@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -12,6 +12,8 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import {
   getWeeklyReviewPrefs,
+  listTimezones,
+  nextScheduledRun,
   updateWeeklyReviewPrefs,
   WEEKDAYS,
 } from "@/lib/weekly-reports";
@@ -26,10 +28,24 @@ export function WeeklyReviewSettings() {
   const [day, setDay] = useState<number | null>(null);
   const [hour, setHour] = useState<number | null>(null);
   const [enabled, setEnabled] = useState<boolean | null>(null);
+  const [tz, setTz] = useState<string | null>(null);
 
   const d = day ?? data?.weekly_review_day ?? 5;
   const h = hour ?? data?.weekly_review_hour ?? 16;
   const en = enabled ?? data?.weekly_review_enabled ?? true;
+  const zone = tz ?? data?.timezone ?? "Africa/Johannesburg";
+
+  const timezones = useMemo(() => listTimezones(), []);
+  const next = useMemo(
+    () =>
+      nextScheduledRun({
+        weekly_review_day: d,
+        weekly_review_hour: h,
+        weekly_review_enabled: en,
+        timezone: zone,
+      }),
+    [d, h, en, zone],
+  );
 
   const save = useMutation({
     mutationFn: () =>
@@ -37,6 +53,7 @@ export function WeeklyReviewSettings() {
         weekly_review_day: d,
         weekly_review_hour: h,
         weekly_review_enabled: en,
+        timezone: zone,
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["weekly-review-prefs"] });
@@ -61,7 +78,9 @@ export function WeeklyReviewSettings() {
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Day</p>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
+            Day
+          </p>
           <Select value={String(d)} onValueChange={(v) => setDay(Number(v))}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -72,7 +91,9 @@ export function WeeklyReviewSettings() {
           </Select>
         </div>
         <div>
-          <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Hour (UTC)</p>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
+            Time (local)
+          </p>
           <Select value={String(h)} onValueChange={(v) => setHour(Number(v))}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent className="max-h-72">
@@ -84,6 +105,47 @@ export function WeeklyReviewSettings() {
             </SelectContent>
           </Select>
         </div>
+      </div>
+
+      <div>
+        <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
+          Timezone
+        </p>
+        <Select value={zone} onValueChange={(v) => setTz(v)}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent className="max-h-72">
+            {timezones.map((z) => (
+              <SelectItem key={z} value={z}>{z.replace(/_/g, " ")}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="rounded-lg bg-muted/40 p-3 text-sm">
+        <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
+          Next scheduled run
+        </p>
+        {en && next ? (
+          <>
+            <p>
+              {next.toLocaleString(undefined, {
+                timeZone: zone,
+                weekday: "short",
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}{" "}
+              <span className="text-muted-foreground">({zone})</span>
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {next.toUTCString()}
+            </p>
+          </>
+        ) : (
+          <p className="text-muted-foreground">Disabled</p>
+        )}
       </div>
 
       <Button onClick={() => save.mutate()} disabled={save.isPending}>
