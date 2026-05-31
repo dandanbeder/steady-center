@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedTodayRouteImport } from './routes/_authenticated/today'
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedNotesRouteImport } from './routes/_authenticated/notes'
 import { Route as AuthenticatedMyWeekRouteImport } from './routes/_authenticated/my-week'
 import { Route as AuthenticatedMeetingsRouteImport } from './routes/_authenticated/meetings'
@@ -22,6 +23,7 @@ import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedMeetingsMeetingIdRouteImport } from './routes/_authenticated/meetings.$meetingId'
 import { Route as ApiPublicHooksSyncCalendarsRouteImport } from './routes/api/public/hooks/sync-calendars'
 import { Route as ApiPublicHooksProcessRemindersRouteImport } from './routes/api/public/hooks/process-reminders'
+import { Route as ApiPublicHooksGenerateWeeklyReportsRouteImport } from './routes/api/public/hooks/generate-weekly-reports'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -50,6 +52,11 @@ const AuthenticatedTasksRoute = AuthenticatedTasksRouteImport.update({
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedNotesRoute = AuthenticatedNotesRouteImport.update({
@@ -90,6 +97,12 @@ const ApiPublicHooksProcessRemindersRoute =
     path: '/api/public/hooks/process-reminders',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksGenerateWeeklyReportsRoute =
+  ApiPublicHooksGenerateWeeklyReportsRouteImport.update({
+    id: '/api/public/hooks/generate-weekly-reports',
+    path: '/api/public/hooks/generate-weekly-reports',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -98,10 +111,12 @@ export interface FileRoutesByFullPath {
   '/meetings': typeof AuthenticatedMeetingsRouteWithChildren
   '/my-week': typeof AuthenticatedMyWeekRoute
   '/notes': typeof AuthenticatedNotesRoute
+  '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/today': typeof AuthenticatedTodayRoute
   '/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
+  '/api/public/hooks/generate-weekly-reports': typeof ApiPublicHooksGenerateWeeklyReportsRoute
   '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
   '/api/public/hooks/sync-calendars': typeof ApiPublicHooksSyncCalendarsRoute
 }
@@ -112,10 +127,12 @@ export interface FileRoutesByTo {
   '/meetings': typeof AuthenticatedMeetingsRouteWithChildren
   '/my-week': typeof AuthenticatedMyWeekRoute
   '/notes': typeof AuthenticatedNotesRoute
+  '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/today': typeof AuthenticatedTodayRoute
   '/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
+  '/api/public/hooks/generate-weekly-reports': typeof ApiPublicHooksGenerateWeeklyReportsRoute
   '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
   '/api/public/hooks/sync-calendars': typeof ApiPublicHooksSyncCalendarsRoute
 }
@@ -128,10 +145,12 @@ export interface FileRoutesById {
   '/_authenticated/meetings': typeof AuthenticatedMeetingsRouteWithChildren
   '/_authenticated/my-week': typeof AuthenticatedMyWeekRoute
   '/_authenticated/notes': typeof AuthenticatedNotesRoute
+  '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
   '/_authenticated/today': typeof AuthenticatedTodayRoute
   '/_authenticated/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
+  '/api/public/hooks/generate-weekly-reports': typeof ApiPublicHooksGenerateWeeklyReportsRoute
   '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
   '/api/public/hooks/sync-calendars': typeof ApiPublicHooksSyncCalendarsRoute
 }
@@ -144,10 +163,12 @@ export interface FileRouteTypes {
     | '/meetings'
     | '/my-week'
     | '/notes'
+    | '/reports'
     | '/settings'
     | '/tasks'
     | '/today'
     | '/meetings/$meetingId'
+    | '/api/public/hooks/generate-weekly-reports'
     | '/api/public/hooks/process-reminders'
     | '/api/public/hooks/sync-calendars'
   fileRoutesByTo: FileRoutesByTo
@@ -158,10 +179,12 @@ export interface FileRouteTypes {
     | '/meetings'
     | '/my-week'
     | '/notes'
+    | '/reports'
     | '/settings'
     | '/tasks'
     | '/today'
     | '/meetings/$meetingId'
+    | '/api/public/hooks/generate-weekly-reports'
     | '/api/public/hooks/process-reminders'
     | '/api/public/hooks/sync-calendars'
   id:
@@ -173,10 +196,12 @@ export interface FileRouteTypes {
     | '/_authenticated/meetings'
     | '/_authenticated/my-week'
     | '/_authenticated/notes'
+    | '/_authenticated/reports'
     | '/_authenticated/settings'
     | '/_authenticated/tasks'
     | '/_authenticated/today'
     | '/_authenticated/meetings/$meetingId'
+    | '/api/public/hooks/generate-weekly-reports'
     | '/api/public/hooks/process-reminders'
     | '/api/public/hooks/sync-calendars'
   fileRoutesById: FileRoutesById
@@ -185,6 +210,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
+  ApiPublicHooksGenerateWeeklyReportsRoute: typeof ApiPublicHooksGenerateWeeklyReportsRoute
   ApiPublicHooksProcessRemindersRoute: typeof ApiPublicHooksProcessRemindersRoute
   ApiPublicHooksSyncCalendarsRoute: typeof ApiPublicHooksSyncCalendarsRoute
 }
@@ -231,6 +257,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/reports': {
+      id: '/_authenticated/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof AuthenticatedReportsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/notes': {
@@ -282,6 +315,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksProcessRemindersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/generate-weekly-reports': {
+      id: '/api/public/hooks/generate-weekly-reports'
+      path: '/api/public/hooks/generate-weekly-reports'
+      fullPath: '/api/public/hooks/generate-weekly-reports'
+      preLoaderRoute: typeof ApiPublicHooksGenerateWeeklyReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -303,6 +343,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedMeetingsRoute: typeof AuthenticatedMeetingsRouteWithChildren
   AuthenticatedMyWeekRoute: typeof AuthenticatedMyWeekRoute
   AuthenticatedNotesRoute: typeof AuthenticatedNotesRoute
+  AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
   AuthenticatedTodayRoute: typeof AuthenticatedTodayRoute
@@ -313,6 +354,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedMeetingsRoute: AuthenticatedMeetingsRouteWithChildren,
   AuthenticatedMyWeekRoute: AuthenticatedMyWeekRoute,
   AuthenticatedNotesRoute: AuthenticatedNotesRoute,
+  AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTasksRoute: AuthenticatedTasksRoute,
   AuthenticatedTodayRoute: AuthenticatedTodayRoute,
@@ -326,6 +368,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
+  ApiPublicHooksGenerateWeeklyReportsRoute:
+    ApiPublicHooksGenerateWeeklyReportsRoute,
   ApiPublicHooksProcessRemindersRoute: ApiPublicHooksProcessRemindersRoute,
   ApiPublicHooksSyncCalendarsRoute: ApiPublicHooksSyncCalendarsRoute,
 }

@@ -16,6 +16,7 @@ import {
   type Calendar as Cal,
 } from "@/lib/calendars";
 import { GoogleSyncPanel } from "@/components/google-sync-panel";
+import { WeeklyReviewSettings } from "@/components/weekly-review-settings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -77,6 +78,17 @@ function SettingsPage() {
           <GoogleSyncPanel businesses={businesses} />
         </div>
       </section>
+
+      <section>
+        <h2 className="text-2xl mb-1">Weekly review</h2>
+        <p className="text-sm text-muted-foreground mb-6">
+          Pick when your weekly summary is generated and emailed to you.
+        </p>
+        <div className="rounded-2xl border border-border bg-card p-6" style={{ boxShadow: "var(--shadow-soft)" }}>
+          <WeeklyReviewSettings />
+        </div>
+      </section>
+
 
 
       <section>
