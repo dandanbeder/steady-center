@@ -338,6 +338,7 @@ export type Database = {
           full_name: string | null
           id: string
           phone: string | null
+          timezone: string
           updated_at: string
           weekly_review_day: number
           weekly_review_enabled: boolean
@@ -348,6 +349,7 @@ export type Database = {
           full_name?: string | null
           id: string
           phone?: string | null
+          timezone?: string
           updated_at?: string
           weekly_review_day?: number
           weekly_review_enabled?: boolean
@@ -358,6 +360,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           phone?: string | null
+          timezone?: string
           updated_at?: string
           weekly_review_day?: number
           weekly_review_enabled?: boolean
@@ -480,7 +483,7 @@ export type Database = {
           created_at: string
           id: string
           metrics: Json
-          narrative: string
+          narrative: Json
           owner_id: string
           week_end: string
           week_start: string
@@ -490,7 +493,7 @@ export type Database = {
           created_at?: string
           id?: string
           metrics?: Json
-          narrative?: string
+          narrative?: Json
           owner_id: string
           week_end: string
           week_start: string
@@ -500,7 +503,7 @@ export type Database = {
           created_at?: string
           id?: string
           metrics?: Json
-          narrative?: string
+          narrative?: Json
           owner_id?: string
           week_end?: string
           week_start?: string
