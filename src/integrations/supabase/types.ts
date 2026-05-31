@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      action_items: {
+        Row: {
+          business_id: string | null
+          created_at: string
+          done: boolean
+          due_at: string | null
+          id: string
+          owner_id: string
+          owner_label: string | null
+          source_id: string | null
+          source_type: string
+          task_id: string | null
+          text: string
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string
+          done?: boolean
+          due_at?: string | null
+          id?: string
+          owner_id: string
+          owner_label?: string | null
+          source_id?: string | null
+          source_type?: string
+          task_id?: string | null
+          text: string
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string
+          done?: boolean
+          due_at?: string | null
+          id?: string
+          owner_id?: string
+          owner_label?: string | null
+          source_id?: string | null
+          source_type?: string
+          task_id?: string | null
+          text?: string
+        }
+        Relationships: []
+      }
       businesses: {
         Row: {
           color: string
@@ -208,6 +250,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      meetings: {
+        Row: {
+          audio_path: string | null
+          business_id: string | null
+          created_at: string
+          decisions: Json
+          event_id: string | null
+          id: string
+          owner_id: string
+          platform: string
+          summary: string
+          title: string
+          transcript: string
+        }
+        Insert: {
+          audio_path?: string | null
+          business_id?: string | null
+          created_at?: string
+          decisions?: Json
+          event_id?: string | null
+          id?: string
+          owner_id: string
+          platform?: string
+          summary?: string
+          title?: string
+          transcript?: string
+        }
+        Update: {
+          audio_path?: string | null
+          business_id?: string | null
+          created_at?: string
+          decisions?: Json
+          event_id?: string | null
+          id?: string
+          owner_id?: string
+          platform?: string
+          summary?: string
+          title?: string
+          transcript?: string
+        }
+        Relationships: []
       }
       notes: {
         Row: {
