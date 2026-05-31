@@ -339,6 +339,9 @@ export type Database = {
           id: string
           phone: string | null
           updated_at: string
+          weekly_review_day: number
+          weekly_review_enabled: boolean
+          weekly_review_hour: number
         }
         Insert: {
           created_at?: string
@@ -346,6 +349,9 @@ export type Database = {
           id: string
           phone?: string | null
           updated_at?: string
+          weekly_review_day?: number
+          weekly_review_enabled?: boolean
+          weekly_review_hour?: number
         }
         Update: {
           created_at?: string
@@ -353,6 +359,9 @@ export type Database = {
           id?: string
           phone?: string | null
           updated_at?: string
+          weekly_review_day?: number
+          weekly_review_enabled?: boolean
+          weekly_review_hour?: number
         }
         Relationships: []
       }
@@ -398,6 +407,7 @@ export type Database = {
       tasks: {
         Row: {
           business_id: string | null
+          completed_at: string | null
           created_at: string
           description: string | null
           due_at: string | null
@@ -412,6 +422,7 @@ export type Database = {
         }
         Insert: {
           business_id?: string | null
+          completed_at?: string | null
           created_at?: string
           description?: string | null
           due_at?: string | null
@@ -426,6 +437,7 @@ export type Database = {
         }
         Update: {
           business_id?: string | null
+          completed_at?: string | null
           created_at?: string
           description?: string | null
           due_at?: string | null
@@ -461,6 +473,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      weekly_reports: {
+        Row: {
+          business_id: string | null
+          created_at: string
+          id: string
+          metrics: Json
+          narrative: string
+          owner_id: string
+          week_end: string
+          week_start: string
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string
+          id?: string
+          metrics?: Json
+          narrative?: string
+          owner_id: string
+          week_end: string
+          week_start: string
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string
+          id?: string
+          metrics?: Json
+          narrative?: string
+          owner_id?: string
+          week_end?: string
+          week_start?: string
+        }
+        Relationships: []
       }
     }
     Views: {
