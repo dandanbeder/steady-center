@@ -91,12 +91,40 @@ export async function createEvent(input: {
 }) {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) throw new Error("Not signed in");
-  const { error } = await supabase.from("events").insert({
-    ...input,
-    source: input.source ?? "manual",
-    owner_id: u.user.id,
-  });
+  const { data: inserted, error } = await supabase
+    .from("events")
+    .insert({
+      ...input,
+      source: input.source ?? "manual",
+      owner_id: u.user.id,
+    })
+    .select("id, calendar_id")
+    .single();
   if (error) throw error;
+
+  // If the parent calendar is Google-synced, push the event up to Google.
+  await maybePushToGoogle(inserted.id, inserted.calendar_id);
+}
+
+export async function updateEvent(
+  id: string,
+  patch: Partial<{
+    title: string;
+    description: string | null;
+    location: string | null;
+    start_at: string;
+    end_at: string;
+    all_day: boolean;
+  }>,
+) {
+  const { data, error } = await supabase
+    .from("events")
+    .update(patch)
+    .eq("id", id)
+    .select("id, calendar_id")
+    .single();
+  if (error) throw error;
+  await maybePushToGoogle(data.id, data.calendar_id);
 }
 
 export async function bulkInsertEvents(rows: Array<Omit<EventRow, "id" | "owner_id" | "created_at">>) {
@@ -108,9 +136,44 @@ export async function bulkInsertEvents(rows: Array<Omit<EventRow, "id" | "owner_
 }
 
 export async function deleteEvent(id: string) {
+  // Look up external IDs first so we can clean up upstream.
+  const { data: ev } = await supabase
+    .from("events")
+    .select("external_id, calendars:calendar_id(provider, external_id)")
+    .eq("id", id)
+    .maybeSingle();
   const { error } = await supabase.from("events").delete().eq("id", id);
   if (error) throw error;
+
+  const cal = (ev?.calendars ?? null) as { provider: string; external_id: string | null } | null;
+  if (cal?.provider === "google" && cal.external_id && ev?.external_id) {
+    try {
+      await deleteEventInGoogle({
+        data: {
+          calendar_external_id: cal.external_id,
+          event_external_id: ev.external_id,
+        },
+      });
+    } catch (e) {
+      console.warn("Failed to delete remote Google event", e);
+    }
+  }
 }
+
+async function maybePushToGoogle(eventId: string, calendarId: string) {
+  const { data: cal } = await supabase
+    .from("calendars")
+    .select("provider")
+    .eq("id", calendarId)
+    .maybeSingle();
+  if (cal?.provider !== "google") return;
+  try {
+    await pushEventToGoogle({ data: { event_id: eventId } });
+  } catch (e) {
+    console.warn("Failed to push event to Google", e);
+  }
+}
+
 
 // ---------- ICS parser ----------
 
