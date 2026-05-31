@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Calendar, CalendarRange, CheckSquare, FileText, Home, Settings, Users, LogOut, ChevronDown } from "lucide-react";
+import heartbeatLogo from "@/assets/heartbeat-horizontal.svg";
 import { useAuth } from "@/hooks/use-auth";
 import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
 import { listBusinesses } from "@/lib/businesses";
@@ -50,7 +51,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <aside className="w-60 shrink-0 border-r border-sidebar-border bg-sidebar flex flex-col">
         <div className="px-6 py-7">
           <Link to="/" className="block">
-            <span className="text-2xl text-sidebar-primary">Heartbeat</span>
+            <img src={heartbeatLogo} alt="Heartbeat" className="h-9 w-auto" />
           </Link>
         </div>
         <nav className="flex-1 px-3 space-y-1">

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import heartbeatLogo from "@/assets/heartbeat-horizontal.svg";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Sign in · Heartbeat" }] }),
@@ -51,8 +52,8 @@ function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 bg-background">
       <div className="w-full max-w-md">
-        <div className="text-center mb-10">
-          <h1 className="text-5xl text-primary">Heartbeat</h1>
+        <div className="flex flex-col items-center mb-10">
+          <img src={heartbeatLogo} alt="Heartbeat" className="h-16 w-auto" />
           <p className="mt-3 text-muted-foreground">A quiet place for your work.</p>
         </div>
 
