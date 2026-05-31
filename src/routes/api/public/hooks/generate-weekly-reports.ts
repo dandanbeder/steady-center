@@ -241,7 +241,7 @@ async function generateForUser(userId: string, weekStart: Date, weekEnd: Date): 
       business_id: null,
       week_start: startIso,
       week_end: endIso,
-      metrics: metrics as unknown as Record<string, unknown>,
+      metrics: JSON.parse(JSON.stringify(metrics)),
       narrative,
     })
     .select("id")
