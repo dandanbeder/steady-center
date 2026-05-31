@@ -87,9 +87,11 @@ export type Database = {
           created_at: string
           external_id: string | null
           id: string
+          last_synced_at: string | null
           name: string
           owner_id: string
           provider: string
+          sync_token: string | null
         }
         Insert: {
           business_id?: string | null
@@ -97,9 +99,11 @@ export type Database = {
           created_at?: string
           external_id?: string | null
           id?: string
+          last_synced_at?: string | null
           name: string
           owner_id: string
           provider?: string
+          sync_token?: string | null
         }
         Update: {
           business_id?: string | null
@@ -107,9 +111,11 @@ export type Database = {
           created_at?: string
           external_id?: string | null
           id?: string
+          last_synced_at?: string | null
           name?: string
           owner_id?: string
           provider?: string
+          sync_token?: string | null
         }
         Relationships: [
           {
@@ -331,19 +337,61 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          phone: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           full_name?: string | null
           id: string
+          phone?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           full_name?: string | null
           id?: string
+          phone?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      reminders: {
+        Row: {
+          channel: string
+          created_at: string
+          id: string
+          last_error: string | null
+          owner_id: string
+          ref_id: string
+          ref_type: string
+          remind_at: string
+          sent: boolean
+          sent_at: string | null
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          owner_id: string
+          ref_id: string
+          ref_type: string
+          remind_at: string
+          sent?: boolean
+          sent_at?: string | null
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          owner_id?: string
+          ref_id?: string
+          ref_type?: string
+          remind_at?: string
+          sent?: boolean
+          sent_at?: string | null
         }
         Relationships: []
       }
