@@ -3,9 +3,6 @@ import type {
   ReportMetrics,
   ReportNarrative,
   PerBusinessMetrics,
-  OverdueEntry,
-  AtRiskEntry,
-  VsLastWeek,
 } from "@/lib/weekly-report-generator.server";
 
 export type { ReportMetrics, ReportNarrative, PerBusinessMetrics };
