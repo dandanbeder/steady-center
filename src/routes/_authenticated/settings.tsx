@@ -69,6 +69,17 @@ function SettingsPage() {
       </header>
 
       <section>
+        <h2 className="text-2xl mb-1">Calendar sync</h2>
+        <p className="text-sm text-muted-foreground mb-6">
+          Connect Google Calendar. Imported calendars sync every hour and changes you make here push back to Google.
+        </p>
+        <div className="rounded-2xl border border-border bg-card p-6" style={{ boxShadow: "var(--shadow-soft)" }}>
+          <GoogleSyncPanel businesses={businesses} />
+        </div>
+      </section>
+
+
+      <section>
         <h2 className="text-2xl mb-1">Businesses</h2>
         <p className="text-sm text-muted-foreground mb-6">
           Each business gets its own color and its own calendars.
