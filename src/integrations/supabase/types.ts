@@ -209,6 +209,39 @@ export type Database = {
           },
         ]
       }
+      notes: {
+        Row: {
+          body: string
+          business_id: string | null
+          created_at: string
+          folder_id: string | null
+          id: string
+          owner_id: string
+          source: string
+          title: string
+        }
+        Insert: {
+          body?: string
+          business_id?: string | null
+          created_at?: string
+          folder_id?: string | null
+          id?: string
+          owner_id: string
+          source?: string
+          title?: string
+        }
+        Update: {
+          body?: string
+          business_id?: string | null
+          created_at?: string
+          folder_id?: string | null
+          id?: string
+          owner_id?: string
+          source?: string
+          title?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
