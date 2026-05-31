@@ -22,6 +22,7 @@ import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedMeetingsMeetingIdRouteImport } from './routes/_authenticated/meetings.$meetingId'
 import { Route as ApiPublicHooksSyncCalendarsRouteImport } from './routes/api/public/hooks/sync-calendars'
 import { Route as ApiPublicHooksProcessRemindersRouteImport } from './routes/api/public/hooks/process-reminders'
+import { Route as ApiPublicHooksGenerateWeeklyReportsRouteImport } from './routes/api/public/hooks/generate-weekly-reports'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -90,6 +91,12 @@ const ApiPublicHooksProcessRemindersRoute =
     path: '/api/public/hooks/process-reminders',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksGenerateWeeklyReportsRoute =
+  ApiPublicHooksGenerateWeeklyReportsRouteImport.update({
+    id: '/api/public/hooks/generate-weekly-reports',
+    path: '/api/public/hooks/generate-weekly-reports',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -102,6 +109,7 @@ export interface FileRoutesByFullPath {
   '/tasks': typeof AuthenticatedTasksRoute
   '/today': typeof AuthenticatedTodayRoute
   '/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
+  '/api/public/hooks/generate-weekly-reports': typeof ApiPublicHooksGenerateWeeklyReportsRoute
   '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
   '/api/public/hooks/sync-calendars': typeof ApiPublicHooksSyncCalendarsRoute
 }
@@ -116,6 +124,7 @@ export interface FileRoutesByTo {
   '/tasks': typeof AuthenticatedTasksRoute
   '/today': typeof AuthenticatedTodayRoute
   '/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
+  '/api/public/hooks/generate-weekly-reports': typeof ApiPublicHooksGenerateWeeklyReportsRoute
   '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
   '/api/public/hooks/sync-calendars': typeof ApiPublicHooksSyncCalendarsRoute
 }
@@ -132,6 +141,7 @@ export interface FileRoutesById {
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
   '/_authenticated/today': typeof AuthenticatedTodayRoute
   '/_authenticated/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
+  '/api/public/hooks/generate-weekly-reports': typeof ApiPublicHooksGenerateWeeklyReportsRoute
   '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
   '/api/public/hooks/sync-calendars': typeof ApiPublicHooksSyncCalendarsRoute
 }
@@ -148,6 +158,7 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/today'
     | '/meetings/$meetingId'
+    | '/api/public/hooks/generate-weekly-reports'
     | '/api/public/hooks/process-reminders'
     | '/api/public/hooks/sync-calendars'
   fileRoutesByTo: FileRoutesByTo
@@ -162,6 +173,7 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/today'
     | '/meetings/$meetingId'
+    | '/api/public/hooks/generate-weekly-reports'
     | '/api/public/hooks/process-reminders'
     | '/api/public/hooks/sync-calendars'
   id:
@@ -177,6 +189,7 @@ export interface FileRouteTypes {
     | '/_authenticated/tasks'
     | '/_authenticated/today'
     | '/_authenticated/meetings/$meetingId'
+    | '/api/public/hooks/generate-weekly-reports'
     | '/api/public/hooks/process-reminders'
     | '/api/public/hooks/sync-calendars'
   fileRoutesById: FileRoutesById
@@ -185,6 +198,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
+  ApiPublicHooksGenerateWeeklyReportsRoute: typeof ApiPublicHooksGenerateWeeklyReportsRoute
   ApiPublicHooksProcessRemindersRoute: typeof ApiPublicHooksProcessRemindersRoute
   ApiPublicHooksSyncCalendarsRoute: typeof ApiPublicHooksSyncCalendarsRoute
 }
@@ -282,6 +296,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksProcessRemindersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/generate-weekly-reports': {
+      id: '/api/public/hooks/generate-weekly-reports'
+      path: '/api/public/hooks/generate-weekly-reports'
+      fullPath: '/api/public/hooks/generate-weekly-reports'
+      preLoaderRoute: typeof ApiPublicHooksGenerateWeeklyReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -326,9 +347,21 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
+  ApiPublicHooksGenerateWeeklyReportsRoute:
+    ApiPublicHooksGenerateWeeklyReportsRoute,
   ApiPublicHooksProcessRemindersRoute: ApiPublicHooksProcessRemindersRoute,
   ApiPublicHooksSyncCalendarsRoute: ApiPublicHooksSyncCalendarsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
