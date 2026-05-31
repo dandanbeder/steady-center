@@ -189,32 +189,18 @@ type EventStub = {
   end?: { dateTime?: string; date?: string };
 };
 
-type SyncSupabase = {
-  from: (table: string) => {
-    select: (cols: string) => {
-      eq: (col: string, val: string) => {
-        eq: (col: string, val: string) => { maybeSingle: () => Promise<{ data: { id: string } | null; error: unknown }> };
-      };
-    };
-    insert: (rows: unknown) => Promise<{ error: unknown }>;
-    update: (patch: unknown) => {
-      eq: (col: string, val: string) => Promise<{ error: unknown }>;
-    };
-    delete: () => {
-      eq: (col: string, val: string) => {
-        eq: (col: string, val: string) => Promise<{ error: unknown }>;
-      };
-    };
-  };
-};
+// We accept any Supabase-like client (auth client from middleware, or admin).
+// Use a permissive type to keep both shapes assignable without ceremony.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SyncSupabase = any;
 
 export async function runSyncForCalendar(
-  supabase: unknown,
+  supabase: SyncSupabase,
   localCalendarId: string,
   externalCalendarId: string,
   syncToken: string | null,
 ): Promise<{ inserted: number; updated: number; deleted: number }> {
-  const sb = supabase as SyncSupabase;
+  const sb: SyncSupabase = supabase;
   let inserted = 0;
   let updated = 0;
   let deleted = 0;
@@ -222,6 +208,18 @@ export async function runSyncForCalendar(
   let pageToken: string | null = null;
   let nextSyncToken: string | null = null;
   let useSyncToken = !!syncToken;
+
+  // Look up the parent calendar once (we need owner_id + business_id for inserts).
+  const { data: calRow } = await sb
+    .from("calendars")
+    .select("owner_id, business_id")
+    .eq("id", localCalendarId)
+    .maybeSingle();
+  const ownerId: string | undefined = calRow?.owner_id;
+  const businessId: string | null = calRow?.business_id ?? null;
+  if (!ownerId) {
+    throw new Error(`Calendar ${localCalendarId} not found or missing owner`);
+  }
 
   // Loop pages
   for (let page = 0; page < 25; page++) {
@@ -257,36 +255,37 @@ export async function runSyncForCalendar(
     const items = json.items ?? [];
     for (const ev of items) {
       if (ev.status === "cancelled") {
-        // delete local
-        // @ts-expect-error untyped supabase
-        const { error } = await sb.from("events").delete().eq("calendar_id", localCalendarId).eq("external_id", ev.id);
+        const { error } = await sb
+          .from("events")
+          .delete()
+          .eq("calendar_id", localCalendarId)
+          .eq("external_id", ev.id);
         if (!error) deleted++;
         continue;
       }
       const norm = fromGoogleEvent(ev);
       if (!norm) continue;
 
-      // @ts-expect-error untyped supabase
-      const { data: found } = await sb.from("events").select("id").eq("calendar_id", localCalendarId).eq("external_id", ev.id).maybeSingle();
+      const { data: found } = await sb
+        .from("events")
+        .select("id")
+        .eq("calendar_id", localCalendarId)
+        .eq("external_id", ev.id)
+        .maybeSingle();
       if (found) {
-        // @ts-expect-error untyped supabase
-        const { error } = await sb.from("events").update({
-          title: norm.title,
-          description: norm.description,
-          location: norm.location,
-          start_at: norm.start_at,
-          end_at: norm.end_at,
-          all_day: norm.all_day,
-        }).eq("id", found.id);
+        const { error } = await sb
+          .from("events")
+          .update({
+            title: norm.title,
+            description: norm.description,
+            location: norm.location,
+            start_at: norm.start_at,
+            end_at: norm.end_at,
+            all_day: norm.all_day,
+          })
+          .eq("id", found.id);
         if (!error) updated++;
       } else {
-        // Get owner_id + business_id from the parent calendar
-        // @ts-expect-error untyped supabase
-        const calRes = await sb.from("calendars").select("owner_id, business_id").eq("id", localCalendarId).maybeSingle();
-        const ownerId = (calRes as { data: { owner_id: string; business_id: string | null } | null }).data?.owner_id;
-        const businessId = (calRes as { data: { owner_id: string; business_id: string | null } | null }).data?.business_id ?? null;
-        if (!ownerId) continue;
-        // @ts-expect-error untyped supabase
         const { error } = await sb.from("events").insert({
           owner_id: ownerId,
           calendar_id: localCalendarId,
@@ -313,14 +312,14 @@ export async function runSyncForCalendar(
   }
 
   // Save the new sync token + timestamp
-  // @ts-expect-error untyped supabase
-  await sb.from("calendars").update({
-    sync_token: nextSyncToken,
-    last_synced_at: new Date().toISOString(),
-  }).eq("id", localCalendarId);
+  await sb
+    .from("calendars")
+    .update({ sync_token: nextSyncToken, last_synced_at: new Date().toISOString() })
+    .eq("id", localCalendarId);
 
   return { inserted, updated, deleted };
 }
+
 
 // ---------------- Helpers ----------------
 
