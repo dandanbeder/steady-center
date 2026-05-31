@@ -15,14 +15,14 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 
-const NAV = [
-  { to: "/", label: "Today", icon: Home, exact: true },
+const NAV: { to: string; label: string; icon: typeof Home }[] = [
+  { to: "/today", label: "Today", icon: Home },
   { to: "/calendar", label: "Calendar", icon: Calendar },
   { to: "/tasks", label: "Tasks", icon: CheckSquare },
   { to: "/notes", label: "Notes", icon: FileText },
   { to: "/meetings", label: "Meetings", icon: Users },
   { to: "/settings", label: "Settings", icon: Settings },
-] as const;
+];
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { signOut, user } = useAuth();
