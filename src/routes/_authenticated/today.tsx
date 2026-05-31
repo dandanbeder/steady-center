@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
 import { useQuery } from "@tanstack/react-query";
+import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
 import { listBusinesses } from "@/lib/businesses";
+import { listCalendars, listEvents } from "@/lib/calendars";
 import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/_authenticated/today")({
@@ -17,13 +18,27 @@ function greeting() {
   return "Good evening";
 }
 
+function startOfDay(d: Date) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+
 function TodayPage() {
   const { user } = useAuth();
   const { activeId } = useActiveBusiness();
-  const { data: businesses = [] } = useQuery({
-    queryKey: ["businesses"],
-    queryFn: listBusinesses,
+  const { data: businesses = [] } = useQuery({ queryKey: ["businesses"], queryFn: listBusinesses });
+  const { data: calendars = [] } = useQuery({ queryKey: ["calendars"], queryFn: listCalendars });
+
+  const start = startOfDay(new Date());
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+
+  const { data: events = [] } = useQuery({
+    queryKey: ["events", start.toISOString(), end.toISOString()],
+    queryFn: () => listEvents(start, end),
   });
+
   const active = activeId === ALL ? null : businesses.find((b) => b.id === activeId);
   const name = (user?.user_metadata?.full_name as string | undefined)?.split(" ")[0];
 
@@ -32,6 +47,11 @@ function TodayPage() {
     month: "long",
     day: "numeric",
   });
+
+  const calById = new Map(calendars.map((c) => [c.id, c]));
+  const todays = events
+    .filter((e) => activeId === ALL || e.business_id === activeId)
+    .sort((a, b) => +new Date(a.start_at) - +new Date(b.start_at));
 
   return (
     <div className="max-w-3xl mx-auto px-8 py-16">
@@ -46,23 +66,48 @@ function TodayPage() {
       </p>
 
       <div className="mt-12 grid gap-4 sm:grid-cols-2">
-        <Card title="On your plate" body="Tasks will land here." />
-        <Card title="Coming up" body="Calendar events will surface here." />
-        <Card title="Recent notes" body="Notes you've touched lately." />
-        <Card title="Meetings" body="Today's and upcoming meetings." />
+        <Card title="Today's events">
+          {todays.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nothing scheduled.</p>
+          ) : (
+            <ul className="space-y-2">
+              {todays.map((e) => {
+                const c = calById.get(e.calendar_id);
+                return (
+                  <li
+                    key={e.id}
+                    className="text-sm pl-3"
+                    style={{ borderLeft: `3px solid ${c?.color ?? "#888"}` }}
+                  >
+                    <div className="font-medium">{e.title}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {e.all_day
+                        ? "All day"
+                        : new Date(e.start_at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
+                      {c && <> · {c.name}</>}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Card>
+        <Card title="On your plate"><p className="text-sm text-muted-foreground">Tasks will land here.</p></Card>
+        <Card title="Recent notes"><p className="text-sm text-muted-foreground">Notes you've touched lately.</p></Card>
+        <Card title="Meetings"><p className="text-sm text-muted-foreground">Today's and upcoming meetings.</p></Card>
       </div>
     </div>
   );
 }
 
-function Card({ title, body }: { title: string; body: string }) {
+function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div
       className="rounded-2xl border border-border bg-card p-6"
       style={{ boxShadow: "var(--shadow-soft)" }}
     >
-      <h3 className="text-lg">{title}</h3>
-      <p className="mt-2 text-sm text-muted-foreground">{body}</p>
+      <h3 className="text-lg mb-3">{title}</h3>
+      {children}
     </div>
   );
 }

@@ -9,6 +9,12 @@ import {
   updateBusiness,
   type Business,
 } from "@/lib/businesses";
+import {
+  createCalendar,
+  deleteCalendar,
+  listCalendars,
+  type Calendar as Cal,
+} from "@/lib/calendars";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -29,8 +35,15 @@ function SettingsPage() {
     queryKey: ["businesses"],
     queryFn: listBusinesses,
   });
+  const { data: calendars = [] } = useQuery({
+    queryKey: ["calendars"],
+    queryFn: listCalendars,
+  });
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: ["businesses"] });
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ["businesses"] });
+    qc.invalidateQueries({ queryKey: ["calendars"] });
+  };
 
   const [newName, setNewName] = useState("");
   const [newColor, setNewColor] = useState(PALETTE[0]);
@@ -56,7 +69,7 @@ function SettingsPage() {
       <section>
         <h2 className="text-2xl mb-1">Businesses</h2>
         <p className="text-sm text-muted-foreground mb-6">
-          Each business gets its own color so you can spot it across the app.
+          Each business gets its own color and its own calendars.
         </p>
 
         <div
@@ -70,7 +83,12 @@ function SettingsPage() {
           ) : (
             <ul className="divide-y divide-border">
               {businesses.map((b) => (
-                <BusinessRow key={b.id} business={b} onChange={invalidate} />
+                <BusinessRow
+                  key={b.id}
+                  business={b}
+                  calendars={calendars.filter((c) => c.business_id === b.id)}
+                  onChange={invalidate}
+                />
               ))}
             </ul>
           )}
@@ -86,9 +104,7 @@ function SettingsPage() {
           style={{ boxShadow: "var(--shadow-soft)" }}
         >
           <h3 className="text-lg">Add a business</h3>
-          <div className="flex gap-3 items-center">
-            <ColorDots value={newColor} onChange={setNewColor} />
-          </div>
+          <ColorDots value={newColor} onChange={setNewColor} />
           <div className="flex gap-3">
             <Input
               placeholder="e.g. Studio, Consulting, Café"
@@ -105,7 +121,15 @@ function SettingsPage() {
   );
 }
 
-function BusinessRow({ business, onChange }: { business: Business; onChange: () => void }) {
+function BusinessRow({
+  business,
+  calendars,
+  onChange,
+}: {
+  business: Business;
+  calendars: Cal[];
+  onChange: () => void;
+}) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(business.name);
   const [color, setColor] = useState(business.color);
@@ -129,66 +153,159 @@ function BusinessRow({ business, onChange }: { business: Business; onChange: () 
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
-  if (editing) {
-    return (
-      <li className="py-4 space-y-3">
-        <ColorDots value={color} onChange={setColor} />
-        <div className="flex gap-2">
-          <Input value={name} onChange={(e) => setName(e.target.value)} />
-          <Button size="icon" onClick={() => save.mutate()} disabled={save.isPending}>
-            <Check className="h-4 w-4" />
-          </Button>
+  return (
+    <li className="py-4 space-y-3">
+      {editing ? (
+        <div className="space-y-3">
+          <ColorDots value={color} onChange={setColor} />
+          <div className="flex gap-2">
+            <Input value={name} onChange={(e) => setName(e.target.value)} />
+            <Button size="icon" onClick={() => save.mutate()} disabled={save.isPending}>
+              <Check className="h-4 w-4" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => {
+                setEditing(false);
+                setName(business.name);
+                setColor(business.color);
+              }}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-center gap-3">
+          <span
+            className="h-3 w-3 rounded-full shrink-0"
+            style={{ backgroundColor: business.color }}
+          />
+          <button
+            className="text-left flex-1 hover:text-accent transition-colors"
+            onClick={() => setEditing(true)}
+          >
+            {business.name}
+          </button>
           <Button
             size="icon"
             variant="ghost"
             onClick={() => {
-              setEditing(false);
-              setName(business.name);
-              setColor(business.color);
+              if (confirm(`Delete "${business.name}"? Calendars and events will go too.`)) del.mutate();
             }}
+            disabled={del.isPending}
           >
-            <X className="h-4 w-4" />
+            <Trash2 className="h-4 w-4 text-muted-foreground" />
           </Button>
         </div>
-      </li>
-    );
-  }
+      )}
 
-  return (
-    <li className="py-3 flex items-center gap-3">
-      <span
-        className="h-3 w-3 rounded-full shrink-0"
-        style={{ backgroundColor: business.color }}
+      <CalendarsForBusiness
+        businessId={business.id}
+        calendars={calendars}
+        onChange={onChange}
       />
-      <button
-        className="text-left flex-1 hover:text-accent transition-colors"
-        onClick={() => setEditing(true)}
-      >
-        {business.name}
-      </button>
-      <Button
-        size="icon"
-        variant="ghost"
-        onClick={() => {
-          if (confirm(`Delete "${business.name}"? This can't be undone.`)) del.mutate();
-        }}
-        disabled={del.isPending}
-      >
-        <Trash2 className="h-4 w-4 text-muted-foreground" />
-      </Button>
     </li>
   );
 }
 
-function ColorDots({ value, onChange }: { value: string; onChange: (c: string) => void }) {
+function CalendarsForBusiness({
+  businessId,
+  calendars,
+  onChange,
+}: {
+  businessId: string;
+  calendars: Cal[];
+  onChange: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [color, setColor] = useState(PALETTE[0]);
+
+  const add = useMutation({
+    mutationFn: () =>
+      createCalendar({ name: name.trim(), color, business_id: businessId }),
+    onSuccess: () => {
+      setName("");
+      onChange();
+      toast.success("Calendar added");
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
+  const del = useMutation({
+    mutationFn: (id: string) => deleteCalendar(id),
+    onSuccess: () => {
+      onChange();
+      toast.success("Calendar deleted");
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
   return (
-    <div className="flex gap-2 flex-wrap">
+    <div className="pl-6 space-y-2">
+      <p className="text-xs uppercase tracking-wider text-muted-foreground">Calendars</p>
+      {calendars.length === 0 ? (
+        <p className="text-xs text-muted-foreground italic">No calendars yet.</p>
+      ) : (
+        <ul className="space-y-1">
+          {calendars.map((c) => (
+            <li key={c.id} className="flex items-center gap-2">
+              <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: c.color }} />
+              <span className="text-sm flex-1">{c.name}</span>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => {
+                  if (confirm(`Delete "${c.name}" and its events?`)) del.mutate(c.id);
+                }}
+              >
+                <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!name.trim()) return;
+          add.mutate();
+        }}
+        className="flex items-center gap-2 pt-1"
+      >
+        <ColorDots value={color} onChange={setColor} small />
+        <Input
+          placeholder="New calendar name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="h-8"
+        />
+        <Button type="submit" size="sm" variant="outline" disabled={add.isPending || !name.trim()}>
+          <Plus className="h-3.5 w-3.5" />
+        </Button>
+      </form>
+    </div>
+  );
+}
+
+function ColorDots({
+  value,
+  onChange,
+  small,
+}: {
+  value: string;
+  onChange: (c: string) => void;
+  small?: boolean;
+}) {
+  return (
+    <div className="flex gap-1.5 flex-wrap">
       {PALETTE.map((c) => (
         <button
           key={c}
           type="button"
           onClick={() => onChange(c)}
-          className="h-7 w-7 rounded-full border-2 transition-transform hover:scale-110"
+          className={`${small ? "h-5 w-5" : "h-7 w-7"} rounded-full border-2 transition-transform hover:scale-110`}
           style={{
             backgroundColor: c,
             borderColor: value === c ? "var(--foreground)" : "transparent",
