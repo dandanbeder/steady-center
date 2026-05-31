@@ -20,6 +20,8 @@ import { Route as AuthenticatedMyWeekRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedMeetingsRouteImport } from './routes/_authenticated/meetings'
 import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticated/calendar'
 import { Route as AuthenticatedMeetingsMeetingIdRouteImport } from './routes/_authenticated/meetings.$meetingId'
+import { Route as ApiPublicHooksSyncCalendarsRouteImport } from './routes/api/public/hooks/sync-calendars'
+import { Route as ApiPublicHooksProcessRemindersRouteImport } from './routes/api/public/hooks/process-reminders'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -76,6 +78,18 @@ const AuthenticatedMeetingsMeetingIdRoute =
     path: '/$meetingId',
     getParentRoute: () => AuthenticatedMeetingsRoute,
   } as any)
+const ApiPublicHooksSyncCalendarsRoute =
+  ApiPublicHooksSyncCalendarsRouteImport.update({
+    id: '/api/public/hooks/sync-calendars',
+    path: '/api/public/hooks/sync-calendars',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicHooksProcessRemindersRoute =
+  ApiPublicHooksProcessRemindersRouteImport.update({
+    id: '/api/public/hooks/process-reminders',
+    path: '/api/public/hooks/process-reminders',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -88,6 +102,8 @@ export interface FileRoutesByFullPath {
   '/tasks': typeof AuthenticatedTasksRoute
   '/today': typeof AuthenticatedTodayRoute
   '/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
+  '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
+  '/api/public/hooks/sync-calendars': typeof ApiPublicHooksSyncCalendarsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -100,6 +116,8 @@ export interface FileRoutesByTo {
   '/tasks': typeof AuthenticatedTasksRoute
   '/today': typeof AuthenticatedTodayRoute
   '/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
+  '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
+  '/api/public/hooks/sync-calendars': typeof ApiPublicHooksSyncCalendarsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -114,6 +132,8 @@ export interface FileRoutesById {
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
   '/_authenticated/today': typeof AuthenticatedTodayRoute
   '/_authenticated/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
+  '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
+  '/api/public/hooks/sync-calendars': typeof ApiPublicHooksSyncCalendarsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -128,6 +148,8 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/today'
     | '/meetings/$meetingId'
+    | '/api/public/hooks/process-reminders'
+    | '/api/public/hooks/sync-calendars'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -140,6 +162,8 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/today'
     | '/meetings/$meetingId'
+    | '/api/public/hooks/process-reminders'
+    | '/api/public/hooks/sync-calendars'
   id:
     | '__root__'
     | '/'
@@ -153,12 +177,16 @@ export interface FileRouteTypes {
     | '/_authenticated/tasks'
     | '/_authenticated/today'
     | '/_authenticated/meetings/$meetingId'
+    | '/api/public/hooks/process-reminders'
+    | '/api/public/hooks/sync-calendars'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
+  ApiPublicHooksProcessRemindersRoute: typeof ApiPublicHooksProcessRemindersRoute
+  ApiPublicHooksSyncCalendarsRoute: typeof ApiPublicHooksSyncCalendarsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -240,6 +268,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMeetingsMeetingIdRouteImport
       parentRoute: typeof AuthenticatedMeetingsRoute
     }
+    '/api/public/hooks/sync-calendars': {
+      id: '/api/public/hooks/sync-calendars'
+      path: '/api/public/hooks/sync-calendars'
+      fullPath: '/api/public/hooks/sync-calendars'
+      preLoaderRoute: typeof ApiPublicHooksSyncCalendarsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/process-reminders': {
+      id: '/api/public/hooks/process-reminders'
+      path: '/api/public/hooks/process-reminders'
+      fullPath: '/api/public/hooks/process-reminders'
+      preLoaderRoute: typeof ApiPublicHooksProcessRemindersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -284,6 +326,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
+  ApiPublicHooksProcessRemindersRoute: ApiPublicHooksProcessRemindersRoute,
+  ApiPublicHooksSyncCalendarsRoute: ApiPublicHooksSyncCalendarsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

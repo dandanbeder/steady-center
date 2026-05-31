@@ -15,9 +15,11 @@ import {
   listCalendars,
   type Calendar as Cal,
 } from "@/lib/calendars";
+import { GoogleSyncPanel } from "@/components/google-sync-panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Settings · Heartbeat" }] }),
@@ -65,6 +67,17 @@ function SettingsPage() {
         <h1 className="text-4xl text-primary">Settings</h1>
         <p className="mt-2 text-muted-foreground">Shape your command center.</p>
       </header>
+
+      <section>
+        <h2 className="text-2xl mb-1">Calendar sync</h2>
+        <p className="text-sm text-muted-foreground mb-6">
+          Connect Google Calendar. Imported calendars sync every hour and changes you make here push back to Google.
+        </p>
+        <div className="rounded-2xl border border-border bg-card p-6" style={{ boxShadow: "var(--shadow-soft)" }}>
+          <GoogleSyncPanel businesses={businesses} />
+        </div>
+      </section>
+
 
       <section>
         <h2 className="text-2xl mb-1">Businesses</h2>
