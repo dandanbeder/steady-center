@@ -16,6 +16,7 @@ import {
   type Calendar as Cal,
 } from "@/lib/calendars";
 import { GoogleSyncPanel } from "@/components/google-sync-panel";
+import { WeeklyReviewSettings } from "@/components/weekly-review-settings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";

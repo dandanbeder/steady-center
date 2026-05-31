@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Calendar, CalendarRange, CheckSquare, FileText, Home, Settings, Users, LogOut, ChevronDown } from "lucide-react";
+import { Calendar, CalendarRange, CheckSquare, FileText, Home, Settings, Users, LogOut, ChevronDown, BarChart3 } from "lucide-react";
 import heartbeatLogo from "@/assets/heartbeat-horizontal.svg";
 import { useAuth } from "@/hooks/use-auth";
 import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
@@ -23,6 +23,7 @@ const NAV: { to: string; label: string; icon: typeof Home }[] = [
   { to: "/tasks", label: "Tasks", icon: CheckSquare },
   { to: "/notes", label: "Notes", icon: FileText },
   { to: "/meetings", label: "Meetings", icon: Users },
+  { to: "/reports", label: "Reports", icon: BarChart3 },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 
