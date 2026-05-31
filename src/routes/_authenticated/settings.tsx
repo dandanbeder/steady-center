@@ -15,9 +15,11 @@ import {
   listCalendars,
   type Calendar as Cal,
 } from "@/lib/calendars";
+import { GoogleSyncPanel } from "@/components/google-sync-panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Settings · Heartbeat" }] }),
