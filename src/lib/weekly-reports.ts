@@ -1,4 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
+import type {
+  ReportMetrics,
+  ReportNarrative,
+  PerBusinessMetrics,
+} from "@/lib/weekly-report-generator.server";
+
+export type { ReportMetrics, ReportNarrative, PerBusinessMetrics };
 
 export type WeeklyReport = {
   id: string;
@@ -7,27 +14,8 @@ export type WeeklyReport = {
   week_start: string;
   week_end: string;
   metrics: ReportMetrics;
-  narrative: string;
+  narrative: ReportNarrative;
   created_at: string;
-};
-
-export type PerBusinessMetrics = {
-  business_id: string | null;
-  business_name: string;
-  tasks_created: number;
-  tasks_completed: number;
-  completed_on_time: number;
-  completed_late: number;
-  high_priority_open_or_overdue: Array<{ id: string; title: string; due_at: string | null }>;
-  meetings_held: number;
-  action_items_closed: number;
-  action_items_open: number;
-  notes_added: number;
-};
-
-export type ReportMetrics = {
-  overall: PerBusinessMetrics;
-  per_business: PerBusinessMetrics[];
 };
 
 export async function listWeeklyReports(): Promise<WeeklyReport[]> {
@@ -37,6 +25,16 @@ export async function listWeeklyReports(): Promise<WeeklyReport[]> {
     .order("week_start", { ascending: false });
   if (error) throw error;
   return (data ?? []) as unknown as WeeklyReport[];
+}
+
+export async function getWeeklyReport(id: string): Promise<WeeklyReport | null> {
+  const { data, error } = await supabase
+    .from("weekly_reports")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as unknown as WeeklyReport | null) ?? null;
 }
 
 export async function updateWeeklyReviewPrefs(p: {
@@ -69,3 +67,9 @@ export async function getWeeklyReviewPrefs() {
 }
 
 export const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+/** green if completion >= 0.7, gold otherwise. */
+export function reportStatus(r: WeeklyReport): "green" | "gold" {
+  const rate = r.metrics?.overall?.completion_rate ?? 0;
+  return rate >= 0.7 ? "green" : "gold";
+}
