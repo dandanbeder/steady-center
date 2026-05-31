@@ -42,8 +42,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     setActiveId(ALL);
   }
 
-  const isActive = (to: string, exact?: boolean) =>
-    exact ? pathname === to : pathname === to || pathname.startsWith(to + "/");
+  const isActive = (to: string) => pathname === to || pathname.startsWith(to + "/");
 
   return (
     <div className="min-h-screen flex bg-background">
