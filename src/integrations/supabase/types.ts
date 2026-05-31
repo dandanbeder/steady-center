@@ -38,6 +38,110 @@ export type Database = {
         }
         Relationships: []
       }
+      calendars: {
+        Row: {
+          business_id: string | null
+          color: string
+          created_at: string
+          external_id: string | null
+          id: string
+          name: string
+          owner_id: string
+          provider: string
+        }
+        Insert: {
+          business_id?: string | null
+          color?: string
+          created_at?: string
+          external_id?: string | null
+          id?: string
+          name: string
+          owner_id: string
+          provider?: string
+        }
+        Update: {
+          business_id?: string | null
+          color?: string
+          created_at?: string
+          external_id?: string | null
+          id?: string
+          name?: string
+          owner_id?: string
+          provider?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendars_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          all_day: boolean
+          business_id: string | null
+          calendar_id: string
+          created_at: string
+          description: string | null
+          end_at: string
+          external_id: string | null
+          id: string
+          location: string | null
+          owner_id: string
+          source: string
+          start_at: string
+          title: string
+        }
+        Insert: {
+          all_day?: boolean
+          business_id?: string | null
+          calendar_id: string
+          created_at?: string
+          description?: string | null
+          end_at: string
+          external_id?: string | null
+          id?: string
+          location?: string | null
+          owner_id: string
+          source?: string
+          start_at: string
+          title: string
+        }
+        Update: {
+          all_day?: boolean
+          business_id?: string | null
+          calendar_id?: string
+          created_at?: string
+          description?: string | null
+          end_at?: string
+          external_id?: string | null
+          id?: string
+          location?: string | null
+          owner_id?: string
+          source?: string
+          start_at?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_calendar_id_fkey"
+            columns: ["calendar_id"]
+            isOneToOne: false
+            referencedRelation: "calendars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
