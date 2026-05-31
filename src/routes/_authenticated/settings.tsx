@@ -79,6 +79,17 @@ function SettingsPage() {
         </div>
       </section>
 
+      <section>
+        <h2 className="text-2xl mb-1">Weekly review</h2>
+        <p className="text-sm text-muted-foreground mb-6">
+          Pick when your weekly summary is generated and emailed to you.
+        </p>
+        <div className="rounded-2xl border border-border bg-card p-6" style={{ boxShadow: "var(--shadow-soft)" }}>
+          <WeeklyReviewSettings />
+        </div>
+      </section>
+
+
 
       <section>
         <h2 className="text-2xl mb-1">Businesses</h2>
