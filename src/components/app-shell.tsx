@@ -55,7 +55,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <nav className="flex-1 px-3 space-y-1">
           {NAV.map((item) => {
             const Icon = item.icon;
-            const active = isActive(item.to, item.exact);
+            const active = isActive(item.to);
             return (
               <Link
                 key={item.to}
