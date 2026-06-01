@@ -34,6 +34,7 @@ import {
   DialogFooter,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { TagPeople } from "@/components/tag-people";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1003,6 +1004,9 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} />
           </div>
           <TaskTimePanel taskId={task.id} businessId={task.business_id} />
+          <div className="pt-2 border-t border-border">
+            <TagPeople itemType="task" itemId={task.id} businessId={task.business_id} />
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
