@@ -9,7 +9,13 @@ import {
   Trash2,
   Pencil,
   RefreshCw,
+  Maximize2,
+  Minimize2,
+  Download,
+  FileText,
+  FileSpreadsheet,
 } from "lucide-react";
+
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
