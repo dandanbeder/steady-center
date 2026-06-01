@@ -75,7 +75,7 @@ function SettingsPage() {
   });
 
   return (
-    <div className="max-w-3xl mx-auto px-8 py-16 space-y-12">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 space-y-12">
       <header>
         <h1 className="text-4xl text-primary">Settings</h1>
         <p className="mt-2 text-muted-foreground">Shape your command center.</p>

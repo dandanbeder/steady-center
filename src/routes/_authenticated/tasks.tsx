@@ -469,7 +469,7 @@ function ListWorkspace({
   const [openTask, setOpenTask] = useState<Task | null>(null);
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-2 gap-4 flex-wrap">
         <h1 className="text-3xl text-primary">{list.name}</h1>
         <div className="flex rounded-lg border border-border overflow-hidden">

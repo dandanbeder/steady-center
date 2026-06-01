@@ -47,7 +47,7 @@ function MeetingsPage() {
   });
 
   return (
-    <div className="max-w-5xl mx-auto px-8 py-10">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-4xl text-primary">Meetings</h1>

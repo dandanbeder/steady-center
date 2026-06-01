@@ -32,7 +32,7 @@ function ReportsPage() {
   });
 
   return (
-    <div className="max-w-4xl mx-auto px-8 py-16 space-y-10">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 space-y-10">
       <header className="flex items-end justify-between gap-4">
         <div>
           <h1 className="text-4xl text-primary">Weekly reports</h1>
