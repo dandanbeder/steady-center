@@ -275,7 +275,7 @@ function DangerZone() {
           <DialogHeader>
             <DialogTitle>Delete account permanently?</DialogTitle>
             <DialogDescription>
-              This removes every business, calendar, task, note, meeting, recording,
+              This removes every account, calendar, task, note, meeting, recording,
               and report you own, then deletes your login. This cannot be undone.
             </DialogDescription>
           </DialogHeader>
