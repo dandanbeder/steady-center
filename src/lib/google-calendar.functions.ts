@@ -162,16 +162,25 @@ export const pushEventToGoogle = createServerFn({ method: "POST" })
 export const deleteEventInGoogle = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z
-      .object({
-        calendar_external_id: z.string().min(1),
-        event_external_id: z.string().min(1),
-      })
-      .parse(input),
+    z.object({ event_id: z.string().uuid() }).parse(input),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    // RLS-scoped lookup: only succeeds if the caller can access this event.
+    // Prevents authenticated users from deleting arbitrary Google events
+    // by passing raw external IDs to the shared connector credentials.
+    const { data: ev, error } = await supabase
+      .from("events")
+      .select("external_id, calendar:calendars!inner(provider, external_id)")
+      .eq("id", data.event_id)
+      .single();
+    if (error) throw error;
+    const cal = ev.calendar as { provider: string; external_id: string | null };
+    if (cal.provider !== "google" || !cal.external_id || !ev.external_id) {
+      return { skipped: true };
+    }
     await gFetch(
-      `/calendars/${encodeURIComponent(data.calendar_external_id)}/events/${encodeURIComponent(data.event_external_id)}`,
+      `/calendars/${encodeURIComponent(cal.external_id)}/events/${encodeURIComponent(ev.external_id)}`,
       { method: "DELETE" },
     );
     return { ok: true };

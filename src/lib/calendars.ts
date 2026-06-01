@@ -136,28 +136,14 @@ export async function bulkInsertEvents(rows: Array<Omit<EventRow, "id" | "owner_
 }
 
 export async function deleteEvent(id: string) {
-  // Look up external IDs first so we can clean up upstream.
-  const { data: ev } = await supabase
-    .from("events")
-    .select("external_id, calendars:calendar_id(provider, external_id)")
-    .eq("id", id)
-    .maybeSingle();
+  // Delete remote first (RLS-scoped on the server), then local.
+  try {
+    await deleteEventInGoogle({ data: { event_id: id } });
+  } catch (e) {
+    console.warn("Failed to delete remote Google event", e);
+  }
   const { error } = await supabase.from("events").delete().eq("id", id);
   if (error) throw error;
-
-  const cal = (ev?.calendars ?? null) as { provider: string; external_id: string | null } | null;
-  if (cal?.provider === "google" && cal.external_id && ev?.external_id) {
-    try {
-      await deleteEventInGoogle({
-        data: {
-          calendar_external_id: cal.external_id,
-          event_external_id: ev.external_id,
-        },
-      });
-    } catch (e) {
-      console.warn("Failed to delete remote Google event", e);
-    }
-  }
 }
 
 async function maybePushToGoogle(eventId: string, calendarId: string) {
