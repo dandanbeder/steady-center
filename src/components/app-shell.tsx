@@ -233,7 +233,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 ))}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link to="/settings">Manage businesses…</Link>
+                  <Link to="/settings">Manage Accounts…</Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
