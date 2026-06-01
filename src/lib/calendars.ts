@@ -12,7 +12,9 @@ export type Calendar = {
   provider: string;
   external_id: string | null;
   created_at: string;
+  last_synced_at: string | null;
 };
+
 
 export type EventRow = {
   id: string;
