@@ -977,6 +977,7 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
             <Label>Description</Label>
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} />
           </div>
+          <TaskTimePanel taskId={task.id} businessId={task.business_id} />
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
