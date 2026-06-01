@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      access_requests: {
+        Row: {
+          business_id: string
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          id: string
+          invitation_id: string | null
+          message: string | null
+          proposed_role: Database["public"]["Enums"]["membership_role"]
+          requester_user_id: string
+          status: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          invitation_id?: string | null
+          message?: string | null
+          proposed_role?: Database["public"]["Enums"]["membership_role"]
+          requester_user_id: string
+          status?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          invitation_id?: string | null
+          message?: string | null
+          proposed_role?: Database["public"]["Enums"]["membership_role"]
+          requester_user_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "access_requests_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: false
+            referencedRelation: "invitations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       action_items: {
         Row: {
           business_id: string | null
@@ -351,6 +398,42 @@ export type Database = {
           },
         ]
       }
+      invitations: {
+        Row: {
+          business_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          invited_by: string
+          invited_email: string
+          proposed_role: Database["public"]["Enums"]["membership_role"]
+          status: string
+          token: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invited_by: string
+          invited_email: string
+          proposed_role: Database["public"]["Enums"]["membership_role"]
+          status?: string
+          token?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          invited_email?: string
+          proposed_role?: Database["public"]["Enums"]["membership_role"]
+          status?: string
+          token?: string
+        }
+        Relationships: []
+      }
       lists: {
         Row: {
           created_at: string
@@ -454,10 +537,7 @@ export type Database = {
           business_id: string
           created_at: string
           id: string
-          invite_token: string | null
-          invite_token_expires_at: string | null
           invited_by: string | null
-          invited_email: string | null
           role: Database["public"]["Enums"]["membership_role"]
           status: Database["public"]["Enums"]["membership_status"]
           user_id: string | null
@@ -466,10 +546,7 @@ export type Database = {
           business_id: string
           created_at?: string
           id?: string
-          invite_token?: string | null
-          invite_token_expires_at?: string | null
           invited_by?: string | null
-          invited_email?: string | null
           role?: Database["public"]["Enums"]["membership_role"]
           status?: Database["public"]["Enums"]["membership_status"]
           user_id?: string | null
@@ -478,10 +555,7 @@ export type Database = {
           business_id?: string
           created_at?: string
           id?: string
-          invite_token?: string | null
-          invite_token_expires_at?: string | null
           invited_by?: string | null
-          invited_email?: string | null
           role?: Database["public"]["Enums"]["membership_role"]
           status?: Database["public"]["Enums"]["membership_status"]
           user_id?: string | null
@@ -873,27 +947,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      accept_invite_by_token: {
-        Args: { p_token: string }
-        Returns: {
-          business_id: string
-          created_at: string
-          id: string
-          invite_token: string | null
-          invite_token_expires_at: string | null
-          invited_by: string | null
-          invited_email: string | null
-          role: Database["public"]["Enums"]["membership_role"]
-          status: Database["public"]["Enums"]["membership_status"]
-          user_id: string | null
-        }
-        SetofOptions: {
-          from: "*"
-          to: "memberships"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
       business_for_list: { Args: { p_list_id: string }; Returns: string }
       current_membership_role: { Args: { p_business: string }; Returns: string }
       has_active_readonly_session: { Args: never; Returns: boolean }

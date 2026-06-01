@@ -1,88 +1,103 @@
-# Multi-user conversion plan
+# Refine sharing: invite → sign-up → request-access → approve
 
-## Context discovered
-- Single auth user exists: `dandanbeder@gmail.com` (`ae5bb1bd-6494-4bcd-ab59-f6ddd9696b37`) — this becomes `superadmin`.
-- Zero businesses currently in the DB, so the data backfill is effectively a no-op but the verification gate still runs.
-- Tables `kpis` and `documents` do **not** exist in this project. I'll skip them (note in chat). The actual business-scoped tables are: `businesses`, `calendars`, `events`, `folders`, `lists`, `tasks`, `notes`, `meetings`, `action_items`, `weekly_reports`.
-- `reminders` has no `business_id` (it references events/tasks by `ref_type`+`ref_id`). I will keep `reminders` **owner-scoped** (per-user notifications). Calling this out so it's explicit.
-- `profiles` stays per-user (not a business-scoped table).
+## Goal
 
-## Approach
-Two migrations so the data backfill runs and is verified **before** RLS is rewritten — this is the "do not lock me out" gate.
+Replace today's "invite directly creates a pending membership" model with an explicit four-step flow:
 
-### Migration 1 — Foundations + backfill (no policy rewrite yet)
-1. Create enums: `platform_role` (`user`, `superadmin`), `membership_role` (`owner`, `admin`, `member`, `commenter`, `viewer`), `membership_status` (`active`, `invited`).
-2. `profiles.platform_role platform_role NOT NULL DEFAULT 'user'`. Set the existing user to `superadmin`.
-3. Create `public.memberships` with the schema specified; add unique partial indexes on `(business_id, user_id) WHERE user_id IS NOT NULL` and `(business_id, lower(invited_email)) WHERE invited_email IS NOT NULL` (partial uniques avoid NULL collisions). Enable RLS + GRANTs. Policies are added in Migration 2.
-4. Add `created_by uuid` to: `businesses, calendars, events, folders, lists, tasks, notes, meetings, action_items, weekly_reports`. Default backfill: `created_by = owner_id` (or `owner_id` for businesses itself).
-5. Create SECURITY DEFINER STABLE helpers in `public` with `SET search_path = public`:
-   - `is_platform_admin() returns boolean`
-   - `is_member(p_business uuid, p_min_role text) returns boolean` — rank map `viewer=1, commenter=2, member=3, admin=4, owner=5`; checks `memberships.status='active'` and the caller's role rank.
-   - `current_membership_role(p_business uuid) returns text` — used by membership-write policies.
-6. Backfill `memberships`: for every existing `businesses` row, insert `(business_id, user_id=owner_id, role='owner', status='active', invited_by=owner_id)` on conflict do nothing.
-7. **Verification gate (raises if violated, aborts the migration in the same transaction):**
-   - assert every `businesses` row has at least one `active` `owner` membership
-   - assert the superadmin user owns/has membership in every business they previously owned
-   - assert RLS is `relrowsecurity=true` on all listed tables
+1. Admin **invites** by email → row in `invitations` (status `sent`) + Resend email with link to sign up.
+2. Invitee **signs up** for their own account (normal email/password or Google).
+3. After login, app **matches their email to invitations** and shows "You've been invited to <Account>". They click **Request access** → row in `access_requests` (status `pending`).
+4. Owner/admin sees pending requests in the People panel and **Approves** (confirming the role) or **Denies**. On approve: insert an **active membership** with that role, mark the invitation `accepted`, and email the requester.
 
-### Migration 2 — Policy rewrite (only runs after Migration 1 is approved)
-Drop old `Owner …` policies on each business-scoped table and replace with:
-- SELECT: `is_member(business_id,'viewer') OR is_platform_admin()`
-- INSERT/UPDATE WITH CHECK: `is_member(business_id,'member') OR is_platform_admin()`
-- DELETE: `is_member(business_id,'admin') OR is_platform_admin()`
+Until approval, the requester has **zero** access to the Account's data — enforced by RLS, not just UI.
 
-`businesses` (uses `id` as business ref):
-- SELECT/INSERT/UPDATE follow same pattern keyed off `id`
-- DELETE requires `is_member(id,'owner') OR is_platform_admin()`
-- INSERT WITH CHECK also requires `owner_id = auth.uid()` so a creator can't fabricate businesses owned by someone else; a trigger then auto-inserts the creator's owner membership.
+## Schema (Migration 1)
 
-`memberships`:
-- SELECT: `user_id = auth.uid() OR is_member(business_id,'admin') OR is_platform_admin()`
-- INSERT/UPDATE/DELETE: `is_member(business_id,'admin') OR is_platform_admin()`
-- Extra WITH CHECK: assigning `role='owner'` requires `is_member(business_id,'owner') OR is_platform_admin()` (only owners transfer ownership).
+New tables:
 
-`reminders` and `profiles`: keep current owner-scoped policies (explicitly out of scope per discovery above).
+- `public.invitations`
+  - `id uuid pk`, `business_id uuid not null`, `invited_email citext not null`, `proposed_role membership_role not null` (must be in admin/member/commenter/viewer — owner blocked by check), `invited_by uuid not null`, `token uuid not null unique default gen_random_uuid()`, `status text not null default 'sent' check in ('sent','accepted','revoked','expired')`, `created_at timestamptz default now()`, `expires_at timestamptz default now() + interval '14 days'`.
+  - Indexes on `(business_id, status)`, `(lower(invited_email), status)`, `(token)`.
+- `public.access_requests`
+  - `id uuid pk`, `business_id uuid not null`, `requester_user_id uuid not null`, `invitation_id uuid null` (when triggered from an invite), `message text`, `status text not null default 'pending' check in ('pending','approved','denied')`, `created_at timestamptz default now()`, `decided_by uuid`, `decided_at timestamptz`, `proposed_role membership_role not null`.
+  - Unique partial index: one open request per `(business_id, requester_user_id) where status='pending'`.
 
-After-migration self-check (run via `read_query` after approval):
-- compare row counts the superadmin can see vs total rows in each table (should match)
-- list every policy on every rewritten table (before/after summary in chat)
-- confirm `relrowsecurity=true` on each
+GRANTs for both: `select,insert,update,delete` to `authenticated`; `all` to `service_role`. No `anon`.
 
-## Technical details
+### RLS
 
-### Helper function shapes
-```sql
-create or replace function public.is_platform_admin()
-returns boolean language sql stable security definer set search_path = public as $$
-  select exists (select 1 from profiles where id = auth.uid() and platform_role = 'superadmin')
-$$;
+`invitations`:
+- SELECT: `invited_by = auth.uid() OR is_member(business_id,'admin') OR is_platform_admin() OR lower(invited_email) = lower((select email from auth.users where id = auth.uid()))` (so the invitee can see their own invite).
+- INSERT/UPDATE/DELETE: `is_member(business_id,'admin') OR is_platform_admin()` (write goes through server fns w/ admin client, but keep RLS tight).
 
-create or replace function public.is_member(p_business uuid, p_min_role text)
-returns boolean language sql stable security definer set search_path = public as $$
-  with rank(r,n) as (values
-    ('viewer',1),('commenter',2),('member',3),('admin',4),('owner',5))
-  select exists (
-    select 1
-    from memberships m
-    join rank ur on ur.r = m.role::text
-    join rank mr on mr.r = p_min_role
-    where m.business_id = p_business
-      and m.user_id = auth.uid()
-      and m.status = 'active'
-      and ur.n >= mr.n
-  )
-$$;
-```
+`access_requests`:
+- SELECT: `requester_user_id = auth.uid() OR is_member(business_id,'admin') OR is_platform_admin()`.
+- INSERT (caller creating own request): `requester_user_id = auth.uid()` AND not already an active member.
+- UPDATE (approve/deny): `is_member(business_id,'admin') OR is_platform_admin()`.
+- DELETE: admin-only or owner of the request.
 
-### Code impact
-No frontend code changes needed for this slice — existing queries continue to work because the superadmin sees everything and the single existing user is the owner of every (zero) business. Future invitation UI is out of scope of this plan.
+`memberships` (already correct): keep as-is — active memberships are only created server-side on approval.
 
-### Files touched
-- `supabase/migrations/<ts>_multiuser_foundations.sql` (Migration 1)
-- `supabase/migrations/<ts>_multiuser_rls.sql` (Migration 2)
-- No source file edits.
+### Migration 2 — cleanup legacy invite rows
 
-## Things I'm intentionally NOT doing
-- Not creating `kpis` / `documents` tables (they don't exist; mentioning in final reply).
-- Not rewriting `reminders` / `profiles` RLS (per-user, not business-scoped).
-- Not building invite UI or membership management screens.
+- Backfill: convert existing `memberships` rows with `status='invited'` into `invitations` rows (status `sent`, copy email/role/token/expiry), then delete those memberships.
+- Drop `claim_pending_invites` trigger on `auth.users` (it auto-claimed invited memberships; no longer the flow). Also drop the `invite_token`/`invite_token_expires_at`/`invited_email` columns on `memberships` once data is migrated — keep memberships pure: only active memberships exist.
+
+## Server functions (`src/lib/memberships.functions.ts` + new `invitations.functions.ts`)
+
+Rewrite the existing functions:
+
+- `inviteMember(business_id, email, role)` — admin+; **does NOT** create a membership. Creates an `invitations` row (or refreshes existing `sent` row's token), sends email. **Never reveals** whether the email already has an account — always returns `{ ok:true }`.
+- `listInvitations(business_id)` — admin+; list invitations for the People panel.
+- `revokeInvitation(id)` — admin+; sets status `revoked`.
+- `resendInvitation(id)` — admin+; refresh token+expiry, re-send email.
+- `listMyInvitations()` — signed-in user; returns invitations matching their email + business name. Used on the new "Invitations" landing/badge after login.
+- `requestAccess({ invitation_token? | business_id })` — signed-in user; create `access_requests` row with `proposed_role` from invitation (or `viewer` if business-id only). If invitation exists, link via `invitation_id`. Idempotent: returns existing pending request.
+- `listPendingRequests(business_id)` — admin+; lists access requests with requester profile info via `auth.users` lookup (admin client).
+- `decideAccessRequest({ request_id, decision: 'approve'|'deny', role? })` — admin+. On approve: insert membership (active) with chosen role, mark invitation `accepted`, mark request `approved`, email requester. On deny: mark `denied`. Owner role only assignable by an owner.
+
+All write functions go through `supabaseAdmin` after `requireRole` check.
+
+## UI changes
+
+- `src/components/people-panel.tsx`
+  - Keep Members list (unchanged).
+  - "Pending invites" → split into two sections:
+    - **Invitations sent** (admin can resend / revoke; show email, role, sent date, status).
+    - **Pending access requests** (admin: Approve / Deny buttons with role dropdown pre-filled to `proposed_role`).
+  - Invite form unchanged but informs admin: "We'll email them a sign-up link. You'll approve their access after they sign up."
+- Replace `src/routes/accept-invite.tsx` flow: the email link still goes to `/accept-invite?token=...` but the page now:
+  - If signed out: prompt to sign up (link to `/login`) with banner "You've been invited to <space>".
+  - If signed in: show the invitation, with a single **"Request access"** button. On click, call `requestAccess({ token })` → success screen "Request sent. The space owner will review shortly."
+- New `src/components/my-invitations-banner.tsx`: shows on `/today` if `listMyInvitations()` returns any invitations the user hasn't requested yet. Quick CTA "Request access".
+- Toast on admin People panel when new request arrives (polling on invalidate is fine; realtime out of scope).
+
+## Email
+
+Reuse the existing Resend helper. Add two more templates:
+- Invite email (already exists, tweak copy: "Sign up to request access").
+- Approval email: "You've been approved to join <space>" with link to `/today`.
+
+## Security notes
+
+- `inviteMember` always returns `{ ok: true }` and never errors on "email exists / already member" — log internally, swallow externally to avoid account enumeration.
+- Rate limiting: per project directive (`no-backend-rate-limiting`), we **will not** add backend rate limiting. I'll call this out in the chat reply so the user knows it's intentional and tracked.
+- All access-control checks happen in RLS first; server fns are a UX/error-handling layer over admin-client writes guarded by `requireRole`.
+
+## Files touched
+
+- `supabase/migrations/<ts>_invitations_and_access_requests.sql` (schema + RLS + GRANTs)
+- `supabase/migrations/<ts>_migrate_invited_memberships.sql` (data backfill + drop legacy columns/trigger)
+- `src/lib/invitations.functions.ts` (new)
+- `src/lib/memberships.functions.ts` (trim — remove `inviteMember`, `acceptInvite`, `resendInvite` to invitations module; keep list/role/remove)
+- `src/components/people-panel.tsx` (two sections + approval UI)
+- `src/routes/accept-invite.tsx` (request-access flow)
+- `src/components/my-invitations-banner.tsx` (new) + mount in `src/routes/_authenticated/today.tsx`
+- `src/hooks/use-my-role.ts` (no change expected)
+
+## Out of scope
+
+- Realtime notifications (admins refresh / re-open panel to see new requests).
+- Backend rate limiting (intentional — see Security notes).
+- Bulk invite, CSV import.
+- Audit log beyond the existing `admin_access_log`.
