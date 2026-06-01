@@ -414,9 +414,12 @@ function WeekGrid({
             </button>
           );
         })}
+          </div>
+        </div>
       </div>
     </div>
   );
+
 }
 
 function DayAgendaDialog({
