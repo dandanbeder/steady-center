@@ -18,6 +18,10 @@ import {
 import { deleteBusinessCascade, deleteMyAccount } from "@/lib/account.functions";
 import { GoogleSyncPanel } from "@/components/google-sync-panel";
 import { WeeklyReviewSettings } from "@/components/weekly-review-settings";
+import { NotificationsPanel } from "@/components/settings/notifications-panel";
+import { AiPrefsPanel } from "@/components/settings/ai-prefs-panel";
+import { WorkingHoursPanel } from "@/components/settings/working-hours-panel";
+import { PrivacyDataPanel } from "@/components/settings/privacy-data-panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
