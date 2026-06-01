@@ -195,6 +195,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </header>
 
+        <SupportSessionBanner />
+        <AnnouncementBanner />
         <main className="flex-1 overflow-auto">{children}</main>
       </div>
     </div>
