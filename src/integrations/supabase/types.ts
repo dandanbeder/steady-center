@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           business_id: string | null
           created_at: string
+          created_by: string | null
           done: boolean
           due_at: string | null
           id: string
@@ -31,6 +32,7 @@ export type Database = {
         Insert: {
           business_id?: string | null
           created_at?: string
+          created_by?: string | null
           done?: boolean
           due_at?: string | null
           id?: string
@@ -44,6 +46,7 @@ export type Database = {
         Update: {
           business_id?: string | null
           created_at?: string
+          created_by?: string | null
           done?: boolean
           due_at?: string | null
           id?: string
@@ -75,6 +78,7 @@ export type Database = {
         Row: {
           color: string
           created_at: string
+          created_by: string | null
           id: string
           name: string
           owner_id: string
@@ -82,6 +86,7 @@ export type Database = {
         Insert: {
           color?: string
           created_at?: string
+          created_by?: string | null
           id?: string
           name: string
           owner_id: string
@@ -89,6 +94,7 @@ export type Database = {
         Update: {
           color?: string
           created_at?: string
+          created_by?: string | null
           id?: string
           name?: string
           owner_id?: string
@@ -100,6 +106,7 @@ export type Database = {
           business_id: string | null
           color: string
           created_at: string
+          created_by: string | null
           external_id: string | null
           id: string
           last_synced_at: string | null
@@ -112,6 +119,7 @@ export type Database = {
           business_id?: string | null
           color?: string
           created_at?: string
+          created_by?: string | null
           external_id?: string | null
           id?: string
           last_synced_at?: string | null
@@ -124,6 +132,7 @@ export type Database = {
           business_id?: string | null
           color?: string
           created_at?: string
+          created_by?: string | null
           external_id?: string | null
           id?: string
           last_synced_at?: string | null
@@ -148,6 +157,7 @@ export type Database = {
           business_id: string | null
           calendar_id: string
           created_at: string
+          created_by: string | null
           description: string | null
           end_at: string
           external_id: string | null
@@ -163,6 +173,7 @@ export type Database = {
           business_id?: string | null
           calendar_id: string
           created_at?: string
+          created_by?: string | null
           description?: string | null
           end_at: string
           external_id?: string | null
@@ -178,6 +189,7 @@ export type Database = {
           business_id?: string | null
           calendar_id?: string
           created_at?: string
+          created_by?: string | null
           description?: string | null
           end_at?: string
           external_id?: string | null
@@ -210,6 +222,7 @@ export type Database = {
           business_id: string
           color: string
           created_at: string
+          created_by: string | null
           id: string
           name: string
           owner_id: string
@@ -218,6 +231,7 @@ export type Database = {
           business_id: string
           color?: string
           created_at?: string
+          created_by?: string | null
           id?: string
           name: string
           owner_id: string
@@ -226,6 +240,7 @@ export type Database = {
           business_id?: string
           color?: string
           created_at?: string
+          created_by?: string | null
           id?: string
           name?: string
           owner_id?: string
@@ -243,6 +258,7 @@ export type Database = {
       lists: {
         Row: {
           created_at: string
+          created_by: string | null
           folder_id: string
           id: string
           name: string
@@ -250,6 +266,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           folder_id: string
           id?: string
           name: string
@@ -257,6 +274,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           folder_id?: string
           id?: string
           name?: string
@@ -277,6 +295,7 @@ export type Database = {
           audio_path: string | null
           business_id: string | null
           created_at: string
+          created_by: string | null
           decisions: Json
           event_id: string | null
           id: string
@@ -291,6 +310,7 @@ export type Database = {
           audio_path?: string | null
           business_id?: string | null
           created_at?: string
+          created_by?: string | null
           decisions?: Json
           event_id?: string | null
           id?: string
@@ -305,6 +325,7 @@ export type Database = {
           audio_path?: string | null
           business_id?: string | null
           created_at?: string
+          created_by?: string | null
           decisions?: Json
           event_id?: string | null
           id?: string
@@ -332,11 +353,53 @@ export type Database = {
           },
         ]
       }
+      memberships: {
+        Row: {
+          business_id: string
+          created_at: string
+          id: string
+          invited_by: string | null
+          invited_email: string | null
+          role: Database["public"]["Enums"]["membership_role"]
+          status: Database["public"]["Enums"]["membership_status"]
+          user_id: string | null
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          id?: string
+          invited_by?: string | null
+          invited_email?: string | null
+          role?: Database["public"]["Enums"]["membership_role"]
+          status?: Database["public"]["Enums"]["membership_status"]
+          user_id?: string | null
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          id?: string
+          invited_by?: string | null
+          invited_email?: string | null
+          role?: Database["public"]["Enums"]["membership_role"]
+          status?: Database["public"]["Enums"]["membership_status"]
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memberships_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notes: {
         Row: {
           body: string
           business_id: string | null
           created_at: string
+          created_by: string | null
           folder_id: string | null
           id: string
           owner_id: string
@@ -347,6 +410,7 @@ export type Database = {
           body?: string
           business_id?: string | null
           created_at?: string
+          created_by?: string | null
           folder_id?: string | null
           id?: string
           owner_id: string
@@ -357,6 +421,7 @@ export type Database = {
           body?: string
           business_id?: string | null
           created_at?: string
+          created_by?: string | null
           folder_id?: string | null
           id?: string
           owner_id?: string
@@ -386,6 +451,7 @@ export type Database = {
           full_name: string | null
           id: string
           phone: string | null
+          platform_role: Database["public"]["Enums"]["platform_role"]
           timezone: string
           updated_at: string
           weekly_review_day: number
@@ -397,6 +463,7 @@ export type Database = {
           full_name?: string | null
           id: string
           phone?: string | null
+          platform_role?: Database["public"]["Enums"]["platform_role"]
           timezone?: string
           updated_at?: string
           weekly_review_day?: number
@@ -408,6 +475,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           phone?: string | null
+          platform_role?: Database["public"]["Enums"]["platform_role"]
           timezone?: string
           updated_at?: string
           weekly_review_day?: number
@@ -460,6 +528,7 @@ export type Database = {
           business_id: string | null
           completed_at: string | null
           created_at: string
+          created_by: string | null
           description: string | null
           due_at: string | null
           id: string
@@ -475,6 +544,7 @@ export type Database = {
           business_id?: string | null
           completed_at?: string | null
           created_at?: string
+          created_by?: string | null
           description?: string | null
           due_at?: string | null
           id?: string
@@ -490,6 +560,7 @@ export type Database = {
           business_id?: string | null
           completed_at?: string | null
           created_at?: string
+          created_by?: string | null
           description?: string | null
           due_at?: string | null
           id?: string
@@ -529,6 +600,7 @@ export type Database = {
         Row: {
           business_id: string | null
           created_at: string
+          created_by: string | null
           id: string
           metrics: Json
           narrative: Json
@@ -539,6 +611,7 @@ export type Database = {
         Insert: {
           business_id?: string | null
           created_at?: string
+          created_by?: string | null
           id?: string
           metrics?: Json
           narrative?: Json
@@ -549,6 +622,7 @@ export type Database = {
         Update: {
           business_id?: string | null
           created_at?: string
+          created_by?: string | null
           id?: string
           metrics?: Json
           narrative?: Json
@@ -571,9 +645,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      business_for_list: { Args: { p_list_id: string }; Returns: string }
+      current_membership_role: { Args: { p_business: string }; Returns: string }
+      is_member: {
+        Args: { p_business: string; p_min_role: string }
+        Returns: boolean
+      }
+      is_platform_admin: { Args: never; Returns: boolean }
     }
     Enums: {
+      membership_role: "owner" | "admin" | "member" | "commenter" | "viewer"
+      membership_status: "active" | "invited"
+      platform_role: "user" | "superadmin"
       task_priority: "urgent" | "high" | "normal" | "low"
       task_status: "todo" | "in_progress" | "review" | "done"
     }
@@ -703,6 +786,9 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      membership_role: ["owner", "admin", "member", "commenter", "viewer"],
+      membership_status: ["active", "invited"],
+      platform_role: ["user", "superadmin"],
       task_priority: ["urgent", "high", "normal", "low"],
       task_status: ["todo", "in_progress", "review", "done"],
     },
