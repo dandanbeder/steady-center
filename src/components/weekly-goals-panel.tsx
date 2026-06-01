@@ -306,7 +306,7 @@ function GoalDialog({
             <Select value={businessId} onValueChange={setBusinessId}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="__none">All businesses</SelectItem>
+                <SelectItem value="__none">All Accounts</SelectItem>
                 {businesses.map((b) => (
                   <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
                 ))}
