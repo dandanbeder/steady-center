@@ -367,7 +367,10 @@ function WeekGrid({
 
   return (
     <div className="rounded-2xl border border-border bg-card overflow-hidden" style={{ boxShadow: "var(--shadow-soft)" }}>
-      <div className="grid grid-cols-7">
+      <div className="overflow-x-auto">
+        <div className="min-w-[700px]">
+          <div className="grid grid-cols-7">
+
         {days.map((d) => {
           const isToday = sameDay(d, today);
           const dayEvts = events
