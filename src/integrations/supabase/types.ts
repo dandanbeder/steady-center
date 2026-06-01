@@ -645,6 +645,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      business_for_list: { Args: { p_list_id: string }; Returns: string }
       current_membership_role: { Args: { p_business: string }; Returns: string }
       is_member: {
         Args: { p_business: string; p_min_role: string }
