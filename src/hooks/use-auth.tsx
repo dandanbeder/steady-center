@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { notifyClaimedTags } from "@/lib/item-tags.functions";
+import { recordLogin } from "@/lib/security";
 
 type AuthCtx = {
   user: User | null;
@@ -24,6 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (event === "SIGNED_IN" && s?.user && notifiedFor.current !== s.user.id) {
         notifiedFor.current = s.user.id;
         notifyClaimedTags().catch((e) => console.warn("[tags] notify failed", e));
+        recordLogin("sign_in").catch(() => {});
       }
     });
     supabase.auth.getSession().then(({ data }) => {
