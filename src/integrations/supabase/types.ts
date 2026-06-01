@@ -836,6 +836,8 @@ export type Database = {
           parent_task_id: string | null
           position: number
           priority: Database["public"]["Enums"]["task_priority"]
+          source_note_id: string | null
+          source_type: string | null
           status: Database["public"]["Enums"]["task_status"]
           status_changed_at: string
           title: string
@@ -853,6 +855,8 @@ export type Database = {
           parent_task_id?: string | null
           position?: number
           priority?: Database["public"]["Enums"]["task_priority"]
+          source_note_id?: string | null
+          source_type?: string | null
           status?: Database["public"]["Enums"]["task_status"]
           status_changed_at?: string
           title: string
@@ -870,6 +874,8 @@ export type Database = {
           parent_task_id?: string | null
           position?: number
           priority?: Database["public"]["Enums"]["task_priority"]
+          source_note_id?: string | null
+          source_type?: string | null
           status?: Database["public"]["Enums"]["task_status"]
           status_changed_at?: string
           title?: string
@@ -894,6 +900,13 @@ export type Database = {
             columns: ["parent_task_id"]
             isOneToOne: false
             referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_source_note_id_fkey"
+            columns: ["source_note_id"]
+            isOneToOne: false
+            referencedRelation: "notes"
             referencedColumns: ["id"]
           },
         ]
