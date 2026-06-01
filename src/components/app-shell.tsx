@@ -37,6 +37,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { signOut, user } = useAuth();
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const { activeId, setActiveId } = useActiveBusiness();
+  const { isAdmin } = useIsPlatformAdmin();
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem(STORAGE_KEY) === "1";
