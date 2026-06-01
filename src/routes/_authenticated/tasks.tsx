@@ -98,8 +98,14 @@ function TasksPage() {
   const selectedList = lists.find((l) => l.id === selectedListId) ?? null;
 
   return (
-    <div className="flex h-[calc(100vh-4rem)]">
-      <aside className="w-72 shrink-0 border-r border-border bg-sidebar/30 overflow-auto">
+    <div className="flex flex-col md:flex-row md:h-[calc(100vh-4rem)]">
+      <aside
+        className={cn(
+          "md:w-72 md:shrink-0 border-b md:border-b-0 md:border-r border-border bg-sidebar/30 md:overflow-auto",
+          // On mobile, hide the spaces panel once a list is selected
+          selectedList ? "hidden md:block" : "block",
+        )}
+      >
         <div className="p-4">
           <h2 className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Spaces</h2>
           {visibleBusinesses.length === 0 ? (
@@ -121,25 +127,34 @@ function TasksPage() {
         </div>
       </aside>
 
-      <main className="flex-1 min-w-0 overflow-auto">
+      <main className="flex-1 min-w-0 md:overflow-auto">
         {!selectedList ? (
-          <div className="h-full flex items-center justify-center text-muted-foreground">
+          <div className="h-full flex items-center justify-center text-muted-foreground p-6">
             <div className="text-center max-w-sm">
-              <h1 className="text-3xl text-primary mb-2">Tasks</h1>
-              <p>Pick a list from the left, or add a folder and list to a business to get started.</p>
+              <h1 className="text-2xl sm:text-3xl text-primary mb-2">Tasks</h1>
+              <p>Pick a list {`${typeof window !== "undefined" && window.innerWidth < 768 ? "above" : "from the left"}`}, or add a folder and list to a business to get started.</p>
             </div>
           </div>
         ) : (
-          <ListWorkspace
-            list={selectedList}
-            view={view}
-            onViewChange={setView}
-          />
+          <>
+            <button
+              onClick={() => setSelectedListId(null)}
+              className="md:hidden text-sm text-muted-foreground px-4 pt-3 -mb-1"
+            >
+              ← All lists
+            </button>
+            <ListWorkspace
+              list={selectedList}
+              view={view}
+              onViewChange={setView}
+            />
+          </>
         )}
       </main>
     </div>
   );
 }
+
 
 function BusinessNode({
   business,
@@ -469,9 +484,9 @@ function ListWorkspace({
   const [openTask, setOpenTask] = useState<Task | null>(null);
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-2 gap-4 flex-wrap">
-        <h1 className="text-3xl text-primary">{list.name}</h1>
+        <h1 className="text-2xl sm:text-3xl text-primary">{list.name}</h1>
         <div className="flex rounded-lg border border-border overflow-hidden">
           {([
             ["list", LayoutList, "List"],
@@ -755,21 +770,26 @@ function BoardView({
 
   return (
     <DndContext sensors={sensors} onDragEnd={onDragEnd}>
-      <div className="grid grid-cols-4 gap-3">
-        {STATUSES.map((s) => (
-          <BoardColumn key={s.value} status={s.value} label={s.label}>
-            {tasks
-              .filter((t) => t.status === s.value)
-              .sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority])
-              .map((t) => (
-                <BoardCard key={t.id} task={t} onOpen={onOpen} />
-              ))}
-          </BoardColumn>
-        ))}
+      <div className="-mx-4 sm:mx-0 overflow-x-auto pb-2">
+        <div className="flex gap-3 px-4 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 min-w-max sm:min-w-0">
+          {STATUSES.map((s) => (
+            <div key={s.value} className="w-72 shrink-0 sm:w-auto">
+              <BoardColumn status={s.value} label={s.label}>
+                {tasks
+                  .filter((t) => t.status === s.value)
+                  .sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority])
+                  .map((t) => (
+                    <BoardCard key={t.id} task={t} onOpen={onOpen} />
+                  ))}
+              </BoardColumn>
+            </div>
+          ))}
+        </div>
       </div>
     </DndContext>
   );
 }
+
 
 function BoardColumn({ status, label, children }: { status: TaskStatus; label: string; children: React.ReactNode }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
@@ -858,47 +878,52 @@ function TaskCalendarView({ tasks, onOpen }: { tasks: Task[]; onOpen: (t: Task) 
         </Button>
       </div>
       <div className="rounded-xl border border-border bg-card overflow-hidden" style={{ boxShadow: "var(--shadow-soft)" }}>
-        <div className="grid grid-cols-7 text-xs uppercase tracking-wider text-muted-foreground border-b border-border">
-          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((w) => (
-            <div key={w} className="px-2 py-2 text-center">{w}</div>
-          ))}
-        </div>
-        <div className="grid grid-cols-7 grid-rows-6">
-          {days.map((d, i) => {
-            const inMonth = d.getMonth() === cursor.getMonth();
-            const dayKey = new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString();
-            const dayTasks = tasksByDay.get(dayKey) ?? [];
-            const isToday = +d === +today;
-            return (
-              <div
-                key={i}
-                className={cn(
-                  "min-h-[90px] border-r border-b border-border p-1.5 flex flex-col gap-0.5",
-                  (i + 1) % 7 === 0 && "border-r-0",
-                  i >= 35 && "border-b-0",
-                  !inMonth && "bg-muted/20",
-                )}
-              >
-                <span className={cn(
-                  "text-xs self-end px-1.5 py-0.5 rounded-full",
-                  isToday && "bg-accent text-accent-foreground font-semibold",
-                  !inMonth && "text-muted-foreground",
-                )}>{d.getDate()}</span>
-                {dayTasks.map((t) => (
-                  <button
-                    key={t.id}
-                    onClick={() => onOpen(t)}
-                    className="text-[11px] truncate rounded px-1 py-0.5 text-left hover:bg-muted"
-                    style={{ borderLeft: `2px solid ${PRIORITY_COLOR[t.priority]}` }}
+        <div className="overflow-x-auto">
+          <div className="min-w-[640px]">
+            <div className="grid grid-cols-7 text-xs uppercase tracking-wider text-muted-foreground border-b border-border">
+              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((w) => (
+                <div key={w} className="px-2 py-2 text-center">{w}</div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7 grid-rows-6">
+              {days.map((d, i) => {
+                const inMonth = d.getMonth() === cursor.getMonth();
+                const dayKey = new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString();
+                const dayTasks = tasksByDay.get(dayKey) ?? [];
+                const isToday = +d === +today;
+                return (
+                  <div
+                    key={i}
+                    className={cn(
+                      "min-h-[90px] border-r border-b border-border p-1.5 flex flex-col gap-0.5",
+                      (i + 1) % 7 === 0 && "border-r-0",
+                      i >= 35 && "border-b-0",
+                      !inMonth && "bg-muted/20",
+                    )}
                   >
-                    {t.title}
-                  </button>
-                ))}
-              </div>
-            );
-          })}
+                    <span className={cn(
+                      "text-xs self-end px-1.5 py-0.5 rounded-full",
+                      isToday && "bg-accent text-accent-foreground font-semibold",
+                      !inMonth && "text-muted-foreground",
+                    )}>{d.getDate()}</span>
+                    {dayTasks.map((t) => (
+                      <button
+                        key={t.id}
+                        onClick={() => onOpen(t)}
+                        className="text-[11px] truncate rounded px-1 py-0.5 text-left hover:bg-muted"
+                        style={{ borderLeft: `2px solid ${PRIORITY_COLOR[t.priority]}` }}
+                      >
+                        {t.title}
+                      </button>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
+
     </div>
   );
 }
@@ -940,7 +965,7 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
             <Label>Title</Label>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label>Status</Label>
               <Select value={status} onValueChange={(v) => setStatus(v as TaskStatus)}>

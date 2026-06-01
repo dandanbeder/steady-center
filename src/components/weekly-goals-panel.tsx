@@ -276,7 +276,7 @@ function GoalDialog({
             <Label>Description (optional)</Label>
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label>Measure</Label>
               <Select value={metric} onValueChange={(v) => setMetric(v as GoalMetricType)}>

@@ -43,7 +43,7 @@ function AdminPortal() {
   }
   if (!isAdmin) return <Navigate to="/today" />;
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
         <ShieldAlert className="h-6 w-6 text-primary" />
         <div>
@@ -109,7 +109,7 @@ function UsersPanel() {
   if (isLoading) return <div className="text-muted-foreground">Loading users…</div>;
 
   return (
-    <div className="border rounded-lg">
+    <div className="border rounded-lg overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
@@ -340,7 +340,7 @@ function AnnouncementsSection() {
                   rows={4}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <Label>Level</Label>
                   <Select
@@ -547,7 +547,7 @@ function AuditPanel() {
           app to switch modes or end it.
         </div>
       )}
-      <div className="border rounded-lg">
+      <div className="border rounded-lg overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>

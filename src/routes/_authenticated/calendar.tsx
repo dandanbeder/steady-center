@@ -128,11 +128,12 @@ function CalendarPage() {
     : `${startOfWeek(cursor).toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${addDays(startOfWeek(cursor), 6).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`;
 
   return (
-    <div className="px-8 py-10 flex gap-8">
-      <div className="flex-1 min-w-0">
+    <div className="px-4 sm:px-6 lg:px-8 py-6 lg:py-10 flex flex-col lg:flex-row gap-6 lg:gap-8">
+      <div className="flex-1 min-w-0 order-2 lg:order-1">
+
         <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
           <div>
-            <h1 className="text-4xl text-primary">Calendar</h1>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl text-primary">Calendar</h1>
             <p className="text-sm text-muted-foreground mt-1">{title}</p>
           </div>
           <div className="flex items-center gap-2">
@@ -175,7 +176,7 @@ function CalendarPage() {
         )}
       </div>
 
-      <aside className="w-64 shrink-0 space-y-6">
+      <aside className="w-full lg:w-64 shrink-0 space-y-6 order-1 lg:order-2">
         <div>
           <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">Calendars</h3>
           {visibleCalendars.length === 0 ? (
@@ -285,12 +286,15 @@ function MonthGrid({
 
   return (
     <div className="rounded-2xl border border-border bg-card overflow-hidden" style={{ boxShadow: "var(--shadow-soft)" }}>
-      <div className="grid grid-cols-7 text-xs uppercase tracking-wider text-muted-foreground border-b border-border">
-        {weekdays.map((w) => (
-          <div key={w} className="px-2 py-2 text-center">{w}</div>
-        ))}
-      </div>
-      <div className="grid grid-cols-7 grid-rows-6">
+      <div className="overflow-x-auto">
+        <div className="min-w-[640px]">
+          <div className="grid grid-cols-7 text-xs uppercase tracking-wider text-muted-foreground border-b border-border">
+            {weekdays.map((w) => (
+              <div key={w} className="px-2 py-2 text-center">{w}</div>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 grid-rows-6">
+
         {days.map((d, i) => {
           const inMonth = d.getMonth() === cursor.getMonth();
           const isToday = sameDay(d, today);
@@ -338,10 +342,13 @@ function MonthGrid({
             </button>
           );
         })}
+          </div>
+        </div>
       </div>
     </div>
   );
 }
+
 
 function WeekGrid({
   cursor,
@@ -360,7 +367,10 @@ function WeekGrid({
 
   return (
     <div className="rounded-2xl border border-border bg-card overflow-hidden" style={{ boxShadow: "var(--shadow-soft)" }}>
-      <div className="grid grid-cols-7">
+      <div className="overflow-x-auto">
+        <div className="min-w-[700px]">
+          <div className="grid grid-cols-7">
+
         {days.map((d) => {
           const isToday = sameDay(d, today);
           const dayEvts = events
@@ -404,9 +414,12 @@ function WeekGrid({
             </button>
           );
         })}
+          </div>
+        </div>
       </div>
     </div>
   );
+
 }
 
 function DayAgendaDialog({
@@ -581,7 +594,7 @@ function NewEventDialog({
             <Label htmlFor="allday" className="cursor-pointer">All day</Label>
           </div>
           {!allDay && (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <Label>Start</Label>
                 <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />

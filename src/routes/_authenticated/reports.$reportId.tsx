@@ -34,14 +34,14 @@ function ReportDetail() {
 
   if (isLoading) {
     return (
-      <div className="max-w-5xl mx-auto px-8 py-16 text-sm text-muted-foreground">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 text-sm text-muted-foreground">
         Loading…
       </div>
     );
   }
   if (!report) {
     return (
-      <div className="max-w-5xl mx-auto px-8 py-16 space-y-4">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 space-y-4">
         <p>Report not found.</p>
         <Link to="/reports">
           <Button variant="outline">Back</Button>
@@ -83,7 +83,7 @@ function ReportDetail() {
     : 0;
 
   return (
-    <div className="max-w-5xl mx-auto px-8 py-12 space-y-10">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12 space-y-10">
       <div>
         <Link
           to="/reports"
@@ -97,7 +97,7 @@ function ReportDetail() {
         <p className="text-xs uppercase tracking-wider text-muted-foreground">
           {start.toLocaleDateString()} – {end.toLocaleDateString()}
         </p>
-        <h1 className="text-3xl text-primary leading-tight">
+        <h1 className="text-2xl sm:text-3xl text-primary leading-tight">
           {n.headline || "Weekly review"}
         </h1>
       </header>

@@ -54,9 +54,9 @@ function TodayPage() {
     .sort((a, b) => +new Date(a.start_at) - +new Date(b.start_at));
 
   return (
-    <div className="max-w-3xl mx-auto px-8 py-16">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
       <p className="text-sm text-muted-foreground uppercase tracking-wider">{today}</p>
-      <h1 className="text-5xl mt-3 text-primary">
+      <h1 className="text-3xl sm:text-4xl lg:text-5xl mt-3 text-primary">
         {greeting()}{name ? `, ${name}` : ""}.
       </h1>
       <p className="mt-4 text-lg text-muted-foreground">
