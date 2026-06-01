@@ -628,6 +628,36 @@ export type Database = {
         }
         Relationships: []
       }
+      task_status_history: {
+        Row: {
+          business_id: string | null
+          changed_at: string
+          changed_by: string | null
+          from_status: Database["public"]["Enums"]["task_status"] | null
+          id: string
+          task_id: string
+          to_status: Database["public"]["Enums"]["task_status"]
+        }
+        Insert: {
+          business_id?: string | null
+          changed_at?: string
+          changed_by?: string | null
+          from_status?: Database["public"]["Enums"]["task_status"] | null
+          id?: string
+          task_id: string
+          to_status: Database["public"]["Enums"]["task_status"]
+        }
+        Update: {
+          business_id?: string | null
+          changed_at?: string
+          changed_by?: string | null
+          from_status?: Database["public"]["Enums"]["task_status"] | null
+          id?: string
+          task_id?: string
+          to_status?: Database["public"]["Enums"]["task_status"]
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
           business_id: string | null
@@ -643,6 +673,7 @@ export type Database = {
           position: number
           priority: Database["public"]["Enums"]["task_priority"]
           status: Database["public"]["Enums"]["task_status"]
+          status_changed_at: string
           title: string
         }
         Insert: {
@@ -659,6 +690,7 @@ export type Database = {
           position?: number
           priority?: Database["public"]["Enums"]["task_priority"]
           status?: Database["public"]["Enums"]["task_status"]
+          status_changed_at?: string
           title: string
         }
         Update: {
@@ -675,6 +707,7 @@ export type Database = {
           position?: number
           priority?: Database["public"]["Enums"]["task_priority"]
           status?: Database["public"]["Enums"]["task_status"]
+          status_changed_at?: string
           title?: string
         }
         Relationships: [
@@ -700,6 +733,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      time_entries: {
+        Row: {
+          business_id: string | null
+          created_at: string
+          ended_at: string | null
+          id: string
+          minutes: number
+          note: string | null
+          source: string
+          started_at: string
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          minutes?: number
+          note?: string | null
+          source?: string
+          started_at?: string
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          minutes?: number
+          note?: string | null
+          source?: string
+          started_at?: string
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       weekly_reports: {
         Row: {
