@@ -54,7 +54,22 @@ export type Database = {
           task_id?: string | null
           text?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "action_items_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "action_items_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       businesses: {
         Row: {
@@ -265,6 +280,7 @@ export type Database = {
           decisions: Json
           event_id: string | null
           id: string
+          keep_recording: boolean
           owner_id: string
           platform: string
           summary: string
@@ -278,6 +294,7 @@ export type Database = {
           decisions?: Json
           event_id?: string | null
           id?: string
+          keep_recording?: boolean
           owner_id: string
           platform?: string
           summary?: string
@@ -291,13 +308,29 @@ export type Database = {
           decisions?: Json
           event_id?: string | null
           id?: string
+          keep_recording?: boolean
           owner_id?: string
           platform?: string
           summary?: string
           title?: string
           transcript?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "meetings_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meetings_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notes: {
         Row: {
@@ -330,7 +363,22 @@ export type Database = {
           source?: string
           title?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "notes_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notes_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "folders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -508,7 +556,15 @@ export type Database = {
           week_end?: string
           week_start?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "weekly_reports_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
