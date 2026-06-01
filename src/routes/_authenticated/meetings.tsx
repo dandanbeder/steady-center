@@ -142,6 +142,7 @@ function NewMeetingDialog({
   const [mode, setMode] = useState<"paste" | "audio">("paste");
   const [transcript, setTranscript] = useState("");
   const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [keepRecording, setKeepRecording] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const reset = () => {
@@ -151,6 +152,7 @@ function NewMeetingDialog({
     setMode("paste");
     setTranscript("");
     setAudioFile(null);
+    setKeepRecording(false);
   };
 
   const submit = async () => {
@@ -183,6 +185,7 @@ function NewMeetingDialog({
           business_id: businessId,
           transcript: mode === "paste" ? transcript.trim() : undefined,
           audio_path,
+          keep_recording: mode === "audio" ? keepRecording : false,
         },
       });
       toast.success("Meeting saved");
@@ -263,7 +266,7 @@ function NewMeetingDialog({
                 className="min-h-[200px]"
               />
             </TabsContent>
-            <TabsContent value="audio" className="mt-3">
+            <TabsContent value="audio" className="mt-3 space-y-3">
               <label className="flex flex-col items-center justify-center border-2 border-dashed border-border rounded-lg p-8 cursor-pointer hover:border-primary/40">
                 <Upload className="h-6 w-6 text-muted-foreground mb-2" />
                 <span className="text-sm text-muted-foreground">
@@ -276,9 +279,23 @@ function NewMeetingDialog({
                   onChange={(e) => setAudioFile(e.target.files?.[0] ?? null)}
                 />
               </label>
-              <p className="text-xs text-muted-foreground mt-2">
-                Transcribed with Whisper. Max ~25MB.
+              <p className="text-xs text-muted-foreground">
+                Transcribed with Whisper. mp3, m4a, wav, webm, ogg, flac, mp4. Max 25MB.
               </p>
+              <label className="flex items-start gap-2 text-sm text-foreground/90">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={keepRecording}
+                  onChange={(e) => setKeepRecording(e.target.checked)}
+                />
+                <span>
+                  <span className="block">Keep the audio recording for this meeting</span>
+                  <span className="block text-xs text-muted-foreground">
+                    Off by default — only the transcript and summary are stored.
+                  </span>
+                </span>
+              </label>
             </TabsContent>
           </Tabs>
         </div>
