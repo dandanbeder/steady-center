@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Calendar, CalendarRange, CheckSquare, FileText, Home, Settings, Users, LogOut, ChevronDown, BarChart3, PanelLeftClose, PanelLeftOpen, Shield, Menu } from "lucide-react";
+import { Calendar, CalendarRange, CheckSquare, FileText, Home, Settings, Users, LogOut, ChevronDown, BarChart3, PanelLeftClose, PanelLeftOpen, Shield, Menu, AtSign } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import heartbeatLogo from "@/assets/heartbeat-horizontal.svg";
 import heartbeatMono from "@/assets/heartbeat-mono.svg";
@@ -28,6 +28,7 @@ const NAV: { to: string; label: string; icon: typeof Home }[] = [
   { to: "/tasks", label: "Tasks", icon: CheckSquare },
   { to: "/notes", label: "Notes", icon: FileText },
   { to: "/meetings", label: "Meetings", icon: Users },
+  { to: "/shared", label: "Shared with me", icon: AtSign },
   { to: "/reports", label: "Reports", icon: BarChart3 },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
