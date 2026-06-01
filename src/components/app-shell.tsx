@@ -211,7 +211,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     style={{ backgroundColor: active?.color ?? "var(--muted-foreground)" }}
                   />
                   <span className="text-sm font-medium truncate">
-                    {active ? active.name : "All accounts"}
+                    {active ? active.name : "All Accounts"}
                   </span>
                   <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
                 </button>
@@ -219,7 +219,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <DropdownMenuContent align="start" className="w-56">
                 <DropdownMenuItem onClick={() => setActiveId(ALL)}>
                   <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground mr-2" />
-                  All accounts
+                  All Accounts
                 </DropdownMenuItem>
                 {businesses.length > 0 && <DropdownMenuSeparator />}
                 {businesses.map((b) => (

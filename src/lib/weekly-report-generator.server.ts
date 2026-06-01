@@ -464,7 +464,7 @@ export async function generateForUser(
     return {
       id: g.id,
       title: g.title,
-      business_name: bizName.get(g.business_id) ?? "All accounts",
+      business_name: bizName.get(g.business_id) ?? "All Accounts",
       metric_type: g.metric_type,
       target_value: g.target_value !== null ? Number(g.target_value) : null,
       current_value: Number(g.current_value),
