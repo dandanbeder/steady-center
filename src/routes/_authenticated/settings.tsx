@@ -173,9 +173,9 @@ function SettingsPage() {
 
 
       <section>
-        <h2 className="text-2xl mb-1">Businesses</h2>
+        <h2 className="text-2xl mb-1">Accounts</h2>
         <p className="text-sm text-muted-foreground mb-6">
-          Each business gets its own color and its own calendars.
+          Each account gets its own color and its own calendars.
         </p>
 
         <div
