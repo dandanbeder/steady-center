@@ -1,10 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+type JsonValue = string | number | boolean | null | JsonValue[] | { [k: string]: JsonValue };
+type Row = Record<string, JsonValue>;
 type ExportPayload = {
   exported_at: string;
   user_id: string;
-  tables: Record<string, unknown[]>;
+  tables: Record<string, Row[]>;
 };
 
 const OWNER_TABLES = [
