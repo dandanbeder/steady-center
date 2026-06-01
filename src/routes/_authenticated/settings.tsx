@@ -264,8 +264,9 @@ function BusinessRow({
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
+  const delBiz = useServerFn(deleteBusinessCascade);
   const del = useMutation({
-    mutationFn: () => deleteBusiness(business.id),
+    mutationFn: () => delBiz({ data: { business_id: business.id } }),
     onSuccess: () => {
       onChange();
       toast.success("Deleted");
