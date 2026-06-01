@@ -306,7 +306,7 @@ export const listMyInvitations = createServerFn({ method: "POST" })
 
     const { data: invs } = await supabaseAdmin
       .from("invitations")
-      .select("id, business_id, proposed_role, status, created_at, expires_at")
+      .select("id, business_id, proposed_role, status, created_at, expires_at, token")
       .ilike("invited_email", email)
       .eq("status", "sent");
     if (!invs?.length) return [];
