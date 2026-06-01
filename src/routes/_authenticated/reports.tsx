@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { listWeeklyReports, reportStatus, type WeeklyReport } from "@/lib/weekly-reports";
 import { generateWeeklyReportNow } from "@/lib/weekly-reports.functions";
+import { WeeklyGoalsPanel } from "@/components/weekly-goals-panel";
 
 export const Route = createFileRoute("/_authenticated/reports")({
   head: () => ({ meta: [{ title: "Reports · Heartbeat" }] }),
@@ -43,6 +44,8 @@ function ReportsPage() {
           {gen.isPending ? "Generating…" : "Generate now"}
         </Button>
       </header>
+      <WeeklyGoalsPanel />
+
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>

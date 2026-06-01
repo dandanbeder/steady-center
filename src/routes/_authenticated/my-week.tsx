@@ -11,6 +11,7 @@ import {
   type Task,
 } from "@/lib/tasks";
 import { cn } from "@/lib/utils";
+import { WeeklyGoalsPanel } from "@/components/weekly-goals-panel";
 
 export const Route = createFileRoute("/_authenticated/my-week")({
   head: () => ({ meta: [{ title: "My Week · Heartbeat" }] }),
@@ -55,6 +56,12 @@ function MyWeekPage() {
       <p className="mt-2 text-muted-foreground">
         Everything due in the next 7 days, across every business.
       </p>
+
+      <div className="mt-6">
+        <WeeklyGoalsPanel compact />
+      </div>
+
+
 
       {overdue.length > 0 && (
         <Section title="Overdue" tone="destructive">

@@ -773,6 +773,57 @@ export type Database = {
         }
         Relationships: []
       }
+      weekly_goals: {
+        Row: {
+          business_id: string | null
+          carried_from: string | null
+          created_at: string
+          current_value: number
+          description: string | null
+          id: string
+          metric_type: Database["public"]["Enums"]["goal_metric_type"]
+          status: Database["public"]["Enums"]["goal_status"]
+          target_value: number | null
+          title: string
+          updated_at: string
+          user_id: string
+          week_end: string
+          week_start: string
+        }
+        Insert: {
+          business_id?: string | null
+          carried_from?: string | null
+          created_at?: string
+          current_value?: number
+          description?: string | null
+          id?: string
+          metric_type?: Database["public"]["Enums"]["goal_metric_type"]
+          status?: Database["public"]["Enums"]["goal_status"]
+          target_value?: number | null
+          title: string
+          updated_at?: string
+          user_id: string
+          week_end: string
+          week_start: string
+        }
+        Update: {
+          business_id?: string | null
+          carried_from?: string | null
+          created_at?: string
+          current_value?: number
+          description?: string | null
+          id?: string
+          metric_type?: Database["public"]["Enums"]["goal_metric_type"]
+          status?: Database["public"]["Enums"]["goal_status"]
+          target_value?: number | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          week_end?: string
+          week_start?: string
+        }
+        Relationships: []
+      }
       weekly_reports: {
         Row: {
           business_id: string | null
@@ -868,6 +919,8 @@ export type Database = {
       }
     }
     Enums: {
+      goal_metric_type: "tasks_completed" | "hours" | "custom"
+      goal_status: "open" | "met" | "missed"
       membership_role: "owner" | "admin" | "member" | "commenter" | "viewer"
       membership_status: "active" | "invited"
       platform_role: "user" | "superadmin"
@@ -1001,6 +1054,8 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      goal_metric_type: ["tasks_completed", "hours", "custom"],
+      goal_status: ["open", "met", "missed"],
       membership_role: ["owner", "admin", "member", "commenter", "viewer"],
       membership_status: ["active", "invited"],
       platform_role: ["user", "superadmin"],
