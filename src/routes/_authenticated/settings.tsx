@@ -209,7 +209,7 @@ function SettingsPage() {
           className="mt-6 rounded-2xl border border-border bg-card p-6 space-y-4"
           style={{ boxShadow: "var(--shadow-soft)" }}
         >
-          <h3 className="text-lg">Add a business</h3>
+          <h3 className="text-lg">Add an account</h3>
           <ColorDots value={newColor} onChange={setNewColor} />
           <div className="flex gap-3">
             <Input
