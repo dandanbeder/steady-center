@@ -176,7 +176,7 @@ function CalendarPage() {
         )}
       </div>
 
-      <aside className="w-64 shrink-0 space-y-6">
+      <aside className="w-full lg:w-64 shrink-0 space-y-6 order-1 lg:order-2">
         <div>
           <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">Calendars</h3>
           {visibleCalendars.length === 0 ? (
