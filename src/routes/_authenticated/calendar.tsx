@@ -1721,3 +1721,120 @@ function ImportIcsDialog({
     </Dialog>
   );
 }
+
+// ---------- Export helpers ----------
+
+type ExportArgs = {
+  events: EventRow[];
+  calById: Map<string, Cal>;
+  view: ViewMode;
+  title: string;
+};
+
+function exportRows({ events, calById }: { events: EventRow[]; calById: Map<string, Cal> }) {
+  const sorted = [...events].sort(
+    (a, b) => +new Date(a.start_at) - +new Date(b.start_at),
+  );
+  return sorted.map((e) => {
+    const c = calById.get(e.calendar_id);
+    const s = new Date(e.start_at);
+    const en = new Date(e.end_at);
+    const dateStr = s.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+    const timeStr = e.all_day
+      ? "All day"
+      : `${s.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })} – ${en.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`;
+    return {
+      Date: dateStr,
+      Time: timeStr,
+      Title: e.title,
+      Calendar: c?.name ?? "",
+      Location: e.location ?? "",
+      Notes: e.description ?? "",
+    };
+  });
+}
+
+function exportFilename(view: ViewMode, title: string, ext: string) {
+  const slug = title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+  return `calendar-${view}-${slug || "export"}.${ext}`;
+}
+
+async function exportEventsPdf({ events, calById, view, title }: ExportArgs) {
+  try {
+    if (events.length === 0) {
+      toast.message("Nothing to export in this range.");
+      return;
+    }
+    const [{ default: jsPDF }, autoTableMod] = await Promise.all([
+      import("jspdf"),
+      import("jspdf-autotable"),
+    ]);
+    const autoTable = (autoTableMod as { default: (doc: unknown, opts: unknown) => void }).default;
+    const rows = exportRows({ events, calById });
+    const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+    doc.setFontSize(16);
+    doc.text("Heartbeat Calendar", 40, 40);
+    doc.setFontSize(10);
+    doc.setTextColor(120);
+    doc.text(`${view.toUpperCase()} · ${title}`, 40, 58);
+    doc.setTextColor(0);
+    autoTable(doc, {
+      startY: 80,
+      head: [["Date", "Time", "Title", "Calendar", "Location", "Notes"]],
+      body: rows.map((r) => [r.Date, r.Time, r.Title, r.Calendar, r.Location, r.Notes]),
+      styles: { fontSize: 9, cellPadding: 4, overflow: "linebreak" },
+      headStyles: { fillColor: [122, 132, 113], textColor: 255 },
+      alternateRowStyles: { fillColor: [248, 246, 240] },
+      columnStyles: {
+        0: { cellWidth: 80 },
+        1: { cellWidth: 90 },
+        2: { cellWidth: 180 },
+        3: { cellWidth: 100 },
+        4: { cellWidth: 120 },
+        5: { cellWidth: "auto" },
+      },
+      margin: { left: 40, right: 40 },
+    });
+    doc.save(exportFilename(view, title, "pdf"));
+    toast.success(`Exported ${rows.length} events to PDF`);
+  } catch (e) {
+    console.error(e);
+    toast.error(e instanceof Error ? e.message : "Failed to export PDF");
+  }
+}
+
+async function exportEventsXlsx({ events, calById, view, title }: ExportArgs) {
+  try {
+    if (events.length === 0) {
+      toast.message("Nothing to export in this range.");
+      return;
+    }
+    const XLSX = await import("xlsx");
+    const rows = exportRows({ events, calById });
+    const ws = XLSX.utils.json_to_sheet(rows, {
+      header: ["Date", "Time", "Title", "Calendar", "Location", "Notes"],
+    });
+    ws["!cols"] = [
+      { wch: 14 },
+      { wch: 18 },
+      { wch: 32 },
+      { wch: 20 },
+      { wch: 24 },
+      { wch: 40 },
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Events");
+    XLSX.writeFile(wb, exportFilename(view, title, "xlsx"));
+    toast.success(`Exported ${rows.length} events to Excel`);
+  } catch (e) {
+    console.error(e);
+    toast.error(e instanceof Error ? e.message : "Failed to export Excel");
+  }
+}
