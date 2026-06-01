@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { TagPeople } from "@/components/tag-people";
 
 export const Route = createFileRoute("/_authenticated/notes")({
   component: NotesPage,
@@ -288,6 +289,9 @@ function NoteEditor({
         className="border-none px-0 focus-visible:ring-0 resize-none shadow-none text-base leading-relaxed"
         placeholder="Start writing…"
       />
+      <div className="pt-4 border-t border-border">
+        <TagPeople itemType="note" itemId={note.id} businessId={note.business_id} />
+      </div>
     </div>
   );
 }
