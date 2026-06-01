@@ -286,12 +286,15 @@ function MonthGrid({
 
   return (
     <div className="rounded-2xl border border-border bg-card overflow-hidden" style={{ boxShadow: "var(--shadow-soft)" }}>
-      <div className="grid grid-cols-7 text-xs uppercase tracking-wider text-muted-foreground border-b border-border">
-        {weekdays.map((w) => (
-          <div key={w} className="px-2 py-2 text-center">{w}</div>
-        ))}
-      </div>
-      <div className="grid grid-cols-7 grid-rows-6">
+      <div className="overflow-x-auto">
+        <div className="min-w-[640px]">
+          <div className="grid grid-cols-7 text-xs uppercase tracking-wider text-muted-foreground border-b border-border">
+            {weekdays.map((w) => (
+              <div key={w} className="px-2 py-2 text-center">{w}</div>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 grid-rows-6">
+
         {days.map((d, i) => {
           const inMonth = d.getMonth() === cursor.getMonth();
           const isToday = sameDay(d, today);
