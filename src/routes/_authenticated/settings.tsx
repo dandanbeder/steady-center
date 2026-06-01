@@ -90,6 +90,26 @@ function SettingsPage() {
       </header>
 
       <section>
+        <h2 className="text-2xl mb-1">Appearance</h2>
+        <p className="text-sm text-muted-foreground mb-6">
+          Theme, density, default calendar view, and accessibility.
+        </p>
+        <div className="rounded-2xl border border-border bg-card p-6" style={{ boxShadow: "var(--shadow-soft)" }}>
+          <AppearancePanel />
+        </div>
+      </section>
+
+      <section>
+        <h2 className="text-2xl mb-1">Security</h2>
+        <p className="text-sm text-muted-foreground mb-6">
+          Two-factor authentication, login history, and active sessions.
+        </p>
+        <div className="rounded-2xl border border-border bg-card p-6" style={{ boxShadow: "var(--shadow-soft)" }}>
+          <SecurityPanel />
+        </div>
+      </section>
+
+      <section>
         <h2 className="text-2xl mb-1">Calendar sync</h2>
         <p className="text-sm text-muted-foreground mb-6">
           Connect Google Calendar. Imported calendars sync every hour and changes you make here push back to Google.
