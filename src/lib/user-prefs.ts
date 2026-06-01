@@ -1,0 +1,162 @@
+import { supabase } from "@/integrations/supabase/client";
+
+// ---------------- Notification prefs ----------------
+export type NotificationChannels = { email: boolean; sms: boolean; browser: boolean };
+export type NotificationEvents = {
+  event_reminders: boolean;
+  event_reminder_lead_minutes: number;
+  task_due: boolean;
+  weekly_review: boolean;
+  meeting_summary_ready: boolean;
+  tagged: boolean;
+};
+export type NotificationPrefs = {
+  channels: NotificationChannels;
+  events: NotificationEvents;
+  quiet_enabled: boolean;
+  quiet_start: number;
+  quiet_end: number;
+};
+
+const DEFAULT_NOTIF: NotificationPrefs = {
+  channels: { email: true, sms: false, browser: false },
+  events: {
+    event_reminders: true,
+    event_reminder_lead_minutes: 15,
+    task_due: true,
+    weekly_review: true,
+    meeting_summary_ready: true,
+    tagged: true,
+  },
+  quiet_enabled: false,
+  quiet_start: 22,
+  quiet_end: 7,
+};
+
+export async function getNotificationPrefs(): Promise<NotificationPrefs> {
+  const { data: u } = await supabase.auth.getUser();
+  if (!u.user) throw new Error("Not signed in");
+  const { data, error } = await supabase
+    .from("notification_prefs")
+    .select("*")
+    .eq("user_id", u.user.id)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return DEFAULT_NOTIF;
+  return {
+    channels: { ...DEFAULT_NOTIF.channels, ...((data.channels as object) ?? {}) } as NotificationChannels,
+    events: { ...DEFAULT_NOTIF.events, ...((data.events as object) ?? {}) } as NotificationEvents,
+    quiet_enabled: data.quiet_enabled,
+    quiet_start: data.quiet_start,
+    quiet_end: data.quiet_end,
+  };
+}
+
+export async function saveNotificationPrefs(p: NotificationPrefs) {
+  const { data: u } = await supabase.auth.getUser();
+  if (!u.user) throw new Error("Not signed in");
+  const { error } = await supabase.from("notification_prefs").upsert(
+    {
+      user_id: u.user.id,
+      channels: p.channels,
+      events: p.events,
+      quiet_enabled: p.quiet_enabled,
+      quiet_start: p.quiet_start,
+      quiet_end: p.quiet_end,
+    },
+    { onConflict: "user_id" },
+  );
+  if (error) throw error;
+}
+
+// ---------------- AI prefs ----------------
+export type AiPrefs = {
+  model: string;
+  summary_length: "short" | "medium" | "long";
+  tone: "neutral" | "friendly" | "formal" | "concise";
+  monthly_cap_cents: number;
+};
+
+const DEFAULT_AI: AiPrefs = {
+  model: "claude-sonnet-4-5",
+  summary_length: "medium",
+  tone: "neutral",
+  monthly_cap_cents: 1000,
+};
+
+export async function getAiPrefs(): Promise<AiPrefs> {
+  const { data: u } = await supabase.auth.getUser();
+  if (!u.user) throw new Error("Not signed in");
+  const { data, error } = await supabase
+    .from("ai_prefs")
+    .select("*")
+    .eq("user_id", u.user.id)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return DEFAULT_AI;
+  return {
+    model: data.model,
+    summary_length: data.summary_length as AiPrefs["summary_length"],
+    tone: data.tone as AiPrefs["tone"],
+    monthly_cap_cents: data.monthly_cap_cents,
+  };
+}
+
+export async function saveAiPrefs(p: AiPrefs) {
+  const { data: u } = await supabase.auth.getUser();
+  if (!u.user) throw new Error("Not signed in");
+  const { error } = await supabase.from("ai_prefs").upsert(
+    { user_id: u.user.id, ...p },
+    { onConflict: "user_id" },
+  );
+  if (error) throw error;
+}
+
+export function currentMonthKey(d = new Date()): string {
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+export async function getAiUsageThisMonth(): Promise<{ cents: number; tokens: number }> {
+  const { data: u } = await supabase.auth.getUser();
+  if (!u.user) return { cents: 0, tokens: 0 };
+  const { data, error } = await supabase
+    .from("ai_usage")
+    .select("cents, tokens")
+    .eq("user_id", u.user.id)
+    .eq("month", currentMonthKey())
+    .maybeSingle();
+  if (error) throw error;
+  return { cents: data?.cents ?? 0, tokens: data?.tokens ?? 0 };
+}
+
+// ---------------- Working hours ----------------
+export type WorkingHours = {
+  work_start_hour: number;
+  work_end_hour: number;
+  work_days: number[]; // 0=Sun..6=Sat
+  daily_capacity_hours: number;
+};
+
+export async function getWorkingHours(): Promise<WorkingHours> {
+  const { data: u } = await supabase.auth.getUser();
+  if (!u.user) throw new Error("Not signed in");
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("work_start_hour, work_end_hour, work_days, daily_capacity_hours")
+    .eq("id", u.user.id)
+    .maybeSingle();
+  if (error) throw error;
+  return {
+    work_start_hour: data?.work_start_hour ?? 9,
+    work_end_hour: data?.work_end_hour ?? 17,
+    work_days: (data?.work_days as number[]) ?? [1, 2, 3, 4, 5],
+    daily_capacity_hours: Number(data?.daily_capacity_hours ?? 6),
+  };
+}
+
+export async function saveWorkingHours(w: WorkingHours) {
+  const { data: u } = await supabase.auth.getUser();
+  if (!u.user) throw new Error("Not signed in");
+  const { error } = await supabase.from("profiles").update(w).eq("id", u.user.id);
+  if (error) throw error;
+}
