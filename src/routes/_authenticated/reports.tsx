@@ -44,6 +44,8 @@ function ReportsPage() {
           {gen.isPending ? "Generating…" : "Generate now"}
         </Button>
       </header>
+      <WeeklyGoalsPanel />
+
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
