@@ -25,7 +25,7 @@ export const exportMyData = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<ExportPayload> => {
     const { supabase, userId } = context;
-    const tables: Record<string, unknown[]> = {};
+    const tables: Record<string, Row[]> = {};
 
     for (const t of OWNER_TABLES) {
       const { data } = await supabase.from(t).select("*").eq("owner_id", userId);
