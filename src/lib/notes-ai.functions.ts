@@ -54,13 +54,17 @@ function parseJsonBlock<T>(text: string): T | null {
 }
 
 async function loadNoteContext(
-  supabase: ReturnType<typeof requireSupabaseAuth>["__type" & never] extends never
-    ? any
-    : any,
+  supabase: any,
   noteId: string,
   includeAttachments: boolean,
 ): Promise<{
-  note: { id: string; title: string; body: string; business_id: string | null; folder_id: string | null };
+  note: {
+    id: string;
+    title: string;
+    body: string;
+    business_id: string | null;
+    folder_id: string | null;
+  };
   attachmentsText: string;
 }> {
   const { data: note, error } = await supabase
@@ -77,7 +81,10 @@ async function loadNoteContext(
       .select("file_name, extracted_text")
       .eq("note_id", noteId);
     const parts: string[] = [];
-    for (const a of atts ?? []) {
+    for (const a of (atts ?? []) as Array<{
+      file_name: string;
+      extracted_text: string | null;
+    }>) {
       if (!a.extracted_text) continue;
       parts.push(`--- Attachment: ${a.file_name} ---\n${a.extracted_text}`);
     }
