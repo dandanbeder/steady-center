@@ -61,7 +61,6 @@ function AcceptInvitePage() {
   }
 
   if (!user) {
-    const next = `/accept-invite?token=${token}`;
     return (
       <Shell>
         <h1 className="text-xl mb-2">You've been invited to Heartbeat</h1>
@@ -69,7 +68,7 @@ function AcceptInvitePage() {
           Sign in or create an account with the email that received this invite, then we'll add you automatically.
         </p>
         <Button asChild>
-          <Link to="/login" search={{ next } as any}>Continue to sign in</Link>
+          <Link to="/login">Continue to sign in</Link>
         </Button>
       </Shell>
     );
