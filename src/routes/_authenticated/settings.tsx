@@ -355,10 +355,12 @@ function CalendarsForBusiness({
   businessId,
   calendars,
   onChange,
+  canEdit,
 }: {
   businessId: string;
   calendars: Cal[];
   onChange: () => void;
+  canEdit: boolean;
 }) {
   const [name, setName] = useState("");
   const [color, setColor] = useState(PALETTE[0]);
@@ -394,38 +396,42 @@ function CalendarsForBusiness({
             <li key={c.id} className="flex items-center gap-2">
               <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: c.color }} />
               <span className="text-sm flex-1">{c.name}</span>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => {
-                  if (confirm(`Delete "${c.name}" and its events?`)) del.mutate(c.id);
-                }}
-              >
-                <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-              </Button>
+              {canEdit && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => {
+                    if (confirm(`Delete "${c.name}" and its events?`)) del.mutate(c.id);
+                  }}
+                >
+                  <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                </Button>
+              )}
             </li>
           ))}
         </ul>
       )}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!name.trim()) return;
-          add.mutate();
-        }}
-        className="flex items-center gap-2 pt-1"
-      >
-        <ColorDots value={color} onChange={setColor} small />
-        <Input
-          placeholder="New calendar name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="h-8"
-        />
-        <Button type="submit" size="sm" variant="outline" disabled={add.isPending || !name.trim()}>
-          <Plus className="h-3.5 w-3.5" />
-        </Button>
-      </form>
+      {canEdit && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!name.trim()) return;
+            add.mutate();
+          }}
+          className="flex items-center gap-2 pt-1"
+        >
+          <ColorDots value={color} onChange={setColor} small />
+          <Input
+            placeholder="New calendar name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="h-8"
+          />
+          <Button type="submit" size="sm" variant="outline" disabled={add.isPending || !name.trim()}>
+            <Plus className="h-3.5 w-3.5" />
+          </Button>
+        </form>
+      )}
     </div>
   );
 }
