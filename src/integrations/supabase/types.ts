@@ -442,6 +442,7 @@ export type Database = {
           id: string
           item_id: string
           item_type: string
+          notified_at: string | null
           tagged_email: string
           tagged_user_id: string | null
         }
@@ -452,6 +453,7 @@ export type Database = {
           id?: string
           item_id: string
           item_type: string
+          notified_at?: string | null
           tagged_email: string
           tagged_user_id?: string | null
         }
@@ -462,6 +464,7 @@ export type Database = {
           id?: string
           item_id?: string
           item_type?: string
+          notified_at?: string | null
           tagged_email?: string
           tagged_user_id?: string | null
         }
