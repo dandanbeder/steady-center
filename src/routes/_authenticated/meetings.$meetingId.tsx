@@ -93,7 +93,27 @@ function MeetingDetail() {
         <span>·</span>
         <span>{new Date(meeting.created_at).toLocaleString()}</span>
       </div>
-      <h1 className="text-3xl text-primary mb-8">{meeting.title}</h1>
+      <h1 className="text-3xl text-primary mb-4">{meeting.title}</h1>
+
+      {meeting.audio_path && (
+        <div className="mb-6 flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-3">
+          <span className="text-sm text-muted-foreground">Audio recording stored for this meeting.</span>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              if (confirm("Delete this recording? Transcript and summary stay.")) {
+                removeRecording.mutate();
+              }
+            }}
+            disabled={removeRecording.isPending}
+            className="gap-2"
+          >
+            <Trash2 className="h-4 w-4" /> Delete recording
+          </Button>
+        </div>
+      )}
+
 
       <section className="mb-8">
         <h2 className="text-sm uppercase tracking-wide text-muted-foreground mb-2">Summary</h2>
