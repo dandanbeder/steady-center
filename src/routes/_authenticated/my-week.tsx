@@ -11,6 +11,7 @@ import {
   type Task,
 } from "@/lib/tasks";
 import { cn } from "@/lib/utils";
+import { WeeklyGoalsPanel } from "@/components/weekly-goals-panel";
 
 export const Route = createFileRoute("/_authenticated/my-week")({
   head: () => ({ meta: [{ title: "My Week · Heartbeat" }] }),
