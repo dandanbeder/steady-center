@@ -105,6 +105,47 @@ function SettingsPage() {
         </div>
       </section>
 
+      <section>
+        <h2 className="text-2xl mb-1">Notifications</h2>
+        <p className="text-sm text-muted-foreground mb-6">
+          Per-channel and per-event toggles, plus quiet hours.
+        </p>
+        <div className="rounded-2xl border border-border bg-card p-6" style={{ boxShadow: "var(--shadow-soft)" }}>
+          <NotificationsPanel />
+        </div>
+      </section>
+
+      <section>
+        <h2 className="text-2xl mb-1">Working hours & capacity</h2>
+        <p className="text-sm text-muted-foreground mb-6">
+          Your work window and a soft daily target. Used by the Today load meter and Plan my day.
+        </p>
+        <div className="rounded-2xl border border-border bg-card p-6" style={{ boxShadow: "var(--shadow-soft)" }}>
+          <WorkingHoursPanel />
+        </div>
+      </section>
+
+      <section>
+        <h2 className="text-2xl mb-1">AI preferences</h2>
+        <p className="text-sm text-muted-foreground mb-6">
+          Choose your default model, summary style, and monthly spend cap.
+        </p>
+        <div className="rounded-2xl border border-border bg-card p-6" style={{ boxShadow: "var(--shadow-soft)" }}>
+          <AiPrefsPanel />
+        </div>
+      </section>
+
+      <section>
+        <h2 className="text-2xl mb-1">Privacy & data</h2>
+        <p className="text-sm text-muted-foreground mb-6">
+          Export your data and manage active sessions.
+        </p>
+        <div className="rounded-2xl border border-border bg-card p-6" style={{ boxShadow: "var(--shadow-soft)" }}>
+          <PrivacyDataPanel />
+        </div>
+      </section>
+
+
 
 
       <section>
