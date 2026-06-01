@@ -30,6 +30,8 @@ import {
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { PeoplePanel } from "@/components/people-panel";
+import { useMyRole } from "@/hooks/use-my-role";
 
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -274,6 +276,10 @@ function BusinessRow({
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
+  const my = useMyRole(business.id);
+  const canEdit = my.can("member");
+  const canDelete = my.can("owner");
+
   return (
     <li className="py-4 space-y-3">
       {editing ? (
@@ -304,21 +310,27 @@ function BusinessRow({
             style={{ backgroundColor: business.color }}
           />
           <button
-            className="text-left flex-1 hover:text-accent transition-colors"
-            onClick={() => setEditing(true)}
+            className="text-left flex-1 hover:text-accent transition-colors disabled:hover:text-foreground disabled:cursor-default"
+            onClick={() => canEdit && setEditing(true)}
+            disabled={!canEdit}
           >
             {business.name}
+            {my.role && my.role !== "owner" && (
+              <span className="ml-2 text-xs text-muted-foreground">({my.role})</span>
+            )}
           </button>
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={() => {
-              if (confirm(`Delete "${business.name}"? Calendars and events will go too.`)) del.mutate();
-            }}
-            disabled={del.isPending}
-          >
-            <Trash2 className="h-4 w-4 text-muted-foreground" />
-          </Button>
+          {canDelete && (
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => {
+                if (confirm(`Delete "${business.name}"? Calendars and events will go too.`)) del.mutate();
+              }}
+              disabled={del.isPending}
+            >
+              <Trash2 className="h-4 w-4 text-muted-foreground" />
+            </Button>
+          )}
         </div>
       )}
 
@@ -326,7 +338,15 @@ function BusinessRow({
         businessId={business.id}
         calendars={calendars}
         onChange={onChange}
+        canEdit={canEdit}
       />
+
+      {my.can("admin") && (
+        <div className="mt-4 pt-4 border-t border-border">
+          <h4 className="text-sm font-medium mb-3">People</h4>
+          <PeoplePanel businessId={business.id} />
+        </div>
+      )}
     </li>
   );
 }
@@ -335,10 +355,12 @@ function CalendarsForBusiness({
   businessId,
   calendars,
   onChange,
+  canEdit,
 }: {
   businessId: string;
   calendars: Cal[];
   onChange: () => void;
+  canEdit: boolean;
 }) {
   const [name, setName] = useState("");
   const [color, setColor] = useState(PALETTE[0]);
@@ -374,38 +396,42 @@ function CalendarsForBusiness({
             <li key={c.id} className="flex items-center gap-2">
               <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: c.color }} />
               <span className="text-sm flex-1">{c.name}</span>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => {
-                  if (confirm(`Delete "${c.name}" and its events?`)) del.mutate(c.id);
-                }}
-              >
-                <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-              </Button>
+              {canEdit && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => {
+                    if (confirm(`Delete "${c.name}" and its events?`)) del.mutate(c.id);
+                  }}
+                >
+                  <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                </Button>
+              )}
             </li>
           ))}
         </ul>
       )}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!name.trim()) return;
-          add.mutate();
-        }}
-        className="flex items-center gap-2 pt-1"
-      >
-        <ColorDots value={color} onChange={setColor} small />
-        <Input
-          placeholder="New calendar name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="h-8"
-        />
-        <Button type="submit" size="sm" variant="outline" disabled={add.isPending || !name.trim()}>
-          <Plus className="h-3.5 w-3.5" />
-        </Button>
-      </form>
+      {canEdit && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!name.trim()) return;
+            add.mutate();
+          }}
+          className="flex items-center gap-2 pt-1"
+        >
+          <ColorDots value={color} onChange={setColor} small />
+          <Input
+            placeholder="New calendar name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="h-8"
+          />
+          <Button type="submit" size="sm" variant="outline" disabled={add.isPending || !name.trim()}>
+            <Plus className="h-3.5 w-3.5" />
+          </Button>
+        </form>
+      )}
     </div>
   );
 }
