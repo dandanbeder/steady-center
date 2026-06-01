@@ -57,6 +57,12 @@ function MyWeekPage() {
         Everything due in the next 7 days, across every business.
       </p>
 
+      <div className="mt-6">
+        <WeeklyGoalsPanel compact />
+      </div>
+
+
+
       {overdue.length > 0 && (
         <Section title="Overdue" tone="destructive">
           {overdue.map((t) => (
