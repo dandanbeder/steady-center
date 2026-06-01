@@ -153,6 +153,18 @@ function CalendarPage() {
     startOfDay(new Date()),
   );
   const [importOpen, setImportOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  // Lock body scroll while in fullscreen so the expanded calendar owns the viewport.
+  useEffect(() => {
+    if (!expanded) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [expanded]);
+
 
   const { data: businesses = [] } = useQuery({
     queryKey: ["businesses"],
