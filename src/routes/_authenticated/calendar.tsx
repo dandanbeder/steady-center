@@ -342,10 +342,13 @@ function MonthGrid({
             </button>
           );
         })}
+          </div>
+        </div>
       </div>
     </div>
   );
 }
+
 
 function WeekGrid({
   cursor,
