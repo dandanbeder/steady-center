@@ -50,7 +50,7 @@ function MeetingsPage() {
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-4xl text-primary">Meetings</h1>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl text-primary">Meetings</h1>
           <p className="mt-2 text-muted-foreground">
             {activeId === ALL ? "Across all businesses" : "Filtered to active business"}
           </p>

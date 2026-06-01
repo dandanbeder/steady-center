@@ -133,7 +133,7 @@ function CalendarPage() {
 
         <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
           <div>
-            <h1 className="text-4xl text-primary">Calendar</h1>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl text-primary">Calendar</h1>
             <p className="text-sm text-muted-foreground mt-1">{title}</p>
           </div>
           <div className="flex items-center gap-2">

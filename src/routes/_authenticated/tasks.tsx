@@ -125,7 +125,7 @@ function TasksPage() {
         {!selectedList ? (
           <div className="h-full flex items-center justify-center text-muted-foreground">
             <div className="text-center max-w-sm">
-              <h1 className="text-3xl text-primary mb-2">Tasks</h1>
+              <h1 className="text-2xl sm:text-3xl text-primary mb-2">Tasks</h1>
               <p>Pick a list from the left, or add a folder and list to a business to get started.</p>
             </div>
           </div>
@@ -471,7 +471,7 @@ function ListWorkspace({
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-2 gap-4 flex-wrap">
-        <h1 className="text-3xl text-primary">{list.name}</h1>
+        <h1 className="text-2xl sm:text-3xl text-primary">{list.name}</h1>
         <div className="flex rounded-lg border border-border overflow-hidden">
           {([
             ["list", LayoutList, "List"],

@@ -97,7 +97,7 @@ function ReportDetail() {
         <p className="text-xs uppercase tracking-wider text-muted-foreground">
           {start.toLocaleDateString()} – {end.toLocaleDateString()}
         </p>
-        <h1 className="text-3xl text-primary leading-tight">
+        <h1 className="text-2xl sm:text-3xl text-primary leading-tight">
           {n.headline || "Weekly review"}
         </h1>
       </header>

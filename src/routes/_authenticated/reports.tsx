@@ -35,7 +35,7 @@ function ReportsPage() {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 space-y-10">
       <header className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="text-4xl text-primary">Weekly reports</h1>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl text-primary">Weekly reports</h1>
           <p className="mt-2 text-muted-foreground">
             Your week, summarized. Generated automatically on your chosen day.
           </p>

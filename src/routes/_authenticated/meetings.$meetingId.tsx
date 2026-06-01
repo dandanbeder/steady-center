@@ -93,7 +93,7 @@ function MeetingDetail() {
         <span>·</span>
         <span>{new Date(meeting.created_at).toLocaleString()}</span>
       </div>
-      <h1 className="text-3xl text-primary mb-4">{meeting.title}</h1>
+      <h1 className="text-2xl sm:text-3xl text-primary mb-4">{meeting.title}</h1>
 
       {meeting.audio_path && (
         <div className="mb-6 flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-3">

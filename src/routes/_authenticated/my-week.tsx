@@ -52,7 +52,7 @@ function MyWeekPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
-      <h1 className="text-4xl text-primary">My Week</h1>
+      <h1 className="text-2xl sm:text-3xl lg:text-4xl text-primary">My Week</h1>
       <p className="mt-2 text-muted-foreground">
         Everything due in the next 7 days, across every business.
       </p>
