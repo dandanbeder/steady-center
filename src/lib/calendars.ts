@@ -132,10 +132,28 @@ export async function updateEvent(
 export async function bulkInsertEvents(rows: Array<Omit<EventRow, "id" | "owner_id" | "created_at">>) {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) throw new Error("Not signed in");
-  const payload = rows.map((r) => ({ ...r, owner_id: u.user!.id }));
-  const { error } = await supabase.from("events").insert(payload);
+
+  // Dedupe within the payload by (calendar_id, external_id, start_at)
+  // so a single .ics that lists the same instance twice doesn't insert twice.
+  const seen = new Set<string>();
+  const deduped = rows.filter((r) => {
+    if (!r.external_id) return true;
+    const k = `${r.calendar_id}|${r.external_id}|${r.start_at}`;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+
+  const payload = deduped.map((r) => ({ ...r, owner_id: u.user!.id }));
+  // Upsert against the partial unique index so re-importing the same
+  // recurring event is a no-op instead of throwing.
+  const { error } = await supabase
+    .from("events")
+    .upsert(payload, { onConflict: "calendar_id,external_id,start_at", ignoreDuplicates: true });
   if (error) throw error;
+  return deduped.length;
 }
+
 
 export async function deleteEvent(id: string) {
   // Delete remote first (RLS-scoped on the server), then local.
