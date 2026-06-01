@@ -154,6 +154,66 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_prefs: {
+        Row: {
+          created_at: string
+          model: string
+          monthly_cap_cents: number
+          summary_length: string
+          tone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          model?: string
+          monthly_cap_cents?: number
+          summary_length?: string
+          tone?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          model?: string
+          monthly_cap_cents?: number
+          summary_length?: string
+          tone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_usage: {
+        Row: {
+          cents: number
+          created_at: string
+          id: string
+          month: string
+          tokens: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cents?: number
+          created_at?: string
+          id?: string
+          month: string
+          tokens?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cents?: number
+          created_at?: string
+          id?: string
+          month?: string
+          tokens?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       announcements: {
         Row: {
           active: boolean
@@ -749,9 +809,43 @@ export type Database = {
           },
         ]
       }
+      notification_prefs: {
+        Row: {
+          channels: Json
+          created_at: string
+          events: Json
+          quiet_enabled: boolean
+          quiet_end: number
+          quiet_start: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          channels?: Json
+          created_at?: string
+          events?: Json
+          quiet_enabled?: boolean
+          quiet_end?: number
+          quiet_start?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          channels?: Json
+          created_at?: string
+          events?: Json
+          quiet_enabled?: boolean
+          quiet_end?: number
+          quiet_start?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
+          daily_capacity_hours: number
           full_name: string | null
           id: string
           phone: string | null
@@ -762,9 +856,13 @@ export type Database = {
           weekly_review_day: number
           weekly_review_enabled: boolean
           weekly_review_hour: number
+          work_days: number[]
+          work_end_hour: number
+          work_start_hour: number
         }
         Insert: {
           created_at?: string
+          daily_capacity_hours?: number
           full_name?: string | null
           id: string
           phone?: string | null
@@ -775,9 +873,13 @@ export type Database = {
           weekly_review_day?: number
           weekly_review_enabled?: boolean
           weekly_review_hour?: number
+          work_days?: number[]
+          work_end_hour?: number
+          work_start_hour?: number
         }
         Update: {
           created_at?: string
+          daily_capacity_hours?: number
           full_name?: string | null
           id?: string
           phone?: string | null
@@ -788,6 +890,9 @@ export type Database = {
           weekly_review_day?: number
           weekly_review_enabled?: boolean
           weekly_review_hour?: number
+          work_days?: number[]
+          work_end_hour?: number
+          work_start_hour?: number
         }
         Relationships: []
       }
