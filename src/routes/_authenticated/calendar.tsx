@@ -249,8 +249,16 @@ function CalendarPage() {
   }, [view, cursor]);
 
   return (
-    <div className="px-3 sm:px-6 lg:px-8 py-6 lg:py-10 flex flex-col lg:flex-row gap-6 lg:gap-8 max-w-full">
+    <div
+      className={cn(
+        "flex flex-col lg:flex-row gap-6 lg:gap-8 max-w-full",
+        expanded
+          ? "fixed inset-0 z-50 bg-background overflow-auto p-3 sm:p-4"
+          : "px-3 sm:px-6 lg:px-8 py-6 lg:py-10",
+      )}
+    >
       <div className="flex-1 min-w-0 order-2 lg:order-1">
+
         <div className="flex items-start sm:items-center justify-between mb-5 gap-3 flex-wrap">
           <div className="min-w-0">
             <h1 className="text-2xl sm:text-3xl lg:text-4xl text-primary">
