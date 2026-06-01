@@ -606,6 +606,45 @@ export type Database = {
           },
         ]
       }
+      note_attachments: {
+        Row: {
+          business_id: string
+          created_at: string
+          created_by: string | null
+          extracted_text: string | null
+          file_name: string
+          id: string
+          mime_type: string | null
+          note_id: string
+          size_bytes: number | null
+          storage_path: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          created_by?: string | null
+          extracted_text?: string | null
+          file_name: string
+          id?: string
+          mime_type?: string | null
+          note_id: string
+          size_bytes?: number | null
+          storage_path: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          created_by?: string | null
+          extracted_text?: string | null
+          file_name?: string
+          id?: string
+          mime_type?: string | null
+          note_id?: string
+          size_bytes?: number | null
+          storage_path?: string
+        }
+        Relationships: []
+      }
       notes: {
         Row: {
           body: string
@@ -614,9 +653,14 @@ export type Database = {
           created_by: string | null
           folder_id: string | null
           id: string
+          linked_event_id: string | null
+          linked_meeting_id: string | null
+          note_type: string
           owner_id: string
+          pinned: boolean
           source: string
           title: string
+          updated_at: string
         }
         Insert: {
           body?: string
@@ -625,9 +669,14 @@ export type Database = {
           created_by?: string | null
           folder_id?: string | null
           id?: string
+          linked_event_id?: string | null
+          linked_meeting_id?: string | null
+          note_type?: string
           owner_id: string
+          pinned?: boolean
           source?: string
           title?: string
+          updated_at?: string
         }
         Update: {
           body?: string
@@ -636,9 +685,14 @@ export type Database = {
           created_by?: string | null
           folder_id?: string | null
           id?: string
+          linked_event_id?: string | null
+          linked_meeting_id?: string | null
+          note_type?: string
           owner_id?: string
+          pinned?: boolean
           source?: string
           title?: string
+          updated_at?: string
         }
         Relationships: [
           {
