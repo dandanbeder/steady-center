@@ -72,6 +72,7 @@ import {
   type TaskStatus,
 } from "@/lib/tasks";
 import { cn } from "@/lib/utils";
+import { TaskTimerInline, TaskTimePanel } from "@/components/task-timer";
 
 export const Route = createFileRoute("/_authenticated/tasks")({
   head: () => ({ meta: [{ title: "Tasks · Heartbeat" }] }),
@@ -672,6 +673,7 @@ function TaskRow({
             {new Date(task.due_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
           </span>
         )}
+        <TaskTimerInline taskId={task.id} businessId={businessId} />
         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => del.mutate()}>
           <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
         </Button>
@@ -975,6 +977,7 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
             <Label>Description</Label>
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} />
           </div>
+          <TaskTimePanel taskId={task.id} businessId={task.business_id} />
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
