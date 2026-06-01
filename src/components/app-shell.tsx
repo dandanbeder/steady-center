@@ -106,6 +106,22 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Link>
             );
           })}
+          {isAdmin && (
+            <Link
+              to="/admin"
+              title={collapsed ? "Admin" : undefined}
+              className={cn(
+                "flex items-center gap-3 rounded-lg text-sm transition-colors",
+                collapsed ? "justify-center px-2 py-2" : "px-3 py-2",
+                isActive("/admin")
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/60",
+              )}
+            >
+              <Shield className="h-4 w-4 shrink-0" />
+              {!collapsed && <span>Admin</span>}
+            </Link>
+          )}
         </nav>
         <div className="p-3 border-t border-sidebar-border">
           {!collapsed && (
