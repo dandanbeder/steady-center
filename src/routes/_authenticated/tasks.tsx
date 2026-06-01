@@ -673,6 +673,7 @@ function TaskRow({
             {new Date(task.due_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
           </span>
         )}
+        <TaskTimerInline taskId={task.id} businessId={businessId} />
         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => del.mutate()}>
           <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
         </Button>
