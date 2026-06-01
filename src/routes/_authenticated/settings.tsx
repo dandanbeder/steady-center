@@ -30,6 +30,8 @@ import {
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { PeoplePanel } from "@/components/people-panel";
+import { useMyRole } from "@/hooks/use-my-role";
 
 
 export const Route = createFileRoute("/_authenticated/settings")({
