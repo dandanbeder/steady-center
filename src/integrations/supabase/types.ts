@@ -434,6 +434,39 @@ export type Database = {
         }
         Relationships: []
       }
+      item_tags: {
+        Row: {
+          business_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          item_id: string
+          item_type: string
+          tagged_email: string
+          tagged_user_id: string | null
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          item_id: string
+          item_type: string
+          tagged_email: string
+          tagged_user_id?: string | null
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          item_id?: string
+          item_type?: string
+          tagged_email?: string
+          tagged_user_id?: string | null
+        }
+        Relationships: []
+      }
       lists: {
         Row: {
           created_at: string
@@ -955,6 +988,10 @@ export type Database = {
         Returns: boolean
       }
       is_platform_admin: { Args: never; Returns: boolean }
+      is_tagged: {
+        Args: { p_item_id: string; p_item_type: string }
+        Returns: boolean
+      }
       list_business_members: {
         Args: { p_business: string }
         Returns: {
