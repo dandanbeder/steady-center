@@ -410,6 +410,20 @@ function BusinessRow({
         canEdit={canEdit}
       />
 
+      {canEdit && (
+        <div className="mt-4 pt-4 border-t border-border">
+          <h4 className="text-sm font-medium mb-3">Branding, statuses & priorities</h4>
+          <CustomizationPanel businessId={business.id} />
+        </div>
+      )}
+
+      {canEdit && (
+        <div className="mt-4 pt-4 border-t border-border">
+          <h4 className="text-sm font-medium mb-3">Templates</h4>
+          <TemplatesPanel businessId={business.id} />
+        </div>
+      )}
+
       {my.can("admin") && (
         <div className="mt-4 pt-4 border-t border-border">
           <h4 className="text-sm font-medium mb-3">People</h4>
