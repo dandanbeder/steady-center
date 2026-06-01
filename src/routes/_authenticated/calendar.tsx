@@ -415,7 +415,7 @@ function CalendarPage() {
         )}
       </div>
 
-      <aside className="w-full lg:w-72 shrink-0 space-y-6 order-1 lg:order-2">
+      <aside className={cn("w-full lg:w-72 shrink-0 space-y-6 order-1 lg:order-2", expanded && "hidden")}>
         <div>
           <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
             Calendars
