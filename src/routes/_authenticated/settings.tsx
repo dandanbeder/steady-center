@@ -77,7 +77,7 @@ function SettingsPage() {
       setNewName("");
       setNewColor(PALETTE[0]);
       invalidate();
-      toast.success("Business added");
+      toast.success("Account added");
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
