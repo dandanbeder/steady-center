@@ -358,6 +358,8 @@ export type Database = {
           business_id: string
           created_at: string
           id: string
+          invite_token: string | null
+          invite_token_expires_at: string | null
           invited_by: string | null
           invited_email: string | null
           role: Database["public"]["Enums"]["membership_role"]
@@ -368,6 +370,8 @@ export type Database = {
           business_id: string
           created_at?: string
           id?: string
+          invite_token?: string | null
+          invite_token_expires_at?: string | null
           invited_by?: string | null
           invited_email?: string | null
           role?: Database["public"]["Enums"]["membership_role"]
@@ -378,6 +382,8 @@ export type Database = {
           business_id?: string
           created_at?: string
           id?: string
+          invite_token?: string | null
+          invite_token_expires_at?: string | null
           invited_by?: string | null
           invited_email?: string | null
           role?: Database["public"]["Enums"]["membership_role"]
@@ -645,6 +651,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_invite_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          business_id: string
+          created_at: string
+          id: string
+          invite_token: string | null
+          invite_token_expires_at: string | null
+          invited_by: string | null
+          invited_email: string | null
+          role: Database["public"]["Enums"]["membership_role"]
+          status: Database["public"]["Enums"]["membership_status"]
+          user_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "memberships"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       business_for_list: { Args: { p_list_id: string }; Returns: string }
       current_membership_role: { Args: { p_business: string }; Returns: string }
       is_member: {
@@ -652,6 +679,21 @@ export type Database = {
         Returns: boolean
       }
       is_platform_admin: { Args: never; Returns: boolean }
+      list_business_members: {
+        Args: { p_business: string }
+        Returns: {
+          business_id: string
+          created_at: string
+          email: string
+          full_name: string
+          has_pending_invite: boolean
+          id: string
+          invited_email: string
+          role: string
+          status: string
+          user_id: string
+        }[]
+      }
     }
     Enums: {
       membership_role: "owner" | "admin" | "member" | "commenter" | "viewer"
