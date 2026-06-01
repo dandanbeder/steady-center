@@ -77,7 +77,7 @@ function SettingsPage() {
       setNewName("");
       setNewColor(PALETTE[0]);
       invalidate();
-      toast.success("Business added");
+      toast.success("Account added");
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
@@ -173,9 +173,9 @@ function SettingsPage() {
 
 
       <section>
-        <h2 className="text-2xl mb-1">Businesses</h2>
+        <h2 className="text-2xl mb-1">Accounts</h2>
         <p className="text-sm text-muted-foreground mb-6">
-          Each business gets its own color and its own calendars.
+          Each account gets its own color and its own calendars.
         </p>
 
         <div
@@ -185,7 +185,7 @@ function SettingsPage() {
           {isLoading ? (
             <p className="text-sm text-muted-foreground">Loading…</p>
           ) : businesses.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No businesses yet. Add your first below.</p>
+            <p className="text-sm text-muted-foreground">No accounts yet. Add your first below.</p>
           ) : (
             <ul className="divide-y divide-border">
               {businesses.map((b) => (
@@ -209,7 +209,7 @@ function SettingsPage() {
           className="mt-6 rounded-2xl border border-border bg-card p-6 space-y-4"
           style={{ boxShadow: "var(--shadow-soft)" }}
         >
-          <h3 className="text-lg">Add a business</h3>
+          <h3 className="text-lg">Add an account</h3>
           <ColorDots value={newColor} onChange={setNewColor} />
           <div className="flex gap-3">
             <Input
@@ -275,7 +275,7 @@ function DangerZone() {
           <DialogHeader>
             <DialogTitle>Delete account permanently?</DialogTitle>
             <DialogDescription>
-              This removes every business, calendar, task, note, meeting, recording,
+              This removes every account, calendar, task, note, meeting, recording,
               and report you own, then deletes your login. This cannot be undone.
             </DialogDescription>
           </DialogHeader>
