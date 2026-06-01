@@ -72,6 +72,7 @@ import {
   type TaskStatus,
 } from "@/lib/tasks";
 import { cn } from "@/lib/utils";
+import { TaskTimerInline, TaskTimePanel } from "@/components/task-timer";
 
 export const Route = createFileRoute("/_authenticated/tasks")({
   head: () => ({ meta: [{ title: "Tasks · Heartbeat" }] }),
