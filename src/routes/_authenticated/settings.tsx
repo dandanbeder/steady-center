@@ -1,10 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { Plus, Trash2, Check, X } from "lucide-react";
+import { Plus, Trash2, Check, X, AlertTriangle } from "lucide-react";
 import {
   createBusiness,
-  deleteBusiness,
   listBusinesses,
   updateBusiness,
   type Business,
@@ -15,10 +15,20 @@ import {
   listCalendars,
   type Calendar as Cal,
 } from "@/lib/calendars";
+import { deleteBusinessCascade, deleteMyAccount } from "@/lib/account.functions";
 import { GoogleSyncPanel } from "@/components/google-sync-panel";
 import { WeeklyReviewSettings } from "@/components/weekly-review-settings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 
@@ -142,7 +152,92 @@ function SettingsPage() {
           </div>
         </form>
       </section>
+
+      <DangerZone />
     </div>
+  );
+}
+
+function DangerZone() {
+  const navigate = useNavigate();
+  const delAccount = useServerFn(deleteMyAccount);
+  const [open, setOpen] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
+
+  const mutation = useMutation({
+    mutationFn: () => delAccount({ data: { confirm: "DELETE" } }),
+    onSuccess: async () => {
+      toast.success("Account deleted.");
+      await supabase.auth.signOut();
+      navigate({ to: "/login", replace: true });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
+  return (
+    <section>
+      <h2 className="text-2xl mb-1 text-destructive flex items-center gap-2">
+        <AlertTriangle className="h-5 w-5" /> Danger zone
+      </h2>
+      <p className="text-sm text-muted-foreground mb-6">
+        Permanently delete your account and every row and file you own.
+      </p>
+      <div
+        className="rounded-2xl border border-destructive/40 bg-card p-6"
+        style={{ boxShadow: "var(--shadow-soft)" }}
+      >
+        <Button variant="destructive" onClick={() => setOpen(true)}>
+          Delete my account and all data
+        </Button>
+      </div>
+
+      <Dialog
+        open={open}
+        onOpenChange={(v) => {
+          if (!mutation.isPending) {
+            setOpen(v);
+            if (!v) setConfirmText("");
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete account permanently?</DialogTitle>
+            <DialogDescription>
+              This removes every business, calendar, task, note, meeting, recording,
+              and report you own, then deletes your login. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <p className="text-sm">
+              Type <span className="font-mono font-semibold">DELETE</span> to confirm.
+            </p>
+            <Input
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              placeholder="DELETE"
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setOpen(false)}
+              disabled={mutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={confirmText !== "DELETE" || mutation.isPending}
+              onClick={() => mutation.mutate()}
+            >
+              {mutation.isPending ? "Deleting…" : "Delete everything"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </section>
   );
 }
 
