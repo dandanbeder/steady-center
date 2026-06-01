@@ -74,6 +74,72 @@ export type Database = {
           },
         ]
       }
+      admin_access_log: {
+        Row: {
+          admin_id: string
+          created_at: string
+          ended_at: string | null
+          id: string
+          mode: string
+          reason: string
+          started_at: string
+          target_user_id: string
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          mode?: string
+          reason: string
+          started_at?: string
+          target_user_id: string
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          mode?: string
+          reason?: string
+          started_at?: string
+          target_user_id?: string
+        }
+        Relationships: []
+      }
+      announcements: {
+        Row: {
+          active: boolean
+          body: string
+          created_at: string
+          created_by: string | null
+          id: string
+          level: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          level?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          level?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       businesses: {
         Row: {
           color: string
@@ -216,6 +282,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      feature_flags: {
+        Row: {
+          created_at: string
+          description: string
+          enabled: boolean
+          id: string
+          key: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          enabled?: boolean
+          id?: string
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          enabled?: boolean
+          id?: string
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
       }
       folders: {
         Row: {
@@ -458,6 +554,7 @@ export type Database = {
           id: string
           phone: string | null
           platform_role: Database["public"]["Enums"]["platform_role"]
+          status: Database["public"]["Enums"]["user_status"]
           timezone: string
           updated_at: string
           weekly_review_day: number
@@ -470,6 +567,7 @@ export type Database = {
           id: string
           phone?: string | null
           platform_role?: Database["public"]["Enums"]["platform_role"]
+          status?: Database["public"]["Enums"]["user_status"]
           timezone?: string
           updated_at?: string
           weekly_review_day?: number
@@ -482,6 +580,7 @@ export type Database = {
           id?: string
           phone?: string | null
           platform_role?: Database["public"]["Enums"]["platform_role"]
+          status?: Database["public"]["Enums"]["user_status"]
           timezone?: string
           updated_at?: string
           weekly_review_day?: number
@@ -674,6 +773,7 @@ export type Database = {
       }
       business_for_list: { Args: { p_list_id: string }; Returns: string }
       current_membership_role: { Args: { p_business: string }; Returns: string }
+      has_active_readonly_session: { Args: never; Returns: boolean }
       is_member: {
         Args: { p_business: string; p_min_role: string }
         Returns: boolean
@@ -701,6 +801,7 @@ export type Database = {
       platform_role: "user" | "superadmin"
       task_priority: "urgent" | "high" | "normal" | "low"
       task_status: "todo" | "in_progress" | "review" | "done"
+      user_status: "active" | "suspended"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -833,6 +934,7 @@ export const Constants = {
       platform_role: ["user", "superadmin"],
       task_priority: ["urgent", "high", "normal", "low"],
       task_status: ["todo", "in_progress", "review", "done"],
+      user_status: ["active", "suspended"],
     },
   },
 } as const

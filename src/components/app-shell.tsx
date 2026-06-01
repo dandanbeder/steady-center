@@ -1,12 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Calendar, CalendarRange, CheckSquare, FileText, Home, Settings, Users, LogOut, ChevronDown, BarChart3, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Calendar, CalendarRange, CheckSquare, FileText, Home, Settings, Users, LogOut, ChevronDown, BarChart3, PanelLeftClose, PanelLeftOpen, Shield } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import heartbeatLogo from "@/assets/heartbeat-horizontal.svg";
 import heartbeatMono from "@/assets/heartbeat-mono.svg";
 import { useAuth } from "@/hooks/use-auth";
 import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
+import { useIsPlatformAdmin } from "@/hooks/use-is-platform-admin";
 import { listBusinesses } from "@/lib/businesses";
+import { AnnouncementBanner } from "@/components/announcement-banner";
+import { SupportSessionBanner } from "@/components/support-session-banner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,6 +37,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { signOut, user } = useAuth();
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const { activeId, setActiveId } = useActiveBusiness();
+  const { isAdmin } = useIsPlatformAdmin();
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem(STORAGE_KEY) === "1";
@@ -102,6 +106,22 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Link>
             );
           })}
+          {isAdmin && (
+            <Link
+              to="/admin"
+              title={collapsed ? "Admin" : undefined}
+              className={cn(
+                "flex items-center gap-3 rounded-lg text-sm transition-colors",
+                collapsed ? "justify-center px-2 py-2" : "px-3 py-2",
+                isActive("/admin")
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/60",
+              )}
+            >
+              <Shield className="h-4 w-4 shrink-0" />
+              {!collapsed && <span>Admin</span>}
+            </Link>
+          )}
         </nav>
         <div className="p-3 border-t border-sidebar-border">
           {!collapsed && (
@@ -175,6 +195,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </header>
 
+        <SupportSessionBanner />
+        <AnnouncementBanner />
         <main className="flex-1 overflow-auto">{children}</main>
       </div>
     </div>
