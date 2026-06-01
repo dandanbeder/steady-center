@@ -98,8 +98,14 @@ function TasksPage() {
   const selectedList = lists.find((l) => l.id === selectedListId) ?? null;
 
   return (
-    <div className="flex h-[calc(100vh-4rem)]">
-      <aside className="w-72 shrink-0 border-r border-border bg-sidebar/30 overflow-auto">
+    <div className="flex flex-col md:flex-row md:h-[calc(100vh-4rem)]">
+      <aside
+        className={cn(
+          "md:w-72 md:shrink-0 border-b md:border-b-0 md:border-r border-border bg-sidebar/30 md:overflow-auto",
+          // On mobile, hide the spaces panel once a list is selected
+          selectedList ? "hidden md:block" : "block",
+        )}
+      >
         <div className="p-4">
           <h2 className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Spaces</h2>
           {visibleBusinesses.length === 0 ? (
@@ -121,25 +127,34 @@ function TasksPage() {
         </div>
       </aside>
 
-      <main className="flex-1 min-w-0 overflow-auto">
+      <main className="flex-1 min-w-0 md:overflow-auto">
         {!selectedList ? (
-          <div className="h-full flex items-center justify-center text-muted-foreground">
+          <div className="h-full flex items-center justify-center text-muted-foreground p-6">
             <div className="text-center max-w-sm">
               <h1 className="text-2xl sm:text-3xl text-primary mb-2">Tasks</h1>
-              <p>Pick a list from the left, or add a folder and list to a business to get started.</p>
+              <p>Pick a list {`${typeof window !== "undefined" && window.innerWidth < 768 ? "above" : "from the left"}`}, or add a folder and list to a business to get started.</p>
             </div>
           </div>
         ) : (
-          <ListWorkspace
-            list={selectedList}
-            view={view}
-            onViewChange={setView}
-          />
+          <>
+            <button
+              onClick={() => setSelectedListId(null)}
+              className="md:hidden text-sm text-muted-foreground px-4 pt-3 -mb-1"
+            >
+              ← All lists
+            </button>
+            <ListWorkspace
+              list={selectedList}
+              view={view}
+              onViewChange={setView}
+            />
+          </>
         )}
       </main>
     </div>
   );
 }
+
 
 function BusinessNode({
   business,
