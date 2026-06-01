@@ -645,6 +645,44 @@ export type Database = {
         }
         Relationships: []
       }
+      note_links: {
+        Row: {
+          business_id: string
+          created_at: string
+          created_by: string | null
+          from_note_id: string
+          id: string
+          to_id: string
+          to_type: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          created_by?: string | null
+          from_note_id: string
+          id?: string
+          to_id: string
+          to_type: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          created_by?: string | null
+          from_note_id?: string
+          id?: string
+          to_id?: string
+          to_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "note_links_from_note_id_fkey"
+            columns: ["from_note_id"]
+            isOneToOne: false
+            referencedRelation: "notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notes: {
         Row: {
           body: string

@@ -38,6 +38,7 @@ import { NewNoteDialog } from "@/components/notes/new-note-dialog";
 import { AttachmentsPanel } from "@/components/notes/attachments-panel";
 import { AIPanel } from "@/components/notes/ai-panel";
 import { LinkedTasksPanel } from "@/components/notes/linked-tasks-panel";
+import { ConnectionsPanel } from "@/components/notes/connections-panel";
 import {
   Select,
   SelectContent,
@@ -389,9 +390,10 @@ function NoteEditor({
 
       <MarkdownEditor value={body} onChange={setBody} />
 
-      <div className="pt-4 border-t border-border space-y-4">
+      <div className="pt-4 border-t border-border space-y-6">
         <AIPanel note={note} onChanged={onChanged} />
         <LinkedTasksPanel noteId={note.id} />
+        <ConnectionsPanel noteId={note.id} businessId={note.business_id} />
         <AttachmentsPanel note={note} />
         <TagPeople itemType="note" itemId={note.id} businessId={note.business_id} />
       </div>
