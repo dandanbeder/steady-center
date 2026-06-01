@@ -187,13 +187,13 @@ export const inviteMember = createServerFn({ method: "POST" })
     const token = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
 
-    const payload = existing
+    const payload: Record<string, unknown> = existing
       ? {
           business_id: data.business_id,
           user_id: existing.id,
           invited_email: email,
           role: data.role,
-          status: "active" as const,
+          status: "active",
           invited_by: userId,
           invite_token: null,
           invite_token_expires_at: null,
@@ -203,7 +203,7 @@ export const inviteMember = createServerFn({ method: "POST" })
           user_id: null,
           invited_email: email,
           role: data.role,
-          status: "invited" as const,
+          status: "invited",
           invited_by: userId,
           invite_token: token,
           invite_token_expires_at: expiresAt,
@@ -211,7 +211,8 @@ export const inviteMember = createServerFn({ method: "POST" })
 
     const { data: inserted, error } = await supabaseAdmin
       .from("memberships")
-      .insert(payload)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .insert(payload as any)
       .select()
       .single();
     if (error) throw new Error(error.message);
