@@ -128,8 +128,9 @@ function CalendarPage() {
     : `${startOfWeek(cursor).toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${addDays(startOfWeek(cursor), 6).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`;
 
   return (
-    <div className="px-8 py-10 flex gap-8">
-      <div className="flex-1 min-w-0">
+    <div className="px-4 sm:px-6 lg:px-8 py-6 lg:py-10 flex flex-col lg:flex-row gap-6 lg:gap-8">
+      <div className="flex-1 min-w-0 order-2 lg:order-1">
+
         <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
           <div>
             <h1 className="text-4xl text-primary">Calendar</h1>
