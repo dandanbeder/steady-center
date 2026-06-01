@@ -22,6 +22,10 @@ import { NotificationsPanel } from "@/components/settings/notifications-panel";
 import { AiPrefsPanel } from "@/components/settings/ai-prefs-panel";
 import { WorkingHoursPanel } from "@/components/settings/working-hours-panel";
 import { PrivacyDataPanel } from "@/components/settings/privacy-data-panel";
+import { AppearancePanel } from "@/components/settings/appearance-panel";
+import { SecurityPanel } from "@/components/settings/security-panel";
+import { CustomizationPanel } from "@/components/settings/customization-panel";
+import { TemplatesPanel } from "@/components/settings/templates-panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
