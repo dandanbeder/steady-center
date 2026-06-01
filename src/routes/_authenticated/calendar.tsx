@@ -58,6 +58,7 @@ import {
   type EventRow,
 } from "@/lib/calendars";
 import { cn } from "@/lib/utils";
+import { TagPeople } from "@/components/tag-people";
 
 export const Route = createFileRoute("/_authenticated/calendar")({
   head: () => ({ meta: [{ title: "Calendar · Heartbeat" }] }),
@@ -1561,6 +1562,9 @@ function EditEventDialog({
               onChange={(ev) => setDescription(ev.target.value)}
               rows={3}
             />
+          </div>
+          <div className="pt-2 border-t border-border">
+            <TagPeople itemType="event" itemId={event.id} businessId={event.business_id} />
           </div>
           <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between gap-2">
             <Button
