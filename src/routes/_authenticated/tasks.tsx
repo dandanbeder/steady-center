@@ -863,47 +863,52 @@ function TaskCalendarView({ tasks, onOpen }: { tasks: Task[]; onOpen: (t: Task) 
         </Button>
       </div>
       <div className="rounded-xl border border-border bg-card overflow-hidden" style={{ boxShadow: "var(--shadow-soft)" }}>
-        <div className="grid grid-cols-7 text-xs uppercase tracking-wider text-muted-foreground border-b border-border">
-          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((w) => (
-            <div key={w} className="px-2 py-2 text-center">{w}</div>
-          ))}
-        </div>
-        <div className="grid grid-cols-7 grid-rows-6">
-          {days.map((d, i) => {
-            const inMonth = d.getMonth() === cursor.getMonth();
-            const dayKey = new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString();
-            const dayTasks = tasksByDay.get(dayKey) ?? [];
-            const isToday = +d === +today;
-            return (
-              <div
-                key={i}
-                className={cn(
-                  "min-h-[90px] border-r border-b border-border p-1.5 flex flex-col gap-0.5",
-                  (i + 1) % 7 === 0 && "border-r-0",
-                  i >= 35 && "border-b-0",
-                  !inMonth && "bg-muted/20",
-                )}
-              >
-                <span className={cn(
-                  "text-xs self-end px-1.5 py-0.5 rounded-full",
-                  isToday && "bg-accent text-accent-foreground font-semibold",
-                  !inMonth && "text-muted-foreground",
-                )}>{d.getDate()}</span>
-                {dayTasks.map((t) => (
-                  <button
-                    key={t.id}
-                    onClick={() => onOpen(t)}
-                    className="text-[11px] truncate rounded px-1 py-0.5 text-left hover:bg-muted"
-                    style={{ borderLeft: `2px solid ${PRIORITY_COLOR[t.priority]}` }}
+        <div className="overflow-x-auto">
+          <div className="min-w-[640px]">
+            <div className="grid grid-cols-7 text-xs uppercase tracking-wider text-muted-foreground border-b border-border">
+              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((w) => (
+                <div key={w} className="px-2 py-2 text-center">{w}</div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7 grid-rows-6">
+              {days.map((d, i) => {
+                const inMonth = d.getMonth() === cursor.getMonth();
+                const dayKey = new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString();
+                const dayTasks = tasksByDay.get(dayKey) ?? [];
+                const isToday = +d === +today;
+                return (
+                  <div
+                    key={i}
+                    className={cn(
+                      "min-h-[90px] border-r border-b border-border p-1.5 flex flex-col gap-0.5",
+                      (i + 1) % 7 === 0 && "border-r-0",
+                      i >= 35 && "border-b-0",
+                      !inMonth && "bg-muted/20",
+                    )}
                   >
-                    {t.title}
-                  </button>
-                ))}
-              </div>
-            );
-          })}
+                    <span className={cn(
+                      "text-xs self-end px-1.5 py-0.5 rounded-full",
+                      isToday && "bg-accent text-accent-foreground font-semibold",
+                      !inMonth && "text-muted-foreground",
+                    )}>{d.getDate()}</span>
+                    {dayTasks.map((t) => (
+                      <button
+                        key={t.id}
+                        onClick={() => onOpen(t)}
+                        className="text-[11px] truncate rounded px-1 py-0.5 text-left hover:bg-muted"
+                        style={{ borderLeft: `2px solid ${PRIORITY_COLOR[t.priority]}` }}
+                      >
+                        {t.title}
+                      </button>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
+
     </div>
   );
 }
