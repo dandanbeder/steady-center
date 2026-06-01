@@ -114,6 +114,9 @@ function LoginPage() {
               : "Already have an account? Sign in"}
           </button>
         </div>
+        <p className="mt-8 text-center text-xs text-muted-foreground">
+          Powered by FlightMed (PTY) Ltd
+        </p>
       </div>
     </div>
   );
