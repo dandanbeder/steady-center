@@ -55,6 +55,16 @@ function MeetingDetail() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["meeting-actions", meetingId] }),
   });
 
+  const delRecording = useServerFn(deleteMeetingRecording);
+  const removeRecording = useMutation({
+    mutationFn: () => delRecording({ data: { meeting_id: meetingId } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["meeting", meetingId] });
+      toast.success("Recording deleted");
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
   const [convertItem, setConvertItem] = useState<ActionItem | null>(null);
 
   if (isLoading) return <div className="p-10 text-muted-foreground">Loading…</div>;
