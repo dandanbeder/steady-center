@@ -594,7 +594,7 @@ function NewEventDialog({
             <Label htmlFor="allday" className="cursor-pointer">All day</Label>
           </div>
           {!allDay && (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <Label>Start</Label>
                 <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
