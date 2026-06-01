@@ -9,7 +9,13 @@ import {
   Trash2,
   Pencil,
   RefreshCw,
+  Maximize2,
+  Minimize2,
+  Download,
+  FileText,
+  FileSpreadsheet,
 } from "lucide-react";
+
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,7 +36,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
+
 import { listBusinesses } from "@/lib/businesses";
 import {
   bulkInsertEvents,
@@ -140,6 +153,18 @@ function CalendarPage() {
     startOfDay(new Date()),
   );
   const [importOpen, setImportOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  // Lock body scroll while in fullscreen so the expanded calendar owns the viewport.
+  useEffect(() => {
+    if (!expanded) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [expanded]);
+
 
   const { data: businesses = [] } = useQuery({
     queryKey: ["businesses"],
@@ -224,8 +249,16 @@ function CalendarPage() {
   }, [view, cursor]);
 
   return (
-    <div className="px-3 sm:px-6 lg:px-8 py-6 lg:py-10 flex flex-col lg:flex-row gap-6 lg:gap-8 max-w-full">
+    <div
+      className={cn(
+        "flex flex-col lg:flex-row gap-6 lg:gap-8 max-w-full",
+        expanded
+          ? "fixed inset-0 z-50 bg-background overflow-auto p-3 sm:p-4"
+          : "px-3 sm:px-6 lg:px-8 py-6 lg:py-10",
+      )}
+    >
       <div className="flex-1 min-w-0 order-2 lg:order-1">
+
         <div className="flex items-start sm:items-center justify-between mb-5 gap-3 flex-wrap">
           <div className="min-w-0">
             <h1 className="text-2xl sm:text-3xl lg:text-4xl text-primary">
@@ -285,6 +318,53 @@ function CalendarPage() {
               <Upload className="h-4 w-4 sm:mr-1" />
               <span className="hidden sm:inline">Import .ics</span>
             </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Download className="h-4 w-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Export</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() =>
+                    exportEventsPdf({
+                      events: visibleEvents,
+                      calById,
+                      view,
+                      title,
+                    })
+                  }
+                >
+                  <FileText className="h-4 w-4 mr-2" /> Export as PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() =>
+                    exportEventsXlsx({
+                      events: visibleEvents,
+                      calById,
+                      view,
+                      title,
+                    })
+                  }
+                >
+                  <FileSpreadsheet className="h-4 w-4 mr-2" /> Export as Excel
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setExpanded((x) => !x)}
+              aria-label={expanded ? "Collapse calendar" : "Expand calendar"}
+              title={expanded ? "Collapse" : "Expand"}
+            >
+              {expanded ? (
+                <Minimize2 className="h-4 w-4" />
+              ) : (
+                <Maximize2 className="h-4 w-4" />
+              )}
+            </Button>
             <Button
               size="sm"
               onClick={() => openNewOn(cursor)}
@@ -295,6 +375,7 @@ function CalendarPage() {
             </Button>
           </div>
         </div>
+
 
         {view === "month" && (
           <MonthGrid
@@ -334,7 +415,7 @@ function CalendarPage() {
         )}
       </div>
 
-      <aside className="w-full lg:w-72 shrink-0 space-y-6 order-1 lg:order-2">
+      <aside className={cn("w-full lg:w-72 shrink-0 space-y-6 order-1 lg:order-2", expanded && "hidden")}>
         <div>
           <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
             Calendars
@@ -1639,4 +1720,121 @@ function ImportIcsDialog({
       </DialogContent>
     </Dialog>
   );
+}
+
+// ---------- Export helpers ----------
+
+type ExportArgs = {
+  events: EventRow[];
+  calById: Map<string, Cal>;
+  view: ViewMode;
+  title: string;
+};
+
+function exportRows({ events, calById }: { events: EventRow[]; calById: Map<string, Cal> }) {
+  const sorted = [...events].sort(
+    (a, b) => +new Date(a.start_at) - +new Date(b.start_at),
+  );
+  return sorted.map((e) => {
+    const c = calById.get(e.calendar_id);
+    const s = new Date(e.start_at);
+    const en = new Date(e.end_at);
+    const dateStr = s.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+    const timeStr = e.all_day
+      ? "All day"
+      : `${s.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })} – ${en.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`;
+    return {
+      Date: dateStr,
+      Time: timeStr,
+      Title: e.title,
+      Calendar: c?.name ?? "",
+      Location: e.location ?? "",
+      Notes: e.description ?? "",
+    };
+  });
+}
+
+function exportFilename(view: ViewMode, title: string, ext: string) {
+  const slug = title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+  return `calendar-${view}-${slug || "export"}.${ext}`;
+}
+
+async function exportEventsPdf({ events, calById, view, title }: ExportArgs) {
+  try {
+    if (events.length === 0) {
+      toast.message("Nothing to export in this range.");
+      return;
+    }
+    const [{ default: jsPDF }, autoTableMod] = await Promise.all([
+      import("jspdf"),
+      import("jspdf-autotable"),
+    ]);
+    const autoTable = (autoTableMod as { default: (doc: unknown, opts: unknown) => void }).default;
+    const rows = exportRows({ events, calById });
+    const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+    doc.setFontSize(16);
+    doc.text("Heartbeat Calendar", 40, 40);
+    doc.setFontSize(10);
+    doc.setTextColor(120);
+    doc.text(`${view.toUpperCase()} · ${title}`, 40, 58);
+    doc.setTextColor(0);
+    autoTable(doc, {
+      startY: 80,
+      head: [["Date", "Time", "Title", "Calendar", "Location", "Notes"]],
+      body: rows.map((r) => [r.Date, r.Time, r.Title, r.Calendar, r.Location, r.Notes]),
+      styles: { fontSize: 9, cellPadding: 4, overflow: "linebreak" },
+      headStyles: { fillColor: [122, 132, 113], textColor: 255 },
+      alternateRowStyles: { fillColor: [248, 246, 240] },
+      columnStyles: {
+        0: { cellWidth: 80 },
+        1: { cellWidth: 90 },
+        2: { cellWidth: 180 },
+        3: { cellWidth: 100 },
+        4: { cellWidth: 120 },
+        5: { cellWidth: "auto" },
+      },
+      margin: { left: 40, right: 40 },
+    });
+    doc.save(exportFilename(view, title, "pdf"));
+    toast.success(`Exported ${rows.length} events to PDF`);
+  } catch (e) {
+    console.error(e);
+    toast.error(e instanceof Error ? e.message : "Failed to export PDF");
+  }
+}
+
+async function exportEventsXlsx({ events, calById, view, title }: ExportArgs) {
+  try {
+    if (events.length === 0) {
+      toast.message("Nothing to export in this range.");
+      return;
+    }
+    const XLSX = await import("xlsx");
+    const rows = exportRows({ events, calById });
+    const ws = XLSX.utils.json_to_sheet(rows, {
+      header: ["Date", "Time", "Title", "Calendar", "Location", "Notes"],
+    });
+    ws["!cols"] = [
+      { wch: 14 },
+      { wch: 18 },
+      { wch: 32 },
+      { wch: 20 },
+      { wch: 24 },
+      { wch: 40 },
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Events");
+    XLSX.writeFile(wb, exportFilename(view, title, "xlsx"));
+    toast.success(`Exported ${rows.length} events to Excel`);
+  } catch (e) {
+    console.error(e);
+    toast.error(e instanceof Error ? e.message : "Failed to export Excel");
+  }
 }
