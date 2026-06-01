@@ -318,6 +318,53 @@ function CalendarPage() {
               <Upload className="h-4 w-4 sm:mr-1" />
               <span className="hidden sm:inline">Import .ics</span>
             </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Download className="h-4 w-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Export</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() =>
+                    exportEventsPdf({
+                      events: visibleEvents,
+                      calById,
+                      view,
+                      title,
+                    })
+                  }
+                >
+                  <FileText className="h-4 w-4 mr-2" /> Export as PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() =>
+                    exportEventsXlsx({
+                      events: visibleEvents,
+                      calById,
+                      view,
+                      title,
+                    })
+                  }
+                >
+                  <FileSpreadsheet className="h-4 w-4 mr-2" /> Export as Excel
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setExpanded((x) => !x)}
+              aria-label={expanded ? "Collapse calendar" : "Expand calendar"}
+              title={expanded ? "Collapse" : "Expand"}
+            >
+              {expanded ? (
+                <Minimize2 className="h-4 w-4" />
+              ) : (
+                <Maximize2 className="h-4 w-4" />
+              )}
+            </Button>
             <Button
               size="sm"
               onClick={() => openNewOn(cursor)}
@@ -328,6 +375,7 @@ function CalendarPage() {
             </Button>
           </div>
         </div>
+
 
         {view === "month" && (
           <MonthGrid
