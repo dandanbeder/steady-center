@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ArrowLeft, Check, CheckCircle2, Loader2 } from "lucide-react";
+import { ArrowLeft, Check, CheckCircle2, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -28,6 +29,7 @@ import {
   linkActionItemTask,
   type ActionItem,
 } from "@/lib/meetings";
+import { deleteMeetingRecording } from "@/lib/account.functions";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/meetings/$meetingId")({
@@ -51,6 +53,16 @@ function MeetingDetail() {
   const toggleDone = useMutation({
     mutationFn: ({ id, done }: { id: string; done: boolean }) => setActionItemDone(id, done),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["meeting-actions", meetingId] }),
+  });
+
+  const delRecording = useServerFn(deleteMeetingRecording);
+  const removeRecording = useMutation({
+    mutationFn: () => delRecording({ data: { meeting_id: meetingId } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["meeting", meetingId] });
+      toast.success("Recording deleted");
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
   const [convertItem, setConvertItem] = useState<ActionItem | null>(null);
@@ -81,7 +93,27 @@ function MeetingDetail() {
         <span>·</span>
         <span>{new Date(meeting.created_at).toLocaleString()}</span>
       </div>
-      <h1 className="text-3xl text-primary mb-8">{meeting.title}</h1>
+      <h1 className="text-3xl text-primary mb-4">{meeting.title}</h1>
+
+      {meeting.audio_path && (
+        <div className="mb-6 flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-3">
+          <span className="text-sm text-muted-foreground">Audio recording stored for this meeting.</span>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              if (confirm("Delete this recording? Transcript and summary stay.")) {
+                removeRecording.mutate();
+              }
+            }}
+            disabled={removeRecording.isPending}
+            className="gap-2"
+          >
+            <Trash2 className="h-4 w-4" /> Delete recording
+          </Button>
+        </div>
+      )}
+
 
       <section className="mb-8">
         <h2 className="text-sm uppercase tracking-wide text-muted-foreground mb-2">Summary</h2>
