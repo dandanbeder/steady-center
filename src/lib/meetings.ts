@@ -11,6 +11,7 @@ export type Meeting = {
   summary: string;
   decisions: string[];
   audio_path: string | null;
+  keep_recording: boolean;
   created_at: string;
 };
 
