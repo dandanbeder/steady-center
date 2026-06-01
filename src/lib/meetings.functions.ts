@@ -10,6 +10,7 @@ const InputSchema = z.object({
   title: z.string().min(1).max(200),
   transcript: z.string().max(200000).optional(),
   audio_path: z.string().max(500).optional(),
+  keep_recording: z.boolean().optional().default(false),
 });
 
 const SummarySchema = z.object({
@@ -135,6 +136,15 @@ export const processMeeting = createServerFn({ method: "POST" })
 
     const result = await summarizeTranscript(transcript);
 
+    // Default to minimizing data: drop audio unless user explicitly opts in.
+    let storedAudioPath: string | null = data.audio_path ?? null;
+    if (storedAudioPath && !data.keep_recording) {
+      if (storedAudioPath.startsWith(`${userId}/`)) {
+        await supabaseAdmin.storage.from("meeting-audio").remove([storedAudioPath]);
+      }
+      storedAudioPath = null;
+    }
+
     const { data: meeting, error: mErr } = await supabase
       .from("meetings")
       .insert({
@@ -146,7 +156,8 @@ export const processMeeting = createServerFn({ method: "POST" })
         transcript,
         summary: result.summary,
         decisions: result.decisions,
-        audio_path: data.audio_path ?? null,
+        audio_path: storedAudioPath,
+        keep_recording: data.keep_recording,
       } as never)
       .select("*")
       .single();
