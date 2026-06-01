@@ -276,6 +276,10 @@ function BusinessRow({
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
+  const my = useMyRole(business.id);
+  const canEdit = my.can("member");
+  const canDelete = my.can("owner");
+
   return (
     <li className="py-4 space-y-3">
       {editing ? (
@@ -306,21 +310,27 @@ function BusinessRow({
             style={{ backgroundColor: business.color }}
           />
           <button
-            className="text-left flex-1 hover:text-accent transition-colors"
-            onClick={() => setEditing(true)}
+            className="text-left flex-1 hover:text-accent transition-colors disabled:hover:text-foreground disabled:cursor-default"
+            onClick={() => canEdit && setEditing(true)}
+            disabled={!canEdit}
           >
             {business.name}
+            {my.role && my.role !== "owner" && (
+              <span className="ml-2 text-xs text-muted-foreground">({my.role})</span>
+            )}
           </button>
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={() => {
-              if (confirm(`Delete "${business.name}"? Calendars and events will go too.`)) del.mutate();
-            }}
-            disabled={del.isPending}
-          >
-            <Trash2 className="h-4 w-4 text-muted-foreground" />
-          </Button>
+          {canDelete && (
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => {
+                if (confirm(`Delete "${business.name}"? Calendars and events will go too.`)) del.mutate();
+              }}
+              disabled={del.isPending}
+            >
+              <Trash2 className="h-4 w-4 text-muted-foreground" />
+            </Button>
+          )}
         </div>
       )}
 
@@ -328,7 +338,15 @@ function BusinessRow({
         businessId={business.id}
         calendars={calendars}
         onChange={onChange}
+        canEdit={canEdit}
       />
+
+      {my.can("admin") && (
+        <div className="mt-4 pt-4 border-t border-border">
+          <h4 className="text-sm font-medium mb-3">People</h4>
+          <PeoplePanel businessId={business.id} />
+        </div>
+      )}
     </li>
   );
 }
