@@ -15,6 +15,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedTodayRouteImport } from './routes/_authenticated/today'
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
+import { Route as AuthenticatedSharedRouteImport } from './routes/_authenticated/shared'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedNotesRouteImport } from './routes/_authenticated/notes'
@@ -55,6 +56,11 @@ const AuthenticatedTodayRoute = AuthenticatedTodayRouteImport.update({
 const AuthenticatedTasksRoute = AuthenticatedTasksRouteImport.update({
   id: '/tasks',
   path: '/tasks',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedSharedRoute = AuthenticatedSharedRouteImport.update({
+  id: '/shared',
+  path: '/shared',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
@@ -134,6 +140,7 @@ export interface FileRoutesByFullPath {
   '/notes': typeof AuthenticatedNotesRoute
   '/reports': typeof AuthenticatedReportsRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
+  '/shared': typeof AuthenticatedSharedRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/today': typeof AuthenticatedTodayRoute
   '/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
@@ -153,6 +160,7 @@ export interface FileRoutesByTo {
   '/notes': typeof AuthenticatedNotesRoute
   '/reports': typeof AuthenticatedReportsRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
+  '/shared': typeof AuthenticatedSharedRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/today': typeof AuthenticatedTodayRoute
   '/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
@@ -174,6 +182,7 @@ export interface FileRoutesById {
   '/_authenticated/notes': typeof AuthenticatedNotesRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/shared': typeof AuthenticatedSharedRoute
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
   '/_authenticated/today': typeof AuthenticatedTodayRoute
   '/_authenticated/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
@@ -195,6 +204,7 @@ export interface FileRouteTypes {
     | '/notes'
     | '/reports'
     | '/settings'
+    | '/shared'
     | '/tasks'
     | '/today'
     | '/meetings/$meetingId'
@@ -214,6 +224,7 @@ export interface FileRouteTypes {
     | '/notes'
     | '/reports'
     | '/settings'
+    | '/shared'
     | '/tasks'
     | '/today'
     | '/meetings/$meetingId'
@@ -234,6 +245,7 @@ export interface FileRouteTypes {
     | '/_authenticated/notes'
     | '/_authenticated/reports'
     | '/_authenticated/settings'
+    | '/_authenticated/shared'
     | '/_authenticated/tasks'
     | '/_authenticated/today'
     | '/_authenticated/meetings/$meetingId'
@@ -295,6 +307,13 @@ declare module '@tanstack/react-router' {
       path: '/tasks'
       fullPath: '/tasks'
       preLoaderRoute: typeof AuthenticatedTasksRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/shared': {
+      id: '/_authenticated/shared'
+      path: '/shared'
+      fullPath: '/shared'
+      preLoaderRoute: typeof AuthenticatedSharedRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/settings': {
@@ -416,6 +435,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedNotesRoute: typeof AuthenticatedNotesRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRouteWithChildren
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedSharedRoute: typeof AuthenticatedSharedRoute
   AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
   AuthenticatedTodayRoute: typeof AuthenticatedTodayRoute
 }
@@ -428,6 +448,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedNotesRoute: AuthenticatedNotesRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRouteWithChildren,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedSharedRoute: AuthenticatedSharedRoute,
   AuthenticatedTasksRoute: AuthenticatedTasksRoute,
   AuthenticatedTodayRoute: AuthenticatedTodayRoute,
 }
