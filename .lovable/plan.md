@@ -1,103 +1,96 @@
-# Refine sharing: invite → sign-up → request-access → approve
+## Scope
 
-## Goal
+Rebuild the Notes section in Heartbeat into a structured notes workspace per spec. A "space" = an Account (business). All work is membership/owner-scoped via RLS.
 
-Replace today's "invite directly creates a pending membership" model with an explicit four-step flow:
+## 1. Database (single migration)
 
-1. Admin **invites** by email → row in `invitations` (status `sent`) + Resend email with link to sign up.
-2. Invitee **signs up** for their own account (normal email/password or Google).
-3. After login, app **matches their email to invitations** and shows "You've been invited to <Account>". They click **Request access** → row in `access_requests` (status `pending`).
-4. Owner/admin sees pending requests in the People panel and **Approves** (confirming the role) or **Denies**. On approve: insert an **active membership** with that role, mark the invitation `accepted`, and email the requester.
+**Extend `public.notes`:**
+- `note_type` text NOT NULL DEFAULT 'note' — check in ('note','journal','meeting','project','decision')
+- `pinned` boolean NOT NULL DEFAULT false
+- `linked_meeting_id` uuid NULL (no FK; soft link)
+- `linked_event_id` uuid NULL
+- `updated_at` timestamptz NOT NULL DEFAULT now() + `touch_updated_at` trigger
+- (body already TEXT — used as markdown)
 
-Until approval, the requester has **zero** access to the Account's data — enforced by RLS, not just UI.
+**Create `public.note_attachments`:**
+- `id`, `note_id`, `business_id`, `storage_path`, `file_name`, `mime_type`, `size_bytes`, `extracted_text` text NULL, `created_by`, `created_at`
+- GRANT SELECT/INSERT/UPDATE/DELETE to authenticated; ALL to service_role
+- RLS: select = `is_member(business_id,'viewer') OR is_platform_admin() OR is_tagged('note', note_id)`; insert/update/delete = `is_member(business_id,'member') OR admin`
+- Index on `note_id`
 
-## Schema (Migration 1)
+**Storage:** create PRIVATE bucket `note-attachments` (public=false). RLS on `storage.objects` for that bucket: select/insert/update/delete allowed only if path's first segment is a `business_id` the user is a member of (≥ viewer for select, ≥ member for write). Paths follow `{business_id}/{note_id}/{uuid}-{filename}`.
 
-New tables:
+## 2. Server functions
 
-- `public.invitations`
-  - `id uuid pk`, `business_id uuid not null`, `invited_email citext not null`, `proposed_role membership_role not null` (must be in admin/member/commenter/viewer — owner blocked by check), `invited_by uuid not null`, `token uuid not null unique default gen_random_uuid()`, `status text not null default 'sent' check in ('sent','accepted','revoked','expired')`, `created_at timestamptz default now()`, `expires_at timestamptz default now() + interval '14 days'`.
-  - Indexes on `(business_id, status)`, `(lower(invited_email), status)`, `(token)`.
-- `public.access_requests`
-  - `id uuid pk`, `business_id uuid not null`, `requester_user_id uuid not null`, `invitation_id uuid null` (when triggered from an invite), `message text`, `status text not null default 'pending' check in ('pending','approved','denied')`, `created_at timestamptz default now()`, `decided_by uuid`, `decided_at timestamptz`, `proposed_role membership_role not null`.
-  - Unique partial index: one open request per `(business_id, requester_user_id) where status='pending'`.
+`src/lib/notes.functions.ts` (new):
+- `extractAttachmentText({ attachmentId })` — `requireSupabaseAuth`; downloads from private bucket via admin client, runs lightweight extractor: PDF (pdf-parse-ish via `unpdf`) and DOCX (`mammoth`) → text; updates `extracted_text`. Images skipped (NULL).
+- `searchNotes({ q })` — ilike across title/body, returns notes with snippet.
 
-GRANTs for both: `select,insert,update,delete` to `authenticated`; `all` to `service_role`. No `anon`.
+Existing `src/lib/notes.ts` extended (browser supabase): `pinNote`, `listAttachments`, `uploadAttachment` (signed upload to bucket + insert row + fire-and-forget call to extract serverFn), `deleteAttachment`, `getSignedUrl`.
 
-### RLS
+## 3. Editor
 
-`invitations`:
-- SELECT: `invited_by = auth.uid() OR is_member(business_id,'admin') OR is_platform_admin() OR lower(invited_email) = lower((select email from auth.users where id = auth.uid()))` (so the invitee can see their own invite).
-- INSERT/UPDATE/DELETE: `is_member(business_id,'admin') OR is_platform_admin()` (write goes through server fns w/ admin client, but keep RLS tight).
+`src/components/notes/markdown-editor.tsx`: lightweight markdown editor — textarea + toolbar (H1/H2, bold, italic, link, bullet, checklist `- [ ]`) that inserts markdown around selection. Live preview pane toggle using `react-markdown` + `remark-gfm` (for checklists). Autosave with 600ms debounce; shows "Saved · updated 12s ago" via `date-fns`.
 
-`access_requests`:
-- SELECT: `requester_user_id = auth.uid() OR is_member(business_id,'admin') OR is_platform_admin()`.
-- INSERT (caller creating own request): `requester_user_id = auth.uid()` AND not already an active member.
-- UPDATE (approve/deny): `is_member(business_id,'admin') OR is_platform_admin()`.
-- DELETE: admin-only or owner of the request.
+(Avoids heavy WYSIWYG deps; markdown matches spec's "markdown or JSON blocks".)
 
-`memberships` (already correct): keep as-is — active memberships are only created server-side on approval.
+## 4. Templates
 
-### Migration 2 — cleanup legacy invite rows
+`src/lib/note-templates.ts`: returns starter markdown per `note_type`:
+- meeting: Attendees / Agenda / Decisions / Action items
+- project: Goal / Scope / Milestones
+- decision: Context / Options / Decision
+- journal: Date / What happened / Reflection
+- note: blank
 
-- Backfill: convert existing `memberships` rows with `status='invited'` into `invitations` rows (status `sent`, copy email/role/token/expiry), then delete those memberships.
-- Drop `claim_pending_invites` trigger on `auth.users` (it auto-claimed invited memberships; no longer the flow). Also drop the `invite_token`/`invite_token_expires_at`/`invited_email` columns on `memberships` once data is migrated — keep memberships pure: only active memberships exist.
+## 5. Guided "Save it right" flow
 
-## Server functions (`src/lib/memberships.functions.ts` + new `invitations.functions.ts`)
+`src/components/notes/new-note-dialog.tsx`: 4-step wizard
+1. **Account** — select business (defaults to active)
+2. **Folder** — pick existing or "+ New folder" inline
+3. **Type** — 5 cards (note/journal/meeting/project/decision)
+4. **Link & title** — optional dropdowns to link a meeting/task/event from that business; AI-free suggested title derived from type + date (e.g. "Meeting — Jun 1"); user can override
 
-Rewrite the existing functions:
+Submit → create note with template body, jump to editor. Prevents unfiled accidents (folder required unless user explicitly picks "Unfiled").
 
-- `inviteMember(business_id, email, role)` — admin+; **does NOT** create a membership. Creates an `invitations` row (or refreshes existing `sent` row's token), sends email. **Never reveals** whether the email already has an account — always returns `{ ok:true }`.
-- `listInvitations(business_id)` — admin+; list invitations for the People panel.
-- `revokeInvitation(id)` — admin+; sets status `revoked`.
-- `resendInvitation(id)` — admin+; refresh token+expiry, re-send email.
-- `listMyInvitations()` — signed-in user; returns invitations matching their email + business name. Used on the new "Invitations" landing/badge after login.
-- `requestAccess({ invitation_token? | business_id })` — signed-in user; create `access_requests` row with `proposed_role` from invitation (or `viewer` if business-id only). If invitation exists, link via `invitation_id`. Idempotent: returns existing pending request.
-- `listPendingRequests(business_id)` — admin+; lists access requests with requester profile info via `auth.users` lookup (admin client).
-- `decideAccessRequest({ request_id, decision: 'approve'|'deny', role? })` — admin+. On approve: insert membership (active) with chosen role, mark invitation `accepted`, mark request `approved`, email requester. On deny: mark `denied`. Owner role only assignable by an owner.
+## 6. Notes page rewrite (`src/routes/_authenticated/notes.tsx`)
 
-All write functions go through `supabaseAdmin` after `requireRole` check.
+Three-pane layout:
+- **Left rail**: Folders list (scoped to active business), "Unfiled", Pinned, Recent (7d), search box
+- **Middle**: notes list filtered by left selection; pin toggle; shows type icon, updated_at, snippet
+- **Right**: editor (title input, type badge, linked-to chips, body editor, attachments panel, TagPeople, delete)
 
-## UI changes
+Header: "+ New note" opens guided dialog.
 
-- `src/components/people-panel.tsx`
-  - Keep Members list (unchanged).
-  - "Pending invites" → split into two sections:
-    - **Invitations sent** (admin can resend / revoke; show email, role, sent date, status).
-    - **Pending access requests** (admin: Approve / Deny buttons with role dropdown pre-filled to `proposed_role`).
-  - Invite form unchanged but informs admin: "We'll email them a sign-up link. You'll approve their access after they sign up."
-- Replace `src/routes/accept-invite.tsx` flow: the email link still goes to `/accept-invite?token=...` but the page now:
-  - If signed out: prompt to sign up (link to `/login`) with banner "You've been invited to <space>".
-  - If signed in: show the invitation, with a single **"Request access"** button. On click, call `requestAccess({ token })` → success screen "Request sent. The space owner will review shortly."
-- New `src/components/my-invitations-banner.tsx`: shows on `/today` if `listMyInvitations()` returns any invitations the user hasn't requested yet. Quick CTA "Request access".
-- Toast on admin People panel when new request arrives (polling on invalidate is fine; realtime out of scope).
+## 7. Attachments UI
 
-## Email
+`src/components/notes/attachments-panel.tsx`: drag-drop / file input (accept .pdf,.docx,.png,.jpg,.jpeg). Uploads to `{business_id}/{note_id}/{uuid}-{name}`, inserts row, kicks off extraction serverFn. Shows list with filename, size, "Extracted ✓" badge once text lands, signed-URL download link, remove button.
 
-Reuse the existing Resend helper. Add two more templates:
-- Invite email (already exists, tweak copy: "Sign up to request access").
-- Approval email: "You've been approved to join <space>" with link to `/today`.
+## 8. Dependencies
 
-## Security notes
+Add: `react-markdown`, `remark-gfm`, `unpdf` (pure-JS PDF text extract, Worker-safe), `mammoth` (DOCX → text, Worker-safe enough for server fn). `date-fns` already present.
 
-- `inviteMember` always returns `{ ok: true }` and never errors on "email exists / already member" — log internally, swallow externally to avoid account enumeration.
-- Rate limiting: per project directive (`no-backend-rate-limiting`), we **will not** add backend rate limiting. I'll call this out in the chat reply so the user knows it's intentional and tracked.
-- All access-control checks happen in RLS first; server fns are a UX/error-handling layer over admin-client writes guarded by `requireRole`.
+## 9. RLS confirmation
 
-## Files touched
+- `notes` already member/admin-scoped (existing policies untouched).
+- `note_attachments` mirrors `notes` scoping; tagged users on parent note get read access via `is_tagged('note', note_id)`.
+- Storage bucket is private; all access via signed URLs minted server-side.
 
-- `supabase/migrations/<ts>_invitations_and_access_requests.sql` (schema + RLS + GRANTs)
-- `supabase/migrations/<ts>_migrate_invited_memberships.sql` (data backfill + drop legacy columns/trigger)
-- `src/lib/invitations.functions.ts` (new)
-- `src/lib/memberships.functions.ts` (trim — remove `inviteMember`, `acceptInvite`, `resendInvite` to invitations module; keep list/role/remove)
-- `src/components/people-panel.tsx` (two sections + approval UI)
-- `src/routes/accept-invite.tsx` (request-access flow)
-- `src/components/my-invitations-banner.tsx` (new) + mount in `src/routes/_authenticated/today.tsx`
-- `src/hooks/use-my-role.ts` (no change expected)
+## 10. Out of scope
 
-## Out of scope
+- Block-based JSON editor (Notion-style) — markdown chosen for shipping speed.
+- OCR for images.
+- Full-text search ranking (uses ilike + ordered by updated_at).
+- Realtime collaboration.
 
-- Realtime notifications (admins refresh / re-open panel to see new requests).
-- Backend rate limiting (intentional — see Security notes).
-- Bulk invite, CSV import.
-- Audit log beyond the existing `admin_access_log`.
+## Files
+
+- `supabase/migrations/<ts>_notes_workspace.sql`
+- `src/lib/notes.ts` (extend)
+- `src/lib/notes.functions.ts` (new)
+- `src/lib/note-templates.ts` (new)
+- `src/components/notes/markdown-editor.tsx` (new)
+- `src/components/notes/new-note-dialog.tsx` (new)
+- `src/components/notes/attachments-panel.tsx` (new)
+- `src/routes/_authenticated/notes.tsx` (rewrite)
+- `package.json` (deps)
