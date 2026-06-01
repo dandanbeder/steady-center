@@ -253,24 +253,33 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
+          logo_url: string | null
           name: string
           owner_id: string
+          priority_labels: Json
+          task_statuses: Json
         }
         Insert: {
           color?: string
           created_at?: string
           created_by?: string | null
           id?: string
+          logo_url?: string | null
           name: string
           owner_id: string
+          priority_labels?: Json
+          task_statuses?: Json
         }
         Update: {
           color?: string
           created_at?: string
           created_by?: string | null
           id?: string
+          logo_url?: string | null
           name?: string
           owner_id?: string
+          priority_labels?: Json
+          task_statuses?: Json
         }
         Relationships: []
       }
@@ -565,6 +574,33 @@ export type Database = {
           },
         ]
       }
+      login_history: {
+        Row: {
+          event: string
+          id: string
+          ip: string | null
+          occurred_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          event?: string
+          id?: string
+          ip?: string | null
+          occurred_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          event?: string
+          id?: string
+          ip?: string | null
+          occurred_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       meetings: {
         Row: {
           audio_path: string | null
@@ -846,11 +882,16 @@ export type Database = {
         Row: {
           created_at: string
           daily_capacity_hours: number
+          default_calendar_view: string
+          density: string
+          font_size: string
           full_name: string | null
           id: string
           phone: string | null
           platform_role: Database["public"]["Enums"]["platform_role"]
+          reduced_motion: boolean
           status: Database["public"]["Enums"]["user_status"]
+          theme: string
           timezone: string
           updated_at: string
           weekly_review_day: number
@@ -863,11 +904,16 @@ export type Database = {
         Insert: {
           created_at?: string
           daily_capacity_hours?: number
+          default_calendar_view?: string
+          density?: string
+          font_size?: string
           full_name?: string | null
           id: string
           phone?: string | null
           platform_role?: Database["public"]["Enums"]["platform_role"]
+          reduced_motion?: boolean
           status?: Database["public"]["Enums"]["user_status"]
+          theme?: string
           timezone?: string
           updated_at?: string
           weekly_review_day?: number
@@ -880,11 +926,16 @@ export type Database = {
         Update: {
           created_at?: string
           daily_capacity_hours?: number
+          default_calendar_view?: string
+          density?: string
+          font_size?: string
           full_name?: string | null
           id?: string
           phone?: string | null
           platform_role?: Database["public"]["Enums"]["platform_role"]
+          reduced_motion?: boolean
           status?: Database["public"]["Enums"]["user_status"]
+          theme?: string
           timezone?: string
           updated_at?: string
           weekly_review_day?: number
@@ -1053,6 +1104,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      templates: {
+        Row: {
+          body: string
+          business_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          kind: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          body?: string
+          business_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          business_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       time_entries: {
         Row: {

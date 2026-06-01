@@ -14,6 +14,12 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ActiveBusinessProvider } from "@/hooks/use-active-business";
 import { Toaster } from "@/components/ui/sonner";
+import { useAppearanceBoot } from "@/hooks/use-appearance-boot";
+
+function AppearanceBoot() {
+  useAppearanceBoot();
+  return null;
+}
 
 function NotFoundComponent() {
   return (
@@ -111,6 +117,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <AppearanceBoot />
         <ActiveBusinessProvider>
           <Outlet />
           <Toaster />

@@ -22,6 +22,10 @@ import { NotificationsPanel } from "@/components/settings/notifications-panel";
 import { AiPrefsPanel } from "@/components/settings/ai-prefs-panel";
 import { WorkingHoursPanel } from "@/components/settings/working-hours-panel";
 import { PrivacyDataPanel } from "@/components/settings/privacy-data-panel";
+import { AppearancePanel } from "@/components/settings/appearance-panel";
+import { SecurityPanel } from "@/components/settings/security-panel";
+import { CustomizationPanel } from "@/components/settings/customization-panel";
+import { TemplatesPanel } from "@/components/settings/templates-panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -84,6 +88,26 @@ function SettingsPage() {
         <h1 className="text-2xl sm:text-3xl lg:text-4xl text-primary">Settings</h1>
         <p className="mt-2 text-muted-foreground">Shape your command center.</p>
       </header>
+
+      <section>
+        <h2 className="text-2xl mb-1">Appearance</h2>
+        <p className="text-sm text-muted-foreground mb-6">
+          Theme, density, default calendar view, and accessibility.
+        </p>
+        <div className="rounded-2xl border border-border bg-card p-6" style={{ boxShadow: "var(--shadow-soft)" }}>
+          <AppearancePanel />
+        </div>
+      </section>
+
+      <section>
+        <h2 className="text-2xl mb-1">Security</h2>
+        <p className="text-sm text-muted-foreground mb-6">
+          Two-factor authentication, login history, and active sessions.
+        </p>
+        <div className="rounded-2xl border border-border bg-card p-6" style={{ boxShadow: "var(--shadow-soft)" }}>
+          <SecurityPanel />
+        </div>
+      </section>
 
       <section>
         <h2 className="text-2xl mb-1">Calendar sync</h2>
@@ -385,6 +409,20 @@ function BusinessRow({
         onChange={onChange}
         canEdit={canEdit}
       />
+
+      {canEdit && (
+        <div className="mt-4 pt-4 border-t border-border">
+          <h4 className="text-sm font-medium mb-3">Branding, statuses & priorities</h4>
+          <CustomizationPanel businessId={business.id} />
+        </div>
+      )}
+
+      {canEdit && (
+        <div className="mt-4 pt-4 border-t border-border">
+          <h4 className="text-sm font-medium mb-3">Templates</h4>
+          <TemplatesPanel businessId={business.id} />
+        </div>
+      )}
 
       {my.can("admin") && (
         <div className="mt-4 pt-4 border-t border-border">
