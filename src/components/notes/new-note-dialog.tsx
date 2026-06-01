@@ -106,8 +106,16 @@ export function NewNoteDialog({
   const handleCreateFolder = async () => {
     if (!businessId || !newFolderName.trim()) return;
     try {
-      const f = await createFolder({ business_id: businessId, name: newFolderName.trim() });
-      setFolderId(f.id);
+      await createFolder({ business_id: businessId, name: newFolderName.trim() });
+      const { data } = await supabase
+        .from("folders")
+        .select("id")
+        .eq("business_id", businessId)
+        .eq("name", newFolderName.trim())
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data?.id) setFolderId(data.id);
       setNewFolderName("");
       toast.success("Folder created");
     } catch (e) {
