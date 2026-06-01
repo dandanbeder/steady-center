@@ -29,21 +29,21 @@ export const exportMyData = createServerFn({ method: "GET" })
 
     for (const t of OWNER_TABLES) {
       const { data } = await supabase.from(t).select("*").eq("owner_id", userId);
-      tables[t] = data ?? [];
+      tables[t] = (data ?? []) as unknown as Row[];
     }
     for (const t of USER_TABLES) {
       const { data } = await supabase.from(t).select("*").eq("user_id", userId);
-      tables[t] = data ?? [];
+      tables[t] = (data ?? []) as unknown as Row[];
     }
 
     // Note attachments tied to the user's notes
-    const noteIds = ((tables.notes as Array<{ id: string }>) ?? []).map((n) => n.id);
+    const noteIds = (tables.notes ?? []).map((n) => String(n.id));
     if (noteIds.length > 0) {
       const { data } = await supabase
         .from("note_attachments")
         .select("*")
         .in("note_id", noteIds);
-      tables.note_attachments = data ?? [];
+      tables.note_attachments = (data ?? []) as unknown as Row[];
     } else {
       tables.note_attachments = [];
     }
