@@ -109,7 +109,7 @@ function UsersPanel() {
   if (isLoading) return <div className="text-muted-foreground">Loading users…</div>;
 
   return (
-    <div className="border rounded-lg">
+    <div className="border rounded-lg overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
@@ -547,7 +547,7 @@ function AuditPanel() {
           app to switch modes or end it.
         </div>
       )}
-      <div className="border rounded-lg">
+      <div className="border rounded-lg overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
