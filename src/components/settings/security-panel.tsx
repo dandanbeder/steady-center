@@ -21,6 +21,7 @@ import {
   unenrollFactor,
   verifyTotpEnrollment,
 } from "@/lib/security";
+import { ChangePasswordSection } from "./change-password-section";
 
 export function SecurityPanel() {
   const qc = useQueryClient();
