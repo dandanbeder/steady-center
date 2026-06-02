@@ -197,15 +197,16 @@ export const inviteByEmail = createServerFn({ method: "POST" })
         token = inserted.token;
       }
 
-      const [{ data: biz }, inviterName] = await Promise.all([
+      const [{ data: biz }, inviter] = await Promise.all([
         supabaseAdmin.from("businesses").select("name").eq("id", data.business_id).maybeSingle(),
-        getInviterName(userId),
+        getInviterInfo(userId),
       ]);
       const origin = await getPublishedOrigin();
       await sendInviteEmail({
         to: email,
         businessName: biz?.name ?? "an account",
-        inviterName,
+        inviterName: inviter.name,
+        inviterEmail: inviter.email,
         role: data.role,
         acceptUrl: `${origin}/accept-invite?token=${token}`,
       });
@@ -275,15 +276,16 @@ export const resendInvitation = createServerFn({ method: "POST" })
       .update({ expires_at: newExpiry })
       .eq("id", data.invitation_id);
 
-    const [{ data: biz }, inviterName] = await Promise.all([
+    const [{ data: biz }, inviter] = await Promise.all([
       supabaseAdmin.from("businesses").select("name").eq("id", inv.business_id).maybeSingle(),
-      getInviterName(userId),
+      getInviterInfo(userId),
     ]);
     const origin = await getPublishedOrigin();
     await sendInviteEmail({
       to: inv.invited_email,
       businessName: biz?.name ?? "an account",
-      inviterName,
+      inviterName: inviter.name,
+      inviterEmail: inviter.email,
       role: inv.proposed_role,
       acceptUrl: `${origin}/accept-invite?token=${inv.token}`,
     });
