@@ -88,6 +88,9 @@ export function SecurityPanel() {
 
   return (
     <div className="space-y-8">
+      <ChangePasswordSection />
+
+
       <section>
         <h3 className="text-sm font-medium mb-1 flex items-center gap-2">
           <Shield className="h-4 w-4" /> Two-factor authentication
