@@ -878,6 +878,24 @@ export type Database = {
         }
         Relationships: []
       }
+      password_reset_attempts: {
+        Row: {
+          attempted_at: string
+          email_hash: string
+          id: string
+        }
+        Insert: {
+          attempted_at?: string
+          email_hash: string
+          id?: string
+        }
+        Update: {
+          attempted_at?: string
+          email_hash?: string
+          id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
