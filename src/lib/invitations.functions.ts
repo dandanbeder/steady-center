@@ -43,13 +43,25 @@ function escapeHtml(s: string) {
   );
 }
 
-async function sendEmail(opts: { to: string; subject: string; html: string }) {
+async function sendEmail(opts: {
+  to: string;
+  subject: string;
+  html: string;
+  replyTo?: string;
+}) {
   const apiKey = process.env.LOVABLE_API_KEY;
   const conn = process.env.RESEND_API_KEY;
   if (!apiKey || !conn) {
     console.warn("[invitations] missing email credentials; skipping email to", opts.to);
     return;
   }
+  const body: Record<string, unknown> = {
+    from: "Heartbeat <noreply@flightmed.software>",
+    to: [opts.to],
+    subject: opts.subject,
+    html: opts.html,
+  };
+  if (opts.replyTo) body.reply_to = opts.replyTo;
   const res = await fetch("https://connector-gateway.lovable.dev/resend/emails", {
     method: "POST",
     headers: {
@@ -57,12 +69,7 @@ async function sendEmail(opts: { to: string; subject: string; html: string }) {
       Authorization: `Bearer ${apiKey}`,
       "X-Connection-Api-Key": conn,
     },
-    body: JSON.stringify({
-      from: "Heartbeat <onboarding@resend.dev>",
-      to: [opts.to],
-      subject: opts.subject,
-      html: opts.html,
-    }),
+    body: JSON.stringify(body),
   });
   if (!res.ok) {
     console.error("[invitations] resend failed", res.status, await res.text());
