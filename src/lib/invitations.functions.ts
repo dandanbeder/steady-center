@@ -80,6 +80,7 @@ async function sendInviteEmail(opts: {
   to: string;
   businessName: string;
   inviterName: string;
+  inviterEmail?: string | null;
   role: string;
   acceptUrl: string;
 }) {
@@ -95,7 +96,12 @@ async function sendInviteEmail(opts: {
       <p style="color:#666;font-size:13px;margin-top:16px">Or open this link directly:<br>${opts.acceptUrl}</p>
       <p style="color:#999;font-size:12px;margin-top:32px">If you weren't expecting this, you can ignore this email.</p>
     </div>`;
-  await sendEmail({ to: opts.to, subject, html });
+  await sendEmail({
+    to: opts.to,
+    subject,
+    html,
+    replyTo: opts.inviterEmail ?? undefined,
+  });
 }
 
 async function sendApprovalEmail(opts: { to: string; businessName: string; appUrl: string }) {
@@ -111,12 +117,13 @@ async function sendApprovalEmail(opts: { to: string; businessName: string; appUr
   await sendEmail({ to: opts.to, subject, html });
 }
 
-async function getInviterName(user_id: string): Promise<string> {
+async function getInviterInfo(user_id: string): Promise<{ name: string; email: string | null }> {
   const [{ data: prof }, { data: u }] = await Promise.all([
     supabaseAdmin.from("profiles").select("full_name").eq("id", user_id).maybeSingle(),
     supabaseAdmin.auth.admin.getUserById(user_id),
   ]);
-  return prof?.full_name?.trim() || u.user?.email || "A teammate";
+  const email = u.user?.email ?? null;
+  return { name: prof?.full_name?.trim() || email || "A teammate", email };
 }
 
 async function findUserByEmail(email: string) {
