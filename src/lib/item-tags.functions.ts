@@ -156,7 +156,7 @@ export const notifyClaimedTags = createServerFn({ method: "POST" })
           "X-Connection-Api-Key": conn,
         },
         body: JSON.stringify({
-          from: "Heartbeat <onboarding@resend.dev>",
+          from: "Heartbeat <noreply@flightmed.software>",
           to: [email],
           subject: "You've been tagged on Heartbeat",
           html,

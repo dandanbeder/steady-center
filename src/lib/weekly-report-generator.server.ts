@@ -797,7 +797,7 @@ async function sendReportEmail(
       "X-Connection-Api-Key": resendKey,
     },
     body: JSON.stringify({
-      from: "Heartbeat <onboarding@resend.dev>",
+      from: "Heartbeat <noreply@flightmed.software>",
       to: [to],
       subject,
       html,

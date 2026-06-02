@@ -43,13 +43,25 @@ function escapeHtml(s: string) {
   );
 }
 
-async function sendEmail(opts: { to: string; subject: string; html: string }) {
+async function sendEmail(opts: {
+  to: string;
+  subject: string;
+  html: string;
+  replyTo?: string;
+}) {
   const apiKey = process.env.LOVABLE_API_KEY;
   const conn = process.env.RESEND_API_KEY;
   if (!apiKey || !conn) {
     console.warn("[invitations] missing email credentials; skipping email to", opts.to);
     return;
   }
+  const body: Record<string, unknown> = {
+    from: "Heartbeat <noreply@flightmed.software>",
+    to: [opts.to],
+    subject: opts.subject,
+    html: opts.html,
+  };
+  if (opts.replyTo) body.reply_to = opts.replyTo;
   const res = await fetch("https://connector-gateway.lovable.dev/resend/emails", {
     method: "POST",
     headers: {
@@ -57,12 +69,7 @@ async function sendEmail(opts: { to: string; subject: string; html: string }) {
       Authorization: `Bearer ${apiKey}`,
       "X-Connection-Api-Key": conn,
     },
-    body: JSON.stringify({
-      from: "Heartbeat <onboarding@resend.dev>",
-      to: [opts.to],
-      subject: opts.subject,
-      html: opts.html,
-    }),
+    body: JSON.stringify(body),
   });
   if (!res.ok) {
     console.error("[invitations] resend failed", res.status, await res.text());
@@ -73,6 +80,7 @@ async function sendInviteEmail(opts: {
   to: string;
   businessName: string;
   inviterName: string;
+  inviterEmail?: string | null;
   role: string;
   acceptUrl: string;
 }) {
@@ -88,7 +96,12 @@ async function sendInviteEmail(opts: {
       <p style="color:#666;font-size:13px;margin-top:16px">Or open this link directly:<br>${opts.acceptUrl}</p>
       <p style="color:#999;font-size:12px;margin-top:32px">If you weren't expecting this, you can ignore this email.</p>
     </div>`;
-  await sendEmail({ to: opts.to, subject, html });
+  await sendEmail({
+    to: opts.to,
+    subject,
+    html,
+    replyTo: opts.inviterEmail ?? undefined,
+  });
 }
 
 async function sendApprovalEmail(opts: { to: string; businessName: string; appUrl: string }) {
@@ -104,12 +117,13 @@ async function sendApprovalEmail(opts: { to: string; businessName: string; appUr
   await sendEmail({ to: opts.to, subject, html });
 }
 
-async function getInviterName(user_id: string): Promise<string> {
+async function getInviterInfo(user_id: string): Promise<{ name: string; email: string | null }> {
   const [{ data: prof }, { data: u }] = await Promise.all([
     supabaseAdmin.from("profiles").select("full_name").eq("id", user_id).maybeSingle(),
     supabaseAdmin.auth.admin.getUserById(user_id),
   ]);
-  return prof?.full_name?.trim() || u.user?.email || "A teammate";
+  const email = u.user?.email ?? null;
+  return { name: prof?.full_name?.trim() || email || "A teammate", email };
 }
 
 async function findUserByEmail(email: string) {
@@ -183,15 +197,16 @@ export const inviteByEmail = createServerFn({ method: "POST" })
         token = inserted.token;
       }
 
-      const [{ data: biz }, inviterName] = await Promise.all([
+      const [{ data: biz }, inviter] = await Promise.all([
         supabaseAdmin.from("businesses").select("name").eq("id", data.business_id).maybeSingle(),
-        getInviterName(userId),
+        getInviterInfo(userId),
       ]);
       const origin = await getPublishedOrigin();
       await sendInviteEmail({
         to: email,
         businessName: biz?.name ?? "an account",
-        inviterName,
+        inviterName: inviter.name,
+        inviterEmail: inviter.email,
         role: data.role,
         acceptUrl: `${origin}/accept-invite?token=${token}`,
       });
@@ -261,15 +276,16 @@ export const resendInvitation = createServerFn({ method: "POST" })
       .update({ expires_at: newExpiry })
       .eq("id", data.invitation_id);
 
-    const [{ data: biz }, inviterName] = await Promise.all([
+    const [{ data: biz }, inviter] = await Promise.all([
       supabaseAdmin.from("businesses").select("name").eq("id", inv.business_id).maybeSingle(),
-      getInviterName(userId),
+      getInviterInfo(userId),
     ]);
     const origin = await getPublishedOrigin();
     await sendInviteEmail({
       to: inv.invited_email,
       businessName: biz?.name ?? "an account",
-      inviterName,
+      inviterName: inviter.name,
+      inviterEmail: inviter.email,
       role: inv.proposed_role,
       acceptUrl: `${origin}/accept-invite?token=${inv.token}`,
     });

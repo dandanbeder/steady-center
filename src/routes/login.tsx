@@ -1,7 +1,9 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { sendWelcomeAndNotifyAdmins } from "@/lib/onboarding.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +17,7 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const { user, loading } = useAuth();
+  const sendWelcome = useServerFn(sendWelcomeAndNotifyAdmins);
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -40,6 +43,10 @@ function LoginPage() {
           },
         });
         if (error) throw error;
+        // Fire-and-forget branded welcome + admin notification.
+        sendWelcome({ data: { email, full_name: fullName } }).catch((e) =>
+          console.error("welcome email failed", e),
+        );
         toast.success("Check your email to confirm your account.");
       }
     } catch (err) {

@@ -170,7 +170,7 @@ async function sendEmail(to: string, subject: string, body: string) {
       "X-Connection-Api-Key": resendKey,
     },
     body: JSON.stringify({
-      from: "Heartbeat <onboarding@resend.dev>",
+      from: "Heartbeat <noreply@flightmed.software>",
       to: [to],
       subject,
       text: body,
