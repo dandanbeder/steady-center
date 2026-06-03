@@ -1498,6 +1498,7 @@ function EditEventDialog({
         start_at: start.toISOString(),
         end_at: end.toISOString(),
         all_day: allDay,
+        is_meeting: isMeeting,
       });
     },
     onSuccess: () => {
