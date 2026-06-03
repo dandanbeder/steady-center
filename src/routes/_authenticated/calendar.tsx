@@ -22,7 +22,6 @@ import {
   Link2,
   ExternalLink,
 } from "lucide-react";
-import { Link } from "@tanstack/react-router";
 import { ReminderControls } from "@/components/reminder-controls";
 import { createNote } from "@/lib/notes";
 import { createTask, listLists } from "@/lib/tasks";
