@@ -159,6 +159,18 @@ export function NotificationsPanel() {
         )}
       </div>
 
+      <div>
+        <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
+          <Megaphone className="h-4 w-4" /> Product updates
+        </h3>
+        <RowToggle
+          label="Send me product updates"
+          description="Occasional emails about new features and tips. Account, security, and billing messages are always sent."
+          checked={optInQ.data?.optedIn ?? false}
+          onChange={(v) => optInM.mutate(v)}
+        />
+      </div>
+
       <Button onClick={() => save.mutate()} disabled={save.isPending}>
         {save.isPending ? "Saving…" : "Save preferences"}
       </Button>
