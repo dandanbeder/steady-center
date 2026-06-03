@@ -1539,12 +1539,8 @@ function EditEventDialog({
   const createTaskFromEvent = useMutation({
     mutationFn: async () => {
       const lists = await listLists();
-      const target =
-        lists.find((l) => {
-          // best-effort: same business as event
-          return event.business_id ? true : true;
-        }) ?? lists[0];
-      if (!target) throw new Error("Create a task list first");
+      const target = lists[0];
+      if (!target) throw new Error("Create a task list first in Tasks");
       await createTask({
         list_id: target.id,
         business_id: event.business_id,
