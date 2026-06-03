@@ -186,6 +186,7 @@ export async function createTask(input: {
   priority?: TaskPriority;
   due_at?: string | null;
   position?: number;
+  recurrence_rule?: RecurrenceRule | null;
 }) {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) throw new Error("Not signed in");
@@ -200,6 +201,8 @@ export async function createTask(input: {
     due_at: input.due_at ?? null,
     position: input.position ?? 0,
     owner_id: u.user.id,
+    recurrence_rule: input.recurrence_rule ?? null,
+    recurrence_anchor: input.recurrence_rule && input.due_at ? input.due_at : null,
   });
   if (error) throw error;
 }
@@ -213,3 +216,53 @@ export async function deleteTask(id: string) {
   const { error } = await supabase.from("tasks").delete().eq("id", id);
   if (error) throw error;
 }
+
+export async function bulkUpdateTasks(ids: string[], patch: Partial<Pick<Task, "status" | "priority" | "due_at">>) {
+  if (ids.length === 0) return;
+  const { error } = await supabase.from("tasks").update(patch).in("id", ids);
+  if (error) throw error;
+}
+
+export async function bulkDeleteTasks(ids: string[]) {
+  if (ids.length === 0) return;
+  const { error } = await supabase.from("tasks").delete().in("id", ids);
+  if (error) throw error;
+}
+
+export type TaskActivity = {
+  id: string;
+  task_id: string;
+  from_status: TaskStatus | null;
+  to_status: TaskStatus;
+  changed_at: string;
+  changed_by: string | null;
+};
+
+export async function listTaskActivity(taskId: string): Promise<TaskActivity[]> {
+  const { data, error } = await supabase
+    .from("task_status_history")
+    .select("id, task_id, from_status, to_status, changed_at, changed_by")
+    .eq("task_id", taskId)
+    .order("changed_at", { ascending: false })
+    .limit(50);
+  if (error) throw error;
+  return (data ?? []) as TaskActivity[];
+}
+
+/** When a recurring task is marked done, spawn the next occurrence and revert this one. */
+export async function rolloverRecurring(task: Task): Promise<void> {
+  if (!task.recurrence_rule) return;
+  const anchor = task.due_at ? new Date(task.due_at) : new Date();
+  const next = nextOccurrence(anchor, task.recurrence_rule);
+  await createTask({
+    list_id: task.list_id,
+    business_id: task.business_id,
+    title: task.title,
+    description: task.description ?? null,
+    priority: task.priority,
+    due_at: next.toISOString(),
+    position: task.position + 1,
+    recurrence_rule: task.recurrence_rule,
+  });
+}
+
