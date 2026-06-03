@@ -793,6 +793,8 @@ function ListView({
   subtasksByParent,
   listId,
   businessId,
+  selectedIds,
+  onToggleSelect,
   onChange,
   onOpen,
 }: {
@@ -800,20 +802,14 @@ function ListView({
   subtasksByParent: Map<string, Task[]>;
   listId: string;
   businessId: string | null;
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string) => void;
   onChange: () => void;
   onOpen: (t: Task) => void;
 }) {
   const grouped = STATUSES.map((s) => ({
     status: s,
-    items: tasks
-      .filter((t) => t.status === s.value)
-      .sort((a, b) => {
-        const p = PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
-        if (p !== 0) return p;
-        const ad = a.due_at ? +new Date(a.due_at) : Infinity;
-        const bd = b.due_at ? +new Date(b.due_at) : Infinity;
-        return ad - bd;
-      }),
+    items: tasks.filter((t) => t.status === s.value),
   }));
 
   return (
@@ -834,6 +830,8 @@ function ListView({
                   subtasks={subtasksByParent.get(t.id) ?? []}
                   listId={listId}
                   businessId={businessId}
+                  selected={selectedIds.has(t.id)}
+                  onToggleSelect={() => onToggleSelect(t.id)}
                   onChange={onChange}
                   onOpen={onOpen}
                 />
@@ -851,6 +849,8 @@ function TaskRow({
   subtasks,
   listId,
   businessId,
+  selected,
+  onToggleSelect,
   onChange,
   onOpen,
 }: {
@@ -858,6 +858,8 @@ function TaskRow({
   subtasks: Task[];
   listId: string;
   businessId: string | null;
+  selected: boolean;
+  onToggleSelect: () => void;
   onChange: () => void;
   onOpen: (t: Task) => void;
 }) {
@@ -865,7 +867,13 @@ function TaskRow({
   const [subTitle, setSubTitle] = useState("");
 
   const toggle = useMutation({
-    mutationFn: () => updateTask(task.id, { status: task.status === "done" ? "todo" : "done" }),
+    mutationFn: async () => {
+      const nowDone = task.status !== "done";
+      await updateTask(task.id, { status: nowDone ? "done" : "todo" });
+      if (nowDone && task.recurrence_rule) {
+        await rolloverRecurring(task);
+      }
+    },
     onSuccess: onChange,
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
@@ -895,8 +903,14 @@ function TaskRow({
   const overdue = task.due_at && new Date(task.due_at) < new Date() && task.status !== "done";
 
   return (
-    <div>
-      <div className="flex items-center gap-3 px-4 py-2.5">
+    <div className={cn(selected && "bg-accent/5")}>
+      <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5">
+        <Checkbox
+          checked={selected}
+          onCheckedChange={onToggleSelect}
+          aria-label="Select task"
+          className="opacity-60 hover:opacity-100"
+        />
         <button
           onClick={() => setOpen(!open)}
           className="text-muted-foreground hover:text-foreground"
@@ -904,13 +918,16 @@ function TaskRow({
         >
           {open ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
         </button>
-        <Checkbox checked={task.status === "done"} onCheckedChange={() => toggle.mutate()} />
+        <Checkbox checked={task.status === "done"} onCheckedChange={() => toggle.mutate()} aria-label="Mark done" />
         <Flag className="h-3.5 w-3.5 shrink-0" style={{ color: PRIORITY_COLOR[task.priority] }} />
         <button
           onClick={() => onOpen(task)}
           className={cn("flex-1 text-left text-sm truncate hover:text-accent", task.status === "done" && "line-through text-muted-foreground")}
         >
           {task.title}
+          {task.recurrence_rule && (
+            <Repeat className="inline-block h-3 w-3 ml-1.5 text-muted-foreground" />
+          )}
           {subtasks.length > 0 && (
             <span className="ml-2 text-xs text-muted-foreground">{subtasks.filter((s) => s.status === "done").length}/{subtasks.length}</span>
           )}
@@ -922,7 +939,7 @@ function TaskRow({
           </span>
         )}
         <TaskTimerInline taskId={task.id} businessId={businessId} />
-        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => del.mutate()}>
+        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => del.mutate()} title="Delete task">
           <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
         </Button>
       </div>
