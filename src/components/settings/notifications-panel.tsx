@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Bell } from "lucide-react";
+import { Bell, Megaphone } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -17,9 +18,24 @@ import {
   saveNotificationPrefs,
   type NotificationPrefs,
 } from "@/lib/user-prefs";
+import { getMarketingOptIn, setMarketingOptIn } from "@/lib/email-prefs.functions";
 
 export function NotificationsPanel() {
   const qc = useQueryClient();
+  const fetchOptIn = useServerFn(getMarketingOptIn);
+  const updateOptIn = useServerFn(setMarketingOptIn);
+  const optInQ = useQuery({
+    queryKey: ["marketing-opt-in"],
+    queryFn: () => fetchOptIn(),
+  });
+  const optInM = useMutation({
+    mutationFn: (v: boolean) => updateOptIn({ data: { optedIn: v } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["marketing-opt-in"] });
+      toast.success("Email preferences updated");
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
   const { data, isLoading } = useQuery({
     queryKey: ["notification-prefs"],
     queryFn: getNotificationPrefs,
@@ -141,6 +157,18 @@ export function NotificationsPanel() {
             <HourPicker label="Until" value={draft.quiet_end} onChange={(v) => setDraft({ ...draft, quiet_end: v })} />
           </div>
         )}
+      </div>
+
+      <div>
+        <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
+          <Megaphone className="h-4 w-4" /> Product updates
+        </h3>
+        <RowToggle
+          label="Send me product updates"
+          description="Occasional emails about new features and tips. Account, security, and billing messages are always sent."
+          checked={optInQ.data?.optedIn ?? false}
+          onChange={(v) => optInM.mutate(v)}
+        />
       </div>
 
       <Button onClick={() => save.mutate()} disabled={save.isPending}>

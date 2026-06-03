@@ -333,6 +333,30 @@ export type Database = {
           },
         ]
       }
+      email_unsubscribe_tokens: {
+        Row: {
+          created_at: string
+          id: string
+          token: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          token: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          token?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       events: {
         Row: {
           all_day: boolean
@@ -1318,6 +1342,10 @@ export type Database = {
     Functions: {
       business_for_list: { Args: { p_list_id: string }; Returns: string }
       current_membership_role: { Args: { p_business: string }; Returns: string }
+      get_or_create_unsubscribe_token: {
+        Args: { p_user_id: string }
+        Returns: string
+      }
       has_active_readonly_session: { Args: never; Returns: boolean }
       is_member: {
         Args: { p_business: string; p_min_role: string }

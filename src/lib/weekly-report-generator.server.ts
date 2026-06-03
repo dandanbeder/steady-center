@@ -8,7 +8,7 @@
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-const RESEND_URL = "https://connector-gateway.lovable.dev/resend/emails";
+// Resend is invoked via the shared email.server helper (sendMarketingEmail).
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 const ANTHROPIC_MODEL = "claude-sonnet-4-20250514";
 
@@ -519,7 +519,7 @@ export async function generateForUser(
 
   const { data: user } = await supabaseAdmin.auth.admin.getUserById(userId);
   const to = user?.user?.email;
-  if (to) await sendReportEmail(to, weekStart, weekEnd, metrics, narrative);
+  if (to) await sendReportEmail(userId, to, weekStart, weekEnd, metrics, narrative);
 
   return (inserted as { id: string }).id;
 }
@@ -718,6 +718,7 @@ function fallbackNarrative(m: ReportMetrics): ReportNarrative {
 }
 
 async function sendReportEmail(
+  userId: string,
   to: string,
   weekStart: Date,
   weekEnd: Date,
@@ -730,7 +731,15 @@ async function sendReportEmail(
     console.warn("Resend not configured — skipping email");
     return;
   }
-  const subject = `Weekly review: ${weekStart.toISOString().slice(0, 10)} → ${weekEnd
+
+  // Honour marketing opt-out: weekly review is a product-update email.
+  const { canSendMarketing, sendMarketingEmail } = await import("./email.server");
+  if (!(await canSendMarketing(userId))) {
+    console.log("[weekly-report] user opted out of product updates, skipping email", userId);
+    return;
+  }
+
+  const subject = `Your weekly review · ${weekStart.toISOString().slice(0, 10)} → ${weekEnd
     .toISOString()
     .slice(0, 10)}`;
   const o = metrics.overall;
@@ -755,7 +764,7 @@ async function sendReportEmail(
             (g) =>
               `<li style="margin:8px 0"><strong>${escapeHtml(g.point)}</strong>${
                 g.why ? ` — <span style="color:#555">${escapeHtml(g.why)}</span>` : ""
-              }<br/><span style="color:#1a73e8">→ ${escapeHtml(g.suggestion)}</span></li>`,
+              }<br/><span style="color:#7A8471">→ ${escapeHtml(g.suggestion)}</span></li>`,
           )
           .join("")}</ul>`
       : `<p style="color:#888;margin:8px 0 16px">—</p>`;
@@ -765,9 +774,7 @@ async function sendReportEmail(
           .map((x) => `<li style="margin:4px 0">${escapeHtml(x)}</li>`)
           .join("")}</ul>`
       : `<p style="color:#888;margin:8px 0 16px">—</p>`;
-  const html = `
-    <div style="font-family:-apple-system,sans-serif;max-width:600px;margin:auto;color:#1a1a1a">
-      <h2 style="margin:0 0 4px">${escapeHtml(narrative.headline || "Your weekly review")}</h2>
+  const bodyHtml = `
       <p style="color:#666;margin:0 0 20px">${weekStart.toDateString()} – ${weekEnd.toDateString()}</p>
       <table style="border-collapse:collapse;width:100%;margin-bottom:20px">
         <tr>
@@ -787,25 +794,16 @@ async function sendReportEmail(
       <h3 style="margin:0 0 4px">Growth areas</h3>${growthList(growth)}
       <h3 style="margin:0 0 4px">Goal review</h3>
       <p style="margin:8px 0 16px">${escapeHtml(narrative.goal_review ?? "")}</p>
-      <h3 style="margin:0 0 4px">Next week</h3>${plainList(nextWeek)}
-    </div>`;
-  const res = await fetch(RESEND_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${lovableKey}`,
-      "X-Connection-Api-Key": resendKey,
-    },
-    body: JSON.stringify({
-      from: "Heartbeat <noreply@flightmed.software>",
-      to: [to],
-      subject,
-      html,
-    }),
+      <h3 style="margin:0 0 4px">Next week</h3>${plainList(nextWeek)}`;
+
+  await sendMarketingEmail({
+    userId,
+    to,
+    subject,
+    heading: narrative.headline || "Your weekly review",
+    intro: "A calm look back at the week — what moved, what stalled, what to pick up next.",
+    bodyHtml,
   });
-  if (!res.ok) {
-    console.error("Resend error", res.status, (await res.text()).slice(0, 300));
-  }
 }
 
 function statCell(label: string, n: number | string) {
