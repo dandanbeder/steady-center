@@ -87,33 +87,39 @@ export function SecurityPanel() {
   const verified = totpFactors.filter((f) => f.status === "verified");
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       <ChangePasswordSection />
 
-
-      <section>
-        <h3 className="text-sm font-medium mb-1 flex items-center gap-2">
-          <Shield className="h-4 w-4" /> Two-factor authentication
-        </h3>
-        <p className="text-xs text-muted-foreground mb-3">
-          Use an authenticator app (1Password, Authy, Google Authenticator) for a one-time code at sign-in.
-          Codes are verified by the auth server.
-        </p>
+      <section className="space-y-3">
+        <header>
+          <h3 className="text-sm font-semibold flex items-center gap-2">
+            <Shield className="h-4 w-4" />
+            Two-factor authentication
+          </h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            Add a one-time code at sign-in using an authenticator app (1Password, Authy,
+            Google Authenticator). Codes are verified server-side.
+          </p>
+        </header>
 
         {verified.length > 0 ? (
           <div className="space-y-2">
             {verified.map((f) => (
-              <div key={f.id} className="flex items-center justify-between rounded-lg border border-border p-3">
-                <div className="flex items-center gap-2 text-sm">
-                  <ShieldCheck className="h-4 w-4 text-accent" />
-                  <span>{f.friendly_name ?? "Authenticator"}</span>
-                  <span className="text-xs text-muted-foreground">
-                    Added {new Date(f.created_at).toLocaleDateString()}
+              <div
+                key={f.id}
+                className="flex items-center justify-between rounded-lg border border-border px-4 py-3"
+              >
+                <div className="flex items-center gap-2.5 text-sm min-w-0">
+                  <ShieldCheck className="h-4 w-4 text-accent shrink-0" />
+                  <span className="truncate">{f.friendly_name ?? "Authenticator"}</span>
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">
+                    · Added {new Date(f.created_at).toLocaleDateString()}
                   </span>
                 </div>
                 <Button
                   variant="ghost"
                   size="sm"
+                  aria-label="Remove this two-factor method"
                   onClick={() => {
                     if (confirm("Remove this two-factor method?")) removeFactor.mutate(f.id);
                   }}
@@ -123,46 +129,62 @@ export function SecurityPanel() {
               </div>
             ))}
             <p className="text-xs text-muted-foreground">
-              Current assurance level: <span className="font-mono">{aalQ.data?.currentLevel ?? "—"}</span>
+              Current assurance level:{" "}
+              <span className="font-mono">{aalQ.data?.currentLevel ?? "—"}</span>
             </p>
           </div>
         ) : (
           <Button onClick={() => startEnroll.mutate()} disabled={startEnroll.isPending}>
-            <KeyRound className="h-4 w-4 mr-1" />
+            <KeyRound className="h-4 w-4 mr-2" />
             {startEnroll.isPending ? "Preparing…" : "Enable two-factor"}
           </Button>
         )}
       </section>
 
-      <section>
-        <h3 className="text-sm font-medium mb-1 flex items-center gap-2">
-          <LogOut className="h-4 w-4" /> Active sessions
-        </h3>
-        <p className="text-xs text-muted-foreground mb-3">
-          Sign out of every other device. This device stays signed in.
-        </p>
-        <Button variant="outline" onClick={() => revokeOthers.mutate()} disabled={revokeOthers.isPending}>
-          {revokeOthers.isPending ? "Revoking…" : "Sign out other sessions"}
+      <section className="space-y-3">
+        <header>
+          <h3 className="text-sm font-semibold flex items-center gap-2">
+            <LogOut className="h-4 w-4" />
+            Active sessions
+          </h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            Sign out everywhere else. This device stays signed in.
+          </p>
+        </header>
+        <Button
+          variant="outline"
+          onClick={() => revokeOthers.mutate()}
+          disabled={revokeOthers.isPending}
+        >
+          {revokeOthers.isPending ? "Signing out…" : "Sign out other sessions"}
         </Button>
       </section>
 
-      <section>
-        <h3 className="text-sm font-medium mb-2">Login history</h3>
+      <section className="space-y-3">
+        <header>
+          <h3 className="text-sm font-semibold">Login history</h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            Recent sign-in events on your account.
+          </p>
+        </header>
         {historyQ.isLoading ? (
           <p className="text-sm text-muted-foreground">Loading…</p>
         ) : (historyQ.data?.length ?? 0) === 0 ? (
-          <p className="text-sm text-muted-foreground">No recent sign-in events recorded yet.</p>
+          <p className="text-sm text-muted-foreground">No recent sign-in events yet.</p>
         ) : (
-          <ul className="divide-y divide-border rounded-lg border border-border">
+          <ul className="divide-y divide-border rounded-lg border border-border overflow-hidden">
             {historyQ.data!.map((e) => (
-              <li key={e.id} className="flex items-start justify-between px-3 py-2 text-sm">
-                <div>
+              <li
+                key={e.id}
+                className="flex items-start justify-between gap-3 px-4 py-3 text-sm"
+              >
+                <div className="min-w-0">
                   <p className="capitalize">{e.event.replace(/_/g, " ")}</p>
                   <p className="text-xs text-muted-foreground truncate max-w-md">
                     {e.user_agent ?? "Unknown device"}
                   </p>
                 </div>
-                <span className="text-xs text-muted-foreground whitespace-nowrap ml-3">
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
                   {new Date(e.occurred_at).toLocaleString()}
                 </span>
               </li>
