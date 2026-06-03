@@ -27,6 +27,7 @@ export type EventRow = {
   start_at: string;
   end_at: string;
   all_day: boolean;
+  is_meeting: boolean;
   source: string;
   external_id: string | null;
   created_at: string;
