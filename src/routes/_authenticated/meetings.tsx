@@ -61,6 +61,11 @@ function MeetingsPage() {
         </Button>
       </div>
 
+      <div className="mb-8 rounded-2xl border border-border bg-card p-5" style={{ boxShadow: "var(--shadow-soft)" }}>
+        <h2 className="text-lg mb-3">Upcoming meetings</h2>
+        <UpcomingMeetings horizonDays={14} limit={8} />
+      </div>
+
       {isLoading ? (
         <p className="text-muted-foreground">Loading…</p>
       ) : meetings.length === 0 ? (
