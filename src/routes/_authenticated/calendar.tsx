@@ -1439,15 +1439,45 @@ function EditEventDialog({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const qc = useQueryClient();
   const s = new Date(event.start_at);
   const e = new Date(event.end_at);
   const [title, setTitle] = useState(event.title);
+  const [calendarId, setCalendarId] = useState(event.calendar_id);
   const [date, setDate] = useState(toDateInputValue(s));
+  const [endDate, setEndDate] = useState(toDateInputValue(e));
   const [allDay, setAllDay] = useState(event.all_day);
   const [startTime, setStartTime] = useState(toTimeInputValue(s));
   const [endTime, setEndTime] = useState(toTimeInputValue(e));
   const [location, setLocation] = useState(event.location ?? "");
   const [description, setDescription] = useState(event.description ?? "");
+
+  const cal = calById.get(calendarId) ?? calById.get(event.calendar_id);
+  const anchorIso = useMemo(() => {
+    try {
+      if (allDay) return new Date(`${date}T09:00:00`).toISOString();
+      return new Date(`${date}T${startTime}:00`).toISOString();
+    } catch {
+      return event.start_at;
+    }
+  }, [allDay, date, startTime, event.start_at]);
+
+  // Backlinks: notes that link to this event
+  const { data: backlinks = [] } = useQuery({
+    queryKey: ["event-backlinks", event.id],
+    queryFn: async () => {
+      const links = await listBacklinks("event", event.id);
+      return resolveLinks(links);
+    },
+  });
+
+  // Recurrence heuristic: ICS events with shared UID = recurring series
+  const recurringHint =
+    event.source === "ics" && event.external_id
+      ? "Part of an imported recurring series"
+      : event.source === "google" && event.external_id?.includes("_")
+        ? "Recurring (synced from Google)"
+        : null;
 
   const save = useMutation({
     mutationFn: async () => {
@@ -1455,7 +1485,7 @@ function EditEventDialog({
       let end: Date;
       if (allDay) {
         start = new Date(`${date}T00:00:00`);
-        end = new Date(`${date}T23:59:59`);
+        end = new Date(`${endDate || date}T23:59:59`);
       } else {
         start = new Date(`${date}T${startTime}:00`);
         end = new Date(`${date}T${endTime}:00`);
@@ -1471,64 +1501,155 @@ function EditEventDialog({
       });
     },
     onSuccess: () => {
-      toast.success("Saved");
+      toast.success("Event updated");
       onSaved();
     },
-    onError: (err) =>
-      toast.error(err instanceof Error ? err.message : "Failed"),
+    onError: (err) => toast.error(err instanceof Error ? err.message : "Failed"),
   });
 
   const del = useMutation({
     mutationFn: () => deleteEvent(event.id),
     onSuccess: () => {
-      toast.success("Deleted");
+      toast.success("Event deleted");
       onSaved();
     },
-    onError: (err) =>
-      toast.error(err instanceof Error ? err.message : "Failed"),
+    onError: (err) => toast.error(err instanceof Error ? err.message : "Failed"),
   });
 
-  const cal = calById.get(event.calendar_id);
-  // Suppress unused warning for calendars param
-  void calendars;
+  const createNoteFromEvent = useMutation({
+    mutationFn: async () => {
+      const note = await createNote({
+        business_id: event.business_id,
+        folder_id: null,
+        title: `Notes — ${event.title}`,
+        body: `From event on ${new Date(event.start_at).toLocaleString()}${event.location ? `\nLocation: ${event.location}` : ""}${event.description ? `\n\n${event.description}` : ""}`,
+        source: "event",
+        linked_event_id: event.id,
+      });
+      return note;
+    },
+    onSuccess: () => {
+      toast.success("Note created");
+      qc.invalidateQueries({ queryKey: ["event-backlinks", event.id] });
+      qc.invalidateQueries({ queryKey: ["notes"] });
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "Failed"),
+  });
+
+  const createTaskFromEvent = useMutation({
+    mutationFn: async () => {
+      const lists = await listLists();
+      const target =
+        lists.find((l) => {
+          // best-effort: same business as event
+          return event.business_id ? true : true;
+        }) ?? lists[0];
+      if (!target) throw new Error("Create a task list first");
+      await createTask({
+        list_id: target.id,
+        business_id: event.business_id,
+        title: event.title,
+        description: event.description ?? null,
+        due_at: event.start_at,
+      });
+    },
+    onSuccess: () => {
+      toast.success("Task created");
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "Failed"),
+  });
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 pr-8">
             {cal && (
               <span
-                className="h-3 w-3 rounded-sm"
+                className="h-3 w-3 rounded-sm shrink-0"
                 style={{ backgroundColor: cal.color }}
               />
             )}
-            Edit event
+            <span className="truncate">Event details</span>
+            {event.source !== "manual" && (
+              <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                {event.source}
+              </span>
+            )}
           </DialogTitle>
         </DialogHeader>
+
         <form
           onSubmit={(ev) => {
             ev.preventDefault();
             if (!title.trim()) return;
             save.mutate();
           }}
-          className="space-y-3"
+          className="space-y-4"
         >
+          {/* Title */}
           <div>
             <Label>Title</Label>
             <Input
               value={title}
               onChange={(ev) => setTitle(ev.target.value)}
               autoFocus
+              className="text-base font-medium"
             />
           </div>
+
+          {/* Calendar */}
           <div>
-            <Label>Date</Label>
-            <Input
-              type="date"
-              value={date}
-              onChange={(ev) => setDate(ev.target.value)}
-            />
+            <Label>Calendar</Label>
+            <Select value={calendarId} onValueChange={setCalendarId}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {calendars.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    <span className="inline-flex items-center gap-2">
+                      <span
+                        className="h-2.5 w-2.5 rounded-full"
+                        style={{ backgroundColor: c.color }}
+                      />
+                      {c.name}
+                      {c.provider !== "manual" && (
+                        <span className="text-[10px] text-muted-foreground capitalize">
+                          · {c.provider}
+                        </span>
+                      )}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Note: moving between calendars is currently view-only; edit syncs to the original calendar.
+            </p>
+          </div>
+
+          {/* Date / time */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <Label>Start date</Label>
+              <Input
+                type="date"
+                value={date}
+                onChange={(ev) => setDate(ev.target.value)}
+              />
+            </div>
+            {allDay && (
+              <div>
+                <Label>End date</Label>
+                <Input
+                  type="date"
+                  value={endDate}
+                  onChange={(ev) => setEndDate(ev.target.value)}
+                />
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Checkbox
@@ -1537,13 +1658,13 @@ function EditEventDialog({
               onCheckedChange={(v) => setAllDay(!!v)}
             />
             <Label htmlFor="editallday" className="cursor-pointer">
-              All day
+              All-day event
             </Label>
           </div>
           {!allDay && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Start</Label>
+                <Label>Start time</Label>
                 <Input
                   type="time"
                   value={startTime}
@@ -1551,7 +1672,7 @@ function EditEventDialog({
                 />
               </div>
               <div>
-                <Label>End</Label>
+                <Label>End time</Label>
                 <Input
                   type="time"
                   value={endTime}
@@ -1560,25 +1681,119 @@ function EditEventDialog({
               </div>
             </div>
           )}
+
+          {/* Recurrence hint */}
+          {recurringHint && (
+            <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/40 rounded-md p-2">
+              <Repeat className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+              <span>
+                {recurringHint}. Edits apply to this instance only; manage the
+                series in the source calendar.
+              </span>
+            </div>
+          )}
+
+          {/* Location */}
           <div>
-            <Label>Location</Label>
+            <Label className="flex items-center gap-1.5">
+              <MapPin className="h-3.5 w-3.5" /> Location
+            </Label>
             <Input
               value={location}
               onChange={(ev) => setLocation(ev.target.value)}
+              placeholder="Address, room, or video link"
             />
           </div>
+
+          {/* Description */}
           <div>
-            <Label>Notes</Label>
+            <Label>Description</Label>
             <Textarea
               value={description}
               onChange={(ev) => setDescription(ev.target.value)}
               rows={3}
+              placeholder="Notes, agenda, prep…"
             />
           </div>
-          <div className="pt-2 border-t border-border">
-            <TagPeople itemType="event" itemId={event.id} businessId={event.business_id} />
+
+          {/* Reminders */}
+          <div className="border-t border-border pt-3">
+            <Label className="flex items-center gap-1.5 mb-2">Reminders</Label>
+            <ReminderControls
+              refType="event"
+              refId={event.id}
+              anchorAt={anchorIso}
+            />
           </div>
-          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between gap-2">
+
+          {/* Tagged people */}
+          <div className="border-t border-border pt-3">
+            <Label className="flex items-center gap-1.5 mb-2">
+              <Users className="h-3.5 w-3.5" /> Tagged people
+            </Label>
+            <TagPeople
+              itemType="event"
+              itemId={event.id}
+              businessId={event.business_id}
+            />
+          </div>
+
+          {/* Linked items */}
+          <div className="border-t border-border pt-3">
+            <Label className="flex items-center gap-1.5 mb-2">
+              <Link2 className="h-3.5 w-3.5" /> Linked notes
+            </Label>
+            {backlinks.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                No notes linked to this event yet.
+              </p>
+            ) : (
+              <ul className="space-y-1">
+                {backlinks.map((l: ResolvedLink) => (
+                  <li key={l.id}>
+                    {l.href ? (
+                      <Link
+                        to={l.href}
+                        className="text-sm text-primary hover:underline inline-flex items-center gap-1"
+                      >
+                        <StickyNote className="h-3.5 w-3.5" />
+                        {l.label}
+                        <ExternalLink className="h-3 w-3 opacity-60" />
+                      </Link>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">
+                        {l.label}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="flex flex-wrap gap-2 mt-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => createNoteFromEvent.mutate()}
+                disabled={createNoteFromEvent.isPending}
+              >
+                <StickyNote className="h-4 w-4 mr-1" />
+                Create note
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => createTaskFromEvent.mutate()}
+                disabled={createTaskFromEvent.isPending}
+              >
+                <ListChecks className="h-4 w-4 mr-1" />
+                Create task
+              </Button>
+            </div>
+          </div>
+
+          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between gap-2 pt-2 border-t border-border">
             <Button
               type="button"
               variant="ghost"
@@ -1594,11 +1809,8 @@ function EditEventDialog({
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                disabled={save.isPending || !title.trim()}
-              >
-                Save
+              <Button type="submit" disabled={save.isPending || !title.trim()}>
+                Save changes
               </Button>
             </div>
           </DialogFooter>
