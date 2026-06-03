@@ -136,9 +136,12 @@ function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-10 bg-background">
       <div className="w-full max-w-md">
-        <div className="flex flex-col items-center mb-8">
+        <div className="flex flex-col items-center mb-8 text-center">
           <img src={heartbeatLogo} alt="Heartbeat" className="h-16 w-auto" />
-          <p className="mt-3 text-muted-foreground">A quiet place for your work.</p>
+          <p className="mt-3 text-foreground">Organize your world. Move with purpose.</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            A workspace for your businesses, studies, projects, tasks, notes, meetings, and daily priorities.
+          </p>
         </div>
 
         <div
