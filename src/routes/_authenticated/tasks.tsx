@@ -988,7 +988,7 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
                     <SelectItem key={p} value={p}>
                       <span className="inline-flex items-center gap-2">
                         <Flag className="h-3 w-3" style={{ color: PRIORITY_COLOR[p] }} />
-                        {p}
+                        {PRIORITY_LABEL[p]}
                       </span>
                     </SelectItem>
                   ))}
