@@ -176,6 +176,19 @@ export async function listMyWeekTasks(): Promise<Task[]> {
   return (data ?? []) as Task[];
 }
 
+/** Tasks with due_at in [start, end). Includes done tasks so the planner can show completed work. */
+export async function listTasksInRange(start: Date, end: Date): Promise<Task[]> {
+  const { data, error } = await supabase
+    .from("tasks")
+    .select("*")
+    .not("due_at", "is", null)
+    .gte("due_at", start.toISOString())
+    .lt("due_at", end.toISOString())
+    .order("due_at", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as Task[];
+}
+
 export async function createTask(input: {
   list_id: string;
   business_id: string | null;
