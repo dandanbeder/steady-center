@@ -56,10 +56,12 @@ function AdminPortal() {
       <Tabs defaultValue="users" className="w-full">
         <TabsList>
           <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="subscribers">Subscribers</TabsTrigger>
           <TabsTrigger value="control">App Control</TabsTrigger>
           <TabsTrigger value="audit">Support Audit</TabsTrigger>
         </TabsList>
         <TabsContent value="users" className="mt-6"><UsersPanel /></TabsContent>
+        <TabsContent value="subscribers" className="mt-6"><SubscribersPanel /></TabsContent>
         <TabsContent value="control" className="mt-6"><AppControlPanel /></TabsContent>
         <TabsContent value="audit" className="mt-6"><AuditPanel /></TabsContent>
       </Tabs>
