@@ -246,9 +246,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <SupportSessionBanner />
         <AnnouncementBanner />
         <main className="flex-1 overflow-auto min-w-0">{children}</main>
-        <footer className="border-t border-border py-3 px-4 sm:px-8 text-center text-xs text-muted-foreground safe-bottom">
-          Powered by FlightMed (PTY) Ltd
-        </footer>
+        <AppFooter />
       </div>
     </div>
   );
