@@ -55,6 +55,8 @@ export type ListRow = {
   created_at: string;
 };
 
+export type RecurrenceRule = "daily" | "weekly" | "biweekly" | "monthly" | "yearly";
+
 export type Task = {
   id: string;
   owner_id: string;
@@ -68,7 +70,29 @@ export type Task = {
   due_at: string | null;
   position: number;
   created_at: string;
+  recurrence_rule: RecurrenceRule | null;
+  recurrence_anchor: string | null;
 };
+
+export const RECURRENCE_LABEL: Record<RecurrenceRule, string> = {
+  daily: "Daily",
+  weekly: "Weekly",
+  biweekly: "Every 2 weeks",
+  monthly: "Monthly",
+  yearly: "Yearly",
+};
+
+export function nextOccurrence(date: Date, rule: RecurrenceRule): Date {
+  const d = new Date(date);
+  switch (rule) {
+    case "daily": d.setDate(d.getDate() + 1); break;
+    case "weekly": d.setDate(d.getDate() + 7); break;
+    case "biweekly": d.setDate(d.getDate() + 14); break;
+    case "monthly": d.setMonth(d.getMonth() + 1); break;
+    case "yearly": d.setFullYear(d.getFullYear() + 1); break;
+  }
+  return d;
+}
 
 // ---- folders
 export async function listFolders(): Promise<Folder[]> {
