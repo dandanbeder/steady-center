@@ -1748,14 +1748,14 @@ function EditEventDialog({
                 {backlinks.map((l: ResolvedLink) => (
                   <li key={l.id}>
                     {l.href ? (
-                      <Link
-                        to={l.href}
+                      <a
+                        href={l.href}
                         className="text-sm text-primary hover:underline inline-flex items-center gap-1"
                       >
                         <StickyNote className="h-3.5 w-3.5" />
                         {l.label}
                         <ExternalLink className="h-3 w-3 opacity-60" />
-                      </Link>
+                      </a>
                     ) : (
                       <span className="text-sm text-muted-foreground">
                         {l.label}
