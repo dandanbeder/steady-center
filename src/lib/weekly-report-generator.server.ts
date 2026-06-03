@@ -8,7 +8,7 @@
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-const RESEND_URL = "https://connector-gateway.lovable.dev/resend/emails";
+// Resend is invoked via the shared email.server helper (sendMarketingEmail).
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 const ANTHROPIC_MODEL = "claude-sonnet-4-20250514";
 
