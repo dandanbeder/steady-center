@@ -939,6 +939,7 @@ export type Database = {
           reduced_motion: boolean
           role_title: string | null
           status: Database["public"]["Enums"]["user_status"]
+          subscription_status: Database["public"]["Enums"]["subscription_status"]
           terms_accepted_at: string | null
           theme: string
           timezone: string
@@ -968,6 +969,7 @@ export type Database = {
           reduced_motion?: boolean
           role_title?: string | null
           status?: Database["public"]["Enums"]["user_status"]
+          subscription_status?: Database["public"]["Enums"]["subscription_status"]
           terms_accepted_at?: string | null
           theme?: string
           timezone?: string
@@ -997,6 +999,7 @@ export type Database = {
           reduced_motion?: boolean
           role_title?: string | null
           status?: Database["public"]["Enums"]["user_status"]
+          subscription_status?: Database["public"]["Enums"]["subscription_status"]
           terms_accepted_at?: string | null
           theme?: string
           timezone?: string
@@ -1378,6 +1381,7 @@ export type Database = {
       membership_role: "owner" | "admin" | "member" | "commenter" | "viewer"
       membership_status: "active" | "invited"
       platform_role: "user" | "superadmin"
+      subscription_status: "trial" | "active" | "canceled" | "past_due" | "none"
       task_priority: "urgent" | "high" | "normal" | "low"
       task_status: "todo" | "in_progress" | "review" | "done"
       user_status: "active" | "suspended"
@@ -1513,6 +1517,7 @@ export const Constants = {
       membership_role: ["owner", "admin", "member", "commenter", "viewer"],
       membership_status: ["active", "invited"],
       platform_role: ["user", "superadmin"],
+      subscription_status: ["trial", "active", "canceled", "past_due", "none"],
       task_priority: ["urgent", "high", "normal", "low"],
       task_status: ["todo", "in_progress", "review", "done"],
       user_status: ["active", "suspended"],
