@@ -1202,6 +1202,9 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
   const [status, setStatus] = useState<TaskStatus>(task.status);
   const [priority, setPriority] = useState<TaskPriority>(task.priority);
   const [dueAt, setDueAt] = useState<string>(task.due_at ? task.due_at.slice(0, 10) : "");
+  const [recurrence, setRecurrence] = useState<RecurrenceRule | "none">(task.recurrence_rule ?? "none");
+
+  const dueIso = dueAt ? new Date(`${dueAt}T12:00:00`).toISOString() : null;
 
   const save = useMutation({
     mutationFn: () =>
@@ -1210,7 +1213,9 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
         description: description.trim() || null,
         status,
         priority,
-        due_at: dueAt ? new Date(`${dueAt}T12:00:00`).toISOString() : null,
+        due_at: dueIso,
+        recurrence_rule: recurrence === "none" ? null : recurrence,
+        recurrence_anchor: recurrence === "none" ? null : (dueIso ?? task.recurrence_anchor),
       }),
     onSuccess: () => {
       toast.success("Saved");
@@ -1220,13 +1225,26 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
+  const { data: activity = [] } = useQuery({
+    queryKey: ["task-activity", task.id],
+    queryFn: () => listTaskActivity(task.id),
+  });
+
+  const { data: backlinks = [] } = useQuery({
+    queryKey: ["task-backlinks", task.id],
+    queryFn: async () => {
+      const links = await listBacklinks("task", task.id);
+      return resolveLinks(links);
+    },
+  });
+
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Edit task</DialogTitle>
+          <DialogTitle>Task details</DialogTitle>
         </DialogHeader>
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div>
             <Label>Title</Label>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} />
@@ -1260,22 +1278,91 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
               </Select>
             </div>
           </div>
-          <div>
-            <Label>Due date</Label>
-            <Input type="date" value={dueAt} onChange={(e) => setDueAt(e.target.value)} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <Label>Due date</Label>
+              <Input type="date" value={dueAt} onChange={(e) => setDueAt(e.target.value)} />
+            </div>
+            <div>
+              <Label className="flex items-center gap-1.5"><Repeat className="h-3.5 w-3.5" /> Repeats</Label>
+              <Select value={recurrence} onValueChange={(v) => setRecurrence(v as RecurrenceRule | "none")}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Does not repeat</SelectItem>
+                  {(Object.keys(RECURRENCE_LABEL) as RecurrenceRule[]).map((r) => (
+                    <SelectItem key={r} value={r}>{RECURRENCE_LABEL[r]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
+          {recurrence !== "none" && !dueAt && (
+            <p className="text-xs text-muted-foreground -mt-2">Add a due date so the next occurrence has a target.</p>
+          )}
+
           <div>
             <Label>Description</Label>
-            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} />
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={4}
+              placeholder="Add context, links, or instructions…"
+            />
           </div>
+
+          <div className="pt-2 border-t border-border">
+            <ReminderControls refType="task" refId={task.id} anchorAt={dueIso} />
+          </div>
+
           <TaskTimePanel taskId={task.id} businessId={task.business_id} />
+
           <div className="pt-2 border-t border-border">
             <TagPeople itemType="task" itemId={task.id} businessId={task.business_id} />
+          </div>
+
+          {/* Linked notes/meetings/events */}
+          <div className="pt-2 border-t border-border">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+              <Link2 className="h-4 w-4" /> <span>Linked from notes</span>
+            </div>
+            {backlinks.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic">No notes link to this task yet.</p>
+            ) : (
+              <ul className="space-y-1 text-sm">
+                {backlinks.map((b) => (
+                  <li key={b.id} className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-[10px]">note</Badge>
+                    <span className="truncate">{b.label}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* Activity */}
+          <div className="pt-2 border-t border-border">
+            <div className="text-sm text-muted-foreground mb-2">Activity</div>
+            {activity.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic">No status changes yet.</p>
+            ) : (
+              <ul className="space-y-1 text-xs text-muted-foreground max-h-32 overflow-y-auto">
+                {activity.map((a) => (
+                  <li key={a.id}>
+                    {new Date(a.changed_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    {" — "}
+                    {a.from_status ? `${STATUS_LABEL[a.from_status]} → ` : ""}
+                    {STATUS_LABEL[a.to_status]}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={() => save.mutate()} disabled={save.isPending}>Save</Button>
+          <Button onClick={() => save.mutate()} disabled={save.isPending}>
+            {save.isPending ? "Saving…" : "Save changes"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
