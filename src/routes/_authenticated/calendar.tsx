@@ -1648,15 +1648,28 @@ function EditEventDialog({
               </div>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="editallday"
-              checked={allDay}
-              onCheckedChange={(v) => setAllDay(!!v)}
-            />
-            <Label htmlFor="editallday" className="cursor-pointer">
-              All-day event
-            </Label>
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="editallday"
+                checked={allDay}
+                onCheckedChange={(v) => setAllDay(!!v)}
+              />
+              <Label htmlFor="editallday" className="cursor-pointer">
+                All-day event
+              </Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="editismeeting"
+                checked={isMeeting}
+                onCheckedChange={(v) => setIsMeeting(!!v)}
+              />
+              <Label htmlFor="editismeeting" className="cursor-pointer">
+                This is a meeting
+                <span className="ml-1 text-[11px] text-muted-foreground">(auto 15 + 5 min reminders)</span>
+              </Label>
+            </div>
           </div>
           {!allDay && (
             <div className="grid grid-cols-2 gap-3">
