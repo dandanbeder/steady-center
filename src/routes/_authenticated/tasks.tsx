@@ -455,6 +455,54 @@ function ListNode({
 
 // ---------- workspace ----------
 
+type SortKey = "priority" | "due" | "created" | "title";
+type DueFilter = "all" | "overdue" | "today" | "week" | "none";
+type Filters = {
+  priority: TaskPriority | "all";
+  status: TaskStatus | "all";
+  due: DueFilter;
+};
+const DEFAULT_FILTERS: Filters = { priority: "all", status: "all", due: "all" };
+
+function matchesFilters(t: Task, f: Filters): boolean {
+  if (f.priority !== "all" && t.priority !== f.priority) return false;
+  if (f.status !== "all" && t.status !== f.status) return false;
+  if (f.due !== "all") {
+    if (f.due === "none") return !t.due_at;
+    if (!t.due_at) return false;
+    const d = new Date(t.due_at);
+    const now = new Date();
+    if (f.due === "overdue") return d < now && t.status !== "done";
+    if (f.due === "today") {
+      const start = new Date(); start.setHours(0, 0, 0, 0);
+      const end = new Date(); end.setHours(23, 59, 59, 999);
+      return d >= start && d <= end;
+    }
+    if (f.due === "week") {
+      const end = new Date(); end.setDate(end.getDate() + 7);
+      return d <= end;
+    }
+  }
+  return true;
+}
+
+function sortTasks(tasks: Task[], key: SortKey): Task[] {
+  const arr = [...tasks];
+  arr.sort((a, b) => {
+    switch (key) {
+      case "priority": return PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
+      case "due": {
+        const ad = a.due_at ? +new Date(a.due_at) : Infinity;
+        const bd = b.due_at ? +new Date(b.due_at) : Infinity;
+        return ad - bd;
+      }
+      case "title": return a.title.localeCompare(b.title);
+      case "created": return +new Date(a.created_at) - +new Date(b.created_at);
+    }
+  });
+  return arr;
+}
+
 function ListWorkspace({
   list,
   view,
@@ -477,6 +525,10 @@ function ListWorkspace({
   const invalidate = () => qc.invalidateQueries({ queryKey: ["tasks", list.id] });
 
   const [quickAdd, setQuickAdd] = useState("");
+  const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
+  const [sortKey, setSortKey] = useState<SortKey>("priority");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
   const create = useMutation({
     mutationFn: () =>
       createTask({
@@ -492,17 +544,54 @@ function ListWorkspace({
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
-  const topLevel = tasks.filter((t) => !t.parent_task_id);
-  const subtasksByParent = new Map<string, Task[]>();
-  for (const t of tasks) {
-    if (t.parent_task_id) {
-      const arr = subtasksByParent.get(t.parent_task_id) ?? [];
-      arr.push(t);
-      subtasksByParent.set(t.parent_task_id, arr);
+  const filteredTopLevel = useMemo(() => {
+    const top = tasks.filter((t) => !t.parent_task_id);
+    return sortTasks(top.filter((t) => matchesFilters(t, filters)), sortKey);
+  }, [tasks, filters, sortKey]);
+
+  const subtasksByParent = useMemo(() => {
+    const m = new Map<string, Task[]>();
+    for (const t of tasks) {
+      if (t.parent_task_id) {
+        const arr = m.get(t.parent_task_id) ?? [];
+        arr.push(t);
+        m.set(t.parent_task_id, arr);
+      }
     }
-  }
+    return m;
+  }, [tasks]);
 
   const [openTask, setOpenTask] = useState<Task | null>(null);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((s) => {
+      const n = new Set(s);
+      if (n.has(id)) n.delete(id); else n.add(id);
+      return n;
+    });
+  };
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const bulkStatus = useMutation({
+    mutationFn: (status: TaskStatus) => bulkUpdateTasks([...selectedIds], { status }),
+    onSuccess: () => { toast.success("Updated"); clearSelection(); invalidate(); },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+  const bulkPriority = useMutation({
+    mutationFn: (priority: TaskPriority) => bulkUpdateTasks([...selectedIds], { priority }),
+    onSuccess: () => { toast.success("Updated"); clearSelection(); invalidate(); },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+  const bulkDelete = useMutation({
+    mutationFn: () => bulkDeleteTasks([...selectedIds]),
+    onSuccess: () => { toast.success("Deleted"); clearSelection(); invalidate(); },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
+  const activeFilterCount =
+    (filters.priority !== "all" ? 1 : 0) +
+    (filters.status !== "all" ? 1 : 0) +
+    (filters.due !== "all" ? 1 : 0);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
@@ -533,34 +622,157 @@ function ListWorkspace({
           e.preventDefault();
           if (quickAdd.trim()) create.mutate();
         }}
-        className="mb-6 mt-4"
+        className="mb-3 mt-4"
       >
         <Input
-          placeholder="Quick add — type a task, hit Enter"
+          placeholder="Quick add — type a task, press Enter"
           value={quickAdd}
           onChange={(e) => setQuickAdd(e.target.value)}
         />
       </form>
 
+      {/* Filters + sort toolbar */}
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm">
+              <Filter className="h-3.5 w-3.5" /> Filter
+              {activeFilterCount > 0 && (
+                <Badge variant="secondary" className="ml-1 h-5 px-1.5">{activeFilterCount}</Badge>
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-56">
+            <DropdownMenuLabel className="text-xs">Priority</DropdownMenuLabel>
+            {(["all", "urgent", "high", "normal", "low"] as const).map((p) => (
+              <DropdownMenuItem key={p} onClick={() => setFilters((f) => ({ ...f, priority: p }))}>
+                {p === "all" ? "All priorities" : PRIORITY_LABEL[p]}
+                {filters.priority === p && <span className="ml-auto">✓</span>}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-xs">Status</DropdownMenuLabel>
+            {(["all", "todo", "in_progress", "review", "done"] as const).map((s) => (
+              <DropdownMenuItem key={s} onClick={() => setFilters((f) => ({ ...f, status: s }))}>
+                {s === "all" ? "All statuses" : STATUS_LABEL[s]}
+                {filters.status === s && <span className="ml-auto">✓</span>}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-xs">Due date</DropdownMenuLabel>
+            {([
+              ["all", "Any time"],
+              ["overdue", "Overdue"],
+              ["today", "Due today"],
+              ["week", "Next 7 days"],
+              ["none", "No due date"],
+            ] as const).map(([k, label]) => (
+              <DropdownMenuItem key={k} onClick={() => setFilters((f) => ({ ...f, due: k }))}>
+                {label}
+                {filters.due === k && <span className="ml-auto">✓</span>}
+              </DropdownMenuItem>
+            ))}
+            {activeFilterCount > 0 && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setFilters(DEFAULT_FILTERS)}>
+                  Clear all filters
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm">
+              <ArrowUpDown className="h-3.5 w-3.5" /> Sort: {sortKey === "priority" ? "Priority" : sortKey === "due" ? "Due date" : sortKey === "title" ? "Title" : "Created"}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            {([
+              ["priority", "Priority"],
+              ["due", "Due date"],
+              ["title", "Title (A–Z)"],
+              ["created", "Created (oldest first)"],
+            ] as const).map(([k, label]) => (
+              <DropdownMenuItem key={k} onClick={() => setSortKey(k)}>
+                {label}{sortKey === k && <span className="ml-auto">✓</span>}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <span className="text-xs text-muted-foreground ml-auto">
+          {filteredTopLevel.length} of {tasks.filter((t) => !t.parent_task_id).length} task{tasks.length === 1 ? "" : "s"}
+        </span>
+      </div>
+
+      {/* Bulk actions */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-2 mb-4 p-2 rounded-lg border border-accent/30 bg-accent/5 flex-wrap">
+          <span className="text-sm font-medium flex items-center gap-1.5">
+            <CheckSquare className="h-4 w-4" /> {selectedIds.size} selected
+          </span>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline">Status</Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              {STATUSES.map((s) => (
+                <DropdownMenuItem key={s.value} onClick={() => bulkStatus.mutate(s.value)}>
+                  {s.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline">Priority</Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              {(["urgent", "high", "normal", "low"] as TaskPriority[]).map((p) => (
+                <DropdownMenuItem key={p} onClick={() => bulkPriority.mutate(p)}>
+                  <Flag className="h-3 w-3" style={{ color: PRIORITY_COLOR[p] }} /> {PRIORITY_LABEL[p]}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-destructive"
+            onClick={() => { if (confirm(`Delete ${selectedIds.size} task${selectedIds.size === 1 ? "" : "s"}?`)) bulkDelete.mutate(); }}
+          >
+            <Trash2 className="h-3.5 w-3.5" /> Delete
+          </Button>
+          <Button size="sm" variant="ghost" onClick={clearSelection}>
+            <X className="h-3.5 w-3.5" /> Clear
+          </Button>
+        </div>
+      )}
+
       {view === "list" && (
         <ListView
-          tasks={topLevel}
+          tasks={filteredTopLevel}
           subtasksByParent={subtasksByParent}
           listId={list.id}
           businessId={businessId}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
           onChange={invalidate}
           onOpen={setOpenTask}
         />
       )}
       {view === "board" && (
         <BoardView
-          tasks={topLevel}
+          tasks={filteredTopLevel}
           onChange={invalidate}
           onOpen={setOpenTask}
         />
       )}
       {view === "calendar" && (
-        <TaskCalendarView tasks={topLevel} onOpen={setOpenTask} />
+        <TaskCalendarView tasks={filteredTopLevel} onOpen={setOpenTask} />
       )}
 
       {openTask && (
