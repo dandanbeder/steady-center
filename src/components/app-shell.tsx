@@ -20,6 +20,7 @@ import {
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { AppFooter } from "@/components/app-footer";
 
 const NAV: { to: string; label: string; icon: typeof Home }[] = [
   { to: "/today", label: "Today", icon: Home },
@@ -246,9 +247,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <SupportSessionBanner />
         <AnnouncementBanner />
         <main className="flex-1 overflow-auto min-w-0">{children}</main>
-        <footer className="border-t border-border py-3 px-4 sm:px-8 text-center text-xs text-muted-foreground safe-bottom">
-          Powered by FlightMed (PTY) Ltd
-        </footer>
+        <AppFooter />
       </div>
     </div>
   );

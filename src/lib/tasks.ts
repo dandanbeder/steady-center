@@ -24,6 +24,20 @@ export const PRIORITY_COLOR: Record<TaskPriority, string> = {
   low: "#9ca3af",    // grey
 };
 
+export const PRIORITY_LABEL: Record<TaskPriority, string> = {
+  urgent: "Urgent",
+  high: "High",
+  normal: "Normal",
+  low: "Low",
+};
+
+export const STATUS_LABEL: Record<TaskStatus, string> = {
+  todo: "To do",
+  in_progress: "In progress",
+  review: "Review",
+  done: "Done",
+};
+
 export type Folder = {
   id: string;
   owner_id: string;

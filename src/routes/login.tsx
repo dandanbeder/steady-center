@@ -167,7 +167,11 @@ function LoginPage() {
           </button>
         </div>
         <p className="mt-8 text-center text-xs text-muted-foreground">
-          Powered by FlightMed (PTY) Ltd
+          © {new Date().getFullYear()} FlightMed (PTY) Ltd. All rights reserved.
+          <span className="mx-2 opacity-50">·</span>
+          <a href="/terms" className="hover:text-foreground">Terms</a>
+          <span className="mx-2 opacity-50">·</span>
+          <a href="/privacy" className="hover:text-foreground">Privacy</a>
         </p>
       </div>
     </div>

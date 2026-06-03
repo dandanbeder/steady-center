@@ -286,30 +286,30 @@ function CalendarPage() {
                 </button>
               ))}
             </div>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="icon"
+            <div className="inline-flex items-stretch rounded-lg border border-border overflow-hidden">
+              <button
                 onClick={() => shift(-1)}
-                aria-label="Previous"
+                aria-label={`Previous ${view}`}
+                title={`Previous ${view}`}
+                className="px-2.5 hover:bg-muted min-h-[36px] inline-flex items-center justify-center"
               >
                 <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
+              </button>
+              <button
                 onClick={() => setCursor(startOfDay(new Date()))}
+                title="Jump to today"
+                className="px-3 text-sm border-x border-border hover:bg-muted min-h-[36px]"
               >
                 Today
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
+              </button>
+              <button
                 onClick={() => shift(1)}
-                aria-label="Next"
+                aria-label={`Next ${view}`}
+                title={`Next ${view}`}
+                className="px-2.5 hover:bg-muted min-h-[36px] inline-flex items-center justify-center"
               >
                 <ChevronRight className="h-4 w-4" />
-              </Button>
+              </button>
             </div>
             <Button
               variant="outline"

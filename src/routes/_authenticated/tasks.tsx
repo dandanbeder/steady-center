@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   Plus,
   Trash2,
@@ -61,6 +62,7 @@ import {
   listLists,
   listTasksByList,
   PRIORITY_COLOR,
+  PRIORITY_LABEL,
   PRIORITY_ORDER,
   STATUSES,
   updateFolder,
@@ -869,14 +871,30 @@ function TaskCalendarView({ tasks, onOpen }: { tasks: Task[]; onOpen: (t: Task) 
 
   return (
     <div>
-      <div className="flex items-center gap-2 mb-3">
-        <Button size="sm" variant="outline" onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}>
-          <ChevronRight className="h-4 w-4 rotate-180" />
-        </Button>
-        <span className="text-sm">{cursor.toLocaleDateString(undefined, { month: "long", year: "numeric" })}</span>
-        <Button size="sm" variant="outline" onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}>
+      <div className="inline-flex items-stretch rounded-lg border border-border overflow-hidden mb-3">
+        <button
+          onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}
+          aria-label="Previous month"
+          className="px-2.5 hover:bg-muted min-h-[36px] inline-flex items-center justify-center"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+        <button
+          onClick={() => setCursor(new Date())}
+          className="px-3 text-sm border-x border-border hover:bg-muted min-h-[36px]"
+        >
+          Today
+        </button>
+        <button
+          onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}
+          aria-label="Next month"
+          className="px-2.5 hover:bg-muted min-h-[36px] inline-flex items-center justify-center"
+        >
           <ChevronRight className="h-4 w-4" />
-        </Button>
+        </button>
+        <span className="px-3 text-sm self-center text-muted-foreground">
+          {cursor.toLocaleDateString(undefined, { month: "long", year: "numeric" })}
+        </span>
       </div>
       <div className="rounded-xl border border-border bg-card overflow-hidden" style={{ boxShadow: "var(--shadow-soft)" }}>
         <div className="overflow-x-auto">
@@ -987,7 +1005,7 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
                     <SelectItem key={p} value={p}>
                       <span className="inline-flex items-center gap-2">
                         <Flag className="h-3 w-3" style={{ color: PRIORITY_COLOR[p] }} />
-                        {p}
+                        {PRIORITY_LABEL[p]}
                       </span>
                     </SelectItem>
                   ))}
