@@ -904,11 +904,18 @@ export type Database = {
           density: string
           font_size: string
           full_name: string | null
+          hear_about_us: string | null
           id: string
+          marketing_opt_in: boolean
+          marketing_opt_in_at: string | null
+          onboarding_completed_at: string | null
+          organisation: string | null
           phone: string | null
           platform_role: Database["public"]["Enums"]["platform_role"]
           reduced_motion: boolean
+          role_title: string | null
           status: Database["public"]["Enums"]["user_status"]
+          terms_accepted_at: string | null
           theme: string
           timezone: string
           updated_at: string
@@ -926,11 +933,18 @@ export type Database = {
           density?: string
           font_size?: string
           full_name?: string | null
+          hear_about_us?: string | null
           id: string
+          marketing_opt_in?: boolean
+          marketing_opt_in_at?: string | null
+          onboarding_completed_at?: string | null
+          organisation?: string | null
           phone?: string | null
           platform_role?: Database["public"]["Enums"]["platform_role"]
           reduced_motion?: boolean
+          role_title?: string | null
           status?: Database["public"]["Enums"]["user_status"]
+          terms_accepted_at?: string | null
           theme?: string
           timezone?: string
           updated_at?: string
@@ -948,11 +962,18 @@ export type Database = {
           density?: string
           font_size?: string
           full_name?: string | null
+          hear_about_us?: string | null
           id?: string
+          marketing_opt_in?: boolean
+          marketing_opt_in_at?: string | null
+          onboarding_completed_at?: string | null
+          organisation?: string | null
           phone?: string | null
           platform_role?: Database["public"]["Enums"]["platform_role"]
           reduced_motion?: boolean
+          role_title?: string | null
           status?: Database["public"]["Enums"]["user_status"]
+          terms_accepted_at?: string | null
           theme?: string
           timezone?: string
           updated_at?: string

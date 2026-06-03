@@ -1,13 +1,22 @@
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/use-auth";
 import { sendWelcomeAndNotifyAdmins } from "@/lib/onboarding.functions";
+import { detectTimezone } from "@/lib/onboarding";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import heartbeatLogo from "@/assets/heartbeat-horizontal.svg";
 
@@ -16,14 +25,67 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
+// A small, curated list — covers the common cases without being overwhelming.
+const TIMEZONES = [
+  "Africa/Johannesburg",
+  "Africa/Cairo",
+  "Africa/Lagos",
+  "Africa/Nairobi",
+  "Europe/London",
+  "Europe/Berlin",
+  "Europe/Paris",
+  "Europe/Madrid",
+  "Europe/Lisbon",
+  "Europe/Amsterdam",
+  "Europe/Stockholm",
+  "Europe/Athens",
+  "Europe/Istanbul",
+  "America/New_York",
+  "America/Chicago",
+  "America/Denver",
+  "America/Los_Angeles",
+  "America/Toronto",
+  "America/Sao_Paulo",
+  "America/Mexico_City",
+  "Asia/Dubai",
+  "Asia/Singapore",
+  "Asia/Tokyo",
+  "Asia/Hong_Kong",
+  "Asia/Kolkata",
+  "Australia/Sydney",
+  "Pacific/Auckland",
+  "UTC",
+];
+
+const HEAR_OPTIONS = [
+  "A friend or colleague",
+  "Search engine",
+  "Social media",
+  "Podcast or newsletter",
+  "Conference or event",
+  "Other",
+];
+
 function LoginPage() {
   const { user, loading } = useAuth();
   const sendWelcome = useServerFn(sendWelcomeAndNotifyAdmins);
   const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [busy, setBusy] = useState(false);
+
+  // shared
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  // signup-only
   const [fullName, setFullName] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [organisation, setOrganisation] = useState("");
+  const [roleTitle, setRoleTitle] = useState("");
+  const [phone, setPhone] = useState("");
+  const [hearAbout, setHearAbout] = useState("");
+  const detected = useMemo(() => detectTimezone(), []);
+  const [timezone, setTimezone] = useState(detected);
+  const [agreed, setAgreed] = useState(false);
+  const [marketing, setMarketing] = useState(false);
 
   if (!loading && user) return <Navigate to="/" />;
 
@@ -35,16 +97,30 @@ function LoginPage() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       } else {
+        if (!agreed) {
+          toast.error("Please accept the Terms and Privacy Policy to continue.");
+          setBusy(false);
+          return;
+        }
+        const nowIso = new Date().toISOString();
         const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             emailRedirectTo: window.location.origin,
-            data: { full_name: fullName },
+            data: {
+              full_name: fullName,
+              organisation: organisation || null,
+              role_title: roleTitle || null,
+              phone: phone || null,
+              hear_about_us: hearAbout || null,
+              timezone,
+              terms_accepted_at: nowIso,
+              marketing_opt_in: marketing,
+            },
           },
         });
         if (error) throw error;
-        // Fire-and-forget branded welcome + admin notification.
         sendWelcome({ data: { email, full_name: fullName } }).catch((e) =>
           console.error("welcome email failed", e),
         );
@@ -58,9 +134,9 @@ function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-background">
+    <div className="min-h-screen flex items-center justify-center px-4 py-10 bg-background">
       <div className="w-full max-w-md">
-        <div className="flex flex-col items-center mb-10">
+        <div className="flex flex-col items-center mb-8">
           <img src={heartbeatLogo} alt="Heartbeat" className="h-16 w-auto" />
           <p className="mt-3 text-muted-foreground">A quiet place for your work.</p>
         </div>
@@ -70,21 +146,24 @@ function LoginPage() {
           style={{ boxShadow: "var(--shadow-soft)" }}
         >
           <h2 className="text-2xl mb-6">
-            {mode === "signin" ? "Welcome back" : "Create your space"}
+            {mode === "signin" ? "Welcome back" : "Create your account"}
           </h2>
 
           <form onSubmit={submit} className="space-y-4">
             {mode === "signup" && (
               <div className="space-y-2">
-                <Label htmlFor="name">Your name</Label>
+                <Label htmlFor="name">Full name</Label>
                 <Input
                   id="name"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   required
+                  maxLength={200}
+                  autoComplete="name"
                 />
               </div>
             )}
+
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -93,9 +172,11 @@ function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                maxLength={320}
                 autoComplete="email"
               />
             </div>
+
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
@@ -114,11 +195,132 @@ function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={6}
+                minLength={mode === "signup" ? 8 : 6}
                 autoComplete={mode === "signin" ? "current-password" : "new-password"}
               />
+              {mode === "signup" && (
+                <p className="text-xs text-muted-foreground">
+                  At least 8 characters.
+                </p>
+              )}
             </div>
-            <Button type="submit" disabled={busy} className="w-full">
+
+            {mode === "signup" && (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="org">
+                      Organisation <span className="text-muted-foreground">(optional)</span>
+                    </Label>
+                    <Input
+                      id="org"
+                      value={organisation}
+                      onChange={(e) => setOrganisation(e.target.value)}
+                      maxLength={200}
+                      autoComplete="organization"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="role">
+                      Role / title <span className="text-muted-foreground">(optional)</span>
+                    </Label>
+                    <Input
+                      id="role"
+                      value={roleTitle}
+                      onChange={(e) => setRoleTitle(e.target.value)}
+                      maxLength={120}
+                      autoComplete="organization-title"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone">
+                    Phone <span className="text-muted-foreground">(optional, for SMS reminders)</span>
+                  </Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    maxLength={32}
+                    placeholder="+27 82 123 4567"
+                    autoComplete="tel"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="tz">Your timezone</Label>
+                  <Select value={timezone} onValueChange={setTimezone}>
+                    <SelectTrigger id="tz"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {!TIMEZONES.includes(detected) && (
+                        <SelectItem value={detected}>{detected} (detected)</SelectItem>
+                      )}
+                      {TIMEZONES.map((tz) => (
+                        <SelectItem key={tz} value={tz}>
+                          {tz}
+                          {tz === detected ? " (detected)" : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="hear">
+                    How did you hear about us? <span className="text-muted-foreground">(optional)</span>
+                  </Label>
+                  <Select value={hearAbout} onValueChange={setHearAbout}>
+                    <SelectTrigger id="hear">
+                      <SelectValue placeholder="Pick one" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {HEAR_OPTIONS.map((o) => (
+                        <SelectItem key={o} value={o}>{o}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-3 pt-1">
+                  <label className="flex items-start gap-2 text-sm cursor-pointer">
+                    <Checkbox
+                      checked={agreed}
+                      onCheckedChange={(v) => setAgreed(v === true)}
+                      className="mt-0.5"
+                    />
+                    <span>
+                      I agree to the{" "}
+                      <a href="/terms" target="_blank" className="text-accent hover:underline">
+                        Terms
+                      </a>{" "}
+                      and{" "}
+                      <a href="/privacy" target="_blank" className="text-accent hover:underline">
+                        Privacy Policy
+                      </a>
+                      .
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-2 text-sm cursor-pointer">
+                    <Checkbox
+                      checked={marketing}
+                      onCheckedChange={(v) => setMarketing(v === true)}
+                      className="mt-0.5"
+                    />
+                    <span className="text-muted-foreground">
+                      Send me occasional product updates. No spam, unsubscribe any time.
+                    </span>
+                  </label>
+                </div>
+              </>
+            )}
+
+            <Button
+              type="submit"
+              disabled={busy || (mode === "signup" && !agreed)}
+              className="w-full"
+            >
               {busy ? "…" : mode === "signin" ? "Sign in" : "Create account"}
             </Button>
           </form>
