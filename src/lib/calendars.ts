@@ -131,7 +131,7 @@ export async function updateEvent(
   await maybePushToGoogle(data.id, data.calendar_id);
 }
 
-export async function bulkInsertEvents(rows: Array<Omit<EventRow, "id" | "owner_id" | "created_at">>) {
+export async function bulkInsertEvents(rows: Array<Omit<EventRow, "id" | "owner_id" | "created_at" | "is_meeting"> & { is_meeting?: boolean }>) {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) throw new Error("Not signed in");
 
