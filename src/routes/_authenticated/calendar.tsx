@@ -14,7 +14,19 @@ import {
   Download,
   FileText,
   FileSpreadsheet,
+  Repeat,
+  MapPin,
+  Users,
+  StickyNote,
+  ListChecks,
+  Link2,
+  ExternalLink,
 } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { ReminderControls } from "@/components/reminder-controls";
+import { createNote } from "@/lib/notes";
+import { createTask, listLists } from "@/lib/tasks";
+import { listBacklinks, resolveLinks, type ResolvedLink } from "@/lib/note-links";
 
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
