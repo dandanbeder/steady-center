@@ -12,6 +12,12 @@ import {
   LayoutList,
   Columns,
   CalendarDays,
+  Filter,
+  ArrowUpDown,
+  Repeat,
+  X,
+  CheckSquare,
+  Link2,
 } from "lucide-react";
 import {
   DndContext,
@@ -28,6 +34,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -36,11 +43,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { TagPeople } from "@/components/tag-people";
+import { ReminderControls } from "@/components/reminder-controls";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import {
   Select,
@@ -52,6 +62,8 @@ import {
 import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
 import { listBusinesses } from "@/lib/businesses";
 import {
+  bulkDeleteTasks,
+  bulkUpdateTasks,
   createFolder,
   createList,
   createTask,
@@ -60,20 +72,26 @@ import {
   deleteTask,
   listFolders,
   listLists,
+  listTaskActivity,
   listTasksByList,
   PRIORITY_COLOR,
   PRIORITY_LABEL,
   PRIORITY_ORDER,
+  RECURRENCE_LABEL,
+  rolloverRecurring,
   STATUSES,
+  STATUS_LABEL,
   updateFolder,
   updateList,
   updateTask,
   type Folder,
   type ListRow,
+  type RecurrenceRule,
   type Task,
   type TaskPriority,
   type TaskStatus,
 } from "@/lib/tasks";
+import { listBacklinks, resolveLinks } from "@/lib/note-links";
 import { cn } from "@/lib/utils";
 import { TaskTimerInline, TaskTimePanel } from "@/components/task-timer";
 
@@ -437,6 +455,54 @@ function ListNode({
 
 // ---------- workspace ----------
 
+type SortKey = "priority" | "due" | "created" | "title";
+type DueFilter = "all" | "overdue" | "today" | "week" | "none";
+type Filters = {
+  priority: TaskPriority | "all";
+  status: TaskStatus | "all";
+  due: DueFilter;
+};
+const DEFAULT_FILTERS: Filters = { priority: "all", status: "all", due: "all" };
+
+function matchesFilters(t: Task, f: Filters): boolean {
+  if (f.priority !== "all" && t.priority !== f.priority) return false;
+  if (f.status !== "all" && t.status !== f.status) return false;
+  if (f.due !== "all") {
+    if (f.due === "none") return !t.due_at;
+    if (!t.due_at) return false;
+    const d = new Date(t.due_at);
+    const now = new Date();
+    if (f.due === "overdue") return d < now && t.status !== "done";
+    if (f.due === "today") {
+      const start = new Date(); start.setHours(0, 0, 0, 0);
+      const end = new Date(); end.setHours(23, 59, 59, 999);
+      return d >= start && d <= end;
+    }
+    if (f.due === "week") {
+      const end = new Date(); end.setDate(end.getDate() + 7);
+      return d <= end;
+    }
+  }
+  return true;
+}
+
+function sortTasks(tasks: Task[], key: SortKey): Task[] {
+  const arr = [...tasks];
+  arr.sort((a, b) => {
+    switch (key) {
+      case "priority": return PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
+      case "due": {
+        const ad = a.due_at ? +new Date(a.due_at) : Infinity;
+        const bd = b.due_at ? +new Date(b.due_at) : Infinity;
+        return ad - bd;
+      }
+      case "title": return a.title.localeCompare(b.title);
+      case "created": return +new Date(a.created_at) - +new Date(b.created_at);
+    }
+  });
+  return arr;
+}
+
 function ListWorkspace({
   list,
   view,
@@ -459,6 +525,10 @@ function ListWorkspace({
   const invalidate = () => qc.invalidateQueries({ queryKey: ["tasks", list.id] });
 
   const [quickAdd, setQuickAdd] = useState("");
+  const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
+  const [sortKey, setSortKey] = useState<SortKey>("priority");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
   const create = useMutation({
     mutationFn: () =>
       createTask({
@@ -474,17 +544,54 @@ function ListWorkspace({
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
-  const topLevel = tasks.filter((t) => !t.parent_task_id);
-  const subtasksByParent = new Map<string, Task[]>();
-  for (const t of tasks) {
-    if (t.parent_task_id) {
-      const arr = subtasksByParent.get(t.parent_task_id) ?? [];
-      arr.push(t);
-      subtasksByParent.set(t.parent_task_id, arr);
+  const filteredTopLevel = useMemo(() => {
+    const top = tasks.filter((t) => !t.parent_task_id);
+    return sortTasks(top.filter((t) => matchesFilters(t, filters)), sortKey);
+  }, [tasks, filters, sortKey]);
+
+  const subtasksByParent = useMemo(() => {
+    const m = new Map<string, Task[]>();
+    for (const t of tasks) {
+      if (t.parent_task_id) {
+        const arr = m.get(t.parent_task_id) ?? [];
+        arr.push(t);
+        m.set(t.parent_task_id, arr);
+      }
     }
-  }
+    return m;
+  }, [tasks]);
 
   const [openTask, setOpenTask] = useState<Task | null>(null);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((s) => {
+      const n = new Set(s);
+      if (n.has(id)) n.delete(id); else n.add(id);
+      return n;
+    });
+  };
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const bulkStatus = useMutation({
+    mutationFn: (status: TaskStatus) => bulkUpdateTasks([...selectedIds], { status }),
+    onSuccess: () => { toast.success("Updated"); clearSelection(); invalidate(); },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+  const bulkPriority = useMutation({
+    mutationFn: (priority: TaskPriority) => bulkUpdateTasks([...selectedIds], { priority }),
+    onSuccess: () => { toast.success("Updated"); clearSelection(); invalidate(); },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+  const bulkDelete = useMutation({
+    mutationFn: () => bulkDeleteTasks([...selectedIds]),
+    onSuccess: () => { toast.success("Deleted"); clearSelection(); invalidate(); },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
+  const activeFilterCount =
+    (filters.priority !== "all" ? 1 : 0) +
+    (filters.status !== "all" ? 1 : 0) +
+    (filters.due !== "all" ? 1 : 0);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
@@ -515,34 +622,157 @@ function ListWorkspace({
           e.preventDefault();
           if (quickAdd.trim()) create.mutate();
         }}
-        className="mb-6 mt-4"
+        className="mb-3 mt-4"
       >
         <Input
-          placeholder="Quick add — type a task, hit Enter"
+          placeholder="Quick add — type a task, press Enter"
           value={quickAdd}
           onChange={(e) => setQuickAdd(e.target.value)}
         />
       </form>
 
+      {/* Filters + sort toolbar */}
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm">
+              <Filter className="h-3.5 w-3.5" /> Filter
+              {activeFilterCount > 0 && (
+                <Badge variant="secondary" className="ml-1 h-5 px-1.5">{activeFilterCount}</Badge>
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-56">
+            <DropdownMenuLabel className="text-xs">Priority</DropdownMenuLabel>
+            {(["all", "urgent", "high", "normal", "low"] as const).map((p) => (
+              <DropdownMenuItem key={p} onClick={() => setFilters((f) => ({ ...f, priority: p }))}>
+                {p === "all" ? "All priorities" : PRIORITY_LABEL[p]}
+                {filters.priority === p && <span className="ml-auto">✓</span>}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-xs">Status</DropdownMenuLabel>
+            {(["all", "todo", "in_progress", "review", "done"] as const).map((s) => (
+              <DropdownMenuItem key={s} onClick={() => setFilters((f) => ({ ...f, status: s }))}>
+                {s === "all" ? "All statuses" : STATUS_LABEL[s]}
+                {filters.status === s && <span className="ml-auto">✓</span>}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-xs">Due date</DropdownMenuLabel>
+            {([
+              ["all", "Any time"],
+              ["overdue", "Overdue"],
+              ["today", "Due today"],
+              ["week", "Next 7 days"],
+              ["none", "No due date"],
+            ] as const).map(([k, label]) => (
+              <DropdownMenuItem key={k} onClick={() => setFilters((f) => ({ ...f, due: k }))}>
+                {label}
+                {filters.due === k && <span className="ml-auto">✓</span>}
+              </DropdownMenuItem>
+            ))}
+            {activeFilterCount > 0 && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setFilters(DEFAULT_FILTERS)}>
+                  Clear all filters
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm">
+              <ArrowUpDown className="h-3.5 w-3.5" /> Sort: {sortKey === "priority" ? "Priority" : sortKey === "due" ? "Due date" : sortKey === "title" ? "Title" : "Created"}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            {([
+              ["priority", "Priority"],
+              ["due", "Due date"],
+              ["title", "Title (A–Z)"],
+              ["created", "Created (oldest first)"],
+            ] as const).map(([k, label]) => (
+              <DropdownMenuItem key={k} onClick={() => setSortKey(k)}>
+                {label}{sortKey === k && <span className="ml-auto">✓</span>}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <span className="text-xs text-muted-foreground ml-auto">
+          {filteredTopLevel.length} of {tasks.filter((t) => !t.parent_task_id).length} task{tasks.length === 1 ? "" : "s"}
+        </span>
+      </div>
+
+      {/* Bulk actions */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-2 mb-4 p-2 rounded-lg border border-accent/30 bg-accent/5 flex-wrap">
+          <span className="text-sm font-medium flex items-center gap-1.5">
+            <CheckSquare className="h-4 w-4" /> {selectedIds.size} selected
+          </span>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline">Status</Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              {STATUSES.map((s) => (
+                <DropdownMenuItem key={s.value} onClick={() => bulkStatus.mutate(s.value)}>
+                  {s.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline">Priority</Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              {(["urgent", "high", "normal", "low"] as TaskPriority[]).map((p) => (
+                <DropdownMenuItem key={p} onClick={() => bulkPriority.mutate(p)}>
+                  <Flag className="h-3 w-3" style={{ color: PRIORITY_COLOR[p] }} /> {PRIORITY_LABEL[p]}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-destructive"
+            onClick={() => { if (confirm(`Delete ${selectedIds.size} task${selectedIds.size === 1 ? "" : "s"}?`)) bulkDelete.mutate(); }}
+          >
+            <Trash2 className="h-3.5 w-3.5" /> Delete
+          </Button>
+          <Button size="sm" variant="ghost" onClick={clearSelection}>
+            <X className="h-3.5 w-3.5" /> Clear
+          </Button>
+        </div>
+      )}
+
       {view === "list" && (
         <ListView
-          tasks={topLevel}
+          tasks={filteredTopLevel}
           subtasksByParent={subtasksByParent}
           listId={list.id}
           businessId={businessId}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
           onChange={invalidate}
           onOpen={setOpenTask}
         />
       )}
       {view === "board" && (
         <BoardView
-          tasks={topLevel}
+          tasks={filteredTopLevel}
           onChange={invalidate}
           onOpen={setOpenTask}
         />
       )}
       {view === "calendar" && (
-        <TaskCalendarView tasks={topLevel} onOpen={setOpenTask} />
+        <TaskCalendarView tasks={filteredTopLevel} onOpen={setOpenTask} />
       )}
 
       {openTask && (
@@ -563,6 +793,8 @@ function ListView({
   subtasksByParent,
   listId,
   businessId,
+  selectedIds,
+  onToggleSelect,
   onChange,
   onOpen,
 }: {
@@ -570,20 +802,14 @@ function ListView({
   subtasksByParent: Map<string, Task[]>;
   listId: string;
   businessId: string | null;
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string) => void;
   onChange: () => void;
   onOpen: (t: Task) => void;
 }) {
   const grouped = STATUSES.map((s) => ({
     status: s,
-    items: tasks
-      .filter((t) => t.status === s.value)
-      .sort((a, b) => {
-        const p = PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
-        if (p !== 0) return p;
-        const ad = a.due_at ? +new Date(a.due_at) : Infinity;
-        const bd = b.due_at ? +new Date(b.due_at) : Infinity;
-        return ad - bd;
-      }),
+    items: tasks.filter((t) => t.status === s.value),
   }));
 
   return (
@@ -604,6 +830,8 @@ function ListView({
                   subtasks={subtasksByParent.get(t.id) ?? []}
                   listId={listId}
                   businessId={businessId}
+                  selected={selectedIds.has(t.id)}
+                  onToggleSelect={() => onToggleSelect(t.id)}
                   onChange={onChange}
                   onOpen={onOpen}
                 />
@@ -621,6 +849,8 @@ function TaskRow({
   subtasks,
   listId,
   businessId,
+  selected,
+  onToggleSelect,
   onChange,
   onOpen,
 }: {
@@ -628,6 +858,8 @@ function TaskRow({
   subtasks: Task[];
   listId: string;
   businessId: string | null;
+  selected: boolean;
+  onToggleSelect: () => void;
   onChange: () => void;
   onOpen: (t: Task) => void;
 }) {
@@ -635,7 +867,13 @@ function TaskRow({
   const [subTitle, setSubTitle] = useState("");
 
   const toggle = useMutation({
-    mutationFn: () => updateTask(task.id, { status: task.status === "done" ? "todo" : "done" }),
+    mutationFn: async () => {
+      const nowDone = task.status !== "done";
+      await updateTask(task.id, { status: nowDone ? "done" : "todo" });
+      if (nowDone && task.recurrence_rule) {
+        await rolloverRecurring(task);
+      }
+    },
     onSuccess: onChange,
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
@@ -665,8 +903,14 @@ function TaskRow({
   const overdue = task.due_at && new Date(task.due_at) < new Date() && task.status !== "done";
 
   return (
-    <div>
-      <div className="flex items-center gap-3 px-4 py-2.5">
+    <div className={cn(selected && "bg-accent/5")}>
+      <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5">
+        <Checkbox
+          checked={selected}
+          onCheckedChange={onToggleSelect}
+          aria-label="Select task"
+          className="opacity-60 hover:opacity-100"
+        />
         <button
           onClick={() => setOpen(!open)}
           className="text-muted-foreground hover:text-foreground"
@@ -674,13 +918,16 @@ function TaskRow({
         >
           {open ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
         </button>
-        <Checkbox checked={task.status === "done"} onCheckedChange={() => toggle.mutate()} />
+        <Checkbox checked={task.status === "done"} onCheckedChange={() => toggle.mutate()} aria-label="Mark done" />
         <Flag className="h-3.5 w-3.5 shrink-0" style={{ color: PRIORITY_COLOR[task.priority] }} />
         <button
           onClick={() => onOpen(task)}
           className={cn("flex-1 text-left text-sm truncate hover:text-accent", task.status === "done" && "line-through text-muted-foreground")}
         >
           {task.title}
+          {task.recurrence_rule && (
+            <Repeat className="inline-block h-3 w-3 ml-1.5 text-muted-foreground" />
+          )}
           {subtasks.length > 0 && (
             <span className="ml-2 text-xs text-muted-foreground">{subtasks.filter((s) => s.status === "done").length}/{subtasks.length}</span>
           )}
@@ -692,7 +939,7 @@ function TaskRow({
           </span>
         )}
         <TaskTimerInline taskId={task.id} businessId={businessId} />
-        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => del.mutate()}>
+        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => del.mutate()} title="Delete task">
           <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
         </Button>
       </div>
@@ -955,6 +1202,9 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
   const [status, setStatus] = useState<TaskStatus>(task.status);
   const [priority, setPriority] = useState<TaskPriority>(task.priority);
   const [dueAt, setDueAt] = useState<string>(task.due_at ? task.due_at.slice(0, 10) : "");
+  const [recurrence, setRecurrence] = useState<RecurrenceRule | "none">(task.recurrence_rule ?? "none");
+
+  const dueIso = dueAt ? new Date(`${dueAt}T12:00:00`).toISOString() : null;
 
   const save = useMutation({
     mutationFn: () =>
@@ -963,7 +1213,9 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
         description: description.trim() || null,
         status,
         priority,
-        due_at: dueAt ? new Date(`${dueAt}T12:00:00`).toISOString() : null,
+        due_at: dueIso,
+        recurrence_rule: recurrence === "none" ? null : recurrence,
+        recurrence_anchor: recurrence === "none" ? null : (dueIso ?? task.recurrence_anchor),
       }),
     onSuccess: () => {
       toast.success("Saved");
@@ -973,13 +1225,26 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
+  const { data: activity = [] } = useQuery({
+    queryKey: ["task-activity", task.id],
+    queryFn: () => listTaskActivity(task.id),
+  });
+
+  const { data: backlinks = [] } = useQuery({
+    queryKey: ["task-backlinks", task.id],
+    queryFn: async () => {
+      const links = await listBacklinks("task", task.id);
+      return resolveLinks(links);
+    },
+  });
+
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Edit task</DialogTitle>
+          <DialogTitle>Task details</DialogTitle>
         </DialogHeader>
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div>
             <Label>Title</Label>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} />
@@ -1013,22 +1278,91 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
               </Select>
             </div>
           </div>
-          <div>
-            <Label>Due date</Label>
-            <Input type="date" value={dueAt} onChange={(e) => setDueAt(e.target.value)} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <Label>Due date</Label>
+              <Input type="date" value={dueAt} onChange={(e) => setDueAt(e.target.value)} />
+            </div>
+            <div>
+              <Label className="flex items-center gap-1.5"><Repeat className="h-3.5 w-3.5" /> Repeats</Label>
+              <Select value={recurrence} onValueChange={(v) => setRecurrence(v as RecurrenceRule | "none")}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Does not repeat</SelectItem>
+                  {(Object.keys(RECURRENCE_LABEL) as RecurrenceRule[]).map((r) => (
+                    <SelectItem key={r} value={r}>{RECURRENCE_LABEL[r]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
+          {recurrence !== "none" && !dueAt && (
+            <p className="text-xs text-muted-foreground -mt-2">Add a due date so the next occurrence has a target.</p>
+          )}
+
           <div>
             <Label>Description</Label>
-            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} />
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={4}
+              placeholder="Add context, links, or instructions…"
+            />
           </div>
+
+          <div className="pt-2 border-t border-border">
+            <ReminderControls refType="task" refId={task.id} anchorAt={dueIso} />
+          </div>
+
           <TaskTimePanel taskId={task.id} businessId={task.business_id} />
+
           <div className="pt-2 border-t border-border">
             <TagPeople itemType="task" itemId={task.id} businessId={task.business_id} />
+          </div>
+
+          {/* Linked notes/meetings/events */}
+          <div className="pt-2 border-t border-border">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+              <Link2 className="h-4 w-4" /> <span>Linked from notes</span>
+            </div>
+            {backlinks.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic">No notes link to this task yet.</p>
+            ) : (
+              <ul className="space-y-1 text-sm">
+                {backlinks.map((b) => (
+                  <li key={b.id} className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-[10px]">note</Badge>
+                    <span className="truncate">{b.label}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* Activity */}
+          <div className="pt-2 border-t border-border">
+            <div className="text-sm text-muted-foreground mb-2">Activity</div>
+            {activity.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic">No status changes yet.</p>
+            ) : (
+              <ul className="space-y-1 text-xs text-muted-foreground max-h-32 overflow-y-auto">
+                {activity.map((a) => (
+                  <li key={a.id}>
+                    {new Date(a.changed_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    {" — "}
+                    {a.from_status ? `${STATUS_LABEL[a.from_status]} → ` : ""}
+                    {STATUS_LABEL[a.to_status]}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={() => save.mutate()} disabled={save.isPending}>Save</Button>
+          <Button onClick={() => save.mutate()} disabled={save.isPending}>
+            {save.isPending ? "Saving…" : "Save changes"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

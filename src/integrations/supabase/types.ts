@@ -1096,6 +1096,8 @@ export type Database = {
           parent_task_id: string | null
           position: number
           priority: Database["public"]["Enums"]["task_priority"]
+          recurrence_anchor: string | null
+          recurrence_rule: string | null
           source_note_id: string | null
           source_type: string | null
           status: Database["public"]["Enums"]["task_status"]
@@ -1115,6 +1117,8 @@ export type Database = {
           parent_task_id?: string | null
           position?: number
           priority?: Database["public"]["Enums"]["task_priority"]
+          recurrence_anchor?: string | null
+          recurrence_rule?: string | null
           source_note_id?: string | null
           source_type?: string | null
           status?: Database["public"]["Enums"]["task_status"]
@@ -1134,6 +1138,8 @@ export type Database = {
           parent_task_id?: string | null
           position?: number
           priority?: Database["public"]["Enums"]["task_priority"]
+          recurrence_anchor?: string | null
+          recurrence_rule?: string | null
           source_note_id?: string | null
           source_type?: string | null
           status?: Database["public"]["Enums"]["task_status"]
