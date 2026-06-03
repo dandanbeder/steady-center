@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { ShieldAlert, Plus, Trash2, Eye, Edit3 } from "lucide-react";
 import { useIsPlatformAdmin } from "@/hooks/use-is-platform-admin";
+import { SubscribersPanel } from "@/components/admin/subscribers-panel";
 import { useActiveSupportSession } from "@/hooks/use-support-session";
 import {
   adminListUsers,
@@ -56,10 +57,12 @@ function AdminPortal() {
       <Tabs defaultValue="users" className="w-full">
         <TabsList>
           <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="subscribers">Subscribers</TabsTrigger>
           <TabsTrigger value="control">App Control</TabsTrigger>
           <TabsTrigger value="audit">Support Audit</TabsTrigger>
         </TabsList>
         <TabsContent value="users" className="mt-6"><UsersPanel /></TabsContent>
+        <TabsContent value="subscribers" className="mt-6"><SubscribersPanel /></TabsContent>
         <TabsContent value="control" className="mt-6"><AppControlPanel /></TabsContent>
         <TabsContent value="audit" className="mt-6"><AuditPanel /></TabsContent>
       </Tabs>
