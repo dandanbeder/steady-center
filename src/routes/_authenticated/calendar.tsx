@@ -1446,6 +1446,7 @@ function EditEventDialog({
   const [date, setDate] = useState(toDateInputValue(s));
   const [endDate, setEndDate] = useState(toDateInputValue(e));
   const [allDay, setAllDay] = useState(event.all_day);
+  const [isMeeting, setIsMeeting] = useState(event.is_meeting ?? false);
   const [startTime, setStartTime] = useState(toTimeInputValue(s));
   const [endTime, setEndTime] = useState(toTimeInputValue(e));
   const [location, setLocation] = useState(event.location ?? "");
