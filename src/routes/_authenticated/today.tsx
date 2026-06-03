@@ -5,6 +5,7 @@ import { listBusinesses } from "@/lib/businesses";
 import { listCalendars, listEvents } from "@/lib/calendars";
 import { useAuth } from "@/hooks/use-auth";
 import { MyInvitationsBanner } from "@/components/my-invitations-banner";
+import { UpcomingMeetings } from "@/components/upcoming-meetings";
 
 export const Route = createFileRoute("/_authenticated/today")({
   head: () => ({ meta: [{ title: "Today · Heartbeat" }] }),
