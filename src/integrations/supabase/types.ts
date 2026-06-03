@@ -368,6 +368,7 @@ export type Database = {
           end_at: string
           external_id: string | null
           id: string
+          is_meeting: boolean
           location: string | null
           owner_id: string
           source: string
@@ -384,6 +385,7 @@ export type Database = {
           end_at: string
           external_id?: string | null
           id?: string
+          is_meeting?: boolean
           location?: string | null
           owner_id: string
           source?: string
@@ -400,6 +402,7 @@ export type Database = {
           end_at?: string
           external_id?: string | null
           id?: string
+          is_meeting?: boolean
           location?: string | null
           owner_id?: string
           source?: string
@@ -1018,7 +1021,9 @@ export type Database = {
           channel: string
           created_at: string
           id: string
+          kind: string
           last_error: string | null
+          lead_minutes: number | null
           owner_id: string
           ref_id: string
           ref_type: string
@@ -1030,7 +1035,9 @@ export type Database = {
           channel?: string
           created_at?: string
           id?: string
+          kind?: string
           last_error?: string | null
+          lead_minutes?: number | null
           owner_id: string
           ref_id: string
           ref_type: string
@@ -1042,7 +1049,9 @@ export type Database = {
           channel?: string
           created_at?: string
           id?: string
+          kind?: string
           last_error?: string | null
+          lead_minutes?: number | null
           owner_id?: string
           ref_id?: string
           ref_type?: string

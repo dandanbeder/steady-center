@@ -1446,6 +1446,7 @@ function EditEventDialog({
   const [date, setDate] = useState(toDateInputValue(s));
   const [endDate, setEndDate] = useState(toDateInputValue(e));
   const [allDay, setAllDay] = useState(event.all_day);
+  const [isMeeting, setIsMeeting] = useState(event.is_meeting ?? false);
   const [startTime, setStartTime] = useState(toTimeInputValue(s));
   const [endTime, setEndTime] = useState(toTimeInputValue(e));
   const [location, setLocation] = useState(event.location ?? "");
@@ -1497,6 +1498,7 @@ function EditEventDialog({
         start_at: start.toISOString(),
         end_at: end.toISOString(),
         all_day: allDay,
+        is_meeting: isMeeting,
       });
     },
     onSuccess: () => {
@@ -1646,15 +1648,28 @@ function EditEventDialog({
               </div>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="editallday"
-              checked={allDay}
-              onCheckedChange={(v) => setAllDay(!!v)}
-            />
-            <Label htmlFor="editallday" className="cursor-pointer">
-              All-day event
-            </Label>
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="editallday"
+                checked={allDay}
+                onCheckedChange={(v) => setAllDay(!!v)}
+              />
+              <Label htmlFor="editallday" className="cursor-pointer">
+                All-day event
+              </Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="editismeeting"
+                checked={isMeeting}
+                onCheckedChange={(v) => setIsMeeting(!!v)}
+              />
+              <Label htmlFor="editismeeting" className="cursor-pointer">
+                This is a meeting
+                <span className="ml-1 text-[11px] text-muted-foreground">(auto 15 + 5 min reminders)</span>
+              </Label>
+            </div>
           </div>
           {!allDay && (
             <div className="grid grid-cols-2 gap-3">

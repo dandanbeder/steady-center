@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.ensure_meeting_reminders() FROM PUBLIC, anon, authenticated;
