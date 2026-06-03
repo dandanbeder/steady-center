@@ -5,6 +5,7 @@ import { listBusinesses } from "@/lib/businesses";
 import { listCalendars, listEvents } from "@/lib/calendars";
 import { useAuth } from "@/hooks/use-auth";
 import { MyInvitationsBanner } from "@/components/my-invitations-banner";
+import { UpcomingMeetings } from "@/components/upcoming-meetings";
 
 export const Route = createFileRoute("/_authenticated/today")({
   head: () => ({ meta: [{ title: "Today · Heartbeat" }] }),
@@ -96,7 +97,7 @@ function TodayPage() {
         </Card>
         <Card title="On your plate"><p className="text-sm text-muted-foreground">Tasks will land here.</p></Card>
         <Card title="Recent notes"><p className="text-sm text-muted-foreground">Notes you've touched lately.</p></Card>
-        <Card title="Meetings"><p className="text-sm text-muted-foreground">Today's and upcoming meetings.</p></Card>
+        <Card title="Upcoming meetings"><UpcomingMeetings horizonDays={7} limit={5} /></Card>
       </div>
     </div>
   );

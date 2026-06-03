@@ -21,6 +21,7 @@ import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
 import { listBusinesses } from "@/lib/businesses";
 import { listMeetings, deleteMeeting, uploadMeetingAudio } from "@/lib/meetings";
 import { processMeeting } from "@/lib/meetings.functions";
+import { UpcomingMeetings } from "@/components/upcoming-meetings";
 
 export const Route = createFileRoute("/_authenticated/meetings")({
   component: MeetingsPage,
@@ -58,6 +59,11 @@ function MeetingsPage() {
         <Button onClick={() => setOpen(true)} className="gap-2">
           <Plus className="h-4 w-4" /> New meeting note
         </Button>
+      </div>
+
+      <div className="mb-8 rounded-2xl border border-border bg-card p-5" style={{ boxShadow: "var(--shadow-soft)" }}>
+        <h2 className="text-lg mb-3">Upcoming meetings</h2>
+        <UpcomingMeetings horizonDays={14} limit={8} />
       </div>
 
       {isLoading ? (
