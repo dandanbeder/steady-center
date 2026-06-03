@@ -139,9 +139,6 @@ function LoginPage() {
         <div className="flex flex-col items-center mb-8 text-center">
           <img src={heartbeatLogo} alt="Heartbeat" className="h-16 w-auto" />
           <p className="mt-3 text-foreground">Organize your world. Move with purpose.</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            A workspace for your businesses, studies, projects, tasks, notes, meetings, and daily priorities.
-          </p>
         </div>
 
         <div
