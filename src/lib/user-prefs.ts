@@ -9,6 +9,8 @@ export type NotificationEvents = {
   weekly_review: boolean;
   meeting_summary_ready: boolean;
   tagged: boolean;
+  meeting_extra_lead_minutes: number | null;
+  meeting_quiet_hours_bypass: boolean;
 };
 export type NotificationPrefs = {
   channels: NotificationChannels;
@@ -27,6 +29,8 @@ const DEFAULT_NOTIF: NotificationPrefs = {
     weekly_review: true,
     meeting_summary_ready: true,
     tagged: true,
+    meeting_extra_lead_minutes: null,
+    meeting_quiet_hours_bypass: true,
   },
   quiet_enabled: false,
   quiet_start: 22,
