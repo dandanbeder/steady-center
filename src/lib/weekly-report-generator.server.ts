@@ -519,7 +519,7 @@ export async function generateForUser(
 
   const { data: user } = await supabaseAdmin.auth.admin.getUserById(userId);
   const to = user?.user?.email;
-  if (to) await sendReportEmail(to, weekStart, weekEnd, metrics, narrative);
+  if (to) await sendReportEmail(userId, to, weekStart, weekEnd, metrics, narrative);
 
   return (inserted as { id: string }).id;
 }
