@@ -118,6 +118,7 @@ export async function updateEvent(
     start_at: string;
     end_at: string;
     all_day: boolean;
+    is_meeting: boolean;
   }>,
 ) {
   const { data, error } = await supabase
