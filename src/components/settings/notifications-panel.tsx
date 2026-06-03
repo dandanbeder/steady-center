@@ -160,10 +160,41 @@ export function NotificationsPanel() {
       </div>
 
       <div>
-        <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
-          <Megaphone className="h-4 w-4" /> Product updates
-        </h3>
-        <RowToggle
+        <h3 className="text-sm font-medium mb-3">Meeting reminders</h3>
+        <p className="text-xs text-muted-foreground mb-3">
+          Meetings always get a 15-minute and 5-minute reminder on your selected channels.
+          Optionally add one extra earlier reminder.
+        </p>
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-muted-foreground">Extra lead time:</span>
+          <Select
+            value={draft.events.meeting_extra_lead_minutes === null
+              ? "none"
+              : String(draft.events.meeting_extra_lead_minutes)}
+            onValueChange={(v) =>
+              setEvent("meeting_extra_lead_minutes", v === "none" ? null : Number(v))
+            }
+          >
+            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">None (15 & 5 only)</SelectItem>
+              {[30, 60, 120, 1440].map((m) => (
+                <SelectItem key={m} value={String(m)}>
+                  {m < 60 ? `${m} min before` : m < 1440 ? `${m / 60} hr before` : "1 day before"}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="mt-3">
+          <RowToggle
+            label="Deliver during Quiet hours"
+            description="Meetings are time-critical — keep this on so you never miss one."
+            checked={draft.events.meeting_quiet_hours_bypass}
+            onChange={(v) => setEvent("meeting_quiet_hours_bypass", v)}
+          />
+        </div>
+      </div>
           label="Send me product updates"
           description="Occasional emails about new features and tips. Account, security, and billing messages are always sent."
           checked={optInQ.data?.optedIn ?? false}
