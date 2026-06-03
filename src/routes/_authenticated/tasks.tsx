@@ -12,6 +12,12 @@ import {
   LayoutList,
   Columns,
   CalendarDays,
+  Filter,
+  ArrowUpDown,
+  Repeat,
+  X,
+  CheckSquare,
+  Link2,
 } from "lucide-react";
 import {
   DndContext,
@@ -28,6 +34,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -36,11 +43,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { TagPeople } from "@/components/tag-people";
+import { ReminderControls } from "@/components/reminder-controls";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import {
   Select,
@@ -52,6 +62,8 @@ import {
 import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
 import { listBusinesses } from "@/lib/businesses";
 import {
+  bulkDeleteTasks,
+  bulkUpdateTasks,
   createFolder,
   createList,
   createTask,
@@ -60,20 +72,26 @@ import {
   deleteTask,
   listFolders,
   listLists,
+  listTaskActivity,
   listTasksByList,
   PRIORITY_COLOR,
   PRIORITY_LABEL,
   PRIORITY_ORDER,
+  RECURRENCE_LABEL,
+  rolloverRecurring,
   STATUSES,
+  STATUS_LABEL,
   updateFolder,
   updateList,
   updateTask,
   type Folder,
   type ListRow,
+  type RecurrenceRule,
   type Task,
   type TaskPriority,
   type TaskStatus,
 } from "@/lib/tasks";
+import { listBacklinks, resolveLinks } from "@/lib/note-links";
 import { cn } from "@/lib/utils";
 import { TaskTimerInline, TaskTimePanel } from "@/components/task-timer";
 
