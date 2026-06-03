@@ -61,6 +61,7 @@ import {
   listLists,
   listTasksByList,
   PRIORITY_COLOR,
+  PRIORITY_LABEL,
   PRIORITY_ORDER,
   STATUSES,
   updateFolder,
