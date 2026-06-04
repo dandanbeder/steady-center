@@ -270,7 +270,7 @@ function ConvertDialog({
           <div className="space-y-4">
             <p className="text-sm text-foreground">{item.text}</p>
             <div>
-              <Label>Business</Label>
+              <Label>Account</Label>
               <Select
                 value={businessId ?? "_none"}
                 onValueChange={(v) => {
@@ -282,7 +282,7 @@ function ConvertDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="_none">No business</SelectItem>
+                  <SelectItem value="_none">No account</SelectItem>
                   {businesses.map((b) => (
                     <SelectItem key={b.id} value={b.id}>
                       {b.name}

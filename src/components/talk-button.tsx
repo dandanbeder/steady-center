@@ -226,7 +226,7 @@ export function TalkButton() {
           }
         }
       } else if (followUpTitle.trim() && !biz) {
-        toast.message("Follow-up skipped — pick a business to file it under.");
+        toast.message("Follow-up skipped — pick an account to file it under.");
       }
 
       qc.invalidateQueries();
@@ -301,13 +301,13 @@ export function TalkButton() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label>Business</Label>
+                  <Label>Account</Label>
                   <Select value={businessId} onValueChange={(v) => setBusinessId(v as any)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">No business</SelectItem>
+                      <SelectItem value="none">No account</SelectItem>
                       {businesses.map((b) => (
                         <SelectItem key={b.id} value={b.id}>
                           {b.name}

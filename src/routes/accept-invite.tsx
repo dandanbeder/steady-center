@@ -92,7 +92,7 @@ function AcceptInvitePage() {
       <Shell>
         <h1 className="text-xl mb-2">Request sent</h1>
         <p className="text-sm text-muted-foreground mb-6">
-          We've notified the {businessName} owner. You'll get an email once you're approved.
+          We've notified the owner of {businessName}. You'll get an email once you're approved.
         </p>
         <Button asChild variant="ghost"><Link to="/today">Go home</Link></Button>
       </Shell>

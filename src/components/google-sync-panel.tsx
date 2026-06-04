@@ -111,13 +111,13 @@ export function GoogleSyncPanel({ businesses }: Props) {
       {open && (
         <div className="rounded-md border border-border bg-card p-4 space-y-3">
           <label className="block text-sm">
-            Tag imported calendars to business:
+            Tag imported calendars to account:
             <select
               value={selectedBusiness}
               onChange={(e) => setSelectedBusiness(e.target.value)}
               className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
             >
-              <option value="">— No business —</option>
+              <option value="">— No account —</option>
               {businesses.map((b) => (
                 <option key={b.id} value={b.id}>{b.name}</option>
               ))}
