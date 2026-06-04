@@ -285,7 +285,7 @@ function CalendarPage() {
         "flex flex-col lg:flex-row gap-6 lg:gap-8 max-w-full",
         expanded
           ? "fixed inset-0 z-50 bg-background overflow-auto p-3 sm:p-4"
-          : "px-3 sm:px-6 lg:px-8 py-6 lg:py-10",
+          : "px-4 sm:px-6 lg:px-8 py-6 lg:py-10",
       )}
     >
       <div className="flex-1 min-w-0 order-2 lg:order-1">
