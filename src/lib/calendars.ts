@@ -31,6 +31,8 @@ export type EventRow = {
   source: string;
   external_id: string | null;
   created_at: string;
+  sync_status?: string | null;
+  sync_error?: string | null;
 };
 
 export async function listCalendars(): Promise<Calendar[]> {
