@@ -33,7 +33,10 @@ export type EventRow = {
   created_at: string;
   sync_status?: string;
   sync_error?: string | null;
+  recurrence_rule?: string | null;
+  recurrence_end?: string | null;
 };
+
 
 export async function listCalendars(): Promise<Calendar[]> {
   const { data, error } = await supabase
