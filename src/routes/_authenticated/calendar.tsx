@@ -328,7 +328,7 @@ function CalendarPage() {
               <button
                 onClick={() => setCursor(startOfDay(new Date()))}
                 title="Jump to today"
-                className="px-3 text-sm border-x border-border hover:bg-muted min-h-[36px]"
+                className="px-3 text-sm border-x border-border hover:bg-muted min-h-[44px] sm:min-h-[36px]"
               >
                 Today
               </button>
