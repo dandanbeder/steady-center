@@ -30,7 +30,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ALL } from "@/hooks/use-active-business";
-import { ALL } from "@/hooks/use-active-business";
 import { cn } from "@/lib/utils";
 
 export type SmartView = "all" | "pinned" | "recent" | "unfiled" | "shared";
