@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -21,6 +21,9 @@ import {
   ListChecks,
   Link2,
   ExternalLink,
+  CalendarDays,
+  Copy,
+  CalendarPlus,
 } from "lucide-react";
 import { ReminderControls } from "@/components/reminder-controls";
 import { createNote } from "@/lib/notes";
@@ -53,11 +56,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar as MiniCalendar } from "@/components/ui/calendar";
 import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
 
-import { listBusinesses } from "@/lib/businesses";
+import { createBusiness, listBusinesses, type Business } from "@/lib/businesses";
 import {
   bulkInsertEvents,
+  createCalendar,
   createEvent,
   deleteEvent,
   listCalendars,
@@ -71,6 +81,7 @@ import {
 } from "@/lib/calendars";
 import { cn } from "@/lib/utils";
 import { TagPeople } from "@/components/tag-people";
+
 
 export const Route = createFileRoute("/_authenticated/calendar")({
   head: () => ({ meta: [{ title: "Calendar · Heartbeat" }] }),
