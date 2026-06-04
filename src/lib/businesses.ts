@@ -17,14 +17,18 @@ export async function listBusinesses(): Promise<Business[]> {
   return data ?? [];
 }
 
-export async function createBusiness(name: string, color: string) {
+export async function createBusiness(name: string, color: string): Promise<{ id: string }> {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) throw new Error("Not signed in");
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("businesses")
-    .insert({ name, color, owner_id: u.user.id });
+    .insert({ name, color, owner_id: u.user.id })
+    .select("id")
+    .single();
   if (error) throw error;
+  return { id: data.id };
 }
+
 
 export async function updateBusiness(id: string, patch: Partial<Pick<Business, "name" | "color">>) {
   const { error } = await supabase.from("businesses").update(patch).eq("id", id);
