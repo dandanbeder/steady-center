@@ -465,6 +465,7 @@ export type Database = {
           id: string
           name: string
           owner_id: string
+          parent_folder_id: string | null
         }
         Insert: {
           business_id: string
@@ -474,6 +475,7 @@ export type Database = {
           id?: string
           name: string
           owner_id: string
+          parent_folder_id?: string | null
         }
         Update: {
           business_id?: string
@@ -483,6 +485,7 @@ export type Database = {
           id?: string
           name?: string
           owner_id?: string
+          parent_folder_id?: string | null
         }
         Relationships: [
           {
@@ -490,6 +493,13 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "folders_parent_folder_id_fkey"
+            columns: ["parent_folder_id"]
+            isOneToOne: false
+            referencedRelation: "folders"
             referencedColumns: ["id"]
           },
         ]

@@ -98,6 +98,17 @@ export async function deleteNote(id: string) {
   if (error) throw error;
 }
 
+export async function moveNote(
+  id: string,
+  target: { business_id: string | null; folder_id: string | null },
+) {
+  const { error } = await supabase
+    .from("notes")
+    .update({ business_id: target.business_id, folder_id: target.folder_id } as never)
+    .eq("id", id);
+  if (error) throw error;
+}
+
 export async function pinNote(id: string, pinned: boolean) {
   await updateNote(id, { pinned });
 }

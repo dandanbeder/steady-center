@@ -42,6 +42,7 @@ export type Folder = {
   id: string;
   owner_id: string;
   business_id: string;
+  parent_folder_id: string | null;
   name: string;
   color: string;
   created_at: string;
@@ -103,7 +104,12 @@ export async function listFolders(): Promise<Folder[]> {
   if (error) throw error;
   return data ?? [];
 }
-export async function createFolder(input: { business_id: string; name: string; color?: string }) {
+export async function createFolder(input: {
+  business_id: string;
+  name: string;
+  color?: string;
+  parent_folder_id?: string | null;
+}) {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) throw new Error("Not signed in");
   const { error } = await supabase.from("folders").insert({
@@ -111,10 +117,14 @@ export async function createFolder(input: { business_id: string; name: string; c
     name: input.name,
     color: input.color ?? "#7A8471",
     owner_id: u.user.id,
+    parent_folder_id: input.parent_folder_id ?? null,
   });
   if (error) throw error;
 }
-export async function updateFolder(id: string, patch: Partial<Pick<Folder, "name" | "color">>) {
+export async function updateFolder(
+  id: string,
+  patch: Partial<Pick<Folder, "name" | "color" | "parent_folder_id">>,
+) {
   const { error } = await supabase.from("folders").update(patch).eq("id", id);
   if (error) throw error;
 }
