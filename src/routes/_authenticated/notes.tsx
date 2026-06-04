@@ -190,16 +190,14 @@ function NotesPage() {
       <div className="w-full md:w-80 shrink-0 border-r border-border overflow-y-auto md:max-w-xs">
         <div className="p-3 sticky top-0 bg-background z-10 border-b border-border space-y-2">
           <div className="flex items-center gap-2">
-            <SheetTrigger asChild>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="md:hidden h-8 w-8"
-                onClick={() => setMobileNav(true)}
-              >
-                <Menu className="h-4 w-4" />
-              </Button>
-            </SheetTrigger>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="md:hidden h-8 w-8"
+              onClick={() => setMobileNav(true)}
+            >
+              <Menu className="h-4 w-4" />
+            </Button>
             <div className="flex-1 min-w-0">
               <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
                 Scope
