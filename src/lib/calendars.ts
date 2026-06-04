@@ -130,7 +130,7 @@ export async function updateEvent(
     all_day: boolean;
     is_meeting: boolean;
   }>,
-) {
+): Promise<{ syncWarning: string | null }> {
   const { data, error } = await supabase
     .from("events")
     .update(patch)
@@ -138,7 +138,8 @@ export async function updateEvent(
     .select("id, calendar_id")
     .single();
   if (error) throw error;
-  await maybePushToGoogle(data.id, data.calendar_id);
+  const syncWarning = await maybePushToGoogle(data.id, data.calendar_id);
+  return { syncWarning };
 }
 
 export async function bulkInsertEvents(rows: Array<Omit<EventRow, "id" | "owner_id" | "created_at" | "is_meeting"> & { is_meeting?: boolean }>) {
@@ -178,18 +179,50 @@ export async function deleteEvent(id: string) {
   if (error) throw error;
 }
 
-async function maybePushToGoogle(eventId: string, calendarId: string) {
+/** Returns null on success/skip, or a friendly warning string on failure. */
+async function maybePushToGoogle(eventId: string, calendarId: string): Promise<string | null> {
   const { data: cal } = await supabase
     .from("calendars")
     .select("provider")
     .eq("id", calendarId)
     .maybeSingle();
-  if (cal?.provider !== "google") return;
+  if (cal?.provider !== "google") return null;
   try {
     await pushEventToGoogle({ data: { event_id: eventId } });
+    await supabase
+      .from("events")
+      .update({ sync_status: "synced", sync_error: null })
+      .eq("id", eventId);
+    return null;
   } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    const reconnect = /401|403|invalid_grant|unauthorized|not configured/i.test(msg);
+    const friendly = reconnect
+      ? "Event saved locally, but Google sync failed — reconnect Google in Settings › Connections."
+      : `Event saved locally, but Google sync failed: ${msg.slice(0, 200)}`;
+    await supabase
+      .from("events")
+      .update({ sync_status: "failed", sync_error: friendly })
+      .eq("id", eventId);
     console.warn("Failed to push event to Google", e);
+    return friendly;
   }
+}
+
+/** Manually retry pushing an event to its provider. */
+export async function retryEventSync(eventId: string): Promise<{ syncWarning: string | null }> {
+  const { data: ev, error } = await supabase
+    .from("events")
+    .select("id, calendar_id")
+    .eq("id", eventId)
+    .single();
+  if (error) throw error;
+  await supabase
+    .from("events")
+    .update({ sync_status: "pending", sync_error: null })
+    .eq("id", eventId);
+  const syncWarning = await maybePushToGoogle(ev.id, ev.calendar_id);
+  return { syncWarning };
 }
 
 
