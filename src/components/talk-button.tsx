@@ -250,12 +250,15 @@ export function TalkButton() {
           setTimeout(() => startListening(), 50);
         }}
         className={cn(
-          "fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full",
+          "fixed right-6 z-40 h-14 w-14 rounded-full",
           "bg-accent text-accent-foreground shadow-lg",
           "flex items-center justify-center transition-transform hover:scale-105",
         )}
         aria-label="Talk to Heartbeat"
-        style={{ boxShadow: "var(--shadow-elegant, 0 10px 30px -10px rgba(0,0,0,0.25))" }}
+        style={{
+          bottom: "max(1.5rem, env(safe-area-inset-bottom))",
+          boxShadow: "var(--shadow-elegant, 0 10px 30px -10px rgba(0,0,0,0.25))",
+        }}
       >
         <Mic className="h-6 w-6" />
       </button>
