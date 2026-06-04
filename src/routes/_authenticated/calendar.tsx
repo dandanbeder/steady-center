@@ -1257,16 +1257,41 @@ function toTimeInputValue(d: Date) {
 function NewEventDialog({
   defaultDate,
   calendars,
+  businesses,
+  activeBizId,
   onClose,
   onCreated,
 }: {
   defaultDate: Date;
   calendars: Cal[];
+  businesses: { id: string; name: string; color: string }[];
+  activeBizId: string;
   onClose: () => void;
   onCreated: () => void;
 }) {
+  // Group writable calendars by business for the picker.
+  const grouped = useMemo(() => {
+    const groups = new Map<string | null, Cal[]>();
+    for (const c of calendars) {
+      const k = c.business_id;
+      const arr = groups.get(k) ?? [];
+      arr.push(c);
+      groups.set(k, arr);
+    }
+    return groups;
+  }, [calendars]);
+
+  // Default: first calendar of the active account; fall back to any.
+  const defaultCalId = useMemo(() => {
+    if (activeBizId !== ALL) {
+      const inBiz = calendars.find((c) => c.business_id === activeBizId);
+      if (inBiz) return inBiz.id;
+    }
+    return calendars[0]?.id ?? "";
+  }, [calendars, activeBizId]);
+
   const [title, setTitle] = useState("");
-  const [calendarId, setCalendarId] = useState<string>(calendars[0]?.id ?? "");
+  const [calendarId, setCalendarId] = useState<string>(defaultCalId);
   const [date, setDate] = useState(toDateInputValue(defaultDate));
   const [allDay, setAllDay] = useState(false);
   const [startTime, setStartTime] = useState(
@@ -1282,6 +1307,11 @@ function NewEventDialog({
   const [location, setLocation] = useState("");
   const [description, setDescription] = useState("");
 
+  const selectedCal = calendars.find((c) => c.id === calendarId);
+  const selectedBiz = selectedCal
+    ? businesses.find((b) => b.id === selectedCal.business_id) ?? null
+    : null;
+
   const mut = useMutation({
     mutationFn: async () => {
       const cal = calendars.find((c) => c.id === calendarId);
@@ -1296,7 +1326,7 @@ function NewEventDialog({
         end = new Date(`${date}T${endTime}:00`);
         if (end <= start) throw new Error("End must be after start");
       }
-      await createEvent({
+      return createEvent({
         calendar_id: cal.id,
         business_id: cal.business_id,
         title: title.trim(),
@@ -1307,12 +1337,26 @@ function NewEventDialog({
         all_day: allDay,
       });
     },
-    onSuccess: () => {
-      toast.success("Event added");
+    onSuccess: (res) => {
+      if (res.syncWarning) toast.warning(res.syncWarning);
+      else toast.success("Event added");
       onCreated();
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
+
+  // Order business groups: active first, then personal (null), then the rest.
+  const groupOrder = useMemo(() => {
+    const keys = Array.from(grouped.keys());
+    return keys.sort((a, b) => {
+      const score = (k: string | null) => {
+        if (activeBizId !== ALL && k === activeBizId) return 0;
+        if (k === null) return 2;
+        return 1;
+      };
+      return score(a) - score(b);
+    });
+  }, [grouped, activeBizId]);
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -1337,26 +1381,58 @@ function NewEventDialog({
             />
           </div>
           <div>
+            <Label>Account</Label>
+            <div className="text-sm text-muted-foreground mt-1">
+              {selectedBiz ? (
+                <span className="inline-flex items-center gap-2">
+                  <span
+                    className="h-2.5 w-2.5 rounded-full"
+                    style={{ backgroundColor: selectedBiz.color }}
+                  />
+                  {selectedBiz.name}
+                </span>
+              ) : (
+                <span>Personal</span>
+              )}
+            </div>
+          </div>
+          <div>
             <Label>Calendar</Label>
             <Select value={calendarId} onValueChange={setCalendarId}>
               <SelectTrigger>
                 <SelectValue placeholder="Select calendar" />
               </SelectTrigger>
               <SelectContent>
-                {calendars.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    <span className="inline-flex items-center gap-2">
-                      <span
-                        className="h-2.5 w-2.5 rounded-full"
-                        style={{ backgroundColor: c.color }}
-                      />
-                      {c.name}
-                    </span>
-                  </SelectItem>
-                ))}
+                {groupOrder.map((bizId) => {
+                  const biz = bizId ? businesses.find((b) => b.id === bizId) : null;
+                  const label = biz?.name ?? "Personal";
+                  const cals = grouped.get(bizId) ?? [];
+                  return (
+                    <div key={bizId ?? "personal"}>
+                      <div className="px-2 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        {label}
+                      </div>
+                      {cals.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          <span className="inline-flex items-center gap-2">
+                            <span
+                              className="h-2.5 w-2.5 rounded-full"
+                              style={{ backgroundColor: c.color }}
+                            />
+                            {c.name}
+                            {c.provider === "google" && (
+                              <span className="text-[10px] text-muted-foreground">· Google</span>
+                            )}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </div>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>
+
           <div>
             <Label>Date</Label>
             <Input
