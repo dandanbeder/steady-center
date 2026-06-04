@@ -49,7 +49,6 @@ import { MoveNoteDialog } from "@/components/notes/move-note-dialog";
 import {
   Sheet,
   SheetContent,
-  SheetTrigger,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
