@@ -1021,7 +1021,7 @@ function BoardView({
   return (
     <DndContext sensors={sensors} onDragEnd={onDragEnd}>
       <div className="-mx-4 sm:mx-0 overflow-x-auto pb-2">
-        <div className="flex gap-3 px-4 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 min-w-max sm:min-w-0">
+        <div className="flex gap-3 px-4 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 min-w-max sm:min-w-0">
           {STATUSES.map((s) => (
             <div key={s.value} className="w-72 shrink-0 sm:w-auto">
               <BoardColumn status={s.value} label={s.label}>
