@@ -371,6 +371,8 @@ export type Database = {
           is_meeting: boolean
           location: string | null
           owner_id: string
+          recurrence_end: string | null
+          recurrence_rule: string | null
           source: string
           start_at: string
           sync_error: string | null
@@ -390,6 +392,8 @@ export type Database = {
           is_meeting?: boolean
           location?: string | null
           owner_id: string
+          recurrence_end?: string | null
+          recurrence_rule?: string | null
           source?: string
           start_at: string
           sync_error?: string | null
@@ -409,6 +413,8 @@ export type Database = {
           is_meeting?: boolean
           location?: string | null
           owner_id?: string
+          recurrence_end?: string | null
+          recurrence_rule?: string | null
           source?: string
           start_at?: string
           sync_error?: string | null

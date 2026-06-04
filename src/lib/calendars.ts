@@ -33,7 +33,10 @@ export type EventRow = {
   created_at: string;
   sync_status?: string;
   sync_error?: string | null;
+  recurrence_rule?: string | null;
+  recurrence_end?: string | null;
 };
+
 
 export async function listCalendars(): Promise<Calendar[]> {
   const { data, error } = await supabase
@@ -48,17 +51,23 @@ export async function createCalendar(input: {
   name: string;
   color: string;
   business_id: string | null;
-}) {
+}): Promise<{ id: string }> {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) throw new Error("Not signed in");
-  const { error } = await supabase.from("calendars").insert({
-    name: input.name,
-    color: input.color,
-    business_id: input.business_id,
-    owner_id: u.user.id,
-  });
+  const { data, error } = await supabase
+    .from("calendars")
+    .insert({
+      name: input.name,
+      color: input.color,
+      business_id: input.business_id,
+      owner_id: u.user.id,
+    })
+    .select("id")
+    .single();
   if (error) throw error;
+  return { id: data.id };
 }
+
 
 export async function updateCalendar(
   id: string,
@@ -93,7 +102,10 @@ export async function createEvent(input: {
   all_day: boolean;
   source?: string;
   external_id?: string | null;
+  recurrence_rule?: string | null;
+  recurrence_end?: string | null;
 }): Promise<{ id: string; syncWarning: string | null }> {
+
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) throw new Error("Not signed in");
 
@@ -131,7 +143,12 @@ export async function updateEvent(
     end_at: string;
     all_day: boolean;
     is_meeting: boolean;
+    calendar_id: string;
+    business_id: string | null;
+    recurrence_rule: string | null;
+    recurrence_end: string | null;
   }>,
+
 ): Promise<{ syncWarning: string | null }> {
   const { data, error } = await supabase
     .from("events")

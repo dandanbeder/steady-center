@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -21,6 +21,9 @@ import {
   ListChecks,
   Link2,
   ExternalLink,
+  CalendarDays,
+  Copy,
+  CalendarPlus,
 } from "lucide-react";
 import { ReminderControls } from "@/components/reminder-controls";
 import { createNote } from "@/lib/notes";
@@ -53,11 +56,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar as MiniCalendar } from "@/components/ui/calendar";
 import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
 
-import { listBusinesses } from "@/lib/businesses";
+import { createBusiness, listBusinesses, type Business } from "@/lib/businesses";
 import {
   bulkInsertEvents,
+  createCalendar,
   createEvent,
   deleteEvent,
   listCalendars,
@@ -71,6 +81,7 @@ import {
 } from "@/lib/calendars";
 import { cn } from "@/lib/utils";
 import { TagPeople } from "@/components/tag-people";
+
 
 export const Route = createFileRoute("/_authenticated/calendar")({
   head: () => ({ meta: [{ title: "Calendar · Heartbeat" }] }),
@@ -165,8 +176,12 @@ function CalendarPage() {
   const [newDefaultDate, setNewDefaultDate] = useState<Date>(
     startOfDay(new Date()),
   );
+  const [newEventEndDate, setNewEventEndDate] = useState<Date | null>(null);
+  const [newEventEndTime, setNewEventEndTime] = useState<string | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [createCalOpen, setCreateCalOpen] = useState(false);
+
 
   // Lock body scroll while in fullscreen so the expanded calendar owns the viewport.
   useEffect(() => {
@@ -243,10 +258,13 @@ function CalendarPage() {
     }
   }
 
-  function openNewOn(d: Date) {
+  function openNewOn(d: Date, opts?: { endDate?: Date; endTime?: string }) {
     setNewDefaultDate(d);
+    setNewEventEndDate(opts?.endDate ?? null);
+    setNewEventEndTime(opts?.endTime ?? null);
     setNewOpen(true);
   }
+
 
   const title = useMemo(() => {
     if (view === "month") return fmtMonth(cursor);
@@ -323,6 +341,23 @@ function CalendarPage() {
                 <ChevronRight className="h-4 w-4" />
               </button>
             </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" title="Jump to date">
+                  <CalendarDays className="h-4 w-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Jump</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <MiniCalendar
+                  mode="single"
+                  selected={cursor}
+                  onSelect={(d) => d && setCursor(startOfDay(d))}
+                  className="pointer-events-auto"
+                  captionLayout="dropdown"
+                />
+              </PopoverContent>
+            </Popover>
             <Button
               variant="outline"
               size="sm"
@@ -378,15 +413,12 @@ function CalendarPage() {
                 <Maximize2 className="h-4 w-4" />
               )}
             </Button>
-            <Button
-              size="sm"
-              onClick={() => openNewOn(cursor)}
-              disabled={visibleCalendars.length === 0}
-            >
+            <Button size="sm" onClick={() => openNewOn(cursor)}>
               <Plus className="h-4 w-4 sm:mr-1" />
               <span className="hidden sm:inline">New event</span>
             </Button>
           </div>
+
         </div>
 
 
@@ -430,13 +462,36 @@ function CalendarPage() {
 
       <aside className={cn("w-full lg:w-72 shrink-0 space-y-6 order-1 lg:order-2", expanded && "hidden")}>
         <div>
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-            Calendars
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              Calendars
+            </h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs"
+              onClick={() => setCreateCalOpen(true)}
+              title="Create calendar"
+            >
+              <Plus className="h-3.5 w-3.5 mr-1" /> New
+            </Button>
+          </div>
           {visibleCalendars.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No calendars yet. Create one in Settings.
-            </p>
+            <div className="rounded-lg border border-dashed border-border p-3 space-y-2">
+              <p className="text-sm text-muted-foreground">
+                No calendars in this view yet.
+              </p>
+              <div className="flex flex-col gap-1.5">
+                <Button size="sm" onClick={() => setCreateCalOpen(true)}>
+                  <CalendarPlus className="h-4 w-4 mr-1.5" />
+                  Create calendar
+                </Button>
+                <Button asChild size="sm" variant="outline">
+                  <Link to="/settings">Connect Google / Outlook</Link>
+                </Button>
+
+              </div>
+            </div>
           ) : (
             <ul className="space-y-1.5">
               {visibleCalendars.map((c) => (
@@ -489,6 +544,7 @@ function CalendarPage() {
           </div>
         )}
       </aside>
+
 
       {dayOpen && (
         <DayAgendaDialog
@@ -549,7 +605,20 @@ function CalendarPage() {
           }}
         />
       )}
+
+      {createCalOpen && (
+        <CreateCalendarDialog
+          businesses={businesses}
+          activeBizId={activeId}
+          onClose={() => setCreateCalOpen(false)}
+          onCreated={() => {
+            setCreateCalOpen(false);
+            qc.invalidateQueries({ queryKey: ["calendars"] });
+          }}
+        />
+      )}
     </div>
+
   );
 }
 
@@ -2188,4 +2257,99 @@ async function exportEventsXlsx({ events, calById, view, title }: ExportArgs) {
     console.error(e);
     toast.error(e instanceof Error ? e.message : "Failed to export Excel");
   }
+}
+
+// ---------- Create Calendar inline dialog ----------
+
+function CreateCalendarDialog({
+  businesses,
+  activeBizId,
+  onClose,
+  onCreated,
+}: {
+  businesses: Business[];
+  activeBizId: string;
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [color, setColor] = useState(PALETTE[0]);
+  const defaultBiz =
+    activeBizId !== ALL && businesses.some((b) => b.id === activeBizId)
+      ? activeBizId
+      : (businesses[0]?.id ?? "__personal__");
+  const [businessId, setBusinessId] = useState<string>(defaultBiz);
+
+  const mut = useMutation({
+    mutationFn: async () => {
+      const bizId = businessId === "__personal__" ? null : businessId;
+      await createCalendar({ name: name.trim(), color, business_id: bizId });
+    },
+    onSuccess: () => {
+      toast.success("Calendar created");
+      onCreated();
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>New calendar</DialogTitle>
+        </DialogHeader>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!name.trim()) return;
+            mut.mutate();
+          }}
+          className="space-y-3"
+        >
+          <div>
+            <Label>Name</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+          </div>
+          <div>
+            <Label>Account</Label>
+            <Select value={businessId} onValueChange={setBusinessId}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__personal__">Personal</SelectItem>
+                {businesses.map((b) => (
+                  <SelectItem key={b.id} value={b.id}>
+                    <span className="inline-flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: b.color }} />
+                      {b.name}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Color</Label>
+            <div className="flex flex-wrap gap-1.5 mt-1">
+              {PALETTE.map((c) => (
+                <button
+                  type="button"
+                  key={c}
+                  onClick={() => setColor(c)}
+                  className={cn(
+                    "h-6 w-6 rounded-full border border-border",
+                    c === color && "ring-2 ring-offset-1 ring-foreground/40",
+                  )}
+                  style={{ backgroundColor: c }}
+                />
+              ))}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+            <Button type="submit" disabled={mut.isPending || !name.trim()}>Create</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
 }
