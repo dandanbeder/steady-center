@@ -184,7 +184,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </Sheet>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 border-b border-border bg-background/80 backdrop-blur flex items-center justify-between px-3 sm:px-6 lg:px-8 gap-2 safe-top">
+        <header className="h-16 border-b border-border bg-background/80 backdrop-blur flex items-center justify-between px-4 sm:px-6 lg:px-8 gap-2 safe-top safe-x">
           <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-1">
             {/* Mobile hamburger */}
             <Button
