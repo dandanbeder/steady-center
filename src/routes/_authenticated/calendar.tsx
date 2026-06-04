@@ -334,6 +334,23 @@ function CalendarPage() {
                 <ChevronRight className="h-4 w-4" />
               </button>
             </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" title="Jump to date">
+                  <CalendarDays className="h-4 w-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Jump</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <MiniCalendar
+                  mode="single"
+                  selected={cursor}
+                  onSelect={(d) => d && setCursor(startOfDay(d))}
+                  className="pointer-events-auto"
+                  captionLayout="dropdown"
+                />
+              </PopoverContent>
+            </Popover>
             <Button
               variant="outline"
               size="sm"
@@ -389,15 +406,12 @@ function CalendarPage() {
                 <Maximize2 className="h-4 w-4" />
               )}
             </Button>
-            <Button
-              size="sm"
-              onClick={() => openNewOn(cursor)}
-              disabled={visibleCalendars.length === 0}
-            >
+            <Button size="sm" onClick={() => openNewOn(cursor)}>
               <Plus className="h-4 w-4 sm:mr-1" />
               <span className="hidden sm:inline">New event</span>
             </Button>
           </div>
+
         </div>
 
 
