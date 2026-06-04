@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
 import { listBusinesses } from "@/lib/businesses";
@@ -9,6 +9,8 @@ import { MyInvitationsBanner } from "@/components/my-invitations-banner";
 import { UpcomingMeetings } from "@/components/upcoming-meetings";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Task } from "@/lib/tasks";
+import type { Note } from "@/lib/notes";
+
 
 export const Route = createFileRoute("/_authenticated/today")({
   head: () => ({ meta: [{ title: "Today · Heartbeat" }] }),
@@ -44,6 +46,16 @@ async function listTopOpenTasks(limit = 5): Promise<Task[]> {
   return (data ?? []) as Task[];
 }
 
+async function listRecentNotes(limit = 5): Promise<Note[]> {
+  const { data, error } = await supabase
+    .from("notes")
+    .select("id, title, updated_at, business_id, pinned")
+    .order("updated_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data ?? []) as unknown as Note[];
+}
+
 function TodayPage() {
   const { user } = useAuth();
   const { activeId } = useActiveBusiness();
@@ -63,11 +75,16 @@ function TodayPage() {
     queryKey: ["tasks", "today-top", 5],
     queryFn: () => listTopOpenTasks(5),
   });
+  const recentNotesQ = useQuery({
+    queryKey: ["notes", "recent", 5],
+    queryFn: () => listRecentNotes(5),
+  });
 
   const businesses = businessesQ.data ?? [];
   const calendars = calendarsQ.data ?? [];
   const events = eventsQ.data ?? [];
   const topTasks = topTasksQ.data ?? [];
+  const recentNotes = recentNotesQ.data ?? [];
 
   const active = activeId === ALL ? null : businesses.find((b) => b.id === activeId);
   const name = (user?.user_metadata?.full_name as string | undefined)?.split(" ")[0];
@@ -147,7 +164,35 @@ function TodayPage() {
             </ul>
           )}
         </Card>
-        <Card title="Recent notes"><p className="text-sm text-muted-foreground">Notes you've touched lately.</p></Card>
+        <Card title="Recent notes">
+          {recentNotesQ.isLoading ? (
+            <SkeletonList />
+          ) : (() => {
+            const visible = recentNotes.filter((n) => activeId === ALL || n.business_id === activeId);
+            if (visible.length === 0) {
+              return (
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">No notes yet.</p>
+                  <Link to="/notes" className="text-sm text-accent hover:underline">Create your first note →</Link>
+                </div>
+              );
+            }
+            return (
+              <ul className="space-y-2">
+                {visible.map((n) => (
+                  <li key={n.id} className="text-sm">
+                    <Link to="/notes" className="font-medium truncate block hover:text-accent">
+                      {n.title || "Untitled"}
+                    </Link>
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(n.updated_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            );
+          })()}
+        </Card>
         <Card title="Upcoming meetings"><UpcomingMeetings horizonDays={7} limit={5} /></Card>
       </div>
     </div>
