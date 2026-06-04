@@ -487,10 +487,9 @@ function CalendarPage() {
                   Create calendar
                 </Button>
                 <Button asChild size="sm" variant="outline">
-                  <Link to="/settings" search={{ tab: "connections" } as never}>
-                    Connect Google / Outlook
-                  </Link>
+                  <Link to="/settings">Connect Google / Outlook</Link>
                 </Button>
+
               </div>
             </div>
           ) : (
