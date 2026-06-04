@@ -143,7 +143,12 @@ export async function updateEvent(
     end_at: string;
     all_day: boolean;
     is_meeting: boolean;
+    calendar_id: string;
+    business_id: string | null;
+    recurrence_rule: string | null;
+    recurrence_end: string | null;
   }>,
+
 ): Promise<{ syncWarning: string | null }> {
   const { data, error } = await supabase
     .from("events")
