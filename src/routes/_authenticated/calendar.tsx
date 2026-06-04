@@ -605,6 +605,22 @@ function CalendarPage() {
           }}
         />
       )}
+
+      {createCalOpen && (
+        <CreateCalendarDialog
+          businesses={businesses}
+          activeBizId={activeId}
+          onClose={() => setCreateCalOpen(false)}
+          onCreated={() => {
+            setCreateCalOpen(false);
+            qc.invalidateQueries({ queryKey: ["calendars"] });
+          }}
+        />
+      )}
+
+          }}
+        />
+      )}
     </div>
   );
 }
