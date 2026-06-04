@@ -306,7 +306,7 @@ function CalendarPage() {
                   key={v}
                   onClick={() => setView(v)}
                   className={cn(
-                    "px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm capitalize min-h-[36px]",
+                    "px-3 sm:px-3 py-1.5 text-sm capitalize min-h-[44px] sm:min-h-[36px]",
                     view === v
                       ? "bg-primary text-primary-foreground"
                       : "hover:bg-muted",
