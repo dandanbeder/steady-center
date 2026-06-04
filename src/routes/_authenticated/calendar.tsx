@@ -515,6 +515,8 @@ function CalendarPage() {
         <NewEventDialog
           defaultDate={newDefaultDate}
           calendars={visibleCalendars}
+          businesses={businesses}
+          activeBizId={activeId}
           onClose={() => setNewOpen(false)}
           onCreated={() => {
             setNewOpen(false);
