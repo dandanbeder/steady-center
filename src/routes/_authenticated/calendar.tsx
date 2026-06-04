@@ -616,9 +616,9 @@ function CalendarPage() {
             qc.invalidateQueries({ queryKey: ["calendars"] });
           }}
         />
-
-
+      )}
     </div>
+
   );
 }
 
