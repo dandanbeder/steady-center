@@ -462,13 +462,37 @@ function CalendarPage() {
 
       <aside className={cn("w-full lg:w-72 shrink-0 space-y-6 order-1 lg:order-2", expanded && "hidden")}>
         <div>
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-            Calendars
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              Calendars
+            </h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs"
+              onClick={() => setCreateCalOpen(true)}
+              title="Create calendar"
+            >
+              <Plus className="h-3.5 w-3.5 mr-1" /> New
+            </Button>
+          </div>
           {visibleCalendars.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No calendars yet. Create one in Settings.
-            </p>
+            <div className="rounded-lg border border-dashed border-border p-3 space-y-2">
+              <p className="text-sm text-muted-foreground">
+                No calendars in this view yet.
+              </p>
+              <div className="flex flex-col gap-1.5">
+                <Button size="sm" onClick={() => setCreateCalOpen(true)}>
+                  <CalendarPlus className="h-4 w-4 mr-1.5" />
+                  Create calendar
+                </Button>
+                <Button asChild size="sm" variant="outline">
+                  <Link to="/settings" search={{ tab: "connections" } as never}>
+                    Connect Google / Outlook
+                  </Link>
+                </Button>
+              </div>
+            </div>
           ) : (
             <ul className="space-y-1.5">
               {visibleCalendars.map((c) => (
@@ -521,6 +545,7 @@ function CalendarPage() {
           </div>
         )}
       </aside>
+
 
       {dayOpen && (
         <DayAgendaDialog
