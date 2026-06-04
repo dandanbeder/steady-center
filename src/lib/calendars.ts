@@ -102,7 +102,10 @@ export async function createEvent(input: {
   all_day: boolean;
   source?: string;
   external_id?: string | null;
+  recurrence_rule?: string | null;
+  recurrence_end?: string | null;
 }): Promise<{ id: string; syncWarning: string | null }> {
+
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) throw new Error("Not signed in");
 
