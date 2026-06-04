@@ -176,8 +176,12 @@ function CalendarPage() {
   const [newDefaultDate, setNewDefaultDate] = useState<Date>(
     startOfDay(new Date()),
   );
+  const [newEventEndDate, setNewEventEndDate] = useState<Date | null>(null);
+  const [newEventEndTime, setNewEventEndTime] = useState<string | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [createCalOpen, setCreateCalOpen] = useState(false);
+
 
   // Lock body scroll while in fullscreen so the expanded calendar owns the viewport.
   useEffect(() => {
