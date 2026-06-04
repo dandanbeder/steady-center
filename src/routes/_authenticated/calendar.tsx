@@ -321,7 +321,7 @@ function CalendarPage() {
                 onClick={() => shift(-1)}
                 aria-label={`Previous ${view}`}
                 title={`Previous ${view}`}
-                className="px-2.5 hover:bg-muted min-h-[36px] inline-flex items-center justify-center"
+                className="px-3 hover:bg-muted min-h-[44px] min-w-[44px] sm:min-h-[36px] sm:min-w-0 inline-flex items-center justify-center"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
