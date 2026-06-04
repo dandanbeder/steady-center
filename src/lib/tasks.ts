@@ -42,6 +42,7 @@ export type Folder = {
   id: string;
   owner_id: string;
   business_id: string;
+  parent_folder_id: string | null;
   name: string;
   color: string;
   created_at: string;
