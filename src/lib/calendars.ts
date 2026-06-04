@@ -51,17 +51,23 @@ export async function createCalendar(input: {
   name: string;
   color: string;
   business_id: string | null;
-}) {
+}): Promise<{ id: string }> {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) throw new Error("Not signed in");
-  const { error } = await supabase.from("calendars").insert({
-    name: input.name,
-    color: input.color,
-    business_id: input.business_id,
-    owner_id: u.user.id,
-  });
+  const { data, error } = await supabase
+    .from("calendars")
+    .insert({
+      name: input.name,
+      color: input.color,
+      business_id: input.business_id,
+      owner_id: u.user.id,
+    })
+    .select("id")
+    .single();
   if (error) throw error;
+  return { id: data.id };
 }
+
 
 export async function updateCalendar(
   id: string,
