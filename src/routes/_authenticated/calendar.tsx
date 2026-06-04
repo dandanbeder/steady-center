@@ -285,7 +285,7 @@ function CalendarPage() {
         "flex flex-col lg:flex-row gap-6 lg:gap-8 max-w-full",
         expanded
           ? "fixed inset-0 z-50 bg-background overflow-auto p-3 sm:p-4"
-          : "px-3 sm:px-6 lg:px-8 py-6 lg:py-10",
+          : "px-4 sm:px-6 lg:px-8 py-6 lg:py-10",
       )}
     >
       <div className="flex-1 min-w-0 order-2 lg:order-1">
@@ -306,7 +306,7 @@ function CalendarPage() {
                   key={v}
                   onClick={() => setView(v)}
                   className={cn(
-                    "px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm capitalize min-h-[36px]",
+                    "px-3 sm:px-3 py-1.5 text-sm capitalize min-h-[44px] sm:min-h-[36px]",
                     view === v
                       ? "bg-primary text-primary-foreground"
                       : "hover:bg-muted",
@@ -321,14 +321,14 @@ function CalendarPage() {
                 onClick={() => shift(-1)}
                 aria-label={`Previous ${view}`}
                 title={`Previous ${view}`}
-                className="px-2.5 hover:bg-muted min-h-[36px] inline-flex items-center justify-center"
+                className="px-3 hover:bg-muted min-h-[44px] min-w-[44px] sm:min-h-[36px] sm:min-w-0 inline-flex items-center justify-center"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
               <button
                 onClick={() => setCursor(startOfDay(new Date()))}
                 title="Jump to today"
-                className="px-3 text-sm border-x border-border hover:bg-muted min-h-[36px]"
+                className="px-3 text-sm border-x border-border hover:bg-muted min-h-[44px] sm:min-h-[36px]"
               >
                 Today
               </button>
@@ -336,7 +336,7 @@ function CalendarPage() {
                 onClick={() => shift(1)}
                 aria-label={`Next ${view}`}
                 title={`Next ${view}`}
-                className="px-2.5 hover:bg-muted min-h-[36px] inline-flex items-center justify-center"
+                className="px-3 hover:bg-muted min-h-[44px] min-w-[44px] sm:min-h-[36px] sm:min-w-0 inline-flex items-center justify-center"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
