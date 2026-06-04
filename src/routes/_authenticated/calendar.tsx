@@ -1570,7 +1570,7 @@ function EditEventDialog({
         end = new Date(`${date}T${endTime}:00`);
         if (end <= start) throw new Error("End must be after start");
       }
-      await updateEvent(event.id, {
+      return updateEvent(event.id, {
         title: title.trim(),
         description: description.trim() || null,
         location: location.trim() || null,
@@ -1580,11 +1580,22 @@ function EditEventDialog({
         is_meeting: isMeeting,
       });
     },
-    onSuccess: () => {
-      toast.success("Event updated");
+    onSuccess: (res) => {
+      if (res?.syncWarning) toast.warning(res.syncWarning);
+      else toast.success("Event updated");
       onSaved();
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : "Failed"),
+  });
+
+  const retry = useMutation({
+    mutationFn: () => retryEventSync(event.id),
+    onSuccess: (res) => {
+      if (res.syncWarning) toast.warning(res.syncWarning);
+      else toast.success("Synced to Google");
+      qc.invalidateQueries({ queryKey: ["events"] });
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "Retry failed"),
   });
 
   const del = useMutation({
