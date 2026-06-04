@@ -31,7 +31,7 @@ export type EventRow = {
   source: string;
   external_id: string | null;
   created_at: string;
-  sync_status?: string | null;
+  sync_status?: string;
   sync_error?: string | null;
 };
 
