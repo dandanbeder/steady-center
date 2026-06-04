@@ -373,6 +373,8 @@ export type Database = {
           owner_id: string
           source: string
           start_at: string
+          sync_error: string | null
+          sync_status: string
           title: string
         }
         Insert: {
@@ -390,6 +392,8 @@ export type Database = {
           owner_id: string
           source?: string
           start_at: string
+          sync_error?: string | null
+          sync_status?: string
           title: string
         }
         Update: {
@@ -407,6 +411,8 @@ export type Database = {
           owner_id?: string
           source?: string
           start_at?: string
+          sync_error?: string | null
+          sync_status?: string
           title?: string
         }
         Relationships: [
