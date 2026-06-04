@@ -302,7 +302,7 @@ function GoalDialog({
             </div>
           </div>
           <div>
-            <Label>Business (optional)</Label>
+            <Label>Account (optional)</Label>
             <Select value={businessId} onValueChange={setBusinessId}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>

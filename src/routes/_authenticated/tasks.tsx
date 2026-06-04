@@ -130,7 +130,7 @@ function TasksPage() {
         <div className="p-4">
           <h2 className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Spaces</h2>
           {visibleBusinesses.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No businesses yet.</p>
+            <p className="text-sm text-muted-foreground">No accounts yet.</p>
           ) : (
             <ul className="space-y-3">
               {visibleBusinesses.map((b) => (
@@ -153,7 +153,7 @@ function TasksPage() {
           <div className="h-full flex items-center justify-center text-muted-foreground p-6">
             <div className="text-center max-w-sm">
               <h1 className="text-2xl sm:text-3xl text-primary mb-2">Tasks</h1>
-              <p>Pick a list {`${typeof window !== "undefined" && window.innerWidth < 768 ? "above" : "from the left"}`}, or add a folder and list to a business to get started.</p>
+              <p>Pick a list {`${typeof window !== "undefined" && window.innerWidth < 768 ? "above" : "from the left"}`}, or add a folder and list to an account to get started.</p>
             </div>
           </div>
         ) : (

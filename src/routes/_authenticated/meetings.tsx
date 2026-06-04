@@ -53,7 +53,7 @@ function MeetingsPage() {
         <div>
           <h1 className="text-2xl sm:text-3xl lg:text-4xl text-primary">Meetings</h1>
           <p className="mt-2 text-muted-foreground">
-            {activeId === ALL ? "Across all businesses" : "Filtered to active business"}
+            {activeId === ALL ? "Across all accounts" : "Filtered to active account"}
           </p>
         </div>
         <Button onClick={() => setOpen(true)} className="gap-2">
@@ -223,7 +223,7 @@ function NewMeetingDialog({
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <Label>Business</Label>
+              <Label>Account</Label>
               <Select
                 value={businessId ?? "_none"}
                 onValueChange={(v) => setBusinessId(v === "_none" ? null : v)}
@@ -232,7 +232,7 @@ function NewMeetingDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="_none">No business</SelectItem>
+                  <SelectItem value="_none">No account</SelectItem>
                   {businesses.map((b) => (
                     <SelectItem key={b.id} value={b.id}>
                       {b.name}
