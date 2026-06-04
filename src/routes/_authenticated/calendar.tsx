@@ -2258,3 +2258,98 @@ async function exportEventsXlsx({ events, calById, view, title }: ExportArgs) {
     toast.error(e instanceof Error ? e.message : "Failed to export Excel");
   }
 }
+
+// ---------- Create Calendar inline dialog ----------
+
+function CreateCalendarDialog({
+  businesses,
+  activeBizId,
+  onClose,
+  onCreated,
+}: {
+  businesses: Business[];
+  activeBizId: string;
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [color, setColor] = useState(PALETTE[0]);
+  const defaultBiz =
+    activeBizId !== ALL && businesses.some((b) => b.id === activeBizId)
+      ? activeBizId
+      : (businesses[0]?.id ?? "__personal__");
+  const [businessId, setBusinessId] = useState<string>(defaultBiz);
+
+  const mut = useMutation({
+    mutationFn: async () => {
+      const bizId = businessId === "__personal__" ? null : businessId;
+      await createCalendar({ name: name.trim(), color, business_id: bizId });
+    },
+    onSuccess: () => {
+      toast.success("Calendar created");
+      onCreated();
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>New calendar</DialogTitle>
+        </DialogHeader>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!name.trim()) return;
+            mut.mutate();
+          }}
+          className="space-y-3"
+        >
+          <div>
+            <Label>Name</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+          </div>
+          <div>
+            <Label>Account</Label>
+            <Select value={businessId} onValueChange={setBusinessId}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__personal__">Personal</SelectItem>
+                {businesses.map((b) => (
+                  <SelectItem key={b.id} value={b.id}>
+                    <span className="inline-flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: b.color }} />
+                      {b.name}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Color</Label>
+            <div className="flex flex-wrap gap-1.5 mt-1">
+              {PALETTE.map((c) => (
+                <button
+                  type="button"
+                  key={c}
+                  onClick={() => setColor(c)}
+                  className={cn(
+                    "h-6 w-6 rounded-full border border-border",
+                    c === color && "ring-2 ring-offset-1 ring-foreground/40",
+                  )}
+                  style={{ backgroundColor: c }}
+                />
+              ))}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+            <Button type="submit" disabled={mut.isPending || !name.trim()}>Create</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
