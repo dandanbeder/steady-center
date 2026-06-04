@@ -443,31 +443,26 @@ function FolderNode({
             <DropdownMenuItem onClick={rename}>
               <Pencil className="h-3.5 w-3.5 mr-2" /> Rename
             </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button
-                    className="w-full flex items-center px-2 py-1.5 text-sm cursor-pointer hover:bg-muted rounded-sm"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <Palette className="h-3.5 w-3.5 mr-2" /> Colour
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-2" align="end">
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {PALETTE.map((c) => (
-                      <button
-                        key={c}
-                        onClick={() => setColor(c)}
-                        className="h-6 w-6 rounded-full border border-border"
-                        style={{ background: c }}
-                        aria-label={c}
-                      />
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </DropdownMenuItem>
+            <div className="px-2 py-1.5 text-xs text-muted-foreground flex items-center gap-2">
+              <Palette className="h-3.5 w-3.5" /> Colour
+            </div>
+            <div className="px-2 pb-2 grid grid-cols-4 gap-1.5">
+              {PALETTE.map((c) => (
+                <button
+                  key={c}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setColor(c);
+                  }}
+                  className={cn(
+                    "h-5 w-5 rounded-full border border-border",
+                    folder.color === c && "ring-2 ring-ring",
+                  )}
+                  style={{ background: c }}
+                  aria-label={c}
+                />
+              ))}
+            </div>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={remove} className="text-destructive">
               <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
