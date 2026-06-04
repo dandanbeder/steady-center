@@ -258,10 +258,13 @@ function CalendarPage() {
     }
   }
 
-  function openNewOn(d: Date) {
+  function openNewOn(d: Date, opts?: { endDate?: Date; endTime?: string }) {
     setNewDefaultDate(d);
+    setNewEventEndDate(opts?.endDate ?? null);
+    setNewEventEndTime(opts?.endTime ?? null);
     setNewOpen(true);
   }
+
 
   const title = useMemo(() => {
     if (view === "month") return fmtMonth(cursor);
