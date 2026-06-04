@@ -91,22 +91,32 @@ export async function createEvent(input: {
   all_day: boolean;
   source?: string;
   external_id?: string | null;
-}) {
+}): Promise<{ id: string; syncWarning: string | null }> {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) throw new Error("Not signed in");
+
+  // Determine if parent calendar is provider-synced so we mark sync_status correctly.
+  const { data: cal } = await supabase
+    .from("calendars")
+    .select("provider")
+    .eq("id", input.calendar_id)
+    .maybeSingle();
+  const isSynced = cal?.provider === "google";
+
   const { data: inserted, error } = await supabase
     .from("events")
     .insert({
       ...input,
       source: input.source ?? "manual",
       owner_id: u.user.id,
+      sync_status: isSynced ? "pending" : "local",
     })
     .select("id, calendar_id")
     .single();
   if (error) throw error;
 
-  // If the parent calendar is Google-synced, push the event up to Google.
-  await maybePushToGoogle(inserted.id, inserted.calendar_id);
+  const syncWarning = await maybePushToGoogle(inserted.id, inserted.calendar_id);
+  return { id: inserted.id, syncWarning };
 }
 
 export async function updateEvent(
