@@ -63,6 +63,7 @@ import {
   listCalendars,
   listEvents,
   parseIcs,
+  retryEventSync,
   updateCalendar,
   updateEvent,
   type Calendar as Cal,
