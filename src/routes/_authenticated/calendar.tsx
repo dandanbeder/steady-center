@@ -1664,6 +1664,29 @@ function EditEventDialog({
                 {event.source}
               </span>
             )}
+            {cal?.provider === "google" && event.sync_status && event.sync_status !== "local" && (
+              <span
+                className={cn(
+                  "text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded inline-flex items-center gap-1",
+                  event.sync_status === "synced" && "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
+                  event.sync_status === "pending" && "bg-amber-500/15 text-amber-700 dark:text-amber-400",
+                  event.sync_status === "failed" && "bg-destructive/15 text-destructive",
+                )}
+                title={event.sync_error ?? undefined}
+              >
+                {event.sync_status}
+                {event.sync_status === "failed" && (
+                  <button
+                    type="button"
+                    onClick={() => retry.mutate()}
+                    disabled={retry.isPending}
+                    className="underline decoration-dotted ml-1"
+                  >
+                    retry
+                  </button>
+                )}
+              </span>
+            )}
           </DialogTitle>
         </DialogHeader>
 
