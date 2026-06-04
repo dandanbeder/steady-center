@@ -4,8 +4,11 @@ import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
 import { listBusinesses } from "@/lib/businesses";
 import { listCalendars, listEvents } from "@/lib/calendars";
 import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
 import { MyInvitationsBanner } from "@/components/my-invitations-banner";
 import { UpcomingMeetings } from "@/components/upcoming-meetings";
+import { Skeleton } from "@/components/ui/skeleton";
+import type { Task } from "@/lib/tasks";
 
 export const Route = createFileRoute("/_authenticated/today")({
   head: () => ({ meta: [{ title: "Today · Heartbeat" }] }),
@@ -26,20 +29,45 @@ function startOfDay(d: Date) {
   return x;
 }
 
+/** Top open tasks due today or earlier (overdue), limited for the dashboard. */
+async function listTopOpenTasks(limit = 5): Promise<Task[]> {
+  const end = new Date();
+  end.setHours(23, 59, 59, 999);
+  const { data, error } = await supabase
+    .from("tasks")
+    .select("*")
+    .neq("status", "done")
+    .or(`due_at.is.null,due_at.lte.${end.toISOString()}`)
+    .order("due_at", { ascending: true, nullsFirst: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data ?? []) as Task[];
+}
+
 function TodayPage() {
   const { user } = useAuth();
   const { activeId } = useActiveBusiness();
-  const { data: businesses = [] } = useQuery({ queryKey: ["businesses"], queryFn: listBusinesses });
-  const { data: calendars = [] } = useQuery({ queryKey: ["calendars"], queryFn: listCalendars });
 
   const start = startOfDay(new Date());
   const end = new Date(start);
   end.setDate(end.getDate() + 1);
 
-  const { data: events = [] } = useQuery({
-    queryKey: ["events", start.toISOString(), end.toISOString()],
+  // All queries fire in parallel — react-query handles dedupe and SWR caching.
+  const businessesQ = useQuery({ queryKey: ["businesses"], queryFn: listBusinesses });
+  const calendarsQ = useQuery({ queryKey: ["calendars"], queryFn: listCalendars });
+  const eventsQ = useQuery({
+    queryKey: ["events", "today", start.toISOString()],
     queryFn: () => listEvents(start, end),
   });
+  const topTasksQ = useQuery({
+    queryKey: ["tasks", "today-top", 5],
+    queryFn: () => listTopOpenTasks(5),
+  });
+
+  const businesses = businessesQ.data ?? [];
+  const calendars = calendarsQ.data ?? [];
+  const events = eventsQ.data ?? [];
+  const topTasks = topTasksQ.data ?? [];
 
   const active = activeId === ALL ? null : businesses.find((b) => b.id === activeId);
   const name = (user?.user_metadata?.full_name as string | undefined)?.split(" ")[0];
@@ -70,7 +98,9 @@ function TodayPage() {
 
       <div className="mt-12 grid gap-4 sm:grid-cols-2">
         <Card title="Today's events">
-          {todays.length === 0 ? (
+          {eventsQ.isLoading ? (
+            <SkeletonList />
+          ) : todays.length === 0 ? (
             <p className="text-sm text-muted-foreground">Nothing scheduled.</p>
           ) : (
             <ul className="space-y-2">
@@ -95,10 +125,41 @@ function TodayPage() {
             </ul>
           )}
         </Card>
-        <Card title="On your plate"><p className="text-sm text-muted-foreground">Tasks will land here.</p></Card>
+        <Card title="On your plate">
+          {topTasksQ.isLoading ? (
+            <SkeletonList />
+          ) : topTasks.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nothing due. Nice.</p>
+          ) : (
+            <ul className="space-y-2">
+              {topTasks
+                .filter((t) => activeId === ALL || t.business_id === activeId)
+                .map((t) => (
+                  <li key={t.id} className="text-sm">
+                    <div className="font-medium truncate">{t.title}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {t.due_at
+                        ? new Date(t.due_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })
+                        : "No due date"}
+                    </div>
+                  </li>
+                ))}
+            </ul>
+          )}
+        </Card>
         <Card title="Recent notes"><p className="text-sm text-muted-foreground">Notes you've touched lately.</p></Card>
         <Card title="Upcoming meetings"><UpcomingMeetings horizonDays={7} limit={5} /></Card>
       </div>
+    </div>
+  );
+}
+
+function SkeletonList() {
+  return (
+    <div className="space-y-2">
+      <Skeleton className="h-4 w-3/4" />
+      <Skeleton className="h-3 w-1/2" />
+      <Skeleton className="h-4 w-2/3" />
     </div>
   );
 }
