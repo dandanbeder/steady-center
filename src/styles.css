@@ -81,7 +81,7 @@
   --secondary-foreground: oklch(0.28 0.05 165);
 
   --muted: oklch(0.94 0.014 85);
-  --muted-foreground: oklch(0.5 0.03 160);
+  --muted-foreground: oklch(0.42 0.03 160);
 
   /* Warm clay accent */
   --accent: oklch(0.66 0.13 45);
