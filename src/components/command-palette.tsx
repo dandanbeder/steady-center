@@ -50,7 +50,7 @@ const PAGES: { to: string; label: string; icon: typeof Home }[] = [
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ];
 
-export function CommandPalette({ open, onOpenChange }: Props) {
+export function CommandPalette({ open, onOpenChange, onAskAssistant }: Props) {
   const navigate = useNavigate();
   const { activeId, setActiveId } = useActiveBusiness();
   const [query, setQuery] = useState("");
