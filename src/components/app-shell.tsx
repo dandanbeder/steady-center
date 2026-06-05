@@ -88,6 +88,12 @@ export function AppShell({ children }: { children: ReactNode }) {
     queryFn: listBusinesses,
   });
 
+  const { data: inboxCount = 0 } = useQuery({
+    queryKey: ["inbox", "count"],
+    queryFn: countPendingInbox,
+    refetchInterval: 30000,
+  });
+
   const active =
     activeId === ALL ? null : businesses.find((b) => b.id === activeId) ?? null;
 
