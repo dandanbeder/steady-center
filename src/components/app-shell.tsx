@@ -269,6 +269,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Search className="h-4 w-4" />
             <span className="hidden md:inline text-xs">Search</span>
             <kbd className="hidden md:inline-flex items-center rounded border border-border bg-muted/50 px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">⌘K</kbd>
+          </Button>
           <Button
             variant="ghost"
             size="icon"
