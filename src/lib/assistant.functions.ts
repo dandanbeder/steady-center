@@ -144,7 +144,7 @@ const TOOLS = [
 type Proposal = {
   id: string;
   type: string;
-  payload: Record<string, unknown>;
+  payload: Record<string, any>;
   summary: string;
 };
 
@@ -152,7 +152,7 @@ function uid() {
   return Math.random().toString(36).slice(2, 10);
 }
 
-function describeProposal(type: string, p: Record<string, unknown>): string {
+function describeProposal(type: string, p: Record<string, any>): string {
   switch (type) {
     case "propose_create_task":
       return `Create task: ${p.title}${p.due_at ? ` (due ${p.due_at})` : ""}${p.priority ? ` [${p.priority}]` : ""}`;
