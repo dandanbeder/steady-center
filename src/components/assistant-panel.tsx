@@ -7,7 +7,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
 import { assistantChat, applyAssistantAction } from "@/lib/assistant.functions";
 import { cn } from "@/lib/utils";
