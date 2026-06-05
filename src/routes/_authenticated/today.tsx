@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { MyInvitationsBanner } from "@/components/my-invitations-banner";
 import { UpcomingMeetings } from "@/components/upcoming-meetings";
+import { DailyPulseCard } from "@/components/daily-pulse-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Task } from "@/lib/tasks";
 import type { Note } from "@/lib/notes";
@@ -112,6 +113,7 @@ function TodayPage() {
           ? <>You're focused on <span className="text-accent">{active.name}</span> today.</>
           : "Looking across everything today."}
       </p>
+      <div className="mt-10"><DailyPulseCard /></div>
 
       <div className="mt-12 grid gap-4 sm:grid-cols-2">
         <Card title="Today's events">
