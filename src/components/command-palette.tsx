@@ -28,7 +28,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
 import { listBusinesses } from "@/lib/businesses";
 
-type Props = { open: boolean; onOpenChange: (v: boolean) => void };
+type Props = { open: boolean; onOpenChange: (v: boolean) => void; onAskAssistant?: (prompt: string) => void };
 
 function useDebounced<T>(value: T, ms = 200): T {
   const [v, setV] = useState(value);
