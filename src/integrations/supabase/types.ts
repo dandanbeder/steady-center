@@ -247,6 +247,47 @@ export type Database = {
         }
         Relationships: []
       }
+      assistant_actions: {
+        Row: {
+          action_type: string
+          business_id: string | null
+          created_at: string
+          id: string
+          payload: Json
+          result_id: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          business_id?: string | null
+          created_at?: string
+          id?: string
+          payload?: Json
+          result_id?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          business_id?: string | null
+          created_at?: string
+          id?: string
+          payload?: Json
+          result_id?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assistant_actions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       businesses: {
         Row: {
           color: string

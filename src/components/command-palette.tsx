@@ -14,6 +14,7 @@ import {
   Plus,
   ArrowRight,
   Building2,
+  Sparkles,
 } from "lucide-react";
 import {
   CommandDialog,
@@ -28,7 +29,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
 import { listBusinesses } from "@/lib/businesses";
 
-type Props = { open: boolean; onOpenChange: (v: boolean) => void };
+type Props = { open: boolean; onOpenChange: (v: boolean) => void; onAskAssistant?: (prompt: string) => void };
 
 function useDebounced<T>(value: T, ms = 200): T {
   const [v, setV] = useState(value);
@@ -50,7 +51,7 @@ const PAGES: { to: string; label: string; icon: typeof Home }[] = [
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ];
 
-export function CommandPalette({ open, onOpenChange }: Props) {
+export function CommandPalette({ open, onOpenChange, onAskAssistant }: Props) {
   const navigate = useNavigate();
   const { activeId, setActiveId } = useActiveBusiness();
   const [query, setQuery] = useState("");
@@ -118,6 +119,19 @@ export function CommandPalette({ open, onOpenChange }: Props) {
         </CommandEmpty>
 
         <CommandGroup heading="Actions">
+          {onAskAssistant && (
+            <CommandItem
+              value="ask assistant"
+              onSelect={() => {
+                const prompt = query.trim();
+                onOpenChange(false);
+                onAskAssistant(prompt || "");
+              }}
+            >
+              <Sparkles className="h-4 w-4" />
+              <span>{query.trim() ? `Ask assistant: "${query.trim()}"` : "Ask Heartbeat Assistant"}</span>
+            </CommandItem>
+          )}
           <CommandItem onSelect={() => go("/tasks")}>
             <Plus className="h-4 w-4" />
             <span>New task</span>
