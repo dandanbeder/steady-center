@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Calendar, CalendarRange, CheckSquare, FileText, Home, Settings, Users, LogOut, ChevronDown, BarChart3, PanelLeftClose, PanelLeftOpen, Shield, Menu, AtSign, BookOpen, Sparkles } from "lucide-react";
+import { Calendar, CalendarRange, CheckSquare, FileText, Home, Settings, Users, LogOut, ChevronDown, BarChart3, PanelLeftClose, PanelLeftOpen, Shield, Menu, AtSign, BookOpen, Sparkles, Search } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import heartbeatLogo from "@/assets/heartbeat-horizontal.svg";
 import heartbeatMono from "@/assets/heartbeat-mono.svg";
@@ -21,6 +21,7 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AppFooter } from "@/components/app-footer";
+import { CommandPalette } from "@/components/command-palette";
 
 const NAV: { to: string; label: string; icon: typeof Home }[] = [
   { to: "/today", label: "Today", icon: Home },
@@ -48,11 +49,24 @@ export function AppShell({ children }: { children: ReactNode }) {
     return window.localStorage.getItem(STORAGE_KEY) === "1";
   });
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [cmdOpen, setCmdOpen] = useState(false);
 
   // Close mobile drawer on route change
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
+
+  // Global Cmd/Ctrl+K to open command palette
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setCmdOpen((o) => !o);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const toggleCollapsed = () => {
     setCollapsed((c) => {
@@ -242,7 +256,20 @@ export function AppShell({ children }: { children: ReactNode }) {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setCmdOpen(true)}
+            aria-label="Search (⌘K)"
+            className="gap-2 text-muted-foreground hover:text-foreground shrink-0"
+          >
+            <Search className="h-4 w-4" />
+            <span className="hidden md:inline text-xs">Search</span>
+            <kbd className="hidden md:inline-flex items-center rounded border border-border bg-muted/50 px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">⌘K</kbd>
+          </Button>
         </header>
+        <CommandPalette open={cmdOpen} onOpenChange={setCmdOpen} />
+
 
         <SupportSessionBanner />
         <AnnouncementBanner />
