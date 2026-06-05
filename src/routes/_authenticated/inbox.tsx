@@ -60,59 +60,57 @@ function InboxPage() {
   });
 
   return (
-    <AppShell>
-      <div className="mx-auto max-w-3xl px-4 sm:px-6 py-6 space-y-6">
-        <header className="flex items-center gap-3">
-          <InboxIcon className="h-6 w-6" />
-          <div>
-            <h1 className="text-2xl font-semibold">Inbox</h1>
-            <p className="text-sm text-muted-foreground">
-              Capture now, triage later. Accept a suggestion to file it into the right module.
-            </p>
-          </div>
-        </header>
-
-        <div className="rounded-lg border bg-card p-3 flex gap-2">
-          <Input
-            placeholder="Capture anything — Enter to send to Inbox"
-            value={capture}
-            onChange={(e) => setCapture(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && capture.trim()) captureMut.mutate(capture.trim());
-            }}
-          />
-          <Button
-            onClick={() => capture.trim() && captureMut.mutate(capture.trim())}
-            disabled={!capture.trim() || captureMut.isPending}
-          >
-            Capture
-          </Button>
+    <div className="mx-auto max-w-3xl px-4 sm:px-6 py-6 space-y-6">
+      <header className="flex items-center gap-3">
+        <InboxIcon className="h-6 w-6" />
+        <div>
+          <h1 className="text-2xl font-semibold">Inbox</h1>
+          <p className="text-sm text-muted-foreground">
+            Capture now, triage later. Accept a suggestion to file it into the right module.
+          </p>
         </div>
+      </header>
 
-        {isLoading ? (
-          <div className="py-10 text-center text-muted-foreground">
-            <Loader2 className="h-5 w-5 animate-spin inline" />
-          </div>
-        ) : items.length === 0 ? (
-          <div className="rounded-lg border border-dashed py-16 text-center text-muted-foreground">
-            <InboxIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p>Inbox zero. Anything you capture by mic or quick-add lands here.</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {items.map((it) => (
-              <InboxCard
-                key={it.id}
-                item={it}
-                businesses={businesses}
-                folders={folders}
-                lists={lists}
-              />
-            ))}
-          </div>
-        )}
+      <div className="rounded-lg border bg-card p-3 flex gap-2">
+        <Input
+          placeholder="Capture anything — Enter to send to Inbox"
+          value={capture}
+          onChange={(e) => setCapture(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && capture.trim()) captureMut.mutate(capture.trim());
+          }}
+        />
+        <Button
+          onClick={() => capture.trim() && captureMut.mutate(capture.trim())}
+          disabled={!capture.trim() || captureMut.isPending}
+        >
+          Capture
+        </Button>
       </div>
-    </AppShell>
+
+      {isLoading ? (
+        <div className="py-10 text-center text-muted-foreground">
+          <Loader2 className="h-5 w-5 animate-spin inline" />
+        </div>
+      ) : items.length === 0 ? (
+        <div className="rounded-lg border border-dashed py-16 text-center text-muted-foreground">
+          <InboxIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
+          <p>Inbox zero. Anything you capture by mic or quick-add lands here.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {items.map((it) => (
+            <InboxCard
+              key={it.id}
+              item={it}
+              businesses={businesses}
+              folders={folders}
+              lists={lists}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
