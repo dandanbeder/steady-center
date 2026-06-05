@@ -256,7 +256,20 @@ export function AppShell({ children }: { children: ReactNode }) {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setCmdOpen(true)}
+            aria-label="Search (⌘K)"
+            className="gap-2 text-muted-foreground hover:text-foreground shrink-0"
+          >
+            <Search className="h-4 w-4" />
+            <span className="hidden md:inline text-xs">Search</span>
+            <kbd className="hidden md:inline-flex items-center rounded border border-border bg-muted/50 px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">⌘K</kbd>
+          </Button>
         </header>
+        <CommandPalette open={cmdOpen} onOpenChange={setCmdOpen} />
+
 
         <SupportSessionBanner />
         <AnnouncementBanner />
