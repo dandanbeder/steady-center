@@ -14,6 +14,7 @@ import {
   Plus,
   ArrowRight,
   Building2,
+  Sparkles,
 } from "lucide-react";
 import {
   CommandDialog,
