@@ -72,14 +72,14 @@ export function CommandPalette({ open, onOpenChange }: Props) {
     enabled: open && debounced.trim().length >= 2,
     queryFn: async () => {
       const q = `%${debounced.trim()}%`;
-      const apply = <T extends { eq: (k: string, v: string) => T }>(query: T) =>
+      const apply = (query: any) =>
         businessFilter ? query.eq("business_id", businessFilter) : query;
 
       const [tasks, notes, events, meetings, folders] = await Promise.all([
         apply(supabase.from("tasks").select("id,title,business_id").ilike("title", q).limit(8)),
         apply(supabase.from("notes").select("id,title,business_id").ilike("title", q).limit(8)),
         apply(supabase.from("events").select("id,title,business_id,start_at").ilike("title", q).limit(8)),
-        apply(supabase.from("meetings" as never).select("id,title,business_id") as never).ilike("title", q).limit(8),
+        apply((supabase.from("meetings" as any) as any).select("id,title,business_id").ilike("title", q).limit(8)),
         apply(supabase.from("folders").select("id,name,business_id").ilike("name", q).limit(6)),
       ]);
       return {
