@@ -27,6 +27,7 @@ import { AssistantPanel } from "@/components/assistant-panel";
 
 const NAV: { to: string; label: string; icon: typeof Home }[] = [
   { to: "/today", label: "Today", icon: Home },
+  { to: "/inbox", label: "Inbox", icon: Inbox },
   { to: "/my-week", label: "My Week", icon: CalendarRange },
   { to: "/calendar", label: "Calendar", icon: Calendar },
   { to: "/tasks", label: "Tasks", icon: CheckSquare },
