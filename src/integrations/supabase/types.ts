@@ -374,6 +374,63 @@ export type Database = {
           },
         ]
       }
+      daily_pulses: {
+        Row: {
+          at_risk_count: number
+          capacity_hours: number
+          confirmed_focus_at: string | null
+          created_at: string
+          email_sent_at: string | null
+          focus_3: Json
+          generated_at: string | null
+          id: string
+          kind: string
+          meetings_json: Json
+          overdue_count: number
+          owner_id: string
+          pulse_date: string
+          scheduled_hours: number
+          summary_text: string | null
+          updated_at: string
+        }
+        Insert: {
+          at_risk_count?: number
+          capacity_hours?: number
+          confirmed_focus_at?: string | null
+          created_at?: string
+          email_sent_at?: string | null
+          focus_3?: Json
+          generated_at?: string | null
+          id?: string
+          kind: string
+          meetings_json?: Json
+          overdue_count?: number
+          owner_id: string
+          pulse_date: string
+          scheduled_hours?: number
+          summary_text?: string | null
+          updated_at?: string
+        }
+        Update: {
+          at_risk_count?: number
+          capacity_hours?: number
+          confirmed_focus_at?: string | null
+          created_at?: string
+          email_sent_at?: string | null
+          focus_3?: Json
+          generated_at?: string | null
+          id?: string
+          kind?: string
+          meetings_json?: Json
+          overdue_count?: number
+          owner_id?: string
+          pulse_date?: string
+          scheduled_hours?: number
+          summary_text?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_unsubscribe_tokens: {
         Row: {
           created_at: string
