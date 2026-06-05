@@ -37,6 +37,7 @@ import { Route as AuthenticatedMeetingsMeetingIdRouteImport } from './routes/_au
 import { Route as ApiPublicHooksSyncCalendarsRouteImport } from './routes/api/public/hooks/sync-calendars'
 import { Route as ApiPublicHooksProcessRemindersRouteImport } from './routes/api/public/hooks/process-reminders'
 import { Route as ApiPublicHooksGenerateWeeklyReportsRouteImport } from './routes/api/public/hooks/generate-weekly-reports'
+import { Route as ApiPublicHooksDailyPulseRouteImport } from './routes/api/public/hooks/daily-pulse'
 
 const UnsubscribeRoute = UnsubscribeRouteImport.update({
   id: '/unsubscribe',
@@ -182,6 +183,12 @@ const ApiPublicHooksGenerateWeeklyReportsRoute =
     path: '/api/public/hooks/generate-weekly-reports',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksDailyPulseRoute =
+  ApiPublicHooksDailyPulseRouteImport.update({
+    id: '/api/public/hooks/daily-pulse',
+    path: '/api/public/hooks/daily-pulse',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -208,6 +215,7 @@ export interface FileRoutesByFullPath {
   '/today': typeof AuthenticatedTodayRoute
   '/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
   '/reports/$reportId': typeof AuthenticatedReportsReportIdRoute
+  '/api/public/hooks/daily-pulse': typeof ApiPublicHooksDailyPulseRoute
   '/api/public/hooks/generate-weekly-reports': typeof ApiPublicHooksGenerateWeeklyReportsRoute
   '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
   '/api/public/hooks/sync-calendars': typeof ApiPublicHooksSyncCalendarsRoute
@@ -237,6 +245,7 @@ export interface FileRoutesByTo {
   '/today': typeof AuthenticatedTodayRoute
   '/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
   '/reports/$reportId': typeof AuthenticatedReportsReportIdRoute
+  '/api/public/hooks/daily-pulse': typeof ApiPublicHooksDailyPulseRoute
   '/api/public/hooks/generate-weekly-reports': typeof ApiPublicHooksGenerateWeeklyReportsRoute
   '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
   '/api/public/hooks/sync-calendars': typeof ApiPublicHooksSyncCalendarsRoute
@@ -268,6 +277,7 @@ export interface FileRoutesById {
   '/_authenticated/today': typeof AuthenticatedTodayRoute
   '/_authenticated/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
   '/_authenticated/reports/$reportId': typeof AuthenticatedReportsReportIdRoute
+  '/api/public/hooks/daily-pulse': typeof ApiPublicHooksDailyPulseRoute
   '/api/public/hooks/generate-weekly-reports': typeof ApiPublicHooksGenerateWeeklyReportsRoute
   '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
   '/api/public/hooks/sync-calendars': typeof ApiPublicHooksSyncCalendarsRoute
@@ -299,6 +309,7 @@ export interface FileRouteTypes {
     | '/today'
     | '/meetings/$meetingId'
     | '/reports/$reportId'
+    | '/api/public/hooks/daily-pulse'
     | '/api/public/hooks/generate-weekly-reports'
     | '/api/public/hooks/process-reminders'
     | '/api/public/hooks/sync-calendars'
@@ -328,6 +339,7 @@ export interface FileRouteTypes {
     | '/today'
     | '/meetings/$meetingId'
     | '/reports/$reportId'
+    | '/api/public/hooks/daily-pulse'
     | '/api/public/hooks/generate-weekly-reports'
     | '/api/public/hooks/process-reminders'
     | '/api/public/hooks/sync-calendars'
@@ -358,6 +370,7 @@ export interface FileRouteTypes {
     | '/_authenticated/today'
     | '/_authenticated/meetings/$meetingId'
     | '/_authenticated/reports/$reportId'
+    | '/api/public/hooks/daily-pulse'
     | '/api/public/hooks/generate-weekly-reports'
     | '/api/public/hooks/process-reminders'
     | '/api/public/hooks/sync-calendars'
@@ -373,6 +386,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   TermsRoute: typeof TermsRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
+  ApiPublicHooksDailyPulseRoute: typeof ApiPublicHooksDailyPulseRoute
   ApiPublicHooksGenerateWeeklyReportsRoute: typeof ApiPublicHooksGenerateWeeklyReportsRoute
   ApiPublicHooksProcessRemindersRoute: typeof ApiPublicHooksProcessRemindersRoute
   ApiPublicHooksSyncCalendarsRoute: typeof ApiPublicHooksSyncCalendarsRoute
@@ -576,6 +590,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksGenerateWeeklyReportsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/daily-pulse': {
+      id: '/api/public/hooks/daily-pulse'
+      path: '/api/public/hooks/daily-pulse'
+      fullPath: '/api/public/hooks/daily-pulse'
+      preLoaderRoute: typeof ApiPublicHooksDailyPulseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -651,6 +672,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   TermsRoute: TermsRoute,
   UnsubscribeRoute: UnsubscribeRoute,
+  ApiPublicHooksDailyPulseRoute: ApiPublicHooksDailyPulseRoute,
   ApiPublicHooksGenerateWeeklyReportsRoute:
     ApiPublicHooksGenerateWeeklyReportsRoute,
   ApiPublicHooksProcessRemindersRoute: ApiPublicHooksProcessRemindersRoute,
