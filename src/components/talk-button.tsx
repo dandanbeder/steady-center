@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Mic, Square, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -8,37 +8,16 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { listBusinesses } from "@/lib/businesses";
-import { listFolders, createFolder, createList, listLists, createTask } from "@/lib/tasks";
-import { createNote } from "@/lib/notes";
-import { parseVoiceCapture } from "@/lib/voice.functions";
+import { captureToInbox } from "@/lib/inbox";
+import { suggestInboxItem } from "@/lib/inbox-ai.functions";
 import { cn } from "@/lib/utils";
 
-type Phase = "idle" | "listening" | "thinking" | "review";
+type Phase = "idle" | "listening" | "saving";
 
-type Parsed = {
-  business: string | null;
-  folder: string | null;
-  note_title: string;
-  note_body: string;
-  follow_up: { title: string | null; due_at: string | null };
-};
-
-// Web Speech API typings
 type SR = any;
 function getSpeechRecognition(): SR | null {
   if (typeof window === "undefined") return null;
@@ -51,34 +30,18 @@ export function TalkButton() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [transcript, setTranscript] = useState("");
   const [interim, setInterim] = useState("");
-  const [parsed, setParsed] = useState<Parsed | null>(null);
-  const [businessId, setBusinessId] = useState<string | "none">("none");
-  const [folderName, setFolderName] = useState("");
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
-  const [followUpTitle, setFollowUpTitle] = useState("");
-  const [followUpDue, setFollowUpDue] = useState("");
-  const [saving, setSaving] = useState(false);
 
   const recogRef = useRef<any>(null);
   const qc = useQueryClient();
-  const parseVoice = useServerFn(parseVoiceCapture);
+  const suggest = useServerFn(suggestInboxItem);
 
-  const { data: businesses = [] } = useQuery({ queryKey: ["businesses"], queryFn: listBusinesses });
-  const { data: folders = [] } = useQuery({ queryKey: ["folders"], queryFn: listFolders });
-
-  // reset on close
   useEffect(() => {
     if (!open) {
-      try {
-        recogRef.current?.stop?.();
-      } catch {}
+      try { recogRef.current?.stop?.(); } catch {}
       recogRef.current = null;
       setPhase("idle");
       setTranscript("");
       setInterim("");
-      setParsed(null);
-      setSaving(false);
     }
   }, [open]);
 
@@ -107,18 +70,30 @@ export function TalkButton() {
       toast.error(`Speech error: ${e.error ?? "unknown"}`);
       setPhase("idle");
     };
-    r.onend = () => {
-      // user-driven stop handled in stopListening
-    };
     recogRef.current = r;
     r.start();
     setPhase("listening");
   };
 
-  const stopListening = async () => {
+  const captureNow = async (text: string) => {
+    setPhase("saving");
     try {
-      recogRef.current?.stop?.();
-    } catch {}
+      const item = await captureToInbox({ raw_text: text, source: "voice" });
+      suggest({ data: { inbox_id: item.id, now: new Date().toISOString() } })
+        .then(() => qc.invalidateQueries({ queryKey: ["inbox"] }))
+        .catch(() => {});
+      qc.invalidateQueries({ queryKey: ["inbox"] });
+      qc.invalidateQueries({ queryKey: ["inbox", "count"] });
+      toast.success("Captured to Inbox", { description: "Triage when ready." });
+      setOpen(false);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to capture");
+      setPhase("idle");
+    }
+  };
+
+  const stopListening = async () => {
+    try { recogRef.current?.stop?.(); } catch {}
     const finalText = (transcript + " " + interim).trim();
     setInterim("");
     if (!finalText) {
@@ -126,117 +101,7 @@ export function TalkButton() {
       setPhase("idle");
       return;
     }
-    setTranscript(finalText);
-    setPhase("thinking");
-    try {
-      const result = (await parseVoice({
-        data: {
-          transcript: finalText,
-          businesses: businesses.map((b) => ({ id: b.id, name: b.name })),
-          now: new Date().toISOString(),
-        },
-      })) as Parsed;
-      setParsed(result);
-      // prefill
-      const matched = businesses.find(
-        (b) => b.name.toLowerCase() === (result.business ?? "").toLowerCase(),
-      );
-      setBusinessId(matched ? matched.id : "none");
-      setFolderName(result.folder ?? "");
-      setTitle(result.note_title);
-      setBody(result.note_body);
-      setFollowUpTitle(result.follow_up.title ?? "");
-      setFollowUpDue(result.follow_up.due_at ? result.follow_up.due_at.slice(0, 10) : "");
-      setPhase("review");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to process");
-      setPhase("idle");
-    }
-  };
-
-  const confirm = async () => {
-    setSaving(true);
-    try {
-      const biz = businessId === "none" ? null : businessId;
-
-      // Find or create folder (within selected business) if a name is provided
-      let folderId: string | null = null;
-      if (biz && folderName.trim()) {
-        const existing = folders.find(
-          (f) =>
-            f.business_id === biz &&
-            f.name.toLowerCase() === folderName.trim().toLowerCase(),
-        );
-        if (existing) {
-          folderId = existing.id;
-        } else {
-          await createFolder({ business_id: biz, name: folderName.trim() });
-          const fresh = await qc.fetchQuery({ queryKey: ["folders"], queryFn: listFolders });
-          folderId =
-            fresh.find(
-              (f) =>
-                f.business_id === biz &&
-                f.name.toLowerCase() === folderName.trim().toLowerCase(),
-            )?.id ?? null;
-        }
-      }
-
-      await createNote({
-        business_id: biz,
-        folder_id: folderId,
-        title: title.trim() || "Untitled note",
-        body,
-        source: "voice",
-      });
-
-      if (followUpTitle.trim() && biz) {
-        // Ensure a folder + list exist to attach the task to
-        let taskFolderId = folderId;
-        if (!taskFolderId) {
-          const inbox = folders.find(
-            (f) => f.business_id === biz && f.name.toLowerCase() === "inbox",
-          );
-          if (inbox) {
-            taskFolderId = inbox.id;
-          } else {
-            await createFolder({ business_id: biz, name: "Inbox" });
-            const fresh = await qc.fetchQuery({ queryKey: ["folders"], queryFn: listFolders });
-            taskFolderId =
-              fresh.find(
-                (f) => f.business_id === biz && f.name.toLowerCase() === "inbox",
-              )?.id ?? null;
-          }
-        }
-        if (taskFolderId) {
-          const lists = await qc.fetchQuery({ queryKey: ["lists"], queryFn: listLists });
-          let list = lists.find((l) => l.folder_id === taskFolderId);
-          if (!list) {
-            await createList({ folder_id: taskFolderId, name: "Tasks" });
-            const refreshed = await qc.fetchQuery({ queryKey: ["lists"], queryFn: listLists });
-            list = refreshed.find((l) => l.folder_id === taskFolderId);
-          }
-          if (list) {
-            const due = followUpDue ? new Date(followUpDue).toISOString() : null;
-            await createTask({
-              list_id: list.id,
-              business_id: biz,
-              title: followUpTitle.trim(),
-              due_at: due,
-            });
-          }
-        }
-      } else if (followUpTitle.trim() && !biz) {
-        toast.message("Follow-up skipped — pick an account to file it under.");
-      }
-
-      qc.invalidateQueries();
-      toast.success("Saved");
-      setOpen(false);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to save");
-    } finally {
-      setSaving(false);
-    }
+    await captureNow(finalText);
   };
 
   const liveText = (transcript + " " + interim).trim();
@@ -246,7 +111,6 @@ export function TalkButton() {
       <button
         onClick={() => {
           setOpen(true);
-          // start listening immediately
           setTimeout(() => startListening(), 50);
         }}
         className={cn(
@@ -264,108 +128,52 @@ export function TalkButton() {
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-xl">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>
               {phase === "listening" && "Listening…"}
-              {phase === "thinking" && "Making sense of it…"}
-              {phase === "review" && "Confirm note"}
+              {phase === "saving" && "Saving to Inbox…"}
               {phase === "idle" && "Talk"}
             </DialogTitle>
             <DialogDescription>
-              {phase === "listening" && "Speak naturally. Press stop when you're done."}
-              {phase === "review" && "Review and adjust before saving. Nothing is saved without your confirmation."}
+              {phase === "listening" && "Speak naturally. We'll drop it in your Inbox and AI will suggest how to file it."}
+              {phase === "saving" && "Just a sec…"}
             </DialogDescription>
           </DialogHeader>
 
-          {(phase === "listening" || phase === "thinking") && (
-            <div className="space-y-4">
-              <div className="min-h-[120px] rounded-lg border bg-muted/40 p-4 text-sm leading-relaxed">
-                {liveText || (
-                  <span className="text-muted-foreground italic">Waiting for words…</span>
-                )}
-                {phase === "listening" && interim && (
-                  <span className="text-muted-foreground"> {interim}</span>
-                )}
-              </div>
+          <div className="space-y-3">
+            <Textarea
+              value={liveText}
+              onChange={(e) => { setTranscript(e.target.value); setInterim(""); }}
+              rows={5}
+              placeholder="Or type your capture here…"
+              className="text-sm"
+            />
+            <div className="flex gap-2">
               {phase === "listening" ? (
-                <Button onClick={stopListening} variant="default" className="w-full gap-2">
-                  <Square className="h-4 w-4" /> Stop and process
+                <Button onClick={stopListening} className="flex-1 gap-2">
+                  <Square className="h-4 w-4" /> Stop & capture
+                </Button>
+              ) : phase === "saving" ? (
+                <Button disabled className="flex-1 gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Saving…
                 </Button>
               ) : (
-                <div className="flex items-center justify-center gap-2 text-muted-foreground py-2">
-                  <Loader2 className="h-4 w-4 animate-spin" /> Thinking…
-                </div>
+                <>
+                  <Button onClick={startListening} variant="outline" className="gap-2">
+                    <Mic className="h-4 w-4" /> Record
+                  </Button>
+                  <Button
+                    onClick={() => liveText.trim() && captureNow(liveText.trim())}
+                    disabled={!liveText.trim()}
+                    className="flex-1"
+                  >
+                    Send to Inbox
+                  </Button>
+                </>
               )}
             </div>
-          )}
-
-          {phase === "review" && parsed && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label>Account</Label>
-                  <Select value={businessId} onValueChange={(v) => setBusinessId(v as any)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No account</SelectItem>
-                      {businesses.map((b) => (
-                        <SelectItem key={b.id} value={b.id}>
-                          {b.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Folder</Label>
-                  <Input
-                    value={folderName}
-                    onChange={(e) => setFolderName(e.target.value)}
-                    placeholder="e.g. Sales"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Title</Label>
-                <Input value={title} onChange={(e) => setTitle(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Note</Label>
-                <Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={5} />
-              </div>
-              <div className="rounded-lg border border-dashed p-3 space-y-3">
-                <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-                  Follow-up task
-                </Label>
-                <Input
-                  value={followUpTitle}
-                  onChange={(e) => setFollowUpTitle(e.target.value)}
-                  placeholder="No follow-up"
-                />
-                <Input
-                  type="date"
-                  value={followUpDue}
-                  onChange={(e) => setFollowUpDue(e.target.value)}
-                />
-              </div>
-            </div>
-          )}
-
-          <DialogFooter>
-            {phase === "review" && (
-              <>
-                <Button variant="ghost" onClick={() => setOpen(false)} disabled={saving}>
-                  Cancel
-                </Button>
-                <Button onClick={confirm} disabled={saving}>
-                  {saving ? "Saving…" : "Save"}
-                </Button>
-              </>
-            )}
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </>

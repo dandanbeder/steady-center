@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Calendar, CalendarRange, CheckSquare, FileText, Home, Settings, Users, LogOut, ChevronDown, BarChart3, PanelLeftClose, PanelLeftOpen, Shield, Menu, AtSign, BookOpen, Sparkles, Search } from "lucide-react";
+import { Calendar, CalendarRange, CheckSquare, FileText, Home, Settings, Users, LogOut, ChevronDown, BarChart3, PanelLeftClose, PanelLeftOpen, Shield, Menu, AtSign, BookOpen, Sparkles, Search, Inbox } from "lucide-react";
+import { countPendingInbox } from "@/lib/inbox";
 import { useEffect, useState, type ReactNode } from "react";
 import heartbeatLogo from "@/assets/heartbeat-horizontal.svg";
 import heartbeatMono from "@/assets/heartbeat-mono.svg";
@@ -26,6 +27,7 @@ import { AssistantPanel } from "@/components/assistant-panel";
 
 const NAV: { to: string; label: string; icon: typeof Home }[] = [
   { to: "/today", label: "Today", icon: Home },
+  { to: "/inbox", label: "Inbox", icon: Inbox },
   { to: "/my-week", label: "My Week", icon: CalendarRange },
   { to: "/calendar", label: "Calendar", icon: Calendar },
   { to: "/tasks", label: "Tasks", icon: CheckSquare },
@@ -86,6 +88,12 @@ export function AppShell({ children }: { children: ReactNode }) {
     queryFn: listBusinesses,
   });
 
+  const { data: inboxCount = 0 } = useQuery({
+    queryKey: ["inbox", "count"],
+    queryFn: countPendingInbox,
+    refetchInterval: 30000,
+  });
+
   const active =
     activeId === ALL ? null : businesses.find((b) => b.id === activeId) ?? null;
 
@@ -100,6 +108,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {NAV.map((item) => {
         const Icon = item.icon;
         const active = isActive(item.to);
+        const showBadge = item.to === "/inbox" && inboxCount > 0;
         return (
           <Link
             key={item.to}
@@ -107,7 +116,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             onClick={onNavigate}
             title={compact ? item.label : undefined}
             className={cn(
-              "flex items-center gap-3 rounded-lg text-sm transition-colors",
+              "flex items-center gap-3 rounded-lg text-sm transition-colors relative",
               compact ? "justify-center px-2 py-2" : "px-3 py-2.5",
               "min-h-[44px]",
               active
@@ -115,8 +124,24 @@ export function AppShell({ children }: { children: ReactNode }) {
                 : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/60",
             )}
           >
-            <Icon className="h-4 w-4 shrink-0" />
-            {!compact && <span>{item.label}</span>}
+            <span className="relative shrink-0">
+              <Icon className="h-4 w-4" />
+              {compact && showBadge && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold leading-[16px] text-center">
+                  {inboxCount > 99 ? "99+" : inboxCount}
+                </span>
+              )}
+            </span>
+            {!compact && (
+              <>
+                <span className="flex-1">{item.label}</span>
+                {showBadge && (
+                  <span className="ml-auto min-w-[20px] h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold leading-5 text-center">
+                    {inboxCount > 99 ? "99+" : inboxCount}
+                  </span>
+                )}
+              </>
+            )}
           </Link>
         );
       })}

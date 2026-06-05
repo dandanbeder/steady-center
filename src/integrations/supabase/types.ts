@@ -557,6 +557,100 @@ export type Database = {
           },
         ]
       }
+      inbox_items: {
+        Row: {
+          accepted_at: string | null
+          ai_processed_at: string | null
+          ai_raw: Json | null
+          created_at: string
+          dismissed_at: string | null
+          id: string
+          owner_id: string
+          raw_text: string
+          resulting_ref_id: string | null
+          resulting_ref_type: string | null
+          source: string
+          status: string
+          suggested_body: string | null
+          suggested_business_id: string | null
+          suggested_due_at: string | null
+          suggested_folder_id: string | null
+          suggested_list_id: string | null
+          suggested_priority: string | null
+          suggested_title: string | null
+          suggested_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          ai_processed_at?: string | null
+          ai_raw?: Json | null
+          created_at?: string
+          dismissed_at?: string | null
+          id?: string
+          owner_id: string
+          raw_text: string
+          resulting_ref_id?: string | null
+          resulting_ref_type?: string | null
+          source?: string
+          status?: string
+          suggested_body?: string | null
+          suggested_business_id?: string | null
+          suggested_due_at?: string | null
+          suggested_folder_id?: string | null
+          suggested_list_id?: string | null
+          suggested_priority?: string | null
+          suggested_title?: string | null
+          suggested_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          ai_processed_at?: string | null
+          ai_raw?: Json | null
+          created_at?: string
+          dismissed_at?: string | null
+          id?: string
+          owner_id?: string
+          raw_text?: string
+          resulting_ref_id?: string | null
+          resulting_ref_type?: string | null
+          source?: string
+          status?: string
+          suggested_body?: string | null
+          suggested_business_id?: string | null
+          suggested_due_at?: string | null
+          suggested_folder_id?: string | null
+          suggested_list_id?: string | null
+          suggested_priority?: string | null
+          suggested_title?: string | null
+          suggested_type?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inbox_items_suggested_business_id_fkey"
+            columns: ["suggested_business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inbox_items_suggested_folder_id_fkey"
+            columns: ["suggested_folder_id"]
+            isOneToOne: false
+            referencedRelation: "folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inbox_items_suggested_list_id_fkey"
+            columns: ["suggested_list_id"]
+            isOneToOne: false
+            referencedRelation: "lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invitations: {
         Row: {
           business_id: string
