@@ -301,7 +301,31 @@ function HourPicker({ label, value, onChange }: { label: string; value: number; 
   );
 }
 
-// Re-export for typed input usage above
+function TimePicker({ label, hour, minute, onChange }: { label: string; hour: number; minute: number; onChange: (h: number, m: number) => void }) {
+  return (
+    <div>
+      <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">{label}</p>
+      <div className="flex gap-2">
+        <Select value={String(hour)} onValueChange={(v) => onChange(Number(v), minute)}>
+          <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
+          <SelectContent className="max-h-72">
+            {Array.from({ length: 24 }, (_, i) => (
+              <SelectItem key={i} value={String(i)}>{String(i).padStart(2, "0")}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={String(minute)} onValueChange={(v) => onChange(hour, Number(v))}>
+          <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {[0, 15, 30, 45].map((m) => (
+              <SelectItem key={m} value={String(m)}>{String(m).padStart(2, "0")}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+  );
+}
+
 export type { NotificationPrefs };
-// Avoid unused import warning if Input isn't otherwise used
 void Input;
