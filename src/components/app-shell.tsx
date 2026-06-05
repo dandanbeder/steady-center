@@ -108,6 +108,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {NAV.map((item) => {
         const Icon = item.icon;
         const active = isActive(item.to);
+        const showBadge = item.to === "/inbox" && inboxCount > 0;
         return (
           <Link
             key={item.to}
@@ -115,7 +116,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             onClick={onNavigate}
             title={compact ? item.label : undefined}
             className={cn(
-              "flex items-center gap-3 rounded-lg text-sm transition-colors",
+              "flex items-center gap-3 rounded-lg text-sm transition-colors relative",
               compact ? "justify-center px-2 py-2" : "px-3 py-2.5",
               "min-h-[44px]",
               active
@@ -123,8 +124,24 @@ export function AppShell({ children }: { children: ReactNode }) {
                 : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/60",
             )}
           >
-            <Icon className="h-4 w-4 shrink-0" />
-            {!compact && <span>{item.label}</span>}
+            <span className="relative shrink-0">
+              <Icon className="h-4 w-4" />
+              {compact && showBadge && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold leading-[16px] text-center">
+                  {inboxCount > 99 ? "99+" : inboxCount}
+                </span>
+              )}
+            </span>
+            {!compact && (
+              <>
+                <span className="flex-1">{item.label}</span>
+                {showBadge && (
+                  <span className="ml-auto min-w-[20px] h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold leading-5 text-center">
+                    {inboxCount > 99 ? "99+" : inboxCount}
+                  </span>
+                )}
+              </>
+            )}
           </Link>
         );
       })}
