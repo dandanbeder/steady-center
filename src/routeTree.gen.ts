@@ -28,6 +28,7 @@ import { Route as AuthenticatedNotesRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedMyWeekRouteImport } from './routes/_authenticated/my-week'
 import { Route as AuthenticatedMeetingsRouteImport } from './routes/_authenticated/meetings'
 import { Route as AuthenticatedJournalRouteImport } from './routes/_authenticated/journal'
+import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated/inbox'
 import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticated/calendar'
 import { Route as AuthenticatedAskNotesRouteImport } from './routes/_authenticated/ask-notes'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
@@ -131,6 +132,11 @@ const AuthenticatedJournalRoute = AuthenticatedJournalRouteImport.update({
   path: '/journal',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedInboxRoute = AuthenticatedInboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedCalendarRoute = AuthenticatedCalendarRouteImport.update({
   id: '/calendar',
   path: '/calendar',
@@ -189,6 +195,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRoute
   '/ask-notes': typeof AuthenticatedAskNotesRoute
   '/calendar': typeof AuthenticatedCalendarRoute
+  '/inbox': typeof AuthenticatedInboxRoute
   '/journal': typeof AuthenticatedJournalRoute
   '/meetings': typeof AuthenticatedMeetingsRouteWithChildren
   '/my-week': typeof AuthenticatedMyWeekRoute
@@ -217,6 +224,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRoute
   '/ask-notes': typeof AuthenticatedAskNotesRoute
   '/calendar': typeof AuthenticatedCalendarRoute
+  '/inbox': typeof AuthenticatedInboxRoute
   '/journal': typeof AuthenticatedJournalRoute
   '/meetings': typeof AuthenticatedMeetingsRouteWithChildren
   '/my-week': typeof AuthenticatedMyWeekRoute
@@ -247,6 +255,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/ask-notes': typeof AuthenticatedAskNotesRoute
   '/_authenticated/calendar': typeof AuthenticatedCalendarRoute
+  '/_authenticated/inbox': typeof AuthenticatedInboxRoute
   '/_authenticated/journal': typeof AuthenticatedJournalRoute
   '/_authenticated/meetings': typeof AuthenticatedMeetingsRouteWithChildren
   '/_authenticated/my-week': typeof AuthenticatedMyWeekRoute
@@ -277,6 +286,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/ask-notes'
     | '/calendar'
+    | '/inbox'
     | '/journal'
     | '/meetings'
     | '/my-week'
@@ -305,6 +315,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/ask-notes'
     | '/calendar'
+    | '/inbox'
     | '/journal'
     | '/meetings'
     | '/my-week'
@@ -334,6 +345,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/ask-notes'
     | '/_authenticated/calendar'
+    | '/_authenticated/inbox'
     | '/_authenticated/journal'
     | '/_authenticated/meetings'
     | '/_authenticated/my-week'
@@ -501,6 +513,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedJournalRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/inbox': {
+      id: '/_authenticated/inbox'
+      path: '/inbox'
+      fullPath: '/inbox'
+      preLoaderRoute: typeof AuthenticatedInboxRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/calendar': {
       id: '/_authenticated/calendar'
       path: '/calendar'
@@ -588,6 +607,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAskNotesRoute: typeof AuthenticatedAskNotesRoute
   AuthenticatedCalendarRoute: typeof AuthenticatedCalendarRoute
+  AuthenticatedInboxRoute: typeof AuthenticatedInboxRoute
   AuthenticatedJournalRoute: typeof AuthenticatedJournalRoute
   AuthenticatedMeetingsRoute: typeof AuthenticatedMeetingsRouteWithChildren
   AuthenticatedMyWeekRoute: typeof AuthenticatedMyWeekRoute
@@ -604,6 +624,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAskNotesRoute: AuthenticatedAskNotesRoute,
   AuthenticatedCalendarRoute: AuthenticatedCalendarRoute,
+  AuthenticatedInboxRoute: AuthenticatedInboxRoute,
   AuthenticatedJournalRoute: AuthenticatedJournalRoute,
   AuthenticatedMeetingsRoute: AuthenticatedMeetingsRouteWithChildren,
   AuthenticatedMyWeekRoute: AuthenticatedMyWeekRoute,
