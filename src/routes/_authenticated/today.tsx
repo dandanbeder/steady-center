@@ -112,6 +112,7 @@ function TodayPage() {
         {active
           ? <>You're focused on <span className="text-accent">{active.name}</span> today.</>
           : "Looking across everything today."}
+      </p>
       <div className="mt-10"><DailyPulseCard /></div>
 
       <div className="mt-12 grid gap-4 sm:grid-cols-2">
