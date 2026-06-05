@@ -11,6 +11,14 @@ export type NotificationEvents = {
   tagged: boolean;
   meeting_extra_lead_minutes: number | null;
   meeting_quiet_hours_bypass: boolean;
+  // Daily Pulse
+  morning_pulse_enabled: boolean;
+  morning_pulse_hour: number;      // 0-23 in user's timezone
+  morning_pulse_minute: number;    // 0 or 30
+  morning_pulse_email: boolean;    // also email the morning brief
+  evening_winddown_enabled: boolean;
+  evening_winddown_hour: number;
+  evening_winddown_minute: number;
 };
 export type NotificationPrefs = {
   channels: NotificationChannels;
@@ -31,6 +39,13 @@ const DEFAULT_NOTIF: NotificationPrefs = {
     tagged: true,
     meeting_extra_lead_minutes: null,
     meeting_quiet_hours_bypass: true,
+    morning_pulse_enabled: true,
+    morning_pulse_hour: 7,
+    morning_pulse_minute: 30,
+    morning_pulse_email: false,
+    evening_winddown_enabled: true,
+    evening_winddown_hour: 17,
+    evening_winddown_minute: 30,
   },
   quiet_enabled: false,
   quiet_start: 22,
