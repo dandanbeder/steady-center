@@ -406,7 +406,7 @@ export const applyAssistantAction = createServerFn({ method: "POST" })
           "propose_create_event",
           "propose_move_event",
         ]),
-        payload: z.record(z.string(), z.unknown()),
+        payload: z.record(z.string(), z.any()),
         businessId: z.string().uuid().nullable().optional(),
       })
       .parse(i),
