@@ -119,6 +119,19 @@ export function CommandPalette({ open, onOpenChange, onAskAssistant }: Props) {
         </CommandEmpty>
 
         <CommandGroup heading="Actions">
+          {onAskAssistant && (
+            <CommandItem
+              value="ask assistant"
+              onSelect={() => {
+                const prompt = query.trim();
+                onOpenChange(false);
+                onAskAssistant(prompt || "");
+              }}
+            >
+              <Sparkles className="h-4 w-4" />
+              <span>{query.trim() ? `Ask assistant: "${query.trim()}"` : "Ask Heartbeat Assistant"}</span>
+            </CommandItem>
+          )}
           <CommandItem onSelect={() => go("/tasks")}>
             <Plus className="h-4 w-4" />
             <span>New task</span>
