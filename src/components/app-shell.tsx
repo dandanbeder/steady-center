@@ -51,6 +51,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   });
   const [mobileOpen, setMobileOpen] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(false);
+  const [assistantPrompt, setAssistantPrompt] = useState<string | undefined>(undefined);
 
   // Close mobile drawer on route change
   useEffect(() => {
