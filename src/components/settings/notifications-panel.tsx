@@ -142,6 +142,54 @@ export function NotificationsPanel() {
       </div>
 
       <div>
+        <h3 className="text-sm font-medium mb-3">Daily Pulse</h3>
+        <p className="text-xs text-muted-foreground mb-3">
+          Morning brief and evening wind-down on Today. Times are in your timezone and respect Quiet hours.
+        </p>
+        <div className="space-y-3">
+          <RowToggle
+            label="Morning pulse"
+            description="Calm daily brief — meetings, Focus 3, load vs capacity, anything at risk"
+            checked={draft.events.morning_pulse_enabled}
+            onChange={(v) => setEvent("morning_pulse_enabled", v)}
+          />
+          {draft.events.morning_pulse_enabled && (
+            <div className="pl-4 grid grid-cols-2 gap-3">
+              <TimePicker
+                label="Time"
+                hour={draft.events.morning_pulse_hour}
+                minute={draft.events.morning_pulse_minute}
+                onChange={(h, m) => setDraft({ ...draft, events: { ...draft.events, morning_pulse_hour: h, morning_pulse_minute: m } })}
+              />
+              <div className="flex items-end">
+                <RowToggle
+                  label="Email it"
+                  checked={draft.events.morning_pulse_email}
+                  onChange={(v) => setEvent("morning_pulse_email", v)}
+                />
+              </div>
+            </div>
+          )}
+          <RowToggle
+            label="Evening wind-down"
+            description="2-minute ritual: review today, set tomorrow's Focus 3, breathe"
+            checked={draft.events.evening_winddown_enabled}
+            onChange={(v) => setEvent("evening_winddown_enabled", v)}
+          />
+          {draft.events.evening_winddown_enabled && (
+            <div className="pl-4">
+              <TimePicker
+                label="Time"
+                hour={draft.events.evening_winddown_hour}
+                minute={draft.events.evening_winddown_minute}
+                onChange={(h, m) => setDraft({ ...draft, events: { ...draft.events, evening_winddown_hour: h, evening_winddown_minute: m } })}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div>
         <h3 className="text-sm font-medium mb-3">Quiet hours</h3>
         <p className="text-xs text-muted-foreground mb-3">
           Suppress non-critical notifications during this window.
