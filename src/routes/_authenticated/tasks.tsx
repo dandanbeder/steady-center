@@ -18,6 +18,7 @@ import {
   X,
   CheckSquare,
   Link2,
+  Focus,
 } from "lucide-react";
 import {
   DndContext,
