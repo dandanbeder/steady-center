@@ -32,6 +32,7 @@ import { Route as AuthenticatedMeetingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedJournalRouteImport } from './routes/_authenticated/journal'
 import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated/inbox'
 import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticated/calendar'
+import { Route as AuthenticatedBacklogRouteImport } from './routes/_authenticated/backlog'
 import { Route as AuthenticatedAskNotesRouteImport } from './routes/_authenticated/ask-notes'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedReportsReportIdRouteImport } from './routes/_authenticated/reports.$reportId'
@@ -157,6 +158,11 @@ const AuthenticatedCalendarRoute = AuthenticatedCalendarRouteImport.update({
   path: '/calendar',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedBacklogRoute = AuthenticatedBacklogRouteImport.update({
+  id: '/backlog',
+  path: '/backlog',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedAskNotesRoute = AuthenticatedAskNotesRouteImport.update({
   id: '/ask-notes',
   path: '/ask-notes',
@@ -227,6 +233,7 @@ export interface FileRoutesByFullPath {
   '/unsubscribe': typeof UnsubscribeRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/ask-notes': typeof AuthenticatedAskNotesRoute
+  '/backlog': typeof AuthenticatedBacklogRoute
   '/calendar': typeof AuthenticatedCalendarRoute
   '/inbox': typeof AuthenticatedInboxRoute
   '/journal': typeof AuthenticatedJournalRoute
@@ -261,6 +268,7 @@ export interface FileRoutesByTo {
   '/unsubscribe': typeof UnsubscribeRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/ask-notes': typeof AuthenticatedAskNotesRoute
+  '/backlog': typeof AuthenticatedBacklogRoute
   '/calendar': typeof AuthenticatedCalendarRoute
   '/inbox': typeof AuthenticatedInboxRoute
   '/journal': typeof AuthenticatedJournalRoute
@@ -297,6 +305,7 @@ export interface FileRoutesById {
   '/unsubscribe': typeof UnsubscribeRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/ask-notes': typeof AuthenticatedAskNotesRoute
+  '/_authenticated/backlog': typeof AuthenticatedBacklogRoute
   '/_authenticated/calendar': typeof AuthenticatedCalendarRoute
   '/_authenticated/inbox': typeof AuthenticatedInboxRoute
   '/_authenticated/journal': typeof AuthenticatedJournalRoute
@@ -333,6 +342,7 @@ export interface FileRouteTypes {
     | '/unsubscribe'
     | '/admin'
     | '/ask-notes'
+    | '/backlog'
     | '/calendar'
     | '/inbox'
     | '/journal'
@@ -367,6 +377,7 @@ export interface FileRouteTypes {
     | '/unsubscribe'
     | '/admin'
     | '/ask-notes'
+    | '/backlog'
     | '/calendar'
     | '/inbox'
     | '/journal'
@@ -402,6 +413,7 @@ export interface FileRouteTypes {
     | '/unsubscribe'
     | '/_authenticated/admin'
     | '/_authenticated/ask-notes'
+    | '/_authenticated/backlog'
     | '/_authenticated/calendar'
     | '/_authenticated/inbox'
     | '/_authenticated/journal'
@@ -607,6 +619,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCalendarRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/backlog': {
+      id: '/_authenticated/backlog'
+      path: '/backlog'
+      fullPath: '/backlog'
+      preLoaderRoute: typeof AuthenticatedBacklogRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/ask-notes': {
       id: '/_authenticated/ask-notes'
       path: '/ask-notes'
@@ -707,6 +726,7 @@ const AuthenticatedReportsRouteWithChildren =
 interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAskNotesRoute: typeof AuthenticatedAskNotesRoute
+  AuthenticatedBacklogRoute: typeof AuthenticatedBacklogRoute
   AuthenticatedCalendarRoute: typeof AuthenticatedCalendarRoute
   AuthenticatedInboxRoute: typeof AuthenticatedInboxRoute
   AuthenticatedJournalRoute: typeof AuthenticatedJournalRoute
@@ -726,6 +746,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAskNotesRoute: AuthenticatedAskNotesRoute,
+  AuthenticatedBacklogRoute: AuthenticatedBacklogRoute,
   AuthenticatedCalendarRoute: AuthenticatedCalendarRoute,
   AuthenticatedInboxRoute: AuthenticatedInboxRoute,
   AuthenticatedJournalRoute: AuthenticatedJournalRoute,
