@@ -77,11 +77,11 @@ export function CommandPalette({ open, onOpenChange, onAskAssistant }: Props) {
         businessFilter ? query.eq("business_id", businessFilter) : query;
 
       const [tasks, notes, events, meetings, folders] = await Promise.all([
-        apply(supabase.from("tasks").select("id,title,business_id").ilike("title", q).limit(8)),
-        apply(supabase.from("notes").select("id,title,business_id").ilike("title", q).limit(8)),
-        apply(supabase.from("events").select("id,title,business_id,start_at").ilike("title", q).limit(8)),
+        apply(supabase.from("tasks").select("id,title,business_id").is("deleted_at", null).ilike("title", q).limit(8)),
+        apply(supabase.from("notes").select("id,title,business_id").is("deleted_at", null).ilike("title", q).limit(8)),
+        apply(supabase.from("events").select("id,title,business_id,start_at").is("deleted_at", null).ilike("title", q).limit(8)),
         apply((supabase.from("meetings" as any) as any).select("id,title,business_id").ilike("title", q).limit(8)),
-        apply(supabase.from("folders").select("id,name,business_id").ilike("name", q).limit(6)),
+        apply(supabase.from("folders").select("id,name,business_id").is("deleted_at", null).ilike("name", q).limit(6)),
       ]);
       return {
         tasks: (tasks.data ?? []) as Array<{ id: string; title: string }>,

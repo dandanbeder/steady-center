@@ -67,6 +67,7 @@ export function NewNoteDialog({
       const { data, error } = await supabase
         .from("events")
         .select("id, title, start_at, business_id")
+        .is("deleted_at", null)
         .eq("business_id", businessId!)
         .order("start_at", { ascending: false })
         .limit(50);
@@ -110,6 +111,7 @@ export function NewNoteDialog({
       const { data } = await supabase
         .from("folders")
         .select("id")
+        .is("deleted_at", null)
         .eq("business_id", businessId)
         .eq("name", newFolderName.trim())
         .order("created_at", { ascending: false })

@@ -445,6 +445,7 @@ function SuggestDialog({
           const { data: f } = await supabase
             .from("folders")
             .select("id")
+            .is("deleted_at", null)
             .eq("business_id", note.business_id)
             .eq("name", data.folder.name)
             .maybeSingle();

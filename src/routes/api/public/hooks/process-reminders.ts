@@ -112,6 +112,7 @@ async function buildSubject(r: ReminderRow): Promise<string | null> {
       .from("events")
       .select("title")
       .eq("id", r.ref_id)
+      .is("deleted_at", null)
       .maybeSingle();
     const row = data as { title: string } | null;
     return row ? `Reminder: ${row.title}` : null;
@@ -120,6 +121,7 @@ async function buildSubject(r: ReminderRow): Promise<string | null> {
       .from("tasks")
       .select("title")
       .eq("id", r.ref_id)
+      .is("deleted_at", null)
       .maybeSingle();
     const row = data as { title: string } | null;
     return row ? `Task due: ${row.title}` : null;
@@ -132,6 +134,7 @@ async function buildBody(r: ReminderRow): Promise<string | null> {
       .from("events")
       .select("title, start_at, location, description")
       .eq("id", r.ref_id)
+      .is("deleted_at", null)
       .maybeSingle();
     if (!data) return null;
     const e = data as EventRefRow;
@@ -148,6 +151,7 @@ async function buildBody(r: ReminderRow): Promise<string | null> {
       .from("tasks")
       .select("title, due_at, description")
       .eq("id", r.ref_id)
+      .is("deleted_at", null)
       .maybeSingle();
     if (!data) return null;
     const t = data as TaskRefRow;

@@ -11,6 +11,7 @@ async function listTasksForNote(noteId: string): Promise<Task[]> {
     .from("tasks")
     .select("*")
     .eq("source_note_id", noteId)
+    .is("deleted_at", null)
     .order("created_at", { ascending: true });
   if (error) throw error;
   return (data ?? []) as Task[];
