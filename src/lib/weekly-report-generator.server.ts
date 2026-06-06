@@ -24,6 +24,7 @@ type TaskRow = {
   created_at: string;
   status_changed_at: string | null;
   business_id: string | null;
+  outcome_id: string | null;
 };
 
 export type OverdueEntry = {
@@ -66,6 +67,18 @@ export type GoalProgress = {
   target_value: number | null;
   current_value: number;
   status: "open" | "met" | "missed";
+  progress_pct: number; // 0..100
+};
+
+export type OutcomeProgress = {
+  id: string;
+  name: string;
+  business_name: string;
+  status: "active" | "achieved" | "archived";
+  target_date: string | null;
+  days_remaining: number | null;
+  total_tasks: number;
+  done_tasks: number;
   progress_pct: number; // 0..100
 };
 
@@ -115,6 +128,7 @@ export type ReportMetrics = {
   top_tasks_hours?: TaskHours[];
   flow?: FlowMetrics;
   goals?: GoalProgress[];
+  outcomes?: OutcomeProgress[];
 };
 
 export type Strength = { point: string; evidence: string };
@@ -156,12 +170,13 @@ export async function generateForUser(
     timeRes,
     goalsRes,
     prevTasksRes,
+    outcomesRes,
   ] = await Promise.all([
     supabaseAdmin.from("businesses").select("id, name").eq("owner_id", userId),
     supabaseAdmin
       .from("tasks")
       .select(
-        "id, title, status, priority, due_at, completed_at, created_at, status_changed_at, business_id",
+        "id, title, status, priority, due_at, completed_at, created_at, status_changed_at, business_id, outcome_id",
       )
       .eq("owner_id", userId)
       .is("deleted_at", null),
@@ -210,6 +225,11 @@ export async function generateForUser(
       .eq("status", "done")
       .gte("completed_at", prevWeekStartIso)
       .lt("completed_at", startIso),
+    supabaseAdmin
+      .from("outcomes")
+      .select("id, name, business_id, target_date, status")
+      .eq("owner_id", userId)
+      .neq("status", "archived"),
   ]);
 
   const bizList: Business[] = (businesses ?? []) as Business[];
@@ -476,6 +496,42 @@ export async function generateForUser(
     };
   });
 
+  // Outcomes: roll up task counts (across all-time, not just this week)
+  const outcomeRows = (outcomesRes.data ?? []) as Array<{
+    id: string;
+    name: string;
+    business_id: string | null;
+    target_date: string | null;
+    status: "active" | "achieved" | "archived";
+  }>;
+  const outcomeCounts = new Map<string, { total: number; done: number }>();
+  for (const t of tasks) {
+    if (!t.outcome_id) continue;
+    const c = outcomeCounts.get(t.outcome_id) ?? { total: 0, done: 0 };
+    c.total++;
+    if (t.status === "done") c.done++;
+    outcomeCounts.set(t.outcome_id, c);
+  }
+  const outcomes: OutcomeProgress[] = outcomeRows.map((o) => {
+    const c = outcomeCounts.get(o.id) ?? { total: 0, done: 0 };
+    const days = o.target_date
+      ? Math.ceil(
+          (new Date(`${o.target_date}T23:59:59Z`).getTime() - Date.now()) / 86400_000,
+        )
+      : null;
+    return {
+      id: o.id,
+      name: o.name,
+      business_name: bizName.get(o.business_id) ?? "Personal",
+      status: o.status,
+      target_date: o.target_date,
+      days_remaining: days,
+      total_tasks: c.total,
+      done_tasks: c.done,
+      progress_pct: c.total === 0 ? (o.status === "achieved" ? 100 : 0) : Math.round((c.done / c.total) * 100),
+    };
+  });
+
   const per_business = bucketKeys.map((k) => buckets.get(k)!).filter(hasActivity);
 
   // vs last week
@@ -503,6 +559,7 @@ export async function generateForUser(
     top_tasks_hours,
     flow,
     goals,
+    outcomes,
   };
   const narrative = await writeNarrative(metrics, weekStart, weekEnd);
 
@@ -579,7 +636,7 @@ Return ONLY JSON, no prose around it, matching exactly this shape:
 
 - 2-4 strengths, each with evidence drawn from the metrics.
 - 2-4 growth areas; "suggestion" must be a specific, actionable next step starting with a verb.
-- "goal_review" is one short paragraph reviewing how the week's goals went (met / missed / partial). If there were no goals, say so.
+- "goal_review" is one short paragraph reviewing how the week's goals went (met / missed / partial). If there were no goals, say so. If the metrics include "outcomes" (bigger goals tasks roll up to), mention 1-2 standout outcomes here with their progress percentage and days remaining (e.g. "Loyalty launch is 70% done, target in 3 weeks"). Skip outcomes with 0 tasks.
 - "next_week" is 2-3 focuses for the coming week, each starting with a verb.`;
 
   const user = `Week: ${weekStart.toISOString().slice(0, 10)} → ${weekEnd

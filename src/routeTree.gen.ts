@@ -26,6 +26,7 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedPricingRouteImport } from './routes/_authenticated/pricing'
 import { Route as AuthenticatedPlanWeekRouteImport } from './routes/_authenticated/plan-week'
+import { Route as AuthenticatedOutcomesRouteImport } from './routes/_authenticated/outcomes'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedNotesRouteImport } from './routes/_authenticated/notes'
 import { Route as AuthenticatedMyWeekRouteImport } from './routes/_authenticated/my-week'
@@ -127,6 +128,11 @@ const AuthenticatedPricingRoute = AuthenticatedPricingRouteImport.update({
 const AuthenticatedPlanWeekRoute = AuthenticatedPlanWeekRouteImport.update({
   id: '/plan-week',
   path: '/plan-week',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedOutcomesRoute = AuthenticatedOutcomesRouteImport.update({
+  id: '/outcomes',
+  path: '/outcomes',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
@@ -247,6 +253,7 @@ export interface FileRoutesByFullPath {
   '/my-week': typeof AuthenticatedMyWeekRoute
   '/notes': typeof AuthenticatedNotesRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/outcomes': typeof AuthenticatedOutcomesRoute
   '/plan-week': typeof AuthenticatedPlanWeekRoute
   '/pricing': typeof AuthenticatedPricingRoute
   '/reports': typeof AuthenticatedReportsRouteWithChildren
@@ -283,6 +290,7 @@ export interface FileRoutesByTo {
   '/my-week': typeof AuthenticatedMyWeekRoute
   '/notes': typeof AuthenticatedNotesRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/outcomes': typeof AuthenticatedOutcomesRoute
   '/plan-week': typeof AuthenticatedPlanWeekRoute
   '/pricing': typeof AuthenticatedPricingRoute
   '/reports': typeof AuthenticatedReportsRouteWithChildren
@@ -321,6 +329,7 @@ export interface FileRoutesById {
   '/_authenticated/my-week': typeof AuthenticatedMyWeekRoute
   '/_authenticated/notes': typeof AuthenticatedNotesRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
+  '/_authenticated/outcomes': typeof AuthenticatedOutcomesRoute
   '/_authenticated/plan-week': typeof AuthenticatedPlanWeekRoute
   '/_authenticated/pricing': typeof AuthenticatedPricingRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRouteWithChildren
@@ -359,6 +368,7 @@ export interface FileRouteTypes {
     | '/my-week'
     | '/notes'
     | '/onboarding'
+    | '/outcomes'
     | '/plan-week'
     | '/pricing'
     | '/reports'
@@ -395,6 +405,7 @@ export interface FileRouteTypes {
     | '/my-week'
     | '/notes'
     | '/onboarding'
+    | '/outcomes'
     | '/plan-week'
     | '/pricing'
     | '/reports'
@@ -432,6 +443,7 @@ export interface FileRouteTypes {
     | '/_authenticated/my-week'
     | '/_authenticated/notes'
     | '/_authenticated/onboarding'
+    | '/_authenticated/outcomes'
     | '/_authenticated/plan-week'
     | '/_authenticated/pricing'
     | '/_authenticated/reports'
@@ -587,6 +599,13 @@ declare module '@tanstack/react-router' {
       path: '/plan-week'
       fullPath: '/plan-week'
       preLoaderRoute: typeof AuthenticatedPlanWeekRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/outcomes': {
+      id: '/_authenticated/outcomes'
+      path: '/outcomes'
+      fullPath: '/outcomes'
+      preLoaderRoute: typeof AuthenticatedOutcomesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/onboarding': {
@@ -753,6 +772,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedMyWeekRoute: typeof AuthenticatedMyWeekRoute
   AuthenticatedNotesRoute: typeof AuthenticatedNotesRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
+  AuthenticatedOutcomesRoute: typeof AuthenticatedOutcomesRoute
   AuthenticatedPlanWeekRoute: typeof AuthenticatedPlanWeekRoute
   AuthenticatedPricingRoute: typeof AuthenticatedPricingRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRouteWithChildren
@@ -774,6 +794,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedMyWeekRoute: AuthenticatedMyWeekRoute,
   AuthenticatedNotesRoute: AuthenticatedNotesRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
+  AuthenticatedOutcomesRoute: AuthenticatedOutcomesRoute,
   AuthenticatedPlanWeekRoute: AuthenticatedPlanWeekRoute,
   AuthenticatedPricingRoute: AuthenticatedPricingRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRouteWithChildren,

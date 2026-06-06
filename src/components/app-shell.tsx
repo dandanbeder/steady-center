@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Calendar, CalendarRange, CheckSquare, FileText, Home, Settings, Users, LogOut, ChevronDown, BarChart3, PanelLeftClose, PanelLeftOpen, Shield, Menu, AtSign, BookOpen, Sparkles, Search, Inbox, Bell, CreditCard, Trash2, BrainCircuit } from "lucide-react";
+import { Calendar, CalendarRange, CheckSquare, FileText, Home, Settings, Users, LogOut, ChevronDown, BarChart3, PanelLeftClose, PanelLeftOpen, Shield, Menu, AtSign, BookOpen, Sparkles, Search, Inbox, Bell, CreditCard, Trash2, BrainCircuit, Target } from "lucide-react";
 import { PaymentTestModeBanner } from "@/components/payment-test-mode-banner";
 import { PastDueBanner } from "@/components/past-due-banner";
 import { countPendingInbox } from "@/lib/inbox";
@@ -36,6 +36,7 @@ const NAV: { to: string; label: string; icon: typeof Home }[] = [
   { to: "/plan-week", label: "Plan my week", icon: BrainCircuit },
   { to: "/calendar", label: "Calendar", icon: Calendar },
   { to: "/tasks", label: "Tasks", icon: CheckSquare },
+  { to: "/outcomes", label: "Outcomes", icon: Target },
   { to: "/notes", label: "Notes", icon: FileText },
   { to: "/journal", label: "Journal", icon: BookOpen },
   { to: "/ask-notes", label: "Ask my notes", icon: Sparkles },

@@ -97,7 +97,9 @@ import {
 } from "@/lib/tasks";
 import { listBacklinks, resolveLinks } from "@/lib/note-links";
 import { showUndoToast } from "@/lib/undo-toast";
+import { listOutcomes, updateOutcome } from "@/lib/outcomes";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 import { TaskTimerInline, TaskTimePanel } from "@/components/task-timer";
 
 export const Route = createFileRoute("/_authenticated/tasks")({
@@ -1242,12 +1244,24 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
   const [priority, setPriority] = useState<TaskPriority>(task.priority);
   const [dueAt, setDueAt] = useState<string>(task.due_at ? task.due_at.slice(0, 10) : "");
   const [recurrence, setRecurrence] = useState<RecurrenceRule | "none">(task.recurrence_rule ?? "none");
+  const [outcomeId, setOutcomeId] = useState<string>(task.outcome_id ?? "");
+  const [celebrate, setCelebrate] = useState<{ outcomeId: string; name: string } | null>(null);
 
   const dueIso = dueAt ? new Date(`${dueAt}T12:00:00`).toISOString() : null;
 
+  // Outcomes for this task's account (or personal if no business)
+  const { data: outcomes = [] } = useQuery({
+    queryKey: ["outcomes-for-task", task.business_id],
+    queryFn: () => listOutcomes(task.business_id),
+  });
+  const activeOutcomes = outcomes.filter(
+    (o) => o.status === "active" || o.id === task.outcome_id,
+  );
+
   const save = useMutation({
-    mutationFn: () =>
-      updateTask(task.id, {
+    mutationFn: async () => {
+      const nextOutcomeId = outcomeId || null;
+      await updateTask(task.id, {
         title: title.trim(),
         description: description.trim() || null,
         status,
@@ -1255,11 +1269,38 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
         due_at: dueIso,
         recurrence_rule: recurrence === "none" ? null : recurrence,
         recurrence_anchor: recurrence === "none" ? null : (dueIso ?? task.recurrence_anchor),
-      }),
-    onSuccess: () => {
+        outcome_id: nextOutcomeId,
+      });
+
+      // If this completion closes out an outcome, offer to celebrate
+      const wasOpen = task.status !== "done";
+      const nowDone = status === "done";
+      if (nowDone && wasOpen && nextOutcomeId) {
+        const { data: remaining } = await supabase
+          .from("tasks")
+          .select("id")
+          .eq("outcome_id", nextOutcomeId)
+          .is("deleted_at", null)
+          .neq("status", "done")
+          .neq("id", task.id)
+          .limit(1);
+        if ((remaining ?? []).length === 0) {
+          const o = outcomes.find((x) => x.id === nextOutcomeId);
+          if (o && o.status === "active") {
+            return { celebrate: { outcomeId: o.id, name: o.name } as const };
+          }
+        }
+      }
+      return { celebrate: null as { outcomeId: string; name: string } | null };
+    },
+    onSuccess: (res) => {
       toast.success("Saved");
       onChange();
-      onClose();
+      if (res.celebrate) {
+        setCelebrate(res.celebrate);
+      } else {
+        onClose();
+      }
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
@@ -1278,129 +1319,205 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
   });
 
   return (
-    <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+    <>
+      <Dialog open onOpenChange={(o) => !o && onClose()}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Task details</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Title</Label>
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <Label>Status</Label>
+                <Select value={status} onValueChange={(v) => setStatus(v as TaskStatus)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {STATUSES.map((s) => (
+                      <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Priority</Label>
+                <Select value={priority} onValueChange={(v) => setPriority(v as TaskPriority)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {(["urgent", "high", "normal", "low"] as TaskPriority[]).map((p) => (
+                      <SelectItem key={p} value={p}>
+                        <span className="inline-flex items-center gap-2">
+                          <Flag className="h-3 w-3" style={{ color: PRIORITY_COLOR[p] }} />
+                          {PRIORITY_LABEL[p]}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <Label>Due date</Label>
+                <Input type="date" value={dueAt} onChange={(e) => setDueAt(e.target.value)} />
+              </div>
+              <div>
+                <Label className="flex items-center gap-1.5"><Repeat className="h-3.5 w-3.5" /> Repeats</Label>
+                <Select value={recurrence} onValueChange={(v) => setRecurrence(v as RecurrenceRule | "none")}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Does not repeat</SelectItem>
+                    {(Object.keys(RECURRENCE_LABEL) as RecurrenceRule[]).map((r) => (
+                      <SelectItem key={r} value={r}>{RECURRENCE_LABEL[r]}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {recurrence !== "none" && !dueAt && (
+              <p className="text-xs text-muted-foreground -mt-2">Add a due date so the next occurrence has a target.</p>
+            )}
+
+            <div>
+              <Label>Outcome</Label>
+              <Select
+                value={outcomeId || "__none"}
+                onValueChange={(v) => setOutcomeId(v === "__none" ? "" : v)}
+              >
+                <SelectTrigger><SelectValue placeholder="No outcome" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none">No outcome</SelectItem>
+                  {activeOutcomes.map((o) => (
+                    <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {activeOutcomes.length === 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  No outcomes yet for this account. Create one in Outcomes to roll tasks up.
+                </p>
+              )}
+            </div>
+
+            <div>
+              <Label>Description</Label>
+              <Textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={4}
+                placeholder="Add context, links, or instructions…"
+              />
+            </div>
+
+            <div className="pt-2 border-t border-border">
+              <ReminderControls refType="task" refId={task.id} anchorAt={dueIso} />
+            </div>
+
+            <TaskTimePanel taskId={task.id} businessId={task.business_id} />
+
+            <div className="pt-2 border-t border-border">
+              <TagPeople itemType="task" itemId={task.id} businessId={task.business_id} />
+            </div>
+
+            {/* Linked notes/meetings/events */}
+            <div className="pt-2 border-t border-border">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                <Link2 className="h-4 w-4" /> <span>Linked from notes</span>
+              </div>
+              {backlinks.length === 0 ? (
+                <p className="text-xs text-muted-foreground italic">No notes link to this task yet.</p>
+              ) : (
+                <ul className="space-y-1 text-sm">
+                  {backlinks.map((b) => (
+                    <li key={b.id} className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-[10px]">note</Badge>
+                      <span className="truncate">{b.label}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* Activity */}
+            <div className="pt-2 border-t border-border">
+              <div className="text-sm text-muted-foreground mb-2">Activity</div>
+              {activity.length === 0 ? (
+                <p className="text-xs text-muted-foreground italic">No status changes yet.</p>
+              ) : (
+                <ul className="space-y-1 text-xs text-muted-foreground max-h-32 overflow-y-auto">
+                  {activity.map((a) => (
+                    <li key={a.id}>
+                      {new Date(a.changed_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      {" — "}
+                      {a.from_status ? `${STATUS_LABEL[a.from_status]} → ` : ""}
+                      {STATUS_LABEL[a.to_status]}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={onClose}>Cancel</Button>
+            <Button onClick={() => save.mutate()} disabled={save.isPending}>
+              {save.isPending ? "Saving…" : "Save changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {celebrate && (
+        <CelebrateOutcomeDialog
+          outcomeId={celebrate.outcomeId}
+          name={celebrate.name}
+          onDone={() => {
+            setCelebrate(null);
+            onChange();
+            onClose();
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+function CelebrateOutcomeDialog({
+  outcomeId,
+  name,
+  onDone,
+}: {
+  outcomeId: string;
+  name: string;
+  onDone: () => void;
+}) {
+  const mark = useMutation({
+    mutationFn: () => updateOutcome(outcomeId, { status: "achieved" }),
+    onSuccess: () => {
+      toast.success(`Outcome achieved: ${name}`);
+      onDone();
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+  return (
+    <Dialog open onOpenChange={(o) => !o && onDone()}>
+      <DialogContent className="sm:max-w-md text-center">
         <DialogHeader>
-          <DialogTitle>Task details</DialogTitle>
+          <DialogTitle className="text-center">That was the last one.</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
-          <div>
-            <Label>Title</Label>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <Label>Status</Label>
-              <Select value={status} onValueChange={(v) => setStatus(v as TaskStatus)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {STATUSES.map((s) => (
-                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Priority</Label>
-              <Select value={priority} onValueChange={(v) => setPriority(v as TaskPriority)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {(["urgent", "high", "normal", "low"] as TaskPriority[]).map((p) => (
-                    <SelectItem key={p} value={p}>
-                      <span className="inline-flex items-center gap-2">
-                        <Flag className="h-3 w-3" style={{ color: PRIORITY_COLOR[p] }} />
-                        {PRIORITY_LABEL[p]}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <Label>Due date</Label>
-              <Input type="date" value={dueAt} onChange={(e) => setDueAt(e.target.value)} />
-            </div>
-            <div>
-              <Label className="flex items-center gap-1.5"><Repeat className="h-3.5 w-3.5" /> Repeats</Label>
-              <Select value={recurrence} onValueChange={(v) => setRecurrence(v as RecurrenceRule | "none")}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Does not repeat</SelectItem>
-                  {(Object.keys(RECURRENCE_LABEL) as RecurrenceRule[]).map((r) => (
-                    <SelectItem key={r} value={r}>{RECURRENCE_LABEL[r]}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          {recurrence !== "none" && !dueAt && (
-            <p className="text-xs text-muted-foreground -mt-2">Add a due date so the next occurrence has a target.</p>
-          )}
-
-          <div>
-            <Label>Description</Label>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={4}
-              placeholder="Add context, links, or instructions…"
-            />
-          </div>
-
-          <div className="pt-2 border-t border-border">
-            <ReminderControls refType="task" refId={task.id} anchorAt={dueIso} />
-          </div>
-
-          <TaskTimePanel taskId={task.id} businessId={task.business_id} />
-
-          <div className="pt-2 border-t border-border">
-            <TagPeople itemType="task" itemId={task.id} businessId={task.business_id} />
-          </div>
-
-          {/* Linked notes/meetings/events */}
-          <div className="pt-2 border-t border-border">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-              <Link2 className="h-4 w-4" /> <span>Linked from notes</span>
-            </div>
-            {backlinks.length === 0 ? (
-              <p className="text-xs text-muted-foreground italic">No notes link to this task yet.</p>
-            ) : (
-              <ul className="space-y-1 text-sm">
-                {backlinks.map((b) => (
-                  <li key={b.id} className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-[10px]">note</Badge>
-                    <span className="truncate">{b.label}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          {/* Activity */}
-          <div className="pt-2 border-t border-border">
-            <div className="text-sm text-muted-foreground mb-2">Activity</div>
-            {activity.length === 0 ? (
-              <p className="text-xs text-muted-foreground italic">No status changes yet.</p>
-            ) : (
-              <ul className="space-y-1 text-xs text-muted-foreground max-h-32 overflow-y-auto">
-                {activity.map((a) => (
-                  <li key={a.id}>
-                    {new Date(a.changed_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-                    {" — "}
-                    {a.from_status ? `${STATUS_LABEL[a.from_status]} → ` : ""}
-                    {STATUS_LABEL[a.to_status]}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+        <div className="py-2 space-y-3">
+          <div className="text-5xl">🌿</div>
+          <p className="text-sm text-muted-foreground">
+            Every task linked to <span className="font-medium text-foreground">{name}</span> is done.
+            Mark this outcome as achieved?
+          </p>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={() => save.mutate()} disabled={save.isPending}>
-            {save.isPending ? "Saving…" : "Save changes"}
+        <DialogFooter className="sm:justify-center gap-2">
+          <Button variant="outline" onClick={onDone}>Not yet</Button>
+          <Button onClick={() => mark.mutate()} disabled={mark.isPending}>
+            {mark.isPending ? "Saving…" : "Mark achieved"}
           </Button>
         </DialogFooter>
       </DialogContent>
