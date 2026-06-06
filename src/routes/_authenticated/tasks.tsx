@@ -977,6 +977,15 @@ function TaskRow({
           </span>
         )}
         <TaskTimerInline taskId={task.id} businessId={businessId} />
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-7 w-7"
+          onClick={() => setFocusOn(true)}
+          title="Focus mode"
+        >
+          <Focus className="h-3.5 w-3.5 text-muted-foreground" />
+        </Button>
         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => del.mutate()} title="Delete task">
           <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
         </Button>
