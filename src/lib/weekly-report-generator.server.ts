@@ -69,6 +69,18 @@ export type GoalProgress = {
   progress_pct: number; // 0..100
 };
 
+export type OutcomeProgress = {
+  id: string;
+  name: string;
+  business_name: string;
+  status: "active" | "achieved" | "archived";
+  target_date: string | null;
+  days_remaining: number | null;
+  total_tasks: number;
+  done_tasks: number;
+  progress_pct: number; // 0..100
+};
+
 export type FlowMetrics = {
   counts_by_status: Record<string, number>;
   stuck: OpenTaskAging[]; // open > 7 days
