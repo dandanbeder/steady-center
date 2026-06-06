@@ -1,7 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Calendar, CalendarRange, CheckSquare, FileText, Home, Settings, Users, LogOut, ChevronDown, BarChart3, PanelLeftClose, PanelLeftOpen, Shield, Menu, AtSign, BookOpen, Sparkles, Search, Inbox } from "lucide-react";
+import { Calendar, CalendarRange, CheckSquare, FileText, Home, Settings, Users, LogOut, ChevronDown, BarChart3, PanelLeftClose, PanelLeftOpen, Shield, Menu, AtSign, BookOpen, Sparkles, Search, Inbox, Bell } from "lucide-react";
 import { countPendingInbox } from "@/lib/inbox";
+import { countUnreadNotifications } from "@/lib/notifications";
+import { NotificationCenter } from "@/components/notification-center";
 import { useEffect, useState, type ReactNode } from "react";
 import heartbeatLogo from "@/assets/heartbeat-horizontal.svg";
 import heartbeatMono from "@/assets/heartbeat-mono.svg";
@@ -55,6 +57,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [cmdOpen, setCmdOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [assistantPrompt, setAssistantPrompt] = useState<string | undefined>(undefined);
+  const [notifOpen, setNotifOpen] = useState(false);
 
   // Close mobile drawer on route change
   useEffect(() => {
@@ -91,6 +94,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { data: inboxCount = 0 } = useQuery({
     queryKey: ["inbox", "count"],
     queryFn: countPendingInbox,
+    refetchInterval: 30000,
+  });
+
+  const { data: unreadNotifications = 0 } = useQuery({
+    queryKey: ["notifications", "unread-count"],
+    queryFn: countUnreadNotifications,
     refetchInterval: 30000,
   });
 
@@ -298,6 +307,21 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Button
             variant="ghost"
             size="icon"
+            onClick={() => setNotifOpen(true)}
+            aria-label="Notifications"
+            title="Notifications"
+            className="h-9 w-9 text-muted-foreground hover:text-foreground shrink-0 relative"
+          >
+            <Bell className="h-4 w-4" />
+            {unreadNotifications > 0 && (
+              <span className="absolute top-1 right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold leading-[16px] text-center">
+                {unreadNotifications > 99 ? "99+" : unreadNotifications}
+              </span>
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => {
               setAssistantPrompt(undefined);
               setAssistantOpen(true);
@@ -309,6 +333,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Sparkles className="h-4 w-4" />
           </Button>
         </header>
+        <NotificationCenter open={notifOpen} onOpenChange={setNotifOpen} />
         <CommandPalette
           open={cmdOpen}
           onOpenChange={setCmdOpen}
