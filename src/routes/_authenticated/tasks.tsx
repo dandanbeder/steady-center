@@ -600,8 +600,18 @@ function ListWorkspace({
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
   const bulkDelete = useMutation({
-    mutationFn: () => bulkDeleteTasks([...selectedIds]),
-    onSuccess: () => { toast.success("Deleted"); clearSelection(); invalidate(); },
+    mutationFn: () => {
+      const ids = [...selectedIds];
+      return bulkDeleteTasks(ids).then(() => ids);
+    },
+    onSuccess: (ids) => {
+      clearSelection();
+      invalidate();
+      showUndoToast(`${ids.length} task${ids.length === 1 ? "" : "s"} deleted`, async () => {
+        await bulkRestoreTasks(ids);
+        invalidate();
+      });
+    },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
