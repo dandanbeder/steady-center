@@ -70,6 +70,7 @@ import {
   createCalendar,
   createEvent,
   deleteEvent,
+  restoreEvent,
   listCalendars,
   listEvents,
   parseIcs,
@@ -79,6 +80,7 @@ import {
   type Calendar as Cal,
   type EventRow,
 } from "@/lib/calendars";
+import { showUndoToast } from "@/lib/undo-toast";
 import { cn } from "@/lib/utils";
 import { TagPeople } from "@/components/tag-people";
 
