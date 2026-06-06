@@ -1015,6 +1015,7 @@ function TaskRow({
         </div>
       )}
     </div>
+    </>
   );
 }
 
