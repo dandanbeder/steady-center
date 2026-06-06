@@ -127,6 +127,7 @@ export type ReportMetrics = {
   top_tasks_hours?: TaskHours[];
   flow?: FlowMetrics;
   goals?: GoalProgress[];
+  outcomes?: OutcomeProgress[];
 };
 
 export type Strength = { point: string; evidence: string };
