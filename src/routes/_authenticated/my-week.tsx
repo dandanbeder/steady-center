@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState, type DragEvent } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Plus, Flag, Calendar as CalIcon, Clock } from "lucide-react";
@@ -75,6 +75,7 @@ function eventHours(e: EventRow): number {
 
 function MyWeekPage() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const { activeId } = useActiveBusiness();
   const [anchor, setAnchor] = useState<Date>(() => new Date());
 
@@ -263,16 +264,30 @@ function MyWeekPage() {
         className="mt-6 rounded-xl border border-border bg-card p-3 flex flex-wrap items-center gap-2"
         style={{ boxShadow: "var(--shadow-soft)" }}
       >
-        <Plus className="h-4 w-4 text-muted-foreground ml-1" />
+        <button
+          type="button"
+          onClick={() => {
+            if (!defaultListId) navigate({ to: "/tasks" });
+          }}
+          className="ml-1 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+          aria-label={defaultListId ? "Add task" : "Go to Tasks to create a list"}
+          title={defaultListId ? "Add task" : "Go to Tasks to create a list"}
+        >
+          <Plus className="h-4 w-4" />
+        </button>
         <Input
           value={quickAdd}
           onChange={(e) => setQuickAdd(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && quickAdd.trim() && defaultListId) createQuick.mutate();
           }}
-          placeholder={defaultListId ? "Quick-add a task…" : "Create a task list first in Tasks"}
-          disabled={!defaultListId}
-          className="flex-1 min-w-[200px] border-0 shadow-none focus-visible:ring-0"
+          onClick={() => {
+            if (!defaultListId) navigate({ to: "/tasks" });
+          }}
+          readOnly={!defaultListId}
+          placeholder={defaultListId ? "Quick-add a task…" : "Create a task list first in Tasks →"}
+          className="flex-1 min-w-[200px] border-0 shadow-none focus-visible:ring-0 cursor-text data-[readonly=true]:cursor-pointer"
+          data-readonly={!defaultListId}
         />
         <Select value={quickDay} onValueChange={setQuickDay}>
           <SelectTrigger className="w-[140px]">
@@ -288,10 +303,16 @@ function MyWeekPage() {
         </Select>
         <Button
           size="sm"
-          onClick={() => createQuick.mutate()}
-          disabled={!quickAdd.trim() || !defaultListId || createQuick.isPending}
+          onClick={() => {
+            if (!defaultListId) {
+              navigate({ to: "/tasks" });
+              return;
+            }
+            createQuick.mutate();
+          }}
+          disabled={defaultListId ? !quickAdd.trim() || createQuick.isPending : false}
         >
-          Add
+          {defaultListId ? "Add" : "Set up Tasks"}
         </Button>
       </div>
 
