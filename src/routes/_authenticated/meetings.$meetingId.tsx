@@ -32,8 +32,14 @@ import {
 import { deleteMeetingRecording } from "@/lib/account.functions";
 import { supabase } from "@/integrations/supabase/client";
 
+import { UpgradeGate } from "@/components/upgrade-gate";
+
 export const Route = createFileRoute("/_authenticated/meetings/$meetingId")({
-  component: MeetingDetail,
+  component: () => (
+    <UpgradeGate feature="meetings">
+      <MeetingDetail />
+    </UpgradeGate>
+  ),
 });
 
 function MeetingDetail() {
