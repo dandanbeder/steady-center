@@ -312,7 +312,13 @@ function FolderNode({
 
   const del = useMutation({
     mutationFn: () => deleteFolder(folder.id),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      invalidate();
+      showUndoToast(`Folder "${folder.name}" deleted`, async () => {
+        await restoreFolder(folder.id);
+        invalidate();
+      });
+    },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
