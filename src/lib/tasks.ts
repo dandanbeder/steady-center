@@ -73,6 +73,8 @@ export type Task = {
   created_at: string;
   recurrence_rule: RecurrenceRule | null;
   recurrence_anchor: string | null;
+  /** Monday (YYYY-MM-DD, UTC) of the week the task is committed to. NULL = backlog. */
+  committed_week: string | null;
 };
 
 export const RECURRENCE_LABEL: Record<RecurrenceRule, string> = {

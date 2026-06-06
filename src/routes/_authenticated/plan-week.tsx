@@ -1,0 +1,405 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
+import {
+  BrainCircuit,
+  Clock,
+  Flag,
+  RotateCcw,
+  Sparkles,
+  X,
+  ArrowRight,
+  CalendarRange,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
+import { BacklogPanel } from "@/components/backlog-panel";
+import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
+import { useSubscription } from "@/hooks/use-subscription";
+import { listBusinesses } from "@/lib/businesses";
+import { listEvents } from "@/lib/calendars";
+import { getWorkingHours } from "@/lib/user-prefs";
+import { PRIORITY_COLOR, PRIORITY_LABEL, type Task } from "@/lib/tasks";
+import {
+  mondayOf,
+  addWeeks,
+  listCommitted,
+  listRolledOver,
+  commitTasks,
+  uncommitTasks,
+  getVelocity,
+  eventHours,
+  DEFAULT_TASK_HOURS,
+} from "@/lib/weekly-plan";
+import { suggestDeferrals } from "@/lib/weekly-plan.functions";
+import { cn } from "@/lib/utils";
+
+export const Route = createFileRoute("/_authenticated/plan-week")({
+  head: () => ({
+    meta: [
+      { title: "Plan my week · Heartbeat" },
+      { name: "description", content: "Build this week's commitment from your backlog with a live capacity check." },
+    ],
+  }),
+  component: PlanWeekPage,
+});
+
+function PlanWeekPage() {
+  const qc = useQueryClient();
+  const { activeId } = useActiveBusiness();
+  const { tier } = useSubscription();
+  const isPro = tier === "pro" || tier === "team";
+
+  const thisMonday = mondayOf();
+  const weekEndDate = useMemo(() => {
+    const d = new Date(thisMonday + "T00:00:00Z");
+    d.setUTCDate(d.getUTCDate() + 7);
+    return d;
+  }, [thisMonday]);
+  const weekStartDate = useMemo(() => new Date(thisMonday + "T00:00:00Z"), [thisMonday]);
+
+  const { data: committed = [] } = useQuery({
+    queryKey: ["committed", thisMonday],
+    queryFn: () => listCommitted(thisMonday),
+  });
+  const { data: rolled = [] } = useQuery({
+    queryKey: ["rolled-over", thisMonday],
+    queryFn: () => listRolledOver(thisMonday),
+  });
+  const { data: events = [] } = useQuery({
+    queryKey: ["my-week-events", weekStartDate.toISOString()],
+    queryFn: () => listEvents(weekStartDate, weekEndDate),
+  });
+  const { data: hours } = useQuery({ queryKey: ["working-hours"], queryFn: getWorkingHours });
+  const { data: businesses = [] } = useQuery({ queryKey: ["businesses"], queryFn: listBusinesses });
+  const { data: velocity } = useQuery({ queryKey: ["velocity"], queryFn: getVelocity });
+
+  const businessName = useMemo(() => new Map(businesses.map((b) => [b.id, b.name])), [businesses]);
+  const filterByActive = <T extends { business_id: string | null }>(rows: T[]) =>
+    activeId === ALL ? rows : rows.filter((r) => r.business_id === activeId);
+
+  const committedFiltered = useMemo(() => filterByActive(committed), [committed, activeId]);
+  const rolledFiltered = useMemo(() => filterByActive(rolled), [rolled, activeId]);
+  const eventsFiltered = useMemo(() => filterByActive(events), [events, activeId]);
+
+  // Capacity
+  const dailyCap = hours?.daily_capacity_hours ?? 6;
+  const workDays = hours?.work_days ?? [1, 2, 3, 4, 5];
+  const weeklyCapacity = workDays.length * dailyCap;
+  const eventLoad = eventsFiltered.reduce((s, e) => s + eventHours(e), 0);
+  const taskLoad =
+    committedFiltered.filter((t) => t.status !== "done").length * DEFAULT_TASK_HOURS;
+  const totalLoad = eventLoad + taskLoad;
+  const loadPct = weeklyCapacity > 0 ? Math.round((totalLoad / weeklyCapacity) * 100) : 0;
+  const loadColor =
+    loadPct > 100 ? "text-destructive" : loadPct >= 80 ? "text-amber-600" : "text-muted-foreground";
+
+  // Velocity comparison
+  const committedCount = committedFiltered.filter((t) => t.status !== "done").length;
+  const overPace =
+    velocity && velocity.tasks_per_week > 0 && committedCount > Math.round(velocity.tasks_per_week * 1.2);
+
+  // Mutations
+  const invalidateAll = () => {
+    qc.invalidateQueries({ queryKey: ["committed"] });
+    qc.invalidateQueries({ queryKey: ["rolled-over"] });
+    qc.invalidateQueries({ queryKey: ["backlog"] });
+    qc.invalidateQueries({ queryKey: ["my-week-tasks"] });
+    qc.invalidateQueries({ queryKey: ["tasks", "today-top"] });
+  };
+
+  const keepRolled = useMutation({
+    mutationFn: (ids: string[]) => commitTasks(ids, thisMonday),
+    onSuccess: () => { invalidateAll(); toast.success("Kept for this week"); },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
+  const dropRolled = useMutation({
+    mutationFn: (ids: string[]) => uncommitTasks(ids),
+    onSuccess: () => { invalidateAll(); toast.success("Sent to backlog"); },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
+  const removeFromWeek = useMutation({
+    mutationFn: (id: string) => uncommitTasks([id]),
+    onSuccess: invalidateAll,
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
+  // AI deferral suggestions
+  const suggestFn = useServerFn(suggestDeferrals);
+  const [suggestedIds, setSuggestedIds] = useState<string[]>([]);
+  const [suggestReason, setSuggestReason] = useState<string>("");
+  const suggest = useMutation({
+    mutationFn: () =>
+      suggestFn({
+        data: {
+          week_start: thisMonday,
+          business_id: activeId === ALL ? null : activeId,
+        },
+      }),
+    onSuccess: (res) => {
+      setSuggestedIds(res.defer_task_ids);
+      setSuggestReason(res.reason);
+      if (res.defer_task_ids.length === 0) toast.success("Nothing obvious to defer");
+    },
+    onError: (e) => {
+      const msg = e instanceof Error ? e.message : "Failed";
+      if (msg.includes("UPGRADE_REQUIRED")) {
+        toast.error("Pro plan required for AI suggestions");
+      } else {
+        toast.error(msg);
+      }
+    },
+  });
+
+  const deferOne = useMutation({
+    mutationFn: (id: string) => uncommitTasks([id]),
+    onSuccess: (_d, id) => {
+      setSuggestedIds((s) => s.filter((x) => x !== id));
+      invalidateAll();
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
+  // Rolled-over selection
+  const [rolledSelected, setRolledSelected] = useState<Set<string>>(new Set());
+  const toggleRolled = (id: string) =>
+    setRolledSelected((s) => {
+      const n = new Set(s);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
+            <BrainCircuit className="h-3.5 w-3.5" />
+            Plan my week
+          </div>
+          <h1 className="mt-1 text-2xl sm:text-3xl text-primary">
+            Week of {weekStartDate.toLocaleDateString(undefined, { month: "long", day: "numeric" })}
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Pull tasks from the backlog into this week. Roll-overs are at the top.
+          </p>
+        </div>
+        <Button asChild variant="outline" size="sm">
+          <Link to="/my-week">
+            <CalendarRange className="h-4 w-4 mr-2" />
+            Open My Week
+          </Link>
+        </Button>
+      </header>
+
+      <div className="mt-6 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 items-start">
+        <div className="space-y-8 min-w-0">
+          {/* Rolled over */}
+          {rolledFiltered.length > 0 && (
+            <section className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <RotateCcw className="h-4 w-4 text-amber-600" />
+                  <h2 className="text-sm font-medium">
+                    Rolled over from last week ({rolledFiltered.length})
+                  </h2>
+                </div>
+                {rolledSelected.size > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => { dropRolled.mutate([...rolledSelected]); setRolledSelected(new Set()); }}>
+                      Send to backlog
+                    </Button>
+                    <Button size="sm" onClick={() => { keepRolled.mutate([...rolledSelected]); setRolledSelected(new Set()); }}>
+                      Keep for this week
+                    </Button>
+                  </div>
+                )}
+              </div>
+              <ul className="divide-y border rounded-xl bg-card overflow-hidden">
+                {rolledFiltered.map((t) => (
+                  <RolledRow
+                    key={t.id}
+                    task={t}
+                    checked={rolledSelected.has(t.id)}
+                    onToggle={() => toggleRolled(t.id)}
+                    businessName={t.business_id ? businessName.get(t.business_id) ?? null : null}
+                  />
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {/* Backlog */}
+          <section className="space-y-3">
+            <h2 className="text-sm font-medium">Backlog</h2>
+            <BacklogPanel scoped weekStart={thisMonday} />
+          </section>
+
+          {/* Committed */}
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-medium">This week's commitment ({committedFiltered.length})</h2>
+              {suggestedIds.length > 0 && (
+                <Button variant="ghost" size="sm" onClick={() => { setSuggestedIds([]); setSuggestReason(""); }}>
+                  Clear suggestions
+                </Button>
+              )}
+            </div>
+            {suggestReason && (
+              <Card className="p-3 border-amber-500/30 bg-amber-50/40 dark:bg-amber-950/20">
+                <p className="text-sm flex items-start gap-2">
+                  <Sparkles className="h-4 w-4 shrink-0 mt-0.5 text-amber-600" />
+                  <span>{suggestReason}</span>
+                </p>
+              </Card>
+            )}
+            {committedFiltered.length === 0 ? (
+              <Card className="p-6 text-center text-sm text-muted-foreground">
+                Nothing committed yet. Pick from the backlog above.
+              </Card>
+            ) : (
+              <ul className="divide-y border rounded-xl bg-card overflow-hidden">
+                {committedFiltered.map((t) => (
+                  <CommittedRow
+                    key={t.id}
+                    task={t}
+                    businessName={t.business_id ? businessName.get(t.business_id) ?? null : null}
+                    suggested={suggestedIds.includes(t.id)}
+                    onRemove={() => removeFromWeek.mutate(t.id)}
+                    onDefer={() => deferOne.mutate(t.id)}
+                  />
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
+
+        {/* Sticky rail */}
+        <aside className="space-y-4 lg:sticky lg:top-6">
+          <Card className="p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium">Capacity</h3>
+              <span className={cn("text-xs tabular-nums flex items-center gap-1", loadColor)}>
+                <Clock className="h-3 w-3" />
+                {totalLoad.toFixed(1)} / {weeklyCapacity.toFixed(0)}h
+              </span>
+            </div>
+            <Progress
+              value={Math.min(100, loadPct)}
+              className={cn(loadPct > 100 && "[&>div]:bg-destructive", loadPct >= 80 && loadPct <= 100 && "[&>div]:bg-amber-500")}
+            />
+            <div className="text-xs text-muted-foreground space-y-0.5">
+              <div>Calendar events: {eventLoad.toFixed(1)}h</div>
+              <div>Committed tasks ({committedCount}): {taskLoad.toFixed(1)}h</div>
+              <div>Working capacity: {workDays.length} days × {dailyCap}h</div>
+            </div>
+          </Card>
+
+          <Card className="p-4 space-y-3">
+            <h3 className="text-sm font-medium">Your pace</h3>
+            {velocity && velocity.tasks_per_week === 0 && velocity.hours_per_week === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                Not enough history yet — finish a few tasks and your trailing 4-week pace will show here.
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                You usually complete about <strong className="text-foreground">{velocity?.tasks_per_week ?? 0}</strong> tasks
+                and track <strong className="text-foreground">{velocity?.hours_per_week ?? 0}h</strong> a week (4-week average).
+              </p>
+            )}
+            {overPace && (
+              <div className="rounded-md bg-amber-50/60 dark:bg-amber-950/30 p-3 text-xs space-y-2">
+                <p>
+                  You've committed <strong>{committedCount}</strong> tasks — that's above your typical pace. Want to trim?
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => suggest.mutate()}
+                  disabled={suggest.isPending}
+                  title={isPro ? "Get a gentle AI suggestion" : "Pro plan required"}
+                >
+                  <Sparkles className="h-3.5 w-3.5 mr-2" />
+                  {suggest.isPending ? "Thinking…" : isPro ? "Suggest tasks to defer" : "Suggest (Pro)"}
+                </Button>
+              </div>
+            )}
+          </Card>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+function RolledRow({
+  task, checked, onToggle, businessName,
+}: {
+  task: Task; checked: boolean; onToggle: () => void; businessName: string | null;
+}) {
+  return (
+    <li className="flex items-center gap-3 px-4 py-3">
+      <Checkbox checked={checked} onCheckedChange={onToggle} />
+      <Flag className="h-3.5 w-3.5 shrink-0" style={{ color: PRIORITY_COLOR[task.priority] }} />
+      <div className="flex-1 min-w-0">
+        <div className="text-sm truncate">{task.title}</div>
+        <div className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-2">
+          <span>{PRIORITY_LABEL[task.priority]}</span>
+          {task.committed_week && <span>committed {task.committed_week}</span>}
+          {businessName && (
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">{businessName}</Badge>
+          )}
+        </div>
+      </div>
+    </li>
+  );
+}
+
+function CommittedRow({
+  task, businessName, suggested, onRemove, onDefer,
+}: {
+  task: Task;
+  businessName: string | null;
+  suggested: boolean;
+  onRemove: () => void;
+  onDefer: () => void;
+}) {
+  return (
+    <li className={cn("flex items-center gap-3 px-4 py-3", suggested && "bg-amber-50/40 dark:bg-amber-950/20")}>
+      <Flag className="h-3.5 w-3.5 shrink-0" style={{ color: PRIORITY_COLOR[task.priority] }} />
+      <div className="flex-1 min-w-0">
+        <div className={cn("text-sm truncate", task.status === "done" && "line-through text-muted-foreground")}>
+          {task.title}
+        </div>
+        <div className="text-[11px] text-muted-foreground flex items-center gap-2 mt-0.5">
+          <span>{PRIORITY_LABEL[task.priority]}</span>
+          {task.due_at && <span>due {new Date(task.due_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>}
+          {businessName && (
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">{businessName}</Badge>
+          )}
+          {suggested && (
+            <span className="text-amber-600 dark:text-amber-500 flex items-center gap-1">
+              <Sparkles className="h-3 w-3" />
+              suggested to defer
+            </span>
+          )}
+        </div>
+      </div>
+      {suggested && (
+        <Button variant="outline" size="sm" onClick={onDefer}>
+          Defer <ArrowRight className="h-3 w-3 ml-1" />
+        </Button>
+      )}
+      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onRemove} title="Remove from this week">
+        <X className="h-4 w-4" />
+      </Button>
+    </li>
+  );
+}

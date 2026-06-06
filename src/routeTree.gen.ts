@@ -25,6 +25,7 @@ import { Route as AuthenticatedSharedRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedPricingRouteImport } from './routes/_authenticated/pricing'
+import { Route as AuthenticatedPlanWeekRouteImport } from './routes/_authenticated/plan-week'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedNotesRouteImport } from './routes/_authenticated/notes'
 import { Route as AuthenticatedMyWeekRouteImport } from './routes/_authenticated/my-week'
@@ -32,6 +33,7 @@ import { Route as AuthenticatedMeetingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedJournalRouteImport } from './routes/_authenticated/journal'
 import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated/inbox'
 import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticated/calendar'
+import { Route as AuthenticatedBacklogRouteImport } from './routes/_authenticated/backlog'
 import { Route as AuthenticatedAskNotesRouteImport } from './routes/_authenticated/ask-notes'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedReportsReportIdRouteImport } from './routes/_authenticated/reports.$reportId'
@@ -122,6 +124,11 @@ const AuthenticatedPricingRoute = AuthenticatedPricingRouteImport.update({
   path: '/pricing',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedPlanWeekRoute = AuthenticatedPlanWeekRouteImport.update({
+  id: '/plan-week',
+  path: '/plan-week',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
@@ -155,6 +162,11 @@ const AuthenticatedInboxRoute = AuthenticatedInboxRouteImport.update({
 const AuthenticatedCalendarRoute = AuthenticatedCalendarRouteImport.update({
   id: '/calendar',
   path: '/calendar',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedBacklogRoute = AuthenticatedBacklogRouteImport.update({
+  id: '/backlog',
+  path: '/backlog',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedAskNotesRoute = AuthenticatedAskNotesRouteImport.update({
@@ -227,6 +239,7 @@ export interface FileRoutesByFullPath {
   '/unsubscribe': typeof UnsubscribeRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/ask-notes': typeof AuthenticatedAskNotesRoute
+  '/backlog': typeof AuthenticatedBacklogRoute
   '/calendar': typeof AuthenticatedCalendarRoute
   '/inbox': typeof AuthenticatedInboxRoute
   '/journal': typeof AuthenticatedJournalRoute
@@ -234,6 +247,7 @@ export interface FileRoutesByFullPath {
   '/my-week': typeof AuthenticatedMyWeekRoute
   '/notes': typeof AuthenticatedNotesRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/plan-week': typeof AuthenticatedPlanWeekRoute
   '/pricing': typeof AuthenticatedPricingRoute
   '/reports': typeof AuthenticatedReportsRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
@@ -261,6 +275,7 @@ export interface FileRoutesByTo {
   '/unsubscribe': typeof UnsubscribeRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/ask-notes': typeof AuthenticatedAskNotesRoute
+  '/backlog': typeof AuthenticatedBacklogRoute
   '/calendar': typeof AuthenticatedCalendarRoute
   '/inbox': typeof AuthenticatedInboxRoute
   '/journal': typeof AuthenticatedJournalRoute
@@ -268,6 +283,7 @@ export interface FileRoutesByTo {
   '/my-week': typeof AuthenticatedMyWeekRoute
   '/notes': typeof AuthenticatedNotesRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/plan-week': typeof AuthenticatedPlanWeekRoute
   '/pricing': typeof AuthenticatedPricingRoute
   '/reports': typeof AuthenticatedReportsRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
@@ -297,6 +313,7 @@ export interface FileRoutesById {
   '/unsubscribe': typeof UnsubscribeRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/ask-notes': typeof AuthenticatedAskNotesRoute
+  '/_authenticated/backlog': typeof AuthenticatedBacklogRoute
   '/_authenticated/calendar': typeof AuthenticatedCalendarRoute
   '/_authenticated/inbox': typeof AuthenticatedInboxRoute
   '/_authenticated/journal': typeof AuthenticatedJournalRoute
@@ -304,6 +321,7 @@ export interface FileRoutesById {
   '/_authenticated/my-week': typeof AuthenticatedMyWeekRoute
   '/_authenticated/notes': typeof AuthenticatedNotesRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
+  '/_authenticated/plan-week': typeof AuthenticatedPlanWeekRoute
   '/_authenticated/pricing': typeof AuthenticatedPricingRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -333,6 +351,7 @@ export interface FileRouteTypes {
     | '/unsubscribe'
     | '/admin'
     | '/ask-notes'
+    | '/backlog'
     | '/calendar'
     | '/inbox'
     | '/journal'
@@ -340,6 +359,7 @@ export interface FileRouteTypes {
     | '/my-week'
     | '/notes'
     | '/onboarding'
+    | '/plan-week'
     | '/pricing'
     | '/reports'
     | '/settings'
@@ -367,6 +387,7 @@ export interface FileRouteTypes {
     | '/unsubscribe'
     | '/admin'
     | '/ask-notes'
+    | '/backlog'
     | '/calendar'
     | '/inbox'
     | '/journal'
@@ -374,6 +395,7 @@ export interface FileRouteTypes {
     | '/my-week'
     | '/notes'
     | '/onboarding'
+    | '/plan-week'
     | '/pricing'
     | '/reports'
     | '/settings'
@@ -402,6 +424,7 @@ export interface FileRouteTypes {
     | '/unsubscribe'
     | '/_authenticated/admin'
     | '/_authenticated/ask-notes'
+    | '/_authenticated/backlog'
     | '/_authenticated/calendar'
     | '/_authenticated/inbox'
     | '/_authenticated/journal'
@@ -409,6 +432,7 @@ export interface FileRouteTypes {
     | '/_authenticated/my-week'
     | '/_authenticated/notes'
     | '/_authenticated/onboarding'
+    | '/_authenticated/plan-week'
     | '/_authenticated/pricing'
     | '/_authenticated/reports'
     | '/_authenticated/settings'
@@ -558,6 +582,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPricingRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/plan-week': {
+      id: '/_authenticated/plan-week'
+      path: '/plan-week'
+      fullPath: '/plan-week'
+      preLoaderRoute: typeof AuthenticatedPlanWeekRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/onboarding': {
       id: '/_authenticated/onboarding'
       path: '/onboarding'
@@ -605,6 +636,13 @@ declare module '@tanstack/react-router' {
       path: '/calendar'
       fullPath: '/calendar'
       preLoaderRoute: typeof AuthenticatedCalendarRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/backlog': {
+      id: '/_authenticated/backlog'
+      path: '/backlog'
+      fullPath: '/backlog'
+      preLoaderRoute: typeof AuthenticatedBacklogRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/ask-notes': {
@@ -707,6 +745,7 @@ const AuthenticatedReportsRouteWithChildren =
 interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAskNotesRoute: typeof AuthenticatedAskNotesRoute
+  AuthenticatedBacklogRoute: typeof AuthenticatedBacklogRoute
   AuthenticatedCalendarRoute: typeof AuthenticatedCalendarRoute
   AuthenticatedInboxRoute: typeof AuthenticatedInboxRoute
   AuthenticatedJournalRoute: typeof AuthenticatedJournalRoute
@@ -714,6 +753,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedMyWeekRoute: typeof AuthenticatedMyWeekRoute
   AuthenticatedNotesRoute: typeof AuthenticatedNotesRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
+  AuthenticatedPlanWeekRoute: typeof AuthenticatedPlanWeekRoute
   AuthenticatedPricingRoute: typeof AuthenticatedPricingRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRouteWithChildren
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -726,6 +766,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAskNotesRoute: AuthenticatedAskNotesRoute,
+  AuthenticatedBacklogRoute: AuthenticatedBacklogRoute,
   AuthenticatedCalendarRoute: AuthenticatedCalendarRoute,
   AuthenticatedInboxRoute: AuthenticatedInboxRoute,
   AuthenticatedJournalRoute: AuthenticatedJournalRoute,
@@ -733,6 +774,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedMyWeekRoute: AuthenticatedMyWeekRoute,
   AuthenticatedNotesRoute: AuthenticatedNotesRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
+  AuthenticatedPlanWeekRoute: AuthenticatedPlanWeekRoute,
   AuthenticatedPricingRoute: AuthenticatedPricingRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRouteWithChildren,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
