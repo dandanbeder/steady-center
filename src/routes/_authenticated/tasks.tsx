@@ -419,7 +419,13 @@ function ListNode({
 
   const del = useMutation({
     mutationFn: () => deleteList(list.id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["lists"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["lists"] });
+      showUndoToast(`List "${list.name}" deleted`, async () => {
+        await restoreList(list.id);
+        qc.invalidateQueries({ queryKey: ["lists"] });
+      });
+    },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
