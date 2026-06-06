@@ -559,6 +559,7 @@ export async function generateForUser(
     top_tasks_hours,
     flow,
     goals,
+    outcomes,
   };
   const narrative = await writeNarrative(metrics, weekStart, weekEnd);
 
