@@ -1,6 +1,8 @@
+import { useEffect } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Check, Loader2, ExternalLink } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useSubscription } from "@/hooks/use-subscription";
 import { usePaddleCheckout } from "@/hooks/use-paddle-checkout";
@@ -70,9 +72,34 @@ const PLANS: Plan[] = [
 
 function PricingPage() {
   const { user } = useAuth();
-  const { tier, subscription, isActive } = useSubscription();
+  const { tier, subscription, isActive, refetch } = useSubscription();
   const { openCheckout, loading } = usePaddleCheckout();
   const openPortal = useServerFn(createCustomerPortalUrl);
+  const qc = useQueryClient();
+
+  // Post-checkout return: webhook may lag a few seconds. Poll briefly and refresh.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("checkout") !== "success") return;
+    toast.success("Payment received — activating your plan…");
+    let attempts = 0;
+    const tick = async () => {
+      attempts += 1;
+      await qc.invalidateQueries({ queryKey: ["subscription"] });
+      const { data } = await refetch();
+      if (data || attempts >= 8) {
+        // Clean the URL so refreshes don't re-trigger.
+        const url = new URL(window.location.href);
+        url.searchParams.delete("checkout");
+        window.history.replaceState({}, "", url.toString());
+        return;
+      }
+      setTimeout(tick, 1500);
+    };
+    tick();
+  }, [qc, refetch]);
+
 
   const handleSubscribe = async (plan: Plan) => {
     if (!plan.priceId || !user) return;
