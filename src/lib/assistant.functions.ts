@@ -307,8 +307,11 @@ export const assistantChat = createServerFn({ method: "POST" })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
+    const { requireFeature } = await import("./entitlements.server");
+    await requireFeature(context.supabase, context.userId, "ai_assistant");
     const { assertAiBudget, recordAiUsage } = await import("./ai-budget.server");
     await assertAiBudget(context.userId);
+
 
     const businessId = data.businessId ?? null;
     const now = new Date().toISOString();
