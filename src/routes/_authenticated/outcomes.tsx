@@ -37,7 +37,6 @@ import {
   daysRemaining,
   deleteOutcome,
   listOutcomesWithProgress,
-  listTasksForOutcome,
   updateOutcome,
   type OutcomeStatus,
   type OutcomeWithProgress,
