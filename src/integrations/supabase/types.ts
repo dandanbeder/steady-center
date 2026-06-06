@@ -462,6 +462,7 @@ export type Database = {
           calendar_id: string
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           description: string | null
           end_at: string
           external_id: string | null
@@ -483,6 +484,7 @@ export type Database = {
           calendar_id: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
           end_at: string
           external_id?: string | null
@@ -504,6 +506,7 @@ export type Database = {
           calendar_id?: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
           end_at?: string
           external_id?: string | null
@@ -572,6 +575,7 @@ export type Database = {
           color: string
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           id: string
           name: string
           owner_id: string
@@ -582,6 +586,7 @@ export type Database = {
           color?: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           id?: string
           name: string
           owner_id: string
@@ -592,6 +597,7 @@ export type Database = {
           color?: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           id?: string
           name?: string
           owner_id?: string
@@ -784,6 +790,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           folder_id: string
           id: string
           name: string
@@ -792,6 +799,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           folder_id: string
           id?: string
           name: string
@@ -800,6 +808,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           folder_id?: string
           id?: string
           name?: string
@@ -1026,6 +1035,7 @@ export type Database = {
           business_id: string | null
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           folder_id: string | null
           id: string
           linked_event_id: string | null
@@ -1042,6 +1052,7 @@ export type Database = {
           business_id?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           folder_id?: string | null
           id?: string
           linked_event_id?: string | null
@@ -1058,6 +1069,7 @@ export type Database = {
           business_id?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           folder_id?: string | null
           id?: string
           linked_event_id?: string | null
@@ -1401,6 +1413,7 @@ export type Database = {
           completed_at: string | null
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           description: string | null
           due_at: string | null
           id: string
@@ -1422,6 +1435,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
           due_at?: string | null
           id?: string
@@ -1443,6 +1457,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
           due_at?: string | null
           id?: string
@@ -1664,6 +1679,12 @@ export type Database = {
     Functions: {
       business_for_list: { Args: { p_list_id: string }; Returns: string }
       current_membership_role: { Args: { p_business: string }; Returns: string }
+      empty_my_trash: {
+        Args: never
+        Returns: {
+          storage_paths: string[]
+        }[]
+      }
       get_or_create_unsubscribe_token: {
         Args: { p_user_id: string }
         Returns: string
@@ -1695,6 +1716,24 @@ export type Database = {
           role: string
           status: string
           user_id: string
+        }[]
+      }
+      list_trash: {
+        Args: never
+        Returns: {
+          business_id: string
+          deleted_at: string
+          id: string
+          kind: string
+          meta: Json
+          parent_id: string
+          title: string
+        }[]
+      }
+      purge_trash: {
+        Args: never
+        Returns: {
+          storage_paths: string[]
         }[]
       }
     }
