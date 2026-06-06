@@ -1023,6 +1023,7 @@ function SubtaskRow({ task, onChange }: { task: Task; onChange: () => void }) {
   const toggle = useMutation({
     mutationFn: () => updateTask(task.id, { status: task.status === "done" ? "todo" : "done" }),
     onSuccess: onChange,
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Could not update subtask"),
   });
   const del = useMutation({
     mutationFn: () => deleteTask(task.id),
@@ -1033,6 +1034,7 @@ function SubtaskRow({ task, onChange }: { task: Task; onChange: () => void }) {
         onChange();
       });
     },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Could not delete subtask"),
   });
   return (
     <div className="flex items-center gap-2 group">

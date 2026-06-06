@@ -40,13 +40,16 @@ export function NotificationCenter({
     enabled: open,
   });
 
-  // Realtime subscription — keep cache fresh
+  // Realtime subscription — keep cache fresh.
+  // The cleanup must be returned synchronously from useEffect, so we set up
+  // the channel inside a then-able and hold a ref so cleanup can remove it
+  // whether or not the auth lookup has resolved by unmount.
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      const { data } = await supabase.auth.getUser();
-      if (!data.user || cancelled) return;
-      const channel = supabase
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    supabase.auth.getUser().then(({ data }) => {
+      if (cancelled || !data.user) return;
+      channel = supabase
         .channel(`notifications:${data.user.id}`)
         .on(
           "postgres_changes",
@@ -56,12 +59,10 @@ export function NotificationCenter({
           },
         )
         .subscribe();
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    })();
+    });
     return () => {
       cancelled = true;
+      if (channel) supabase.removeChannel(channel);
     };
   }, [qc]);
 
