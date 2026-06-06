@@ -301,6 +301,55 @@ function ReportDetail() {
         </section>
       )}
 
+      {/* Outcomes */}
+      {outcomes.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-xs uppercase tracking-wider text-muted-foreground">
+            Outcomes
+          </h2>
+          <Card className="p-5 space-y-4">
+            {outcomes
+              .filter((o) => o.total_tasks > 0 || o.status === "achieved")
+              .map((o) => {
+                const daysLabel =
+                  o.days_remaining === null
+                    ? "no target"
+                    : o.days_remaining < 0
+                      ? `${Math.abs(o.days_remaining)}d overdue`
+                      : o.days_remaining === 0
+                        ? "due today"
+                        : `${o.days_remaining}d left`;
+                return (
+                  <div key={o.id} className="space-y-1">
+                    <div className="flex justify-between items-baseline gap-3">
+                      <div className="text-sm">
+                        {o.name}
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          {o.business_name}
+                        </span>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {o.done_tasks}/{o.total_tasks} ·{" "}
+                        <span
+                          className={
+                            o.status === "achieved"
+                              ? "text-primary uppercase tracking-wider"
+                              : ""
+                          }
+                        >
+                          {o.status === "achieved" ? "achieved" : daysLabel}
+                        </span>
+                      </div>
+                    </div>
+                    <Progress value={o.progress_pct} />
+                  </div>
+                );
+              })}
+          </Card>
+        </section>
+      )}
+
+
       {/* Per-business breakdown (kept) */}
       {per.length > 0 && (
         <section className="space-y-3">
