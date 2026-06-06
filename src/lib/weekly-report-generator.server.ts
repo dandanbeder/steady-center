@@ -169,12 +169,13 @@ export async function generateForUser(
     timeRes,
     goalsRes,
     prevTasksRes,
+    outcomesRes,
   ] = await Promise.all([
     supabaseAdmin.from("businesses").select("id, name").eq("owner_id", userId),
     supabaseAdmin
       .from("tasks")
       .select(
-        "id, title, status, priority, due_at, completed_at, created_at, status_changed_at, business_id",
+        "id, title, status, priority, due_at, completed_at, created_at, status_changed_at, business_id, outcome_id",
       )
       .eq("owner_id", userId)
       .is("deleted_at", null),
@@ -223,6 +224,11 @@ export async function generateForUser(
       .eq("status", "done")
       .gte("completed_at", prevWeekStartIso)
       .lt("completed_at", startIso),
+    supabaseAdmin
+      .from("outcomes")
+      .select("id, name, business_id, target_date, status")
+      .eq("owner_id", userId)
+      .neq("status", "archived"),
   ]);
 
   const bizList: Business[] = (businesses ?? []) as Business[];
