@@ -496,6 +496,42 @@ export async function generateForUser(
     };
   });
 
+  // Outcomes: roll up task counts (across all-time, not just this week)
+  const outcomeRows = (outcomesRes.data ?? []) as Array<{
+    id: string;
+    name: string;
+    business_id: string | null;
+    target_date: string | null;
+    status: "active" | "achieved" | "archived";
+  }>;
+  const outcomeCounts = new Map<string, { total: number; done: number }>();
+  for (const t of tasks) {
+    if (!t.outcome_id) continue;
+    const c = outcomeCounts.get(t.outcome_id) ?? { total: 0, done: 0 };
+    c.total++;
+    if (t.status === "done") c.done++;
+    outcomeCounts.set(t.outcome_id, c);
+  }
+  const outcomes: OutcomeProgress[] = outcomeRows.map((o) => {
+    const c = outcomeCounts.get(o.id) ?? { total: 0, done: 0 };
+    const days = o.target_date
+      ? Math.ceil(
+          (new Date(`${o.target_date}T23:59:59Z`).getTime() - Date.now()) / 86400_000,
+        )
+      : null;
+    return {
+      id: o.id,
+      name: o.name,
+      business_name: bizName.get(o.business_id) ?? "Personal",
+      status: o.status,
+      target_date: o.target_date,
+      days_remaining: days,
+      total_tasks: c.total,
+      done_tasks: c.done,
+      progress_pct: c.total === 0 ? (o.status === "achieved" ? 100 : 0) : Math.round((c.done / c.total) * 100),
+    };
+  });
+
   const per_business = bucketKeys.map((k) => buckets.get(k)!).filter(hasActivity);
 
   // vs last week
