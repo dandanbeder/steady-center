@@ -1173,6 +1173,50 @@ export type Database = {
         }
         Relationships: []
       }
+      outcomes: {
+        Row: {
+          business_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          owner_id: string
+          status: Database["public"]["Enums"]["outcome_status"]
+          target_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          owner_id: string
+          status?: Database["public"]["Enums"]["outcome_status"]
+          target_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          owner_id?: string
+          status?: Database["public"]["Enums"]["outcome_status"]
+          target_date?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outcomes_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       password_reset_attempts: {
         Row: {
           attempted_at: string
@@ -1419,6 +1463,7 @@ export type Database = {
           due_at: string | null
           id: string
           list_id: string
+          outcome_id: string | null
           owner_id: string
           parent_task_id: string | null
           position: number
@@ -1442,6 +1487,7 @@ export type Database = {
           due_at?: string | null
           id?: string
           list_id: string
+          outcome_id?: string | null
           owner_id: string
           parent_task_id?: string | null
           position?: number
@@ -1465,6 +1511,7 @@ export type Database = {
           due_at?: string | null
           id?: string
           list_id?: string
+          outcome_id?: string | null
           owner_id?: string
           parent_task_id?: string | null
           position?: number
@@ -1490,6 +1537,13 @@ export type Database = {
             columns: ["list_id"]
             isOneToOne: false
             referencedRelation: "lists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_outcome_id_fkey"
+            columns: ["outcome_id"]
+            isOneToOne: false
+            referencedRelation: "outcomes"
             referencedColumns: ["id"]
           },
           {
@@ -1745,6 +1799,7 @@ export type Database = {
       goal_status: "open" | "met" | "missed"
       membership_role: "owner" | "admin" | "member" | "commenter" | "viewer"
       membership_status: "active" | "invited"
+      outcome_status: "active" | "achieved" | "archived"
       platform_role: "user" | "superadmin"
       subscription_status: "trial" | "active" | "canceled" | "past_due" | "none"
       task_priority: "urgent" | "high" | "normal" | "low"
@@ -1881,6 +1936,7 @@ export const Constants = {
       goal_status: ["open", "met", "missed"],
       membership_role: ["owner", "admin", "member", "commenter", "viewer"],
       membership_status: ["active", "invited"],
+      outcome_status: ["active", "achieved", "archived"],
       platform_role: ["user", "superadmin"],
       subscription_status: ["trial", "active", "canceled", "past_due", "none"],
       task_priority: ["urgent", "high", "normal", "low"],
