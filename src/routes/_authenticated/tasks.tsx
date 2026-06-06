@@ -97,6 +97,7 @@ import {
 } from "@/lib/tasks";
 import { listBacklinks, resolveLinks } from "@/lib/note-links";
 import { showUndoToast } from "@/lib/undo-toast";
+import { listOutcomes, updateOutcome } from "@/lib/outcomes";
 import { cn } from "@/lib/utils";
 import { TaskTimerInline, TaskTimePanel } from "@/components/task-timer";
 
