@@ -28,6 +28,7 @@ import {
 import { listEvents, type EventRow } from "@/lib/calendars";
 import { getWorkingHours } from "@/lib/user-prefs";
 import { WeeklyGoalsPanel } from "@/components/weekly-goals-panel";
+import { WeekPulse } from "@/components/week-pulse";
 import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
 import { cn } from "@/lib/utils";
 
