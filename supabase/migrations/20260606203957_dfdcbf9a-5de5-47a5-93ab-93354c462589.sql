@@ -1,0 +1,3 @@
+CREATE POLICY "users insert own assistant actions" ON public.assistant_actions FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
+CREATE POLICY "users update own assistant actions" ON public.assistant_actions FOR UPDATE TO authenticated USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+CREATE POLICY "users delete own assistant actions" ON public.assistant_actions FOR DELETE TO authenticated USING (user_id = auth.uid());
