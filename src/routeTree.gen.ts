@@ -18,6 +18,7 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AcceptInviteRouteImport } from './routes/accept-invite'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedTrashRouteImport } from './routes/_authenticated/trash'
 import { Route as AuthenticatedTodayRouteImport } from './routes/_authenticated/today'
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
 import { Route as AuthenticatedSharedRouteImport } from './routes/_authenticated/shared'
@@ -84,6 +85,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedTrashRoute = AuthenticatedTrashRouteImport.update({
+  id: '/trash',
+  path: '/trash',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedTodayRoute = AuthenticatedTodayRouteImport.update({
   id: '/today',
@@ -227,6 +233,7 @@ export interface FileRoutesByFullPath {
   '/shared': typeof AuthenticatedSharedRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/today': typeof AuthenticatedTodayRoute
+  '/trash': typeof AuthenticatedTrashRoute
   '/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
   '/reports/$reportId': typeof AuthenticatedReportsReportIdRoute
   '/api/public/hooks/daily-pulse': typeof ApiPublicHooksDailyPulseRoute
@@ -259,6 +266,7 @@ export interface FileRoutesByTo {
   '/shared': typeof AuthenticatedSharedRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/today': typeof AuthenticatedTodayRoute
+  '/trash': typeof AuthenticatedTrashRoute
   '/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
   '/reports/$reportId': typeof AuthenticatedReportsReportIdRoute
   '/api/public/hooks/daily-pulse': typeof ApiPublicHooksDailyPulseRoute
@@ -293,6 +301,7 @@ export interface FileRoutesById {
   '/_authenticated/shared': typeof AuthenticatedSharedRoute
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
   '/_authenticated/today': typeof AuthenticatedTodayRoute
+  '/_authenticated/trash': typeof AuthenticatedTrashRoute
   '/_authenticated/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
   '/_authenticated/reports/$reportId': typeof AuthenticatedReportsReportIdRoute
   '/api/public/hooks/daily-pulse': typeof ApiPublicHooksDailyPulseRoute
@@ -327,6 +336,7 @@ export interface FileRouteTypes {
     | '/shared'
     | '/tasks'
     | '/today'
+    | '/trash'
     | '/meetings/$meetingId'
     | '/reports/$reportId'
     | '/api/public/hooks/daily-pulse'
@@ -359,6 +369,7 @@ export interface FileRouteTypes {
     | '/shared'
     | '/tasks'
     | '/today'
+    | '/trash'
     | '/meetings/$meetingId'
     | '/reports/$reportId'
     | '/api/public/hooks/daily-pulse'
@@ -392,6 +403,7 @@ export interface FileRouteTypes {
     | '/_authenticated/shared'
     | '/_authenticated/tasks'
     | '/_authenticated/today'
+    | '/_authenticated/trash'
     | '/_authenticated/meetings/$meetingId'
     | '/_authenticated/reports/$reportId'
     | '/api/public/hooks/daily-pulse'
@@ -482,6 +494,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/trash': {
+      id: '/_authenticated/trash'
+      path: '/trash'
+      fullPath: '/trash'
+      preLoaderRoute: typeof AuthenticatedTrashRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/today': {
       id: '/_authenticated/today'
@@ -680,6 +699,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedSharedRoute: typeof AuthenticatedSharedRoute
   AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
   AuthenticatedTodayRoute: typeof AuthenticatedTodayRoute
+  AuthenticatedTrashRoute: typeof AuthenticatedTrashRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -698,6 +718,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedSharedRoute: AuthenticatedSharedRoute,
   AuthenticatedTasksRoute: AuthenticatedTasksRoute,
   AuthenticatedTodayRoute: AuthenticatedTodayRoute,
+  AuthenticatedTrashRoute: AuthenticatedTrashRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
