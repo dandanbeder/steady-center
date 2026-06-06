@@ -1410,6 +1410,7 @@ export type Database = {
       tasks: {
         Row: {
           business_id: string | null
+          committed_week: string | null
           completed_at: string | null
           created_at: string
           created_by: string | null
@@ -1432,6 +1433,7 @@ export type Database = {
         }
         Insert: {
           business_id?: string | null
+          committed_week?: string | null
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
@@ -1454,6 +1456,7 @@ export type Database = {
         }
         Update: {
           business_id?: string | null
+          committed_week?: string | null
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
