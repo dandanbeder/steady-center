@@ -90,8 +90,13 @@ import {
   type Task,
   type TaskPriority,
   type TaskStatus,
+  restoreFolder,
+  restoreList,
+  restoreTask,
+  bulkRestoreTasks,
 } from "@/lib/tasks";
 import { listBacklinks, resolveLinks } from "@/lib/note-links";
+import { showUndoToast } from "@/lib/undo-toast";
 import { cn } from "@/lib/utils";
 import { TaskTimerInline, TaskTimePanel } from "@/components/task-timer";
 
