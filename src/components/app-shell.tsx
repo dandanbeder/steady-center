@@ -97,6 +97,12 @@ export function AppShell({ children }: { children: ReactNode }) {
     refetchInterval: 30000,
   });
 
+  const { data: unreadNotifications = 0 } = useQuery({
+    queryKey: ["notifications", "unread-count"],
+    queryFn: countUnreadNotifications,
+    refetchInterval: 30000,
+  });
+
   const active =
     activeId === ALL ? null : businesses.find((b) => b.id === activeId) ?? null;
 
