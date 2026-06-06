@@ -896,6 +896,7 @@ function TaskRow({
 }) {
   const [open, setOpen] = useState(false);
   const [subTitle, setSubTitle] = useState("");
+  const [focusOn, setFocusOn] = useState(false);
 
   const toggle = useMutation({
     mutationFn: async () => {
