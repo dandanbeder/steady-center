@@ -74,7 +74,7 @@ export function FocusMode({
   const [breathing, setBreathing] = useState(false);
   const chimedRef = useRef(false);
 
-  const { data: running } = useQuery({
+  const { data: running, isLoading: runningLoading } = useQuery({
     queryKey: ["time-running"],
     queryFn: getRunningTimer,
     refetchInterval: 15_000,
@@ -115,11 +115,16 @@ export function FocusMode({
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
-  // Auto-start on enter
+  // Auto-start on enter — only once the running-timer query has resolved,
+  // and only if no other task's timer is already running (otherwise leave it
+  // alone so we don't silently corrupt time tracking).
+  const autoStartedRef = useRef(false);
   useEffect(() => {
+    if (runningLoading || autoStartedRef.current) return;
+    autoStartedRef.current = true;
     if (!running) start.mutate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [runningLoading, running]);
 
   const elapsedMs = useMemo(() => {
     if (!isThisRunning || !running) return 0;
@@ -140,17 +145,16 @@ export function FocusMode({
     if (!reachedTarget) chimedRef.current = false;
   }, [reachedTarget, duration]);
 
-  const exit = async (silent = false) => {
+  const exit = async () => {
     if (isThisRunning && running) {
       try {
         await stopTimer(running);
         invalidate();
-      } catch {
-        /* ignore */
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Could not stop the timer");
       }
     }
-    if (!silent) onClose();
-    else onClose();
+    onClose();
   };
 
   // ESC to leave
@@ -182,6 +186,7 @@ export function FocusMode({
       refetchSubtasks();
       onChange?.();
     },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Could not update subtask"),
   });
 
   const completeTask = useMutation({

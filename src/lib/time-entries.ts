@@ -106,13 +106,11 @@ export async function listTaskMinutes(): Promise<Record<string, number>> {
   return totals;
 }
 
-/** Minutes per task for entries that overlap the current ISO week (Mon–Sun). */
+/** Minutes per task for entries since the start of the current local week (Mon 00:00). */
 export async function listTaskMinutesThisWeek(): Promise<Record<string, number>> {
-  const now = new Date();
-  const day = (now.getDay() + 6) % 7; // 0 = Mon
-  const weekStart = new Date(now);
+  const weekStart = new Date();
   weekStart.setHours(0, 0, 0, 0);
-  weekStart.setDate(weekStart.getDate() - day);
+  weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7));
 
   const { data, error } = await supabase
     .from("time_entries")

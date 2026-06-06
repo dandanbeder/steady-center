@@ -1,24 +1,34 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Task } from "@/lib/tasks";
 
-/** Monday (UTC) for the week containing `date`, as YYYY-MM-DD. */
+/** Format a Date's local Y-M-D as YYYY-MM-DD (no timezone shift). */
+function ymdLocal(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+/** Monday for the week containing `date` in the user's local timezone, as YYYY-MM-DD.
+ *  Local (not UTC) so that early-Monday hours in non-UTC zones aren't mis-bucketed
+ *  into the previous week. committed_week is treated as a local calendar date. */
 export function mondayOf(date: Date = new Date()): string {
-  const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-  const dow = (d.getUTCDay() + 6) % 7; // 0 = Mon
-  d.setUTCDate(d.getUTCDate() - dow);
-  return d.toISOString().slice(0, 10);
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return ymdLocal(d);
 }
 
-/** Add N weeks to a YYYY-MM-DD Monday. */
+/** Add N weeks to a YYYY-MM-DD Monday (local). */
 export function addWeeks(monday: string, n: number): string {
-  const d = new Date(monday + "T00:00:00Z");
-  d.setUTCDate(d.getUTCDate() + n * 7);
-  return d.toISOString().slice(0, 10);
+  const d = new Date(monday + "T00:00:00"); // local midnight
+  d.setDate(d.getDate() + n * 7);
+  return ymdLocal(d);
 }
 
-/** ISO string for the Monday Date (UTC). */
+/** Date for the start of the Monday week (local midnight). */
 function mondayDate(monday: string): Date {
-  return new Date(monday + "T00:00:00Z");
+  return new Date(monday + "T00:00:00");
 }
 
 /**

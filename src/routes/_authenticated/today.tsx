@@ -5,6 +5,7 @@ import { listBusinesses } from "@/lib/businesses";
 import { listCalendars, listEvents } from "@/lib/calendars";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { mondayOf } from "@/lib/weekly-plan";
 import { MyInvitationsBanner } from "@/components/my-invitations-banner";
 import { UpcomingMeetings } from "@/components/upcoming-meetings";
 import { DailyPulseCard } from "@/components/daily-pulse-card";
@@ -36,31 +37,36 @@ function startOfDay(d: Date) {
 /**
  * Top open tasks. Prefers tasks committed to this week, then falls back to
  * anything else due today or overdue, so committed work always surfaces first.
+ * Optionally scoped to a single business (account).
  */
-async function listTopOpenTasks(limit = 5): Promise<Task[]> {
+async function listTopOpenTasks(limit = 5, businessId: string | null = null): Promise<Task[]> {
   const end = new Date();
   end.setHours(23, 59, 59, 999);
-  const monday = new Date();
-  monday.setHours(0, 0, 0, 0);
-  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
-  const mondayStr = monday.toISOString().slice(0, 10);
+  const mondayStr = mondayOf();
+
+  const apply = <T extends { eq: (col: string, val: string) => T }>(q: T): T =>
+    businessId ? q.eq("business_id", businessId) : q;
 
   const [committed, dueSoon] = await Promise.all([
-    supabase
-      .from("tasks")
-      .select("*")
-      .is("deleted_at", null)
-      .neq("status", "done")
-      .eq("committed_week", mondayStr)
+    apply(
+      supabase
+        .from("tasks")
+        .select("*")
+        .is("deleted_at", null)
+        .neq("status", "done")
+        .eq("committed_week", mondayStr),
+    )
       .order("priority", { ascending: true })
       .order("due_at", { ascending: true, nullsFirst: false })
       .limit(limit),
-    supabase
-      .from("tasks")
-      .select("*")
-      .is("deleted_at", null)
-      .neq("status", "done")
-      .or(`due_at.is.null,due_at.lte.${end.toISOString()}`)
+    apply(
+      supabase
+        .from("tasks")
+        .select("*")
+        .is("deleted_at", null)
+        .neq("status", "done")
+        .or(`due_at.is.null,due_at.lte.${end.toISOString()}`),
+    )
       .order("due_at", { ascending: true, nullsFirst: false })
       .limit(limit),
   ]);
@@ -104,9 +110,10 @@ function TodayPage() {
     queryKey: ["events", "today", start.toISOString()],
     queryFn: () => listEvents(start, end),
   });
+  const businessScope = activeId === ALL ? null : activeId;
   const topTasksQ = useQuery({
-    queryKey: ["tasks", "today-top", 5],
-    queryFn: () => listTopOpenTasks(5),
+    queryKey: ["tasks", "today-top", 5, businessScope],
+    queryFn: () => listTopOpenTasks(5, businessScope),
   });
   const recentNotesQ = useQuery({
     queryKey: ["notes", "recent", 5],

@@ -171,6 +171,7 @@ function MyWeekPage() {
     mutationFn: (t: Task) =>
       updateTask(t.id, { status: t.status === "done" ? "todo" : "done" }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["my-week-tasks", weekKey] }),
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Could not update task"),
   });
 
   // Quick-add: pick a sensible default list for the active business

@@ -190,21 +190,17 @@ function OnboardingPage() {
                   </p>
                 </div>
               </div>
+              <p className="text-xs text-muted-foreground">
+                Connect calendars from <span className="font-medium">Settings → Connections</span> once you've finished onboarding.
+              </p>
               <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
                 <Button variant="ghost" onClick={() => setStep(3)}>
                   Skip this step
                 </Button>
-                <div className="flex gap-2">
-                  <Button variant="outline" asChild>
-                    <Link to="/settings" onClick={() => setStep(3)}>
-                      Open Settings
-                    </Link>
-                  </Button>
-                  <Button onClick={() => setStep(3)}>
-                    Continue
-                    <ChevronRight className="ml-1 h-4 w-4" />
-                  </Button>
-                </div>
+                <Button onClick={() => setStep(3)}>
+                  Continue
+                  <ChevronRight className="ml-1 h-4 w-4" />
+                </Button>
               </div>
             </section>
           )}

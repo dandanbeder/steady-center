@@ -4,7 +4,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { Trash2, RotateCcw, AlertTriangle, FileText, CheckSquare, Calendar, FolderOpen, List as ListIcon } from "lucide-react";
-import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -113,7 +112,6 @@ function TrashPage() {
   const rowsToShow: TrashRow[] = tab === "all" ? (data ?? []) : grouped[tab];
 
   return (
-    <AppShell>
       <div className="max-w-5xl mx-auto p-4 sm:p-6 lg:p-10 space-y-6">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
@@ -231,6 +229,5 @@ function TrashPage() {
           </TabsContent>
         </Tabs>
       </div>
-    </AppShell>
   );
 }
