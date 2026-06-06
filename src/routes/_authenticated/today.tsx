@@ -39,6 +39,7 @@ async function listTopOpenTasks(limit = 5): Promise<Task[]> {
   const { data, error } = await supabase
     .from("tasks")
     .select("*")
+    .is("deleted_at", null)
     .neq("status", "done")
     .or(`due_at.is.null,due_at.lte.${end.toISOString()}`)
     .order("due_at", { ascending: true, nullsFirst: false })
@@ -51,6 +52,7 @@ async function listRecentNotes(limit = 5): Promise<Note[]> {
   const { data, error } = await supabase
     .from("notes")
     .select("id, title, updated_at, business_id, pinned")
+    .is("deleted_at", null)
     .order("updated_at", { ascending: false })
     .limit(limit);
   if (error) throw error;

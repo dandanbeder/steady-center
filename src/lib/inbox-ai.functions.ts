@@ -27,8 +27,8 @@ export const suggestInboxItem = createServerFn({ method: "POST" })
     // Load context: businesses + folders + lists (RLS scoped)
     const [bizRes, folderRes, listRes] = await Promise.all([
       (supabase.from("businesses") as any).select("id, name").limit(100),
-      (supabase.from("folders") as any).select("id, name, business_id").limit(300),
-      (supabase.from("lists") as any).select("id, name, folder_id").limit(300),
+      (supabase.from("folders") as any).select("id, name, business_id").is("deleted_at", null).limit(300),
+      (supabase.from("lists") as any).select("id, name, folder_id").is("deleted_at", null).limit(300),
     ]);
     const businesses = (bizRes.data ?? []) as { id: string; name: string }[];
     const folders = (folderRes.data ?? []) as { id: string; name: string; business_id: string }[];

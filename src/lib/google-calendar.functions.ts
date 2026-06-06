@@ -129,6 +129,7 @@ export const pushEventToGoogle = createServerFn({ method: "POST" })
       .from("events")
       .select("*, calendar:calendars!inner(provider, external_id)")
       .eq("id", data.event_id)
+      .is("deleted_at", null)
       .single();
     if (error) throw error;
     const cal = ev.calendar as { provider: string; external_id: string | null };
@@ -264,11 +265,13 @@ export async function runSyncForCalendar(
     const items = json.items ?? [];
     for (const ev of items) {
       if (ev.status === "cancelled") {
+        // Soft-delete locally to mirror the remote cancellation.
         const { error } = await sb
           .from("events")
-          .delete()
+          .update({ deleted_at: new Date().toISOString() })
           .eq("calendar_id", localCalendarId)
-          .eq("external_id", ev.id);
+          .eq("external_id", ev.id)
+          .is("deleted_at", null);
         if (!error) deleted++;
         continue;
       }
@@ -280,6 +283,7 @@ export async function runSyncForCalendar(
         .select("id")
         .eq("calendar_id", localCalendarId)
         .eq("external_id", ev.id)
+        .is("deleted_at", null)
         .maybeSingle();
       if (found) {
         const { error } = await sb

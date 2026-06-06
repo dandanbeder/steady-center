@@ -83,7 +83,11 @@ export async function deleteCalendar(id: string) {
 }
 
 export async function listEvents(rangeStart?: Date, rangeEnd?: Date): Promise<EventRow[]> {
-  let q = supabase.from("events").select("*").order("start_at", { ascending: true });
+  let q = supabase
+    .from("events")
+    .select("*")
+    .is("deleted_at", null)
+    .order("start_at", { ascending: true });
   if (rangeStart) q = q.gte("end_at", rangeStart.toISOString());
   if (rangeEnd) q = q.lte("start_at", rangeEnd.toISOString());
   const { data, error } = await q;
@@ -188,14 +192,31 @@ export async function bulkInsertEvents(rows: Array<Omit<EventRow, "id" | "owner_
 
 
 export async function deleteEvent(id: string) {
-  // Delete remote first (RLS-scoped on the server), then local.
+  // Push delete to provider first (so it disappears for invitees), then soft-delete locally.
+  // We also clear external_id so a future restore creates a fresh Google event.
   try {
     await deleteEventInGoogle({ data: { event_id: id } });
   } catch (e) {
     console.warn("Failed to delete remote Google event", e);
   }
-  const { error } = await supabase.from("events").delete().eq("id", id);
+  const { error } = await supabase
+    .from("events")
+    .update({ deleted_at: new Date().toISOString(), external_id: null } as never)
+    .eq("id", id);
   if (error) throw error;
+}
+
+/** Restore a soft-deleted event. For Google-synced calendars, recreate the remote event. */
+export async function restoreEvent(id: string): Promise<{ syncWarning: string | null }> {
+  const { data: ev, error } = await supabase
+    .from("events")
+    .update({ deleted_at: null } as never)
+    .eq("id", id)
+    .select("id, calendar_id")
+    .single();
+  if (error) throw error;
+  const syncWarning = await maybePushToGoogle(ev.id, ev.calendar_id);
+  return { syncWarning };
 }
 
 /** Returns null on success/skip, or a friendly warning string on failure. */

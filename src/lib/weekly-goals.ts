@@ -100,6 +100,7 @@ export async function computeMeasuredProgress(goal: WeeklyGoal): Promise<number>
     let q = supabase
       .from("tasks")
       .select("id", { count: "exact", head: true })
+      .is("deleted_at", null)
       .eq("status", "done")
       .gte("completed_at", goal.week_start)
       .lt("completed_at", goal.week_end);

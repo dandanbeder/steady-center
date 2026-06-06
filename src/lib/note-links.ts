@@ -68,7 +68,7 @@ export async function resolveLinks(links: NoteLink[]): Promise<ResolvedLink[]> {
   const labels = new Map<string, { label: string; href?: string }>();
 
   if (byType.task.length) {
-    const { data } = await supabase.from("tasks").select("id,title").in("id", byType.task);
+    const { data } = await supabase.from("tasks").select("id,title").is("deleted_at", null).in("id", byType.task);
     for (const t of (data ?? []) as Array<{ id: string; title: string }>) {
       labels.set(`task:${t.id}`, { label: t.title, href: `/tasks` });
     }
@@ -80,13 +80,13 @@ export async function resolveLinks(links: NoteLink[]): Promise<ResolvedLink[]> {
     }
   }
   if (byType.event.length) {
-    const { data } = await supabase.from("events").select("id,title,start_at").in("id", byType.event);
+    const { data } = await supabase.from("events").select("id,title,start_at").is("deleted_at", null).in("id", byType.event);
     for (const e of (data ?? []) as Array<{ id: string; title: string; start_at: string }>) {
       labels.set(`event:${e.id}`, { label: e.title, href: `/calendar` });
     }
   }
   if (byType.note.length) {
-    const { data } = await supabase.from("notes").select("id,title").in("id", byType.note);
+    const { data } = await supabase.from("notes").select("id,title").is("deleted_at", null).in("id", byType.note);
     for (const n of (data ?? []) as Array<{ id: string; title: string }>) {
       labels.set(`note:${n.id}`, { label: n.title || "Untitled", href: `/notes` });
     }

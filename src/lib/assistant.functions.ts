@@ -183,7 +183,7 @@ async function execReadTool(
 
   switch (name) {
     case "search_tasks": {
-      let q: any = supabase.from("tasks").select("id,title,status,priority,due_at,list_id,business_id").limit(25);
+      let q: any = supabase.from("tasks").select("id,title,status,priority,due_at,list_id,business_id").is("deleted_at", null).limit(25);
       if (input?.query) q = q.ilike("title", `%${input.query}%`);
       if (input?.status) q = q.eq("status", input.status);
       if (input?.due_before) q = q.lte("due_at", input.due_before);
@@ -198,6 +198,7 @@ async function execReadTool(
       let q: any = supabase
         .from("events")
         .select("id,title,start_at,end_at,calendar_id,business_id,is_meeting")
+        .is("deleted_at", null)
         .gte("start_at", input.from)
         .lt("start_at", input.to)
         .order("start_at")
@@ -212,6 +213,7 @@ async function execReadTool(
       let q: any = supabase
         .from("notes")
         .select("id,title,body,folder_id,business_id,updated_at")
+        .is("deleted_at", null)
         .or(`title.ilike.%${input.query}%,body.ilike.%${input.query}%`)
         .order("updated_at", { ascending: false })
         .limit(15);
@@ -238,6 +240,7 @@ async function execReadTool(
       const { data, error } = await supabase
         .from("lists")
         .select("id,name,folder_id,folders!inner(business_id,name)")
+        .is("deleted_at", null)
         .order("name");
       if (error) throw error;
       const rows = (data ?? []) as any[];
@@ -430,6 +433,7 @@ export const applyAssistantAction = createServerFn({ method: "POST" })
           const { data: lists } = await supabase
             .from("lists")
             .select("id, folders!inner(business_id)")
+            .is("deleted_at", null)
             .limit(50);
           const candidate = (lists ?? []).find((l: any) =>
             data.businessId ? l.folders?.business_id === data.businessId : true,

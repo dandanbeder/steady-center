@@ -163,7 +163,8 @@ export async function generateForUser(
       .select(
         "id, title, status, priority, due_at, completed_at, created_at, status_changed_at, business_id",
       )
-      .eq("owner_id", userId),
+      .eq("owner_id", userId)
+      .is("deleted_at", null),
     supabaseAdmin
       .from("meetings")
       .select("id, business_id, created_at")
@@ -179,6 +180,7 @@ export async function generateForUser(
       .from("notes")
       .select("id, business_id, created_at")
       .eq("owner_id", userId)
+      .is("deleted_at", null)
       .gte("created_at", startIso)
       .lte("created_at", endIso),
     supabaseAdmin
@@ -204,6 +206,7 @@ export async function generateForUser(
       .from("tasks")
       .select("id, completed_at")
       .eq("owner_id", userId)
+      .is("deleted_at", null)
       .eq("status", "done")
       .gte("completed_at", prevWeekStartIso)
       .lt("completed_at", startIso),

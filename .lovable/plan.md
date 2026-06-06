@@ -1,96 +1,79 @@
-## Scope
+# Recoverable deletes: Soft Delete, Undo, Trash
 
-Rebuild the Notes section in Heartbeat into a structured notes workspace per spec. A "space" = an Account (business). All work is membership/owner-scoped via RLS.
+Make destructive actions recoverable across the app. Hard deletes are kept only for the Danger Zone account deletion.
 
-## 1. Database (single migration)
+## 1. Database (one migration)
 
-**Extend `public.notes`:**
-- `note_type` text NOT NULL DEFAULT 'note' — check in ('note','journal','meeting','project','decision')
-- `pinned` boolean NOT NULL DEFAULT false
-- `linked_meeting_id` uuid NULL (no FK; soft link)
-- `linked_event_id` uuid NULL
-- `updated_at` timestamptz NOT NULL DEFAULT now() + `touch_updated_at` trigger
-- (body already TEXT — used as markdown)
+Add nullable `deleted_at timestamptz` to:
+- `tasks`, `notes`, `events`, `folders`, `lists`
 
-**Create `public.note_attachments`:**
-- `id`, `note_id`, `business_id`, `storage_path`, `file_name`, `mime_type`, `size_bytes`, `extracted_text` text NULL, `created_by`, `created_at`
-- GRANT SELECT/INSERT/UPDATE/DELETE to authenticated; ALL to service_role
-- RLS: select = `is_member(business_id,'viewer') OR is_platform_admin() OR is_tagged('note', note_id)`; insert/update/delete = `is_member(business_id,'member') OR admin`
-- Index on `note_id`
+Indexes: partial index `WHERE deleted_at IS NULL` on each table for the common list queries; plus `WHERE deleted_at IS NOT NULL` for trash listings.
 
-**Storage:** create PRIVATE bucket `note-attachments` (public=false). RLS on `storage.objects` for that bucket: select/insert/update/delete allowed only if path's first segment is a `business_id` the user is a member of (≥ viewer for select, ≥ member for write). Paths follow `{business_id}/{note_id}/{uuid}-{filename}`.
+RLS: existing owner/member policies stay unchanged — they already gate access by ownership/membership and continue to apply equally to active and soft-deleted rows. I'll add UPDATE policies (where missing) so the same people who can delete can also restore. No new role check needed — restore respects current membership at restore time. I'll re-run the linter after the migration to confirm.
 
-## 2. Server functions
+Cascade behavior via triggers (SECURITY DEFINER):
+- Soft-deleting a `folder` → soft-delete its lists + their tasks; recursively soft-delete child folders + their notes.
+- Soft-deleting a `list` → soft-delete its tasks.
+- Restore mirrors this **only for rows whose `deleted_at` equals the parent's** (so we don't resurrect items the user deleted earlier on purpose). Implemented by stamping a shared `deleted_at` timestamp at cascade time.
 
-`src/lib/notes.functions.ts` (new):
-- `extractAttachmentText({ attachmentId })` — `requireSupabaseAuth`; downloads from private bucket via admin client, runs lightweight extractor: PDF (pdf-parse-ish via `unpdf`) and DOCX (`mammoth`) → text; updates `extracted_text`. Images skipped (NULL).
-- `searchNotes({ q })` — ilike across title/body, returns notes with snippet.
+Hard-purge function `public.purge_trash()`:
+- Deletes rows where `deleted_at < now() - interval '30 days'`.
+- Returns storage paths for `note_attachments` belonging to purged notes so the cron route can remove the files from the `note-attachments` bucket.
 
-Existing `src/lib/notes.ts` extended (browser supabase): `pinNote`, `listAttachments`, `uploadAttachment` (signed upload to bucket + insert row + fire-and-forget call to extract serverFn), `deleteAttachment`, `getSignedUrl`.
+Realtime: no change (soft delete still emits UPDATE events; the UI filters on `deleted_at IS NULL`).
 
-## 3. Editor
+## 2. Data-access layer
 
-`src/components/notes/markdown-editor.tsx`: lightweight markdown editor — textarea + toolbar (H1/H2, bold, italic, link, bullet, checklist `- [ ]`) that inserts markdown around selection. Live preview pane toggle using `react-markdown` + `remark-gfm` (for checklists). Autosave with 600ms debounce; shows "Saved · updated 12s ago" via `date-fns`.
+Update every list/query/count/search to filter `deleted_at IS NULL`:
+- `src/lib/tasks.ts` (listFolders, listLists, listTasksByList, listMyWeekTasks, listTasksInRange, activity)
+- `src/lib/notes.ts` (listNotes, listAttachments stays — note-scoped)
+- `src/lib/calendars.ts` (listCalendars, listEvents)
+- Any server fns that query these tables: meetings/assistant/notes-journal/weekly-reports/daily-pulse/inbox/reports/search — add `.is('deleted_at', null)` filter.
 
-(Avoids heavy WYSIWYG deps; markdown matches spec's "markdown or JSON blocks".)
+Replace destructive `.delete()` with soft-delete helpers:
+- `softDelete(table, id)` → `update({ deleted_at: now })`
+- `restore(table, id)` → `update({ deleted_at: null })`
+- Bulk variants for multi-select.
 
-## 4. Templates
+Events on Google-synced calendars: `deleteEvent` keeps pushing the provider delete (as today) and then soft-deletes locally. On `restoreEvent`, if the parent calendar is `provider='google'`, call a new server fn `recreateEventInGoogle` that POSTs to the Calendar API, stores the new `external_id`, and on failure returns a friendly warning ("Restored locally, but couldn't recreate in Google — reconnect Google or recreate manually").
 
-`src/lib/note-templates.ts`: returns starter markdown per `note_type`:
-- meeting: Attendees / Agenda / Decisions / Action items
-- project: Goal / Scope / Milestones
-- decision: Context / Options / Decision
-- journal: Date / What happened / Reflection
-- note: blank
+## 3. Undo toast
 
-## 5. Guided "Save it right" flow
+A small helper `useUndoableDelete()` wrapping sonner:
+```ts
+toast("Note deleted", { action: { label: "Undo", onClick: restore }, duration: 8000 })
+```
+Used by every delete call site (tasks, notes, events, folders, lists, bulk task delete, bulk note delete).
 
-`src/components/notes/new-note-dialog.tsx`: 4-step wizard
-1. **Account** — select business (defaults to active)
-2. **Folder** — pick existing or "+ New folder" inline
-3. **Type** — 5 cards (note/journal/meeting/project/decision)
-4. **Link & title** — optional dropdowns to link a meeting/task/event from that business; AI-free suggested title derived from type + date (e.g. "Meeting — Jun 1"); user can override
+## 4. Trash page
 
-Submit → create note with template body, jump to editor. Prevents unfiled accidents (folder required unless user explicitly picks "Unfiled").
+New route `src/routes/_authenticated/trash.tsx`, linked from the sidebar (under Settings group) and from Settings → Privacy & Data.
+- Tabs/sections per type: Tasks, Notes, Events, Lists, Folders.
+- Each row: title, deleted date, "X days until permanent deletion", Restore, Delete forever.
+- Header actions: "Empty trash" (confirm dialog, hard-deletes all the user's soft-deleted rows).
+- Server fns: `listTrash`, `restoreItem`, `hardDeleteItem`, `emptyTrash` — all owner/member-scoped.
 
-## 6. Notes page rewrite (`src/routes/_authenticated/notes.tsx`)
+## 5. Scheduled purge
 
-Three-pane layout:
-- **Left rail**: Folders list (scoped to active business), "Unfiled", Pinned, Recent (7d), search box
-- **Middle**: notes list filtered by left selection; pin toggle; shows type icon, updated_at, snippet
-- **Right**: editor (title input, type badge, linked-to chips, body editor, attachments panel, TagPeople, delete)
+Server route `src/routes/api/public/hooks/purge-trash.ts` (apikey-protected). Calls `purge_trash()`, then removes returned storage paths from the bucket.
+Schedule via `pg_cron` daily at 03:00 UTC.
 
-Header: "+ New note" opens guided dialog.
+## 6. Out of scope (intentional)
 
-## 7. Attachments UI
+- Account deletion in Danger Zone stays a true hard delete.
+- `meetings`, `weekly_reports`, `inbox_items`, `daily_pulses`, `reminders`, `time_entries`, `note_attachments`, `item_tags`, `task_status_history`, `calendars`, `businesses` — not soft-deleted (per the brief). Attachments tied to a soft-deleted note remain hidden by the note filter and get purged with their note at 30 days.
 
-`src/components/notes/attachments-panel.tsx`: drag-drop / file input (accept .pdf,.docx,.png,.jpg,.jpeg). Uploads to `{business_id}/{note_id}/{uuid}-{name}`, inserts row, kicks off extraction serverFn. Shows list with filename, size, "Extracted ✓" badge once text lands, signed-URL download link, remove button.
+## Technical notes
 
-## 8. Dependencies
+- Filter strategy: explicit `.is('deleted_at', null)` everywhere rather than a Postgres view, so we keep typed Supabase queries and `realtime` semantics.
+- Cascade trigger uses a single timestamp passed via row-level `NEW.deleted_at` to allow "restore together" semantics.
+- The Google recreate uses the existing connector pattern in `google-calendar.functions.ts`.
 
-Add: `react-markdown`, `remark-gfm`, `unpdf` (pure-JS PDF text extract, Worker-safe), `mammoth` (DOCX → text, Worker-safe enough for server fn). `date-fns` already present.
+## Test plan
 
-## 9. RLS confirmation
-
-- `notes` already member/admin-scoped (existing policies untouched).
-- `note_attachments` mirrors `notes` scoping; tagged users on parent note get read access via `is_tagged('note', note_id)`.
-- Storage bucket is private; all access via signed URLs minted server-side.
-
-## 10. Out of scope
-
-- Block-based JSON editor (Notion-style) — markdown chosen for shipping speed.
-- OCR for images.
-- Full-text search ranking (uses ilike + ordered by updated_at).
-- Realtime collaboration.
-
-## Files
-
-- `supabase/migrations/<ts>_notes_workspace.sql`
-- `src/lib/notes.ts` (extend)
-- `src/lib/notes.functions.ts` (new)
-- `src/lib/note-templates.ts` (new)
-- `src/components/notes/markdown-editor.tsx` (new)
-- `src/components/notes/new-note-dialog.tsx` (new)
-- `src/components/notes/attachments-panel.tsx` (new)
-- `src/routes/_authenticated/notes.tsx` (rewrite)
-- `package.json` (deps)
+1. Delete a task → toast Undo restores it.
+2. Delete a folder with nested lists/tasks → all hidden; restoring the folder brings everything back.
+3. Delete a note with attachments → hidden everywhere (search, journal, AI); restore brings it back with attachments intact.
+4. Delete an event on a Google calendar → removed from Google; restore re-creates it in Google with new external_id.
+5. Trash page: restore + delete forever + empty trash work; cron purge clears 30+ day items and their storage files.
+6. RLS: second user in same business sees soft-deleted items in Trash only if they're a member; non-members get nothing.

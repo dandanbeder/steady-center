@@ -56,6 +56,7 @@ export const journalPrefillToday = createServerFn({ method: "POST" })
     const tasksQ = supabase
       .from("tasks")
       .select("title, completed_at, business_id")
+      .is("deleted_at", null)
       .gte("completed_at", start.toISOString())
       .lt("completed_at", end.toISOString());
     const meetingsQ = supabase
@@ -66,6 +67,7 @@ export const journalPrefillToday = createServerFn({ method: "POST" })
     const notesQ = supabase
       .from("notes")
       .select("title, body, note_type, created_at, business_id")
+      .is("deleted_at", null)
       .gte("created_at", start.toISOString())
       .lt("created_at", end.toISOString());
 
@@ -178,6 +180,7 @@ export const askNotes = createServerFn({ method: "POST" })
     let query = supabase
       .from("notes")
       .select("id, title, body, business_id, updated_at, note_type")
+      .is("deleted_at", null)
       .order("updated_at", { ascending: false })
       .limit(50);
     if (data.businessId) query = query.eq("business_id", data.businessId);

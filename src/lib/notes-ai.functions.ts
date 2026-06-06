@@ -180,6 +180,7 @@ export const suggestNoteMeta = createServerFn({ method: "POST" })
       const { data: f } = await supabase
         .from("folders")
         .select("id,name")
+        .is("deleted_at", null)
         .eq("business_id", note.business_id);
       folders = f ?? [];
       const { data: m } = await supabase.rpc("list_business_members", {

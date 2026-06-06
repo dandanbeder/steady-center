@@ -38,13 +38,13 @@ export const listSharedWithMe = createServerFn({ method: "GET" })
       await Promise.all([
         supabaseAdmin.from("businesses").select("id, name").in("id", bizIds),
         taskIds.length
-          ? supabaseAdmin.from("tasks").select("id, title, status, due_at").in("id", taskIds)
+          ? supabaseAdmin.from("tasks").select("id, title, status, due_at").is("deleted_at", null).in("id", taskIds)
           : Promise.resolve({ data: [] as { id: string; title: string; status: string; due_at: string | null }[] }),
         noteIds.length
-          ? supabaseAdmin.from("notes").select("id, title, body").in("id", noteIds)
+          ? supabaseAdmin.from("notes").select("id, title, body").is("deleted_at", null).in("id", noteIds)
           : Promise.resolve({ data: [] as { id: string; title: string; body: string }[] }),
         eventIds.length
-          ? supabaseAdmin.from("events").select("id, title, start_at, location").in("id", eventIds)
+          ? supabaseAdmin.from("events").select("id, title, start_at, location").is("deleted_at", null).in("id", eventIds)
           : Promise.resolve({ data: [] as { id: string; title: string; start_at: string; location: string | null }[] }),
       ]);
 

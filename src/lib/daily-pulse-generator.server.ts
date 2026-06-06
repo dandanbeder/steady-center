@@ -137,6 +137,7 @@ export async function generatePulseForUser(
   const { data: events } = await (supabaseAdmin.from("events") as any)
     .select("id, title, start_at, end_at, business_id, is_meeting")
     .eq("owner_id", userId)
+    .is("deleted_at", null)
     .gte("start_at", start.toISOString())
     .lte("start_at", end.toISOString())
     .order("start_at", { ascending: true });
@@ -147,6 +148,7 @@ export async function generatePulseForUser(
   const { data: openTasks } = await (supabaseAdmin.from("tasks") as any)
     .select("id, title, due_at, priority, status, business_id")
     .eq("owner_id", userId)
+    .is("deleted_at", null)
     .neq("status", "done")
     .order("due_at", { ascending: true })
     .limit(50);
