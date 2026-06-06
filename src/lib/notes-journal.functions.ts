@@ -160,7 +160,10 @@ export const askNotes = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase } = context;
+    const { requireFeature } = await import("./entitlements.server");
+    await requireFeature(supabase, context.userId, "ai_assistant");
     const q = data.question.trim();
+
     // Pull tokens (alpha, length >= 3) to seed an OR ilike search.
     const tokens = Array.from(
       new Set(

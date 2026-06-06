@@ -7,10 +7,15 @@ import { toast } from "sonner";
 import { listWeeklyReports, reportStatus, type WeeklyReport } from "@/lib/weekly-reports";
 import { generateWeeklyReportNow } from "@/lib/weekly-reports.functions";
 import { WeeklyGoalsPanel } from "@/components/weekly-goals-panel";
+import { UpgradeGate } from "@/components/upgrade-gate";
 
 export const Route = createFileRoute("/_authenticated/reports")({
   head: () => ({ meta: [{ title: "Reports · Heartbeat" }] }),
-  component: ReportsPage,
+  component: () => (
+    <UpgradeGate feature="weekly_reports">
+      <ReportsPage />
+    </UpgradeGate>
+  ),
 });
 
 function ReportsPage() {

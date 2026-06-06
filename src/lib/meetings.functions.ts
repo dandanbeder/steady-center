@@ -127,6 +127,9 @@ export const processMeeting = createServerFn({ method: "POST" })
   .inputValidator((input) => InputSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    const { requireFeature } = await import("./entitlements.server");
+    await requireFeature(supabase, userId, "meetings");
+
 
     let transcript = (data.transcript ?? "").trim();
     if (!transcript && data.audio_path) {

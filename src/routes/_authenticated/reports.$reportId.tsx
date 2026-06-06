@@ -20,9 +20,15 @@ import {
   type ReportNarrative,
 } from "@/lib/weekly-reports";
 
+import { UpgradeGate } from "@/components/upgrade-gate";
+
 export const Route = createFileRoute("/_authenticated/reports/$reportId")({
   head: () => ({ meta: [{ title: "Report · Heartbeat" }] }),
-  component: ReportDetail,
+  component: () => (
+    <UpgradeGate feature="weekly_reports">
+      <ReportDetail />
+    </UpgradeGate>
+  ),
 });
 
 function ReportDetail() {

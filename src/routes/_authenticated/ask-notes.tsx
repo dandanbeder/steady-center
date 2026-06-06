@@ -9,9 +9,14 @@ import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
 import { askNotes } from "@/lib/notes-journal.functions";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { UpgradeGate } from "@/components/upgrade-gate";
 
 export const Route = createFileRoute("/_authenticated/ask-notes")({
-  component: AskNotesPage,
+  component: () => (
+    <UpgradeGate feature="ai_assistant">
+      <AskNotesPage />
+    </UpgradeGate>
+  ),
 });
 
 type Match = { n: number; id: string; title: string; snippet: string };

@@ -6,7 +6,9 @@ import { generateForUser } from "@/lib/weekly-report-generator.server";
 export const generateWeeklyReportNow = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { userId } = context;
+    const { userId, supabase } = context;
+    const { requireFeature } = await import("./entitlements.server");
+    await requireFeature(supabase, userId, "weekly_reports");
     const weekEnd = new Date();
     const weekStart = new Date(weekEnd.getTime() - 7 * 86400_000);
     const id = await generateForUser(userId, weekStart, weekEnd);

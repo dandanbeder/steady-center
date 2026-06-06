@@ -145,9 +145,12 @@ export const inviteByEmail = createServerFn({ method: "POST" })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
-    const { userId } = context;
+    const { userId, supabase } = context;
+    const { requireFeature } = await import("./entitlements.server");
+    await requireFeature(supabase, userId, "invite_members");
     await requireAdmin(data.business_id, userId);
     const email = data.email.trim().toLowerCase();
+
 
     try {
       // Silently skip if already an active member
