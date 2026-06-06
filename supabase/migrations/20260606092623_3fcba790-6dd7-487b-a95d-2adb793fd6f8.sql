@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.prevent_platform_role_change() FROM anon, authenticated, PUBLIC;
