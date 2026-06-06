@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { MyInvitationsBanner } from "@/components/my-invitations-banner";
 import { UpcomingMeetings } from "@/components/upcoming-meetings";
 import { DailyPulseCard } from "@/components/daily-pulse-card";
+import { WeekPulse } from "@/components/week-pulse";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Task } from "@/lib/tasks";
 import type { Note } from "@/lib/notes";
@@ -145,6 +146,14 @@ function TodayPage() {
           : "Looking across everything today."}
       </p>
       <div className="mt-10"><DailyPulseCard /></div>
+
+      <section className="mt-8 rounded-xl border border-border bg-card/40 px-4 pt-3 pb-2" style={{ boxShadow: "var(--shadow-soft)" }}>
+        <div className="flex items-baseline justify-between mb-1">
+          <h2 className="text-xs uppercase tracking-wider text-muted-foreground">Week pulse</h2>
+          <span className="text-[10px] text-muted-foreground/70">tap a day</span>
+        </div>
+        <WeekPulse />
+      </section>
 
       <div className="mt-12 grid gap-4 sm:grid-cols-2">
         <Card title="Today's events">
