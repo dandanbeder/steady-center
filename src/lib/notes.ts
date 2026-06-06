@@ -36,6 +36,7 @@ export async function listNotes(): Promise<Note[]> {
   const { data, error } = await supabase
     .from("notes")
     .select("*")
+    .is("deleted_at", null)
     .order("pinned", { ascending: false })
     .order("updated_at", { ascending: false });
   if (error) throw error;
@@ -94,7 +95,17 @@ export async function updateNote(
 }
 
 export async function deleteNote(id: string) {
-  const { error } = await supabase.from("notes").delete().eq("id", id);
+  const { error } = await supabase
+    .from("notes")
+    .update({ deleted_at: new Date().toISOString() } as never)
+    .eq("id", id);
+  if (error) throw error;
+}
+export async function restoreNote(id: string) {
+  const { error } = await supabase
+    .from("notes")
+    .update({ deleted_at: null } as never)
+    .eq("id", id);
   if (error) throw error;
 }
 

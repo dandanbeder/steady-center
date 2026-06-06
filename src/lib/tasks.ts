@@ -100,6 +100,7 @@ export async function listFolders(): Promise<Folder[]> {
   const { data, error } = await supabase
     .from("folders")
     .select("*")
+    .is("deleted_at", null)
     .order("created_at", { ascending: true });
   if (error) throw error;
   return data ?? [];
@@ -129,7 +130,17 @@ export async function updateFolder(
   if (error) throw error;
 }
 export async function deleteFolder(id: string) {
-  const { error } = await supabase.from("folders").delete().eq("id", id);
+  const { error } = await supabase
+    .from("folders")
+    .update({ deleted_at: new Date().toISOString() } as never)
+    .eq("id", id);
+  if (error) throw error;
+}
+export async function restoreFolder(id: string) {
+  const { error } = await supabase
+    .from("folders")
+    .update({ deleted_at: null } as never)
+    .eq("id", id);
   if (error) throw error;
 }
 
@@ -138,6 +149,7 @@ export async function listLists(): Promise<ListRow[]> {
   const { data, error } = await supabase
     .from("lists")
     .select("*")
+    .is("deleted_at", null)
     .order("created_at", { ascending: true });
   if (error) throw error;
   return data ?? [];
@@ -155,7 +167,17 @@ export async function updateList(id: string, patch: Partial<Pick<ListRow, "name"
   if (error) throw error;
 }
 export async function deleteList(id: string) {
-  const { error } = await supabase.from("lists").delete().eq("id", id);
+  const { error } = await supabase
+    .from("lists")
+    .update({ deleted_at: new Date().toISOString() } as never)
+    .eq("id", id);
+  if (error) throw error;
+}
+export async function restoreList(id: string) {
+  const { error } = await supabase
+    .from("lists")
+    .update({ deleted_at: null } as never)
+    .eq("id", id);
   if (error) throw error;
 }
 
@@ -165,6 +187,7 @@ export async function listTasksByList(listId: string): Promise<Task[]> {
     .from("tasks")
     .select("*")
     .eq("list_id", listId)
+    .is("deleted_at", null)
     .order("position", { ascending: true });
   if (error) throw error;
   return (data ?? []) as Task[];
@@ -178,6 +201,7 @@ export async function listMyWeekTasks(): Promise<Task[]> {
   const { data, error } = await supabase
     .from("tasks")
     .select("*")
+    .is("deleted_at", null)
     .neq("status", "done")
     .not("due_at", "is", null)
     .lte("due_at", end.toISOString())
@@ -191,6 +215,7 @@ export async function listTasksInRange(start: Date, end: Date): Promise<Task[]> 
   const { data, error } = await supabase
     .from("tasks")
     .select("*")
+    .is("deleted_at", null)
     .not("due_at", "is", null)
     .gte("due_at", start.toISOString())
     .lt("due_at", end.toISOString())
@@ -236,7 +261,17 @@ export async function updateTask(id: string, patch: Partial<Omit<Task, "id" | "o
 }
 
 export async function deleteTask(id: string) {
-  const { error } = await supabase.from("tasks").delete().eq("id", id);
+  const { error } = await supabase
+    .from("tasks")
+    .update({ deleted_at: new Date().toISOString() } as never)
+    .eq("id", id);
+  if (error) throw error;
+}
+export async function restoreTask(id: string) {
+  const { error } = await supabase
+    .from("tasks")
+    .update({ deleted_at: null } as never)
+    .eq("id", id);
   if (error) throw error;
 }
 
@@ -248,7 +283,18 @@ export async function bulkUpdateTasks(ids: string[], patch: Partial<Pick<Task, "
 
 export async function bulkDeleteTasks(ids: string[]) {
   if (ids.length === 0) return;
-  const { error } = await supabase.from("tasks").delete().in("id", ids);
+  const { error } = await supabase
+    .from("tasks")
+    .update({ deleted_at: new Date().toISOString() } as never)
+    .in("id", ids);
+  if (error) throw error;
+}
+export async function bulkRestoreTasks(ids: string[]) {
+  if (ids.length === 0) return;
+  const { error } = await supabase
+    .from("tasks")
+    .update({ deleted_at: null } as never)
+    .in("id", ids);
   if (error) throw error;
 }
 
