@@ -18,7 +18,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Business } from "@/lib/businesses";
-import { createFolder, deleteFolder, updateFolder, type Folder } from "@/lib/tasks";
+import { createFolder, deleteFolder, restoreFolder, updateFolder, type Folder } from "@/lib/tasks";
+import { showUndoToast } from "@/lib/undo-toast";
 import type { Note } from "@/lib/notes";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -378,13 +379,17 @@ function FolderNode({
   const remove = async () => {
     if (
       !window.confirm(
-        `Delete "${folder.name}"? Notes inside will move to Unfiled. Sub-folders will be removed.`,
+        `Delete "${folder.name}"? Notes and lists inside will be moved to Trash too.`,
       )
     )
       return;
     try {
       await deleteFolder(folder.id);
       onChanged();
+      showUndoToast(`Folder "${folder.name}" deleted`, async () => {
+        await restoreFolder(folder.id);
+        onChanged();
+      });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed");
     }

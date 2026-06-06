@@ -90,8 +90,13 @@ import {
   type Task,
   type TaskPriority,
   type TaskStatus,
+  restoreFolder,
+  restoreList,
+  restoreTask,
+  bulkRestoreTasks,
 } from "@/lib/tasks";
 import { listBacklinks, resolveLinks } from "@/lib/note-links";
+import { showUndoToast } from "@/lib/undo-toast";
 import { cn } from "@/lib/utils";
 import { TaskTimerInline, TaskTimePanel } from "@/components/task-timer";
 
@@ -307,7 +312,13 @@ function FolderNode({
 
   const del = useMutation({
     mutationFn: () => deleteFolder(folder.id),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      invalidate();
+      showUndoToast(`Folder "${folder.name}" deleted`, async () => {
+        await restoreFolder(folder.id);
+        invalidate();
+      });
+    },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
@@ -408,7 +419,13 @@ function ListNode({
 
   const del = useMutation({
     mutationFn: () => deleteList(list.id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["lists"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["lists"] });
+      showUndoToast(`List "${list.name}" deleted`, async () => {
+        await restoreList(list.id);
+        qc.invalidateQueries({ queryKey: ["lists"] });
+      });
+    },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
@@ -583,8 +600,18 @@ function ListWorkspace({
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
   const bulkDelete = useMutation({
-    mutationFn: () => bulkDeleteTasks([...selectedIds]),
-    onSuccess: () => { toast.success("Deleted"); clearSelection(); invalidate(); },
+    mutationFn: () => {
+      const ids = [...selectedIds];
+      return bulkDeleteTasks(ids).then(() => ids);
+    },
+    onSuccess: (ids) => {
+      clearSelection();
+      invalidate();
+      showUndoToast(`${ids.length} task${ids.length === 1 ? "" : "s"} deleted`, async () => {
+        await bulkRestoreTasks(ids);
+        invalidate();
+      });
+    },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
@@ -880,7 +907,13 @@ function TaskRow({
 
   const del = useMutation({
     mutationFn: () => deleteTask(task.id),
-    onSuccess: onChange,
+    onSuccess: () => {
+      onChange();
+      showUndoToast(`Task "${task.title}" deleted`, async () => {
+        await restoreTask(task.id);
+        onChange();
+      });
+    },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
@@ -974,7 +1007,13 @@ function SubtaskRow({ task, onChange }: { task: Task; onChange: () => void }) {
   });
   const del = useMutation({
     mutationFn: () => deleteTask(task.id),
-    onSuccess: onChange,
+    onSuccess: () => {
+      onChange();
+      showUndoToast(`Subtask "${task.title}" deleted`, async () => {
+        await restoreTask(task.id);
+        onChange();
+      });
+    },
   });
   return (
     <div className="flex items-center gap-2 group">

@@ -18,6 +18,7 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AcceptInviteRouteImport } from './routes/accept-invite'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedTrashRouteImport } from './routes/_authenticated/trash'
 import { Route as AuthenticatedTodayRouteImport } from './routes/_authenticated/today'
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
 import { Route as AuthenticatedSharedRouteImport } from './routes/_authenticated/shared'
@@ -37,6 +38,7 @@ import { Route as AuthenticatedReportsReportIdRouteImport } from './routes/_auth
 import { Route as AuthenticatedMeetingsMeetingIdRouteImport } from './routes/_authenticated/meetings.$meetingId'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 import { Route as ApiPublicHooksSyncCalendarsRouteImport } from './routes/api/public/hooks/sync-calendars'
+import { Route as ApiPublicHooksPurgeTrashRouteImport } from './routes/api/public/hooks/purge-trash'
 import { Route as ApiPublicHooksProcessRemindersRouteImport } from './routes/api/public/hooks/process-reminders'
 import { Route as ApiPublicHooksGenerateWeeklyReportsRouteImport } from './routes/api/public/hooks/generate-weekly-reports'
 import { Route as ApiPublicHooksDailyPulseRouteImport } from './routes/api/public/hooks/daily-pulse'
@@ -84,6 +86,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedTrashRoute = AuthenticatedTrashRouteImport.update({
+  id: '/trash',
+  path: '/trash',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedTodayRoute = AuthenticatedTodayRouteImport.update({
   id: '/today',
@@ -184,6 +191,12 @@ const ApiPublicHooksSyncCalendarsRoute =
     path: '/api/public/hooks/sync-calendars',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksPurgeTrashRoute =
+  ApiPublicHooksPurgeTrashRouteImport.update({
+    id: '/api/public/hooks/purge-trash',
+    path: '/api/public/hooks/purge-trash',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksProcessRemindersRoute =
   ApiPublicHooksProcessRemindersRouteImport.update({
     id: '/api/public/hooks/process-reminders',
@@ -227,11 +240,13 @@ export interface FileRoutesByFullPath {
   '/shared': typeof AuthenticatedSharedRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/today': typeof AuthenticatedTodayRoute
+  '/trash': typeof AuthenticatedTrashRoute
   '/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
   '/reports/$reportId': typeof AuthenticatedReportsReportIdRoute
   '/api/public/hooks/daily-pulse': typeof ApiPublicHooksDailyPulseRoute
   '/api/public/hooks/generate-weekly-reports': typeof ApiPublicHooksGenerateWeeklyReportsRoute
   '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
+  '/api/public/hooks/purge-trash': typeof ApiPublicHooksPurgeTrashRoute
   '/api/public/hooks/sync-calendars': typeof ApiPublicHooksSyncCalendarsRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -259,11 +274,13 @@ export interface FileRoutesByTo {
   '/shared': typeof AuthenticatedSharedRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/today': typeof AuthenticatedTodayRoute
+  '/trash': typeof AuthenticatedTrashRoute
   '/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
   '/reports/$reportId': typeof AuthenticatedReportsReportIdRoute
   '/api/public/hooks/daily-pulse': typeof ApiPublicHooksDailyPulseRoute
   '/api/public/hooks/generate-weekly-reports': typeof ApiPublicHooksGenerateWeeklyReportsRoute
   '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
+  '/api/public/hooks/purge-trash': typeof ApiPublicHooksPurgeTrashRoute
   '/api/public/hooks/sync-calendars': typeof ApiPublicHooksSyncCalendarsRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -293,11 +310,13 @@ export interface FileRoutesById {
   '/_authenticated/shared': typeof AuthenticatedSharedRoute
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
   '/_authenticated/today': typeof AuthenticatedTodayRoute
+  '/_authenticated/trash': typeof AuthenticatedTrashRoute
   '/_authenticated/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
   '/_authenticated/reports/$reportId': typeof AuthenticatedReportsReportIdRoute
   '/api/public/hooks/daily-pulse': typeof ApiPublicHooksDailyPulseRoute
   '/api/public/hooks/generate-weekly-reports': typeof ApiPublicHooksGenerateWeeklyReportsRoute
   '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
+  '/api/public/hooks/purge-trash': typeof ApiPublicHooksPurgeTrashRoute
   '/api/public/hooks/sync-calendars': typeof ApiPublicHooksSyncCalendarsRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -327,11 +346,13 @@ export interface FileRouteTypes {
     | '/shared'
     | '/tasks'
     | '/today'
+    | '/trash'
     | '/meetings/$meetingId'
     | '/reports/$reportId'
     | '/api/public/hooks/daily-pulse'
     | '/api/public/hooks/generate-weekly-reports'
     | '/api/public/hooks/process-reminders'
+    | '/api/public/hooks/purge-trash'
     | '/api/public/hooks/sync-calendars'
     | '/api/public/payments/webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -359,11 +380,13 @@ export interface FileRouteTypes {
     | '/shared'
     | '/tasks'
     | '/today'
+    | '/trash'
     | '/meetings/$meetingId'
     | '/reports/$reportId'
     | '/api/public/hooks/daily-pulse'
     | '/api/public/hooks/generate-weekly-reports'
     | '/api/public/hooks/process-reminders'
+    | '/api/public/hooks/purge-trash'
     | '/api/public/hooks/sync-calendars'
     | '/api/public/payments/webhook'
   id:
@@ -392,11 +415,13 @@ export interface FileRouteTypes {
     | '/_authenticated/shared'
     | '/_authenticated/tasks'
     | '/_authenticated/today'
+    | '/_authenticated/trash'
     | '/_authenticated/meetings/$meetingId'
     | '/_authenticated/reports/$reportId'
     | '/api/public/hooks/daily-pulse'
     | '/api/public/hooks/generate-weekly-reports'
     | '/api/public/hooks/process-reminders'
+    | '/api/public/hooks/purge-trash'
     | '/api/public/hooks/sync-calendars'
     | '/api/public/payments/webhook'
   fileRoutesById: FileRoutesById
@@ -414,6 +439,7 @@ export interface RootRouteChildren {
   ApiPublicHooksDailyPulseRoute: typeof ApiPublicHooksDailyPulseRoute
   ApiPublicHooksGenerateWeeklyReportsRoute: typeof ApiPublicHooksGenerateWeeklyReportsRoute
   ApiPublicHooksProcessRemindersRoute: typeof ApiPublicHooksProcessRemindersRoute
+  ApiPublicHooksPurgeTrashRoute: typeof ApiPublicHooksPurgeTrashRoute
   ApiPublicHooksSyncCalendarsRoute: typeof ApiPublicHooksSyncCalendarsRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
 }
@@ -482,6 +508,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/trash': {
+      id: '/_authenticated/trash'
+      path: '/trash'
+      fullPath: '/trash'
+      preLoaderRoute: typeof AuthenticatedTrashRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/today': {
       id: '/_authenticated/today'
@@ -616,6 +649,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksSyncCalendarsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/purge-trash': {
+      id: '/api/public/hooks/purge-trash'
+      path: '/api/public/hooks/purge-trash'
+      fullPath: '/api/public/hooks/purge-trash'
+      preLoaderRoute: typeof ApiPublicHooksPurgeTrashRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/process-reminders': {
       id: '/api/public/hooks/process-reminders'
       path: '/api/public/hooks/process-reminders'
@@ -680,6 +720,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedSharedRoute: typeof AuthenticatedSharedRoute
   AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
   AuthenticatedTodayRoute: typeof AuthenticatedTodayRoute
+  AuthenticatedTrashRoute: typeof AuthenticatedTrashRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -698,6 +739,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedSharedRoute: AuthenticatedSharedRoute,
   AuthenticatedTasksRoute: AuthenticatedTasksRoute,
   AuthenticatedTodayRoute: AuthenticatedTodayRoute,
+  AuthenticatedTrashRoute: AuthenticatedTrashRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
@@ -718,6 +760,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksGenerateWeeklyReportsRoute:
     ApiPublicHooksGenerateWeeklyReportsRoute,
   ApiPublicHooksProcessRemindersRoute: ApiPublicHooksProcessRemindersRoute,
+  ApiPublicHooksPurgeTrashRoute: ApiPublicHooksPurgeTrashRoute,
   ApiPublicHooksSyncCalendarsRoute: ApiPublicHooksSyncCalendarsRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
 }

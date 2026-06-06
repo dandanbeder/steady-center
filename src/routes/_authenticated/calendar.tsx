@@ -70,6 +70,7 @@ import {
   createCalendar,
   createEvent,
   deleteEvent,
+  restoreEvent,
   listCalendars,
   listEvents,
   parseIcs,
@@ -79,6 +80,7 @@ import {
   type Calendar as Cal,
   type EventRow,
 } from "@/lib/calendars";
+import { showUndoToast } from "@/lib/undo-toast";
 import { cn } from "@/lib/utils";
 import { TagPeople } from "@/components/tag-people";
 
@@ -1670,8 +1672,12 @@ function EditEventDialog({
   const del = useMutation({
     mutationFn: () => deleteEvent(event.id),
     onSuccess: () => {
-      toast.success("Event deleted");
       onSaved();
+      showUndoToast(`Event "${event.title}" deleted`, async () => {
+        const { syncWarning } = await restoreEvent(event.id);
+        if (syncWarning) toast.warning(syncWarning);
+        onSaved();
+      });
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : "Failed"),
   });

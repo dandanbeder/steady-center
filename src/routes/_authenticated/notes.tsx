@@ -25,9 +25,11 @@ import {
   listNotes,
   updateNote,
   deleteNote,
+  restoreNote,
   pinNote,
   type Note,
 } from "@/lib/notes";
+import { showUndoToast } from "@/lib/undo-toast";
 import { NOTE_TYPES, type NoteType } from "@/lib/note-templates";
 import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
 import { Button } from "@/components/ui/button";
@@ -404,7 +406,13 @@ function NoteEditor({
     if (!confirm("Delete this note?")) return;
     try {
       await deleteNote(note.id);
+      const noteId = note.id;
+      const title = note.title || "Note";
       onDeleted();
+      showUndoToast(`"${title}" deleted`, async () => {
+        await restoreNote(noteId);
+        onChanged();
+      });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed");
     }
