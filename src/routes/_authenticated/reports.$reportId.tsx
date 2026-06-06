@@ -62,6 +62,7 @@ function ReportDetail() {
   const flow = m?.flow;
   const topTasks = m?.top_tasks_hours ?? [];
   const goals = m?.goals ?? [];
+  const outcomes = m?.outcomes ?? [];
   const n: ReportNarrative = report.narrative ?? { headline: "" };
   const start = new Date(report.week_start);
   const end = new Date(report.week_end);
