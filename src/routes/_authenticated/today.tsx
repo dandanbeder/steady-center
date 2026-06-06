@@ -32,20 +32,49 @@ function startOfDay(d: Date) {
   return x;
 }
 
-/** Top open tasks due today or earlier (overdue), limited for the dashboard. */
+/**
+ * Top open tasks. Prefers tasks committed to this week, then falls back to
+ * anything else due today or overdue, so committed work always surfaces first.
+ */
 async function listTopOpenTasks(limit = 5): Promise<Task[]> {
   const end = new Date();
   end.setHours(23, 59, 59, 999);
-  const { data, error } = await supabase
-    .from("tasks")
-    .select("*")
-    .is("deleted_at", null)
-    .neq("status", "done")
-    .or(`due_at.is.null,due_at.lte.${end.toISOString()}`)
-    .order("due_at", { ascending: true, nullsFirst: false })
-    .limit(limit);
-  if (error) throw error;
-  return (data ?? []) as Task[];
+  const monday = new Date();
+  monday.setHours(0, 0, 0, 0);
+  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+  const mondayStr = monday.toISOString().slice(0, 10);
+
+  const [committed, dueSoon] = await Promise.all([
+    supabase
+      .from("tasks")
+      .select("*")
+      .is("deleted_at", null)
+      .neq("status", "done")
+      .eq("committed_week", mondayStr)
+      .order("priority", { ascending: true })
+      .order("due_at", { ascending: true, nullsFirst: false })
+      .limit(limit),
+    supabase
+      .from("tasks")
+      .select("*")
+      .is("deleted_at", null)
+      .neq("status", "done")
+      .or(`due_at.is.null,due_at.lte.${end.toISOString()}`)
+      .order("due_at", { ascending: true, nullsFirst: false })
+      .limit(limit),
+  ]);
+  if (committed.error) throw committed.error;
+  if (dueSoon.error) throw dueSoon.error;
+
+  const seen = new Set<string>();
+  const merged: Task[] = [];
+  for (const t of [...(committed.data ?? []), ...(dueSoon.data ?? [])] as Task[]) {
+    if (seen.has(t.id)) continue;
+    seen.add(t.id);
+    merged.push(t);
+    if (merged.length >= limit) break;
+  }
+  return merged;
 }
 
 async function listRecentNotes(limit = 5): Promise<Note[]> {
