@@ -3,22 +3,70 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-const BUCKET = "meeting-audio";
+const AUDIO_BUCKET = "meeting-audio";
+const ATTACHMENT_BUCKET = "note-attachments";
 
-async function deleteUserAudio(userId: string) {
-  // List every object under <userId>/ and remove. Storage is folder-scoped per owner.
-  const { data: objs, error } = await supabaseAdmin.storage
-    .from(BUCKET)
-    .list(userId, { limit: 1000 });
-  if (error) return; // bucket empty or no folder is fine
-  const paths = (objs ?? []).map((o) => `${userId}/${o.name}`);
-  if (paths.length > 0) {
-    await supabaseAdmin.storage.from(BUCKET).remove(paths);
+/** Recursively list all files under a storage prefix and return their full paths. */
+async function listAllPaths(bucket: string, prefix: string): Promise<string[]> {
+  const out: string[] = [];
+  const { data: entries, error } = await supabaseAdmin.storage
+    .from(bucket)
+    .list(prefix, { limit: 1000 });
+  if (error || !entries) return out;
+  for (const e of entries) {
+    const full = prefix ? `${prefix}/${e.name}` : e.name;
+    // Folders have no id/metadata in Supabase storage list
+    if (e.id) {
+      out.push(full);
+    } else {
+      const nested = await listAllPaths(bucket, full);
+      out.push(...nested);
+    }
+  }
+  return out;
+}
+
+async function removeAll(bucket: string, paths: string[]) {
+  if (paths.length === 0) return;
+  // Chunk to stay within request limits
+  for (let i = 0; i < paths.length; i += 500) {
+    await supabaseAdmin.storage.from(bucket).remove(paths.slice(i, i + 500));
   }
 }
 
+async function deleteUserAudio(userId: string) {
+  const paths = await listAllPaths(AUDIO_BUCKET, userId);
+  await removeAll(AUDIO_BUCKET, paths);
+}
+
+/** Delete every note attachment file linked to notes owned (or created) by the user. */
+async function deleteUserNoteAttachments(userId: string) {
+  // Notes the user owns
+  const { data: ownedNotes } = await supabaseAdmin
+    .from("notes")
+    .select("id")
+    .eq("owner_id", userId);
+  const ownedIds = (ownedNotes ?? []).map((n: { id: string }) => n.id);
+
+  const paths = new Set<string>();
+  if (ownedIds.length > 0) {
+    const { data: atts1 } = await supabaseAdmin
+      .from("note_attachments")
+      .select("storage_path")
+      .in("note_id", ownedIds);
+    for (const a of atts1 ?? []) if (a.storage_path) paths.add(a.storage_path);
+  }
+  // Attachments the user uploaded inside other people's notes
+  const { data: atts2 } = await supabaseAdmin
+    .from("note_attachments")
+    .select("storage_path")
+    .eq("created_by", userId);
+  for (const a of atts2 ?? []) if (a.storage_path) paths.add(a.storage_path);
+
+  await removeAll(ATTACHMENT_BUCKET, [...paths]);
+}
+
 async function deleteBusinessAudio(userId: string, businessId: string) {
-  // Find all meeting audio paths for that business owned by user, delete files first.
   const { data: meetings } = await supabaseAdmin
     .from("meetings")
     .select("audio_path")
@@ -29,8 +77,20 @@ async function deleteBusinessAudio(userId: string, businessId: string) {
     .map((m: { audio_path: string | null }) => m.audio_path)
     .filter((p): p is string => !!p && p.startsWith(`${userId}/`));
   if (paths.length > 0) {
-    await supabaseAdmin.storage.from(BUCKET).remove(paths);
+    await supabaseAdmin.storage.from(AUDIO_BUCKET).remove(paths);
   }
+}
+
+/** Delete attachment files for every note belonging to a business. */
+async function deleteBusinessAttachments(businessId: string) {
+  const { data: atts } = await supabaseAdmin
+    .from("note_attachments")
+    .select("storage_path")
+    .eq("business_id", businessId);
+  const paths = (atts ?? [])
+    .map((a: { storage_path: string | null }) => a.storage_path)
+    .filter((p): p is string => !!p);
+  await removeAll(ATTACHMENT_BUCKET, paths);
 }
 
 /** Delete a business + all its child data (DB cascade) and its storage files. */
@@ -40,6 +100,7 @@ export const deleteBusinessCascade = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await deleteBusinessAudio(userId, data.business_id);
+    await deleteBusinessAttachments(data.business_id);
     // RLS on businesses scopes to owner — DB FKs cascade the rest.
     const { error } = await supabase.from("businesses").delete().eq("id", data.business_id);
     if (error) throw new Error(error.message);
@@ -52,7 +113,6 @@ export const deleteMeetingRecording = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ meeting_id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    // RLS-scoped read
     const { data: m, error: rErr } = await supabase
       .from("meetings")
       .select("id, audio_path")
@@ -61,7 +121,7 @@ export const deleteMeetingRecording = createServerFn({ method: "POST" })
     if (rErr) throw new Error(rErr.message);
     if (!m) throw new Error("Not found");
     if (m.audio_path && m.audio_path.startsWith(`${userId}/`)) {
-      await supabaseAdmin.storage.from(BUCKET).remove([m.audio_path]);
+      await supabaseAdmin.storage.from(AUDIO_BUCKET).remove([m.audio_path]);
     }
     const { error: uErr } = await supabase
       .from("meetings")
@@ -71,7 +131,7 @@ export const deleteMeetingRecording = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-/** Permanently delete the signed-in user, all owned rows, and all storage files. */
+/** Permanently delete the signed-in user, all owned rows, and all storage files (POPIA s24). */
 export const deleteMyAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
@@ -79,12 +139,25 @@ export const deleteMyAccount = createServerFn({ method: "POST" })
   )
   .handler(async ({ context }) => {
     const { userId } = context;
-    // 1. Wipe all storage objects under userId/
+
+    // 1. Wipe storage objects owned by the user, BEFORE deleting their DB rows
+    //    so we still have the paths to look up.
+    await deleteUserNoteAttachments(userId);
     await deleteUserAudio(userId);
-    // 2. Delete all owned rows. Order matters where no FK cascade exists.
+
+    // 2. Delete item_tags the user created or that target the user.
+    await supabaseAdmin.from("item_tags").delete().eq("created_by", userId);
+    await supabaseAdmin.from("item_tags").delete().eq("tagged_user_id", userId);
+
+    // 3. Delete access_requests the user made.
+    await supabaseAdmin.from("access_requests").delete().eq("requester_user_id", userId);
+
+    // 4. Delete all rows keyed by owner_id. Order matters where no FK cascade exists.
     //    Businesses cascade most child tables; we also clean rows where business_id is null.
-    const tables = [
+    const ownerTables = [
+      "daily_pulses",
       "weekly_reports",
+      "inbox_items",
       "reminders",
       "action_items",
       "meetings",
@@ -96,12 +169,31 @@ export const deleteMyAccount = createServerFn({ method: "POST" })
       "calendars",
       "businesses",
     ] as const;
-    for (const t of tables) {
+    for (const t of ownerTables) {
       const { error } = await supabaseAdmin.from(t).delete().eq("owner_id", userId);
       if (error) throw new Error(`${t}: ${error.message}`);
     }
+
+    // 5. Delete all rows keyed by user_id.
+    const userTables = [
+      "ai_prefs",
+      "ai_usage",
+      "assistant_actions",
+      "login_history",
+      "memberships",
+      "notification_prefs",
+      "notifications",
+      "time_entries",
+      "weekly_goals",
+      "email_unsubscribe_tokens",
+    ] as const;
+    for (const t of userTables) {
+      const { error } = await supabaseAdmin.from(t).delete().eq("user_id", userId);
+      if (error) throw new Error(`${t}: ${error.message}`);
+    }
+
+    // 6. Profile + auth user
     await supabaseAdmin.from("profiles").delete().eq("id", userId);
-    // 3. Delete auth user
     const { error: dErr } = await supabaseAdmin.auth.admin.deleteUser(userId);
     if (dErr) throw new Error(dErr.message);
     return { ok: true };
