@@ -636,7 +636,7 @@ Return ONLY JSON, no prose around it, matching exactly this shape:
 
 - 2-4 strengths, each with evidence drawn from the metrics.
 - 2-4 growth areas; "suggestion" must be a specific, actionable next step starting with a verb.
-- "goal_review" is one short paragraph reviewing how the week's goals went (met / missed / partial). If there were no goals, say so.
+- "goal_review" is one short paragraph reviewing how the week's goals went (met / missed / partial). If there were no goals, say so. If the metrics include "outcomes" (bigger goals tasks roll up to), mention 1-2 standout outcomes here with their progress percentage and days remaining (e.g. "Loyalty launch is 70% done, target in 3 weeks"). Skip outcomes with 0 tasks.
 - "next_week" is 2-3 focuses for the coming week, each starting with a verb.`;
 
   const user = `Week: ${weekStart.toISOString().slice(0, 10)} → ${weekEnd
