@@ -317,6 +317,22 @@ function MyWeekPage() {
         </Button>
       </div>
 
+      {/* Week pulse — a quiet heartbeat strip of the week's load */}
+      <section className="mt-6 rounded-xl border border-border bg-card/40 px-4 pt-3 pb-2" style={{ boxShadow: "var(--shadow-soft)" }}>
+        <div className="flex items-baseline justify-between mb-1">
+          <h2 className="text-xs uppercase tracking-wider text-muted-foreground">Week pulse</h2>
+          <span className="text-[10px] text-muted-foreground/70">tap a day</span>
+        </div>
+        <WeekPulse
+          anchor={weekStart}
+          onDayClick={(d) => {
+            const idx = Math.round((+d - +weekStart) / 86_400_000);
+            const el = document.getElementById(`my-week-day-${idx}`);
+            if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+          }}
+        />
+      </section>
+
       {/* Week grid — 7 cols on lg, stacks on mobile */}
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3">
         {byDay.map((day, i) => {
@@ -326,22 +342,23 @@ function MyWeekPage() {
           const pct = Math.min(100, Math.round((day.loadH / capacity) * 100));
           const over = day.loadH > capacity;
           return (
-            <DayColumn
-              key={i}
-              date={day.date}
-              dayName={DAY_NAMES[i]}
-              isToday={isToday}
-              isWorkDay={isWorkDay}
-              tasks={day.tasks}
-              events={day.events}
-              loadH={day.loadH}
-              capacity={capacity}
-              loadPct={pct}
-              overloaded={over}
-              businessById={businessById}
-              onDropTask={(taskId) => moveTask.mutate({ taskId, target: day.date })}
-              onToggleTask={(t) => toggleTask.mutate(t)}
-            />
+            <div key={i} id={`my-week-day-${i}`} className="scroll-mt-20">
+              <DayColumn
+                date={day.date}
+                dayName={DAY_NAMES[i]}
+                isToday={isToday}
+                isWorkDay={isWorkDay}
+                tasks={day.tasks}
+                events={day.events}
+                loadH={day.loadH}
+                capacity={capacity}
+                loadPct={pct}
+                overloaded={over}
+                businessById={businessById}
+                onDropTask={(taskId) => moveTask.mutate({ taskId, target: day.date })}
+                onToggleTask={(t) => toggleTask.mutate(t)}
+              />
+            </div>
           );
         })}
       </div>
