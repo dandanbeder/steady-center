@@ -1007,7 +1007,13 @@ function SubtaskRow({ task, onChange }: { task: Task; onChange: () => void }) {
   });
   const del = useMutation({
     mutationFn: () => deleteTask(task.id),
-    onSuccess: onChange,
+    onSuccess: () => {
+      onChange();
+      showUndoToast(`Subtask "${task.title}" deleted`, async () => {
+        await restoreTask(task.id);
+        onChange();
+      });
+    },
   });
   return (
     <div className="flex items-center gap-2 group">
