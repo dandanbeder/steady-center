@@ -38,6 +38,7 @@ import { Route as AuthenticatedReportsReportIdRouteImport } from './routes/_auth
 import { Route as AuthenticatedMeetingsMeetingIdRouteImport } from './routes/_authenticated/meetings.$meetingId'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 import { Route as ApiPublicHooksSyncCalendarsRouteImport } from './routes/api/public/hooks/sync-calendars'
+import { Route as ApiPublicHooksPurgeTrashRouteImport } from './routes/api/public/hooks/purge-trash'
 import { Route as ApiPublicHooksProcessRemindersRouteImport } from './routes/api/public/hooks/process-reminders'
 import { Route as ApiPublicHooksGenerateWeeklyReportsRouteImport } from './routes/api/public/hooks/generate-weekly-reports'
 import { Route as ApiPublicHooksDailyPulseRouteImport } from './routes/api/public/hooks/daily-pulse'
@@ -190,6 +191,12 @@ const ApiPublicHooksSyncCalendarsRoute =
     path: '/api/public/hooks/sync-calendars',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksPurgeTrashRoute =
+  ApiPublicHooksPurgeTrashRouteImport.update({
+    id: '/api/public/hooks/purge-trash',
+    path: '/api/public/hooks/purge-trash',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksProcessRemindersRoute =
   ApiPublicHooksProcessRemindersRouteImport.update({
     id: '/api/public/hooks/process-reminders',
@@ -239,6 +246,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/daily-pulse': typeof ApiPublicHooksDailyPulseRoute
   '/api/public/hooks/generate-weekly-reports': typeof ApiPublicHooksGenerateWeeklyReportsRoute
   '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
+  '/api/public/hooks/purge-trash': typeof ApiPublicHooksPurgeTrashRoute
   '/api/public/hooks/sync-calendars': typeof ApiPublicHooksSyncCalendarsRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -272,6 +280,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/daily-pulse': typeof ApiPublicHooksDailyPulseRoute
   '/api/public/hooks/generate-weekly-reports': typeof ApiPublicHooksGenerateWeeklyReportsRoute
   '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
+  '/api/public/hooks/purge-trash': typeof ApiPublicHooksPurgeTrashRoute
   '/api/public/hooks/sync-calendars': typeof ApiPublicHooksSyncCalendarsRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -307,6 +316,7 @@ export interface FileRoutesById {
   '/api/public/hooks/daily-pulse': typeof ApiPublicHooksDailyPulseRoute
   '/api/public/hooks/generate-weekly-reports': typeof ApiPublicHooksGenerateWeeklyReportsRoute
   '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
+  '/api/public/hooks/purge-trash': typeof ApiPublicHooksPurgeTrashRoute
   '/api/public/hooks/sync-calendars': typeof ApiPublicHooksSyncCalendarsRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -342,6 +352,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/daily-pulse'
     | '/api/public/hooks/generate-weekly-reports'
     | '/api/public/hooks/process-reminders'
+    | '/api/public/hooks/purge-trash'
     | '/api/public/hooks/sync-calendars'
     | '/api/public/payments/webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -375,6 +386,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/daily-pulse'
     | '/api/public/hooks/generate-weekly-reports'
     | '/api/public/hooks/process-reminders'
+    | '/api/public/hooks/purge-trash'
     | '/api/public/hooks/sync-calendars'
     | '/api/public/payments/webhook'
   id:
@@ -409,6 +421,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/daily-pulse'
     | '/api/public/hooks/generate-weekly-reports'
     | '/api/public/hooks/process-reminders'
+    | '/api/public/hooks/purge-trash'
     | '/api/public/hooks/sync-calendars'
     | '/api/public/payments/webhook'
   fileRoutesById: FileRoutesById
@@ -426,6 +439,7 @@ export interface RootRouteChildren {
   ApiPublicHooksDailyPulseRoute: typeof ApiPublicHooksDailyPulseRoute
   ApiPublicHooksGenerateWeeklyReportsRoute: typeof ApiPublicHooksGenerateWeeklyReportsRoute
   ApiPublicHooksProcessRemindersRoute: typeof ApiPublicHooksProcessRemindersRoute
+  ApiPublicHooksPurgeTrashRoute: typeof ApiPublicHooksPurgeTrashRoute
   ApiPublicHooksSyncCalendarsRoute: typeof ApiPublicHooksSyncCalendarsRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
 }
@@ -635,6 +649,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksSyncCalendarsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/purge-trash': {
+      id: '/api/public/hooks/purge-trash'
+      path: '/api/public/hooks/purge-trash'
+      fullPath: '/api/public/hooks/purge-trash'
+      preLoaderRoute: typeof ApiPublicHooksPurgeTrashRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/process-reminders': {
       id: '/api/public/hooks/process-reminders'
       path: '/api/public/hooks/process-reminders'
@@ -739,9 +760,20 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksGenerateWeeklyReportsRoute:
     ApiPublicHooksGenerateWeeklyReportsRoute,
   ApiPublicHooksProcessRemindersRoute: ApiPublicHooksProcessRemindersRoute,
+  ApiPublicHooksPurgeTrashRoute: ApiPublicHooksPurgeTrashRoute,
   ApiPublicHooksSyncCalendarsRoute: ApiPublicHooksSyncCalendarsRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
