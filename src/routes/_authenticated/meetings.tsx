@@ -22,9 +22,14 @@ import { listBusinesses } from "@/lib/businesses";
 import { listMeetings, deleteMeeting, uploadMeetingAudio } from "@/lib/meetings";
 import { processMeeting } from "@/lib/meetings.functions";
 import { UpcomingMeetings } from "@/components/upcoming-meetings";
+import { UpgradeGate } from "@/components/upgrade-gate";
 
 export const Route = createFileRoute("/_authenticated/meetings")({
-  component: MeetingsPage,
+  component: () => (
+    <UpgradeGate feature="meetings">
+      <MeetingsPage />
+    </UpgradeGate>
+  ),
 });
 
 function MeetingsPage() {
