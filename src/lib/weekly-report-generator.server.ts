@@ -24,6 +24,7 @@ type TaskRow = {
   created_at: string;
   status_changed_at: string | null;
   business_id: string | null;
+  outcome_id: string | null;
 };
 
 export type OverdueEntry = {
