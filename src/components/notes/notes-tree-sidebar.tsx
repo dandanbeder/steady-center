@@ -18,7 +18,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Business } from "@/lib/businesses";
-import { createFolder, deleteFolder, updateFolder, type Folder } from "@/lib/tasks";
+import { createFolder, deleteFolder, restoreFolder, updateFolder, type Folder } from "@/lib/tasks";
+import { showUndoToast } from "@/lib/undo-toast";
 import type { Note } from "@/lib/notes";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
