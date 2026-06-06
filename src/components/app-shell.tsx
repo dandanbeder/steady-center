@@ -36,6 +36,7 @@ const NAV: { to: string; label: string; icon: typeof Home }[] = [
   { to: "/plan-week", label: "Plan my week", icon: BrainCircuit },
   { to: "/calendar", label: "Calendar", icon: Calendar },
   { to: "/tasks", label: "Tasks", icon: CheckSquare },
+  { to: "/outcomes", label: "Outcomes", icon: Target },
   { to: "/notes", label: "Notes", icon: FileText },
   { to: "/journal", label: "Journal", icon: BookOpen },
   { to: "/ask-notes", label: "Ask my notes", icon: Sparkles },
