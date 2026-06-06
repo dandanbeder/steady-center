@@ -416,7 +416,10 @@ export const applyAssistantAction = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    const { requireFeature } = await import("./entitlements.server");
+    await requireFeature(supabase, userId, "ai_assistant");
     const p: any = data.payload;
+
     let resultId: string | null = null;
 
     switch (data.type) {

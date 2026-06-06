@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Calendar, CalendarRange, CheckSquare, FileText, Home, Settings, Users, LogOut, ChevronDown, BarChart3, PanelLeftClose, PanelLeftOpen, Shield, Menu, AtSign, BookOpen, Sparkles, Search, Inbox, Bell, CreditCard } from "lucide-react";
 import { PaymentTestModeBanner } from "@/components/payment-test-mode-banner";
+import { PastDueBanner } from "@/components/past-due-banner";
 import { countPendingInbox } from "@/lib/inbox";
 import { countUnreadNotifications } from "@/lib/notifications";
 import { NotificationCenter } from "@/components/notification-center";
@@ -357,6 +358,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
 
         <PaymentTestModeBanner />
+        <PastDueBanner />
         <SupportSessionBanner />
         <AnnouncementBanner />
         <main className="flex-1 overflow-auto min-w-0">{children}</main>
