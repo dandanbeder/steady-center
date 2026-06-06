@@ -307,6 +307,21 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Button
             variant="ghost"
             size="icon"
+            onClick={() => setNotifOpen(true)}
+            aria-label="Notifications"
+            title="Notifications"
+            className="h-9 w-9 text-muted-foreground hover:text-foreground shrink-0 relative"
+          >
+            <Bell className="h-4 w-4" />
+            {unreadNotifications > 0 && (
+              <span className="absolute top-1 right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold leading-[16px] text-center">
+                {unreadNotifications > 99 ? "99+" : unreadNotifications}
+              </span>
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => {
               setAssistantPrompt(undefined);
               setAssistantOpen(true);
@@ -318,6 +333,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Sparkles className="h-4 w-4" />
           </Button>
         </header>
+        <NotificationCenter open={notifOpen} onOpenChange={setNotifOpen} />
         <CommandPalette
           open={cmdOpen}
           onOpenChange={setCmdOpen}
