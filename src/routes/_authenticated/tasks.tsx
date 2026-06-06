@@ -18,6 +18,7 @@ import {
   X,
   CheckSquare,
   Link2,
+  Focus,
 } from "lucide-react";
 import {
   DndContext,
@@ -101,6 +102,7 @@ import { listOutcomes, updateOutcome } from "@/lib/outcomes";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { TaskTimerInline, TaskTimePanel } from "@/components/task-timer";
+import { FocusMode } from "@/components/focus-mode";
 
 export const Route = createFileRoute("/_authenticated/tasks")({
   head: () => ({ meta: [{ title: "Tasks · Heartbeat" }] }),
@@ -894,6 +896,7 @@ function TaskRow({
 }) {
   const [open, setOpen] = useState(false);
   const [subTitle, setSubTitle] = useState("");
+  const [focusOn, setFocusOn] = useState(false);
 
   const toggle = useMutation({
     mutationFn: async () => {
@@ -938,6 +941,10 @@ function TaskRow({
   const overdue = task.due_at && new Date(task.due_at) < new Date() && task.status !== "done";
 
   return (
+    <>
+      {focusOn && (
+        <FocusMode task={task} onClose={() => setFocusOn(false)} onChange={onChange} />
+      )}
     <div className={cn(selected && "bg-accent/5")}>
       <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5">
         <Checkbox
@@ -974,6 +981,15 @@ function TaskRow({
           </span>
         )}
         <TaskTimerInline taskId={task.id} businessId={businessId} />
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-7 w-7"
+          onClick={() => setFocusOn(true)}
+          title="Focus mode"
+        >
+          <Focus className="h-3.5 w-3.5 text-muted-foreground" />
+        </Button>
         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => del.mutate()} title="Delete task">
           <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
         </Button>
@@ -999,6 +1015,7 @@ function TaskRow({
         </div>
       )}
     </div>
+    </>
   );
 }
 
@@ -1246,6 +1263,7 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
   const [recurrence, setRecurrence] = useState<RecurrenceRule | "none">(task.recurrence_rule ?? "none");
   const [outcomeId, setOutcomeId] = useState<string>(task.outcome_id ?? "");
   const [celebrate, setCelebrate] = useState<{ outcomeId: string; name: string } | null>(null);
+  const [focusOn, setFocusOn] = useState(false);
 
   const dueIso = dueAt ? new Date(`${dueAt}T12:00:00`).toISOString() : null;
 
@@ -1460,7 +1478,10 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
               )}
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => setFocusOn(true)}>
+              <Focus className="h-4 w-4 mr-1.5" /> Focus
+            </Button>
             <Button variant="outline" onClick={onClose}>Cancel</Button>
             <Button onClick={() => save.mutate()} disabled={save.isPending}>
               {save.isPending ? "Saving…" : "Save changes"}
@@ -1478,6 +1499,13 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
             onChange();
             onClose();
           }}
+        />
+      )}
+      {focusOn && (
+        <FocusMode
+          task={task}
+          onClose={() => setFocusOn(false)}
+          onChange={onChange}
         />
       )}
     </>
