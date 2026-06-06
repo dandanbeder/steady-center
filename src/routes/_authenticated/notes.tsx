@@ -25,9 +25,11 @@ import {
   listNotes,
   updateNote,
   deleteNote,
+  restoreNote,
   pinNote,
   type Note,
 } from "@/lib/notes";
+import { showUndoToast } from "@/lib/undo-toast";
 import { NOTE_TYPES, type NoteType } from "@/lib/note-templates";
 import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
 import { Button } from "@/components/ui/button";
