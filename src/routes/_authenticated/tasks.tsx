@@ -1263,6 +1263,7 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
   const [recurrence, setRecurrence] = useState<RecurrenceRule | "none">(task.recurrence_rule ?? "none");
   const [outcomeId, setOutcomeId] = useState<string>(task.outcome_id ?? "");
   const [celebrate, setCelebrate] = useState<{ outcomeId: string; name: string } | null>(null);
+  const [focusOn, setFocusOn] = useState(false);
 
   const dueIso = dueAt ? new Date(`${dueAt}T12:00:00`).toISOString() : null;
 
