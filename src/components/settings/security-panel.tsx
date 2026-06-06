@@ -172,24 +172,26 @@ export function SecurityPanel() {
         ) : (historyQ.data?.length ?? 0) === 0 ? (
           <p className="text-sm text-muted-foreground">No recent sign-in events yet.</p>
         ) : (
-          <ul className="divide-y divide-border rounded-lg border border-border overflow-hidden">
-            {historyQ.data!.map((e) => (
-              <li
-                key={e.id}
-                className="flex items-start justify-between gap-3 px-4 py-3 text-sm"
-              >
-                <div className="min-w-0">
-                  <p className="capitalize">{e.event.replace(/_/g, " ")}</p>
-                  <p className="text-xs text-muted-foreground truncate max-w-md">
-                    {e.user_agent ?? "Unknown device"}
-                  </p>
-                </div>
-                <span className="text-xs text-muted-foreground whitespace-nowrap">
-                  {new Date(e.occurred_at).toLocaleString()}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <div className="rounded-lg border border-border overflow-hidden">
+            <ul className="divide-y divide-border max-h-80 overflow-y-auto">
+              {historyQ.data!.map((e) => (
+                <li
+                  key={e.id}
+                  className="flex items-start justify-between gap-3 px-4 py-3 text-sm"
+                >
+                  <div className="min-w-0">
+                    <p className="capitalize">{e.event.replace(/_/g, " ")}</p>
+                    <p className="text-xs text-muted-foreground truncate max-w-md">
+                      {e.user_agent ?? "Unknown device"}
+                    </p>
+                  </div>
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">
+                    {new Date(e.occurred_at).toLocaleString()}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </section>
 
