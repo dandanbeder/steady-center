@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { MyInvitationsBanner } from "@/components/my-invitations-banner";
 import { UpcomingMeetings } from "@/components/upcoming-meetings";
 import { DailyPulseCard } from "@/components/daily-pulse-card";
+import { WeekPulse } from "@/components/week-pulse";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Task } from "@/lib/tasks";
 import type { Note } from "@/lib/notes";
