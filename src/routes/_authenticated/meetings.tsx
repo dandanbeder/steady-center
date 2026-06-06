@@ -288,6 +288,12 @@ function NewMeetingDialog({
               <p className="text-xs text-muted-foreground">
                 Transcribed with Whisper. mp3, m4a, wav, webm, ogg, flac, mp4. Max 25MB.
               </p>
+              <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-foreground/90">
+                <strong className="block mb-1">Recording consent</strong>
+                By uploading, you confirm that every attendee in this recording has been
+                informed and has consented to being recorded, transcribed, and summarised.
+                South African law (POPIA / RICA) requires consent from all parties.
+              </div>
               <label className="flex items-start gap-2 text-sm text-foreground/90">
                 <input
                   type="checkbox"
