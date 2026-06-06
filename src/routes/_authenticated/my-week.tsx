@@ -75,6 +75,7 @@ function eventHours(e: EventRow): number {
 
 function MyWeekPage() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const { activeId } = useActiveBusiness();
   const [anchor, setAnchor] = useState<Date>(() => new Date());
 
