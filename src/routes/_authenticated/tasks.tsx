@@ -1478,7 +1478,10 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
               )}
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => setFocusOn(true)}>
+              <Focus className="h-4 w-4 mr-1.5" /> Focus
+            </Button>
             <Button variant="outline" onClick={onClose}>Cancel</Button>
             <Button onClick={() => save.mutate()} disabled={save.isPending}>
               {save.isPending ? "Saving…" : "Save changes"}
