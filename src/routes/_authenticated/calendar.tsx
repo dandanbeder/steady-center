@@ -1672,8 +1672,12 @@ function EditEventDialog({
   const del = useMutation({
     mutationFn: () => deleteEvent(event.id),
     onSuccess: () => {
-      toast.success("Event deleted");
       onSaved();
+      showUndoToast(`Event "${event.title}" deleted`, async () => {
+        const { syncWarning } = await restoreEvent(event.id);
+        if (syncWarning) toast.warning(syncWarning);
+        onSaved();
+      });
     },
     onError: (err) => toast.error(err instanceof Error ? err.message : "Failed"),
   });
