@@ -907,7 +907,13 @@ function TaskRow({
 
   const del = useMutation({
     mutationFn: () => deleteTask(task.id),
-    onSuccess: onChange,
+    onSuccess: () => {
+      onChange();
+      showUndoToast(`Task "${task.title}" deleted`, async () => {
+        await restoreTask(task.id);
+        onChange();
+      });
+    },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
