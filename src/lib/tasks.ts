@@ -239,6 +239,7 @@ export async function createTask(input: {
   due_at?: string | null;
   position?: number;
   recurrence_rule?: RecurrenceRule | null;
+  outcome_id?: string | null;
 }) {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) throw new Error("Not signed in");
@@ -255,6 +256,7 @@ export async function createTask(input: {
     owner_id: u.user.id,
     recurrence_rule: input.recurrence_rule ?? null,
     recurrence_anchor: input.recurrence_rule && input.due_at ? input.due_at : null,
+    outcome_id: input.outcome_id ?? null,
   });
   if (error) throw error;
 }
