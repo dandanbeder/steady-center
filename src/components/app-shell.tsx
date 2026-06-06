@@ -1,7 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Calendar, CalendarRange, CheckSquare, FileText, Home, Settings, Users, LogOut, ChevronDown, BarChart3, PanelLeftClose, PanelLeftOpen, Shield, Menu, AtSign, BookOpen, Sparkles, Search, Inbox } from "lucide-react";
+import { Calendar, CalendarRange, CheckSquare, FileText, Home, Settings, Users, LogOut, ChevronDown, BarChart3, PanelLeftClose, PanelLeftOpen, Shield, Menu, AtSign, BookOpen, Sparkles, Search, Inbox, Bell } from "lucide-react";
 import { countPendingInbox } from "@/lib/inbox";
+import { countUnreadNotifications } from "@/lib/notifications";
+import { NotificationCenter } from "@/components/notification-center";
 import { useEffect, useState, type ReactNode } from "react";
 import heartbeatLogo from "@/assets/heartbeat-horizontal.svg";
 import heartbeatMono from "@/assets/heartbeat-mono.svg";
