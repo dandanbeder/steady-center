@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /accept-invite
+Disallow: /reset-password
+Disallow: /unsubscribe
+
+Sitemap: https://heartbeatcommand.software/sitemap.xml
