@@ -154,6 +154,39 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_audit_log: {
+        Row: {
+          action: string
+          admin_id: string
+          after: Json | null
+          before: Json | null
+          created_at: string
+          id: string
+          reason: string | null
+          target_user_id: string | null
+        }
+        Insert: {
+          action: string
+          admin_id: string
+          after?: Json | null
+          before?: Json | null
+          created_at?: string
+          id?: string
+          reason?: string | null
+          target_user_id?: string | null
+        }
+        Update: {
+          action?: string
+          admin_id?: string
+          after?: Json | null
+          before?: Json | null
+          created_at?: string
+          id?: string
+          reason?: string | null
+          target_user_id?: string | null
+        }
+        Relationships: []
+      }
       ai_prefs: {
         Row: {
           created_at: string
@@ -1240,6 +1273,8 @@ export type Database = {
           created_at: string
           daily_capacity_hours: number
           default_calendar_view: string
+          deletion_requested_by: string | null
+          deletion_scheduled_at: string | null
           density: string
           font_size: string
           full_name: string | null
@@ -1255,6 +1290,8 @@ export type Database = {
           role_title: string | null
           status: Database["public"]["Enums"]["user_status"]
           subscription_status: Database["public"]["Enums"]["subscription_status"]
+          suspended_message: string | null
+          suspended_reason: string | null
           terms_accepted_at: string | null
           theme: string
           timezone: string
@@ -1270,6 +1307,8 @@ export type Database = {
           created_at?: string
           daily_capacity_hours?: number
           default_calendar_view?: string
+          deletion_requested_by?: string | null
+          deletion_scheduled_at?: string | null
           density?: string
           font_size?: string
           full_name?: string | null
@@ -1285,6 +1324,8 @@ export type Database = {
           role_title?: string | null
           status?: Database["public"]["Enums"]["user_status"]
           subscription_status?: Database["public"]["Enums"]["subscription_status"]
+          suspended_message?: string | null
+          suspended_reason?: string | null
           terms_accepted_at?: string | null
           theme?: string
           timezone?: string
@@ -1300,6 +1341,8 @@ export type Database = {
           created_at?: string
           daily_capacity_hours?: number
           default_calendar_view?: string
+          deletion_requested_by?: string | null
+          deletion_scheduled_at?: string | null
           density?: string
           font_size?: string
           full_name?: string | null
@@ -1315,6 +1358,8 @@ export type Database = {
           role_title?: string | null
           status?: Database["public"]["Enums"]["user_status"]
           subscription_status?: Database["public"]["Enums"]["subscription_status"]
+          suspended_message?: string | null
+          suspended_reason?: string | null
           terms_accepted_at?: string | null
           theme?: string
           timezone?: string
@@ -1631,6 +1676,39 @@ export type Database = {
           started_at?: string
           task_id?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_entitlement_overrides: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          key: string
+          note: string | null
+          user_id: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          key: string
+          note?: string | null
+          user_id: string
+          value?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          key?: string
+          note?: string | null
+          user_id?: string
+          value?: number
         }
         Relationships: []
       }
