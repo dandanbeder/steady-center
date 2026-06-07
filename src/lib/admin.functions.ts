@@ -236,7 +236,8 @@ export const adminResendVerification = createServerFn({ method: "POST" })
     const { data: u } = await supabaseAdmin.auth.admin.getUserById(data.user_id);
     const email = u?.user?.email;
     if (!email) throw new Error("User has no email");
-    const { error } = await supabaseAdmin.auth.admin.generateLink({ type: "signup", email });
+    // Use magiclink as a verification re-send — works for confirmed and unconfirmed users.
+    const { error } = await supabaseAdmin.auth.admin.generateLink({ type: "magiclink", email });
     if (error) throw new Error(error.message);
     await logAudit(context.userId, data.user_id, "auth.verification.resend", null, { email }, null);
     return { ok: true };
