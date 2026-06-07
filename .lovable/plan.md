@@ -1,122 +1,99 @@
-# Weekly Commitment Planning
+# Full User Management for Super Admin
 
-A calm version of sprint planning. Each week has a list of tasks you've *committed* to. Anything not committed lives in the backlog and stays out of sight on My Week and Today.
+Expand `/admin` Users into a searchable list + per-user detail page with audited admin actions, server-side enforcement, and append-only audit log.
 
-## 1. Schema (one migration)
+## 1. Database (migration)
 
-Add to `public.tasks`:
-- `committed_week date` — nullable. The Monday (UTC) of the week the task is committed to.
-- Partial index `(owner_id, committed_week) WHERE committed_week IS NOT NULL AND deleted_at IS NULL` for the per-week queries.
-- Partial index `(owner_id, status, priority, due_at) WHERE committed_week IS NULL AND deleted_at IS NULL AND status <> 'done'` for backlog reads.
+### New table: `admin_audit_log` (append-only)
+Columns: `id`, `admin_id`, `target_user_id`, `action` (text), `before` (jsonb), `after` (jsonb), `reason` (text), `created_at`.
+- RLS: only `is_platform_admin()` can `SELECT`. INSERT/UPDATE/DELETE blocked for everyone (rows inserted via service_role in server fns).
+- Trigger blocks any UPDATE/DELETE even from service_role to guarantee append-only.
+- GRANT SELECT to authenticated, GRANT INSERT to service_role only.
 
-RLS: no policy changes. `committed_week` is just another column on `tasks`; existing owner/member policies already gate read/write. Confirmed via linter after migration.
+### New table: `user_entitlement_overrides`
+Columns: `id`, `user_id`, `key` (text, e.g. `ai_actions_extra`, `extra_businesses`), `value` (int), `expires_at` (nullable), `note`, `created_at`, `created_by`.
+- RLS: superadmin SELECT/ALL; users can SELECT own.
 
-**Backlog rule (single source of truth, used everywhere):**
-```
-status <> 'done'
-AND deleted_at IS NULL
-AND (committed_week IS NULL OR committed_week < <this Monday>)
-```
-i.e. uncommitted *or* committed to a past week but still open → both surface as backlog so they can be re-committed or moved on.
+### Profile additions
+- `profiles.suspended_reason text`
+- `profiles.suspended_message text` (shown on login)
+- `profiles.deletion_scheduled_at timestamptz` (7-day soft delete)
+- `profiles.deletion_requested_by uuid`
 
-## 2. Data-access additions (`src/lib/weekly-plan.ts`)
+## 2. Server functions (`src/lib/admin.functions.ts`)
 
-```ts
-mondayOf(date) -> 'YYYY-MM-DD'      // UTC Monday
-listBacklog({ businessId? })        // uses backlog rule above
-listCommitted(weekStart)            // committed_week = weekStart, not done
-commitTasks(ids, weekStart)         // bulk update
-uncommitTasks(ids)                  // committed_week = null
-getVelocity()                       // trailing 4 weeks: avg tasks/week, avg hours/week
-```
+All gated by `requirePlatformAdmin()`. Each mutating fn writes to `admin_audit_log` with `before`/`after` and `reason`. Safety rails enforced server-side:
+- No self-suspend, self-demote, self-delete.
+- Last superadmin cannot be demoted/deleted (existing count check extended).
+- Destructive actions require non-empty `reason` (already partly there) and explicit confirmation flags.
 
-`getVelocity()` query: tasks `completed_at` in last 28 days grouped by ISO week → mean; `time_entries.minutes` in last 28 days grouped likewise → mean hours. Pure SQL via two RPC-free Supabase calls (avg client-side).
+New/extended:
+- `adminGetUser({user_id})` → profile + auth (email, last_sign_in, banned_until, email_confirmed_at) + subscription + overrides + recent audit entries.
+- `adminUpdateProfile({user_id, patch, reason})` — name, organisation, role_title, phone, timezone.
+- `adminChangeUserEmail({user_id, new_email, reason})` — typed-confirm checked client-side; server updates auth via `supabaseAdmin.auth.admin.updateUserById`, sends notice emails to old+new addresses via app email infra, logs.
+- `adminResendVerification({user_id})` — uses `auth.admin.generateLink({type:'signup'})` or `inviteUserByEmail`.
+- `adminManuallyVerifyEmail({user_id, reason})` — sets `email_confirm: true`.
+- `adminSendPasswordReset({user_id})` — `auth.admin.generateLink({type:'recovery'})`, emails user.
+- `adminRevokeSessions({user_id, reason})` — `auth.admin.signOut(user_id, 'global')`.
+- `adminSuspendUser({user_id, reason, message})` — extends existing `adminSetUserStatus`, stores `suspended_reason`/`suspended_message`, bans in auth.
+- `adminReactivateUser({user_id, reason})`.
+- `adminUpsertEntitlementOverride({user_id, key, value, expires_at, note})`.
+- `adminDeleteEntitlementOverride({id})`.
+- `adminCompSubscription({user_id, plan, period_end, reason})` — inserts/updates a subscription row tagged as comp.
+- `adminExtendTrial({user_id, days, reason})`.
+- Extend `adminSetPlatformRole` to log via `admin_audit_log` (already partly).
+- `adminScheduleUserDeletion({user_id, typed_email, reason})` — sets `deletion_scheduled_at = now()+7 days`, bans auth user, logs.
+- `adminCancelUserDeletion({user_id, reason})`.
+- `adminListAuditLog({target_user_id?, limit})`.
 
-## 3. Backlog view
+Cron route `/api/public/hooks/purge-deleted-users` (CRON_SECRET) deletes auth users + cascaded data where `deletion_scheduled_at < now()`.
 
-New page `/backlog` (route under `_authenticated`). Also reachable from `/plan-week`.
+## 3. Login enforcement
 
-- Toggle: This account / All accounts (uses `useActiveBusiness`).
-- Sort: priority (urgent→low) then `due_at` (oldest first, nulls last).
-- Multi-select checkboxes + sticky bottom bar: **Commit to this week** (and **Commit to next week**).
-- Row shows: title, priority flag, due date if any, account chip, "rolled over from N weeks ago" badge when applicable.
+On sign-in (`src/routes/login.tsx`), if profile is `status='suspended'`, show the stored `suspended_message` (fallback: "Your account is suspended — contact support.") and immediately `signOut()`. (Auth ban already blocks tokens; this surfaces the message.)
 
-## 4. Plan My Week flow
+## 4. UI
 
-New page `/plan-week` (linked from sidebar; **prompted on Mondays** via a dismissible banner on My Week when `weekday === 1` and there is no commitment yet for the current week).
+### `src/routes/_authenticated/admin.tsx` — UsersPanel rewrite
+- Search box (name/email).
+- Filters: plan, status, marketing opt-in, sign-up date range.
+- Columns: user, email, plan, status, accounts owned, last active, marketing.
+- Bulk select → Suspend / Export CSV.
+- Row click → navigates to `/admin/users/$userId`.
 
-Layout (single column, three sections, all visible on the same page — no wizard back/forward):
+### New route `src/routes/_authenticated/admin.users.$userId.tsx`
+Sections (tabs/cards):
+1. **Profile** — editable fields + Save dialog requiring reason.
+2. **Email** — change email (typed-confirm + reason), Resend verification, Manually verify.
+3. **Password & Sessions** — "Send password reset" + "Revoke all sessions" (no view/set password).
+4. **Status** — Suspend (reason + optional user-facing message) / Reactivate.
+5. **Plan & Billing** — current subscription, Comp, Extend trial, Adjust plan, Paddle customer link.
+6. **Limit overrides** — list + add/remove with expiry.
+7. **Role** — promote/demote.
+8. **Danger zone** — Delete user (typed-email + reason, schedules 7-day purge; shows pending state + cancel).
+9. **Audit log** — entries for this user.
 
-1. **Rolled over from last week** — committed-but-unfinished tasks from prior weeks. Multi-select with **Keep for this week** / **Send to backlog** buttons.
-2. **Backlog** — same component as the Backlog view, with **Commit this week** action.
-3. **This week's commitment** — live list of what's committed. Tap × to remove (returns to backlog).
+Each destructive action uses a shared `ReasonConfirmDialog` component that requires a reason and (for destructive) typed confirmation token.
 
-Sticky right rail (collapses below content on mobile):
+### `src/lib/admin.functions.ts` audit helper
+Internal `logAudit(admin_id, target, action, before, after, reason)` used by every mutating fn.
 
-- **Capacity check** — exactly the model already in `my-week.tsx`:
-  - Working capacity: `work_days.length × daily_capacity_hours` hours.
-  - Committed tasks load: `count_with_no_due_block × DEFAULT_TASK_HOURS` + sum of event hours overlapping the week.
-  - Visual bar; green under, amber 80-100%, red over.
-- **Personal velocity** — "You usually complete about **{tasksAvg}** tasks per week and track **{hoursAvg}h**." (4-week trailing). When commitment count > `tasksAvg × 1.2`:
-  - "You've committed {n}. That's above your typical pace — want to trim some?"
-  - Button: **Suggest tasks to defer (AI)** → calls a new server fn (Pro-gated) that returns up to 3 candidate task IDs (lowest priority then latest `due_at`). UI highlights them with an Defer action. AI suggests, user decides.
+## 5. Safety / Verification
 
-Empty-state copy is supportive ("Light week ahead — make it count" / "You've got a focused list").
+- All `admin*` server fns: `requirePlatformAdmin(context.userId)` first.
+- Self-action guards: throw on `target === admin` for suspend/demote/delete.
+- Last-superadmin guard for demote/delete.
+- `admin_audit_log` has a `BEFORE UPDATE OR DELETE` trigger raising exception (append-only).
+- Confirm via Supabase linter after migration.
 
-## 5. AI deferral suggestion
+## Files
 
-New server fn `suggestDeferrals` in `src/lib/weekly-plan.functions.ts`:
+- migration: new tables, profile columns, trigger
+- `src/lib/admin.functions.ts` — extend
+- `src/routes/_authenticated/admin.tsx` — UsersPanel rewrite
+- `src/routes/_authenticated/admin.users.$userId.tsx` — new detail page
+- `src/components/admin/reason-confirm-dialog.tsx` — shared dialog
+- `src/routes/login.tsx` — suspended-message surface
+- `src/routes/api/public/hooks/purge-deleted-users.ts` — cron
 
-- `.middleware([requireSupabaseAuth])` + `requireFeature(supabase, userId, "ai_assistant")` (existing Pro gate covers it).
-- Input: `{ week_start, business_id?: string | null }`.
-- Reads currently-committed tasks + this user's velocity.
-- Calls Lovable AI Gateway (`google/gemini-2.5-flash`, cheap and fast) with strict JSON output:
-  ```json
-  { "defer_task_ids": ["..."], "reason": "short kind sentence" }
-  ```
-- Falls back to deterministic pick (lowest priority, latest due) on any AI error so the UX is never blocked.
-
-## 6. My Week + Today integration
-
-- `my-week.tsx`: keep the day grid. Add a **Backlog drawer** (right edge, closed by default). The grid filters to `committed_week = thisMonday OR due_at IN week`. The capacity panel uses the *same* committed set.
-- `today.tsx` `listTopOpenTasks(5)`: prefer tasks whose `committed_week = thisMonday`, then fall back to anything with `due_at <= eod`. One-line query change.
-- Backlog stays hidden everywhere unless the drawer/page is opened.
-
-## 7. Weekly Review (metrics + narrative)
-
-Update `weekly-report-generator.server.ts`:
-
-- Add to `PerBusinessMetrics`:
-  - `tasks_committed: number` (count where `committed_week = weekStart`)
-  - `tasks_committed_completed: number` (those with `status='done'` and `completed_at` in week)
-  - `commitment_ratio: number` (completed / committed; null when committed = 0)
-  - `rolled_over_to_next_week: number` (committed but not done at week end)
-- Pass these into the Anthropic prompt with a single sentence rule: "Open with commitment vs delivered when committed > 0."
-- Report UI (`reports.$reportId.tsx`): add one card "Commitment" showing `committed / completed / rolled over`. Use the same neutral tone the report already uses.
-
-Rolled-over tasks are visibly preserved because they appear in **Plan My Week → Rolled over from last week**.
-
-## 8. Entitlements
-
-- No new gate for backlog, planning page, or capacity (free, personal feature).
-- AI deferral suggestion only runs when `ai_assistant` feature is allowed (existing Pro gate). The button renders an upgrade chip for free users.
-
-## 9. Sidebar
-
-Add **Plan My Week** under **My Week** in `src/components/app-shell.tsx` NAV (icon: `BrainCircuit` from lucide). Backlog is reachable from inside Plan My Week and from My Week's drawer — no separate top-level entry.
-
-## 10. Test plan
-
-1. Create 5 tasks with no `committed_week`. They appear in `/backlog`, do **not** appear on My Week or Today.
-2. Multi-select 3 of them → **Commit to this week**. They appear on My Week (in their due day or in an "Unscheduled" lane), Today shows them ahead of generic due-soon tasks, and the capacity bar updates.
-3. Add a couple of long calendar events that week. Capacity bar reflects event hours + committed task hours.
-4. Set velocity (manually mark 12 tasks done across the last 4 weeks). Commit 18 tasks → see the gentle prompt and **Suggest tasks to defer** button (Pro account).
-5. Complete some, leave some open. Generate weekly report → Commitment card shows `18 / N / rolled-over`. Narrative mentions commitment delivery.
-6. Next Monday → Plan My Week banner appears on My Week; rolled-over tasks show in the **Rolled over** section.
-7. RLS: a second user (no membership) cannot read or update another user's committed tasks; member of the same business can commit/uncommit tasks of that business. Verified via Supabase linter and a manual cross-user check.
-
-## Out of scope
-
-- No new `scheduled_date` per-day field — keep day placement driven by `due_at`, as today.
-- No team-level commitment ("the team committed to X"). Personal only, per spec.
-- No notification on Monday morning beyond the in-app banner.
+After approval I'll run the migration and implement code in subsequent turns.
