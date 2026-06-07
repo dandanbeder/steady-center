@@ -139,14 +139,18 @@ export const notifyClaimedTags = createServerFn({ method: "POST" })
     const apiKey = process.env.LOVABLE_API_KEY;
     const conn = process.env.RESEND_API_KEY;
     if (apiKey && conn) {
+      const escapeHtml = (s: string) =>
+        s.replace(/[&<>"']/g, (c) =>
+          ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!),
+        );
       const spaces = bizIds
-        .map((id) => bizName.get(id) ?? "a space")
+        .map((id) => escapeHtml(bizName.get(id) ?? "a space"))
         .join(", ");
       const parts: string[] = [];
       if (counts.task) parts.push(`${counts.task} task${counts.task > 1 ? "s" : ""}`);
       if (counts.note) parts.push(`${counts.note} note${counts.note > 1 ? "s" : ""}`);
       if (counts.event) parts.push(`${counts.event} event${counts.event > 1 ? "s" : ""}`);
-      const html = `<p>You've been tagged on ${parts.join(", ")} across ${spaces}.</p>
+      const html = `<p>You've been tagged on ${escapeHtml(parts.join(", "))} across ${spaces}.</p>
         <p><a href="${origin}/shared">Open Shared with me</a></p>`;
       await fetch("https://connector-gateway.lovable.dev/resend/emails", {
         method: "POST",
