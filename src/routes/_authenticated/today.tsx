@@ -6,6 +6,7 @@ import { listCalendars, listEvents } from "@/lib/calendars";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { mondayOf } from "@/lib/weekly-plan";
+import { getOnboardingProfile } from "@/lib/onboarding";
 import { MyInvitationsBanner } from "@/components/my-invitations-banner";
 import { UpcomingMeetings } from "@/components/upcoming-meetings";
 import { DailyPulseCard } from "@/components/daily-pulse-card";
