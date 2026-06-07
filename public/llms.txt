@@ -1,0 +1,12 @@
+# Heartbeat
+
+> A calm command center for your accounts — calendars, tasks, notes and meetings in one place.
+
+Heartbeat helps founders and operators run multiple businesses from a single, focused workspace. It brings together a daily plan, a weekly review, tasks, notes, meeting summaries, and a shared calendar so teams can move with purpose without context-switching across tools.
+
+## Pages
+
+- [Home](/): Overview of Heartbeat.
+- [Sign in](/login): Sign in or create a Heartbeat account.
+- [Terms](/terms): Terms of service.
+- [Privacy](/privacy): Privacy policy.

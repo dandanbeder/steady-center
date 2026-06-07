@@ -192,13 +192,14 @@ export function AppShell({ children }: { children: ReactNode }) {
         variant="ghost"
         size="sm"
         onClick={signOut}
+        aria-label="Sign out"
         title={compact ? "Sign out" : undefined}
         className={cn(
           "w-full gap-2 text-sidebar-foreground/70 hover:text-sidebar-foreground",
           compact ? "justify-center px-0" : "justify-start",
         )}
       >
-        <LogOut className="h-4 w-4" />
+        <LogOut className="h-4 w-4" aria-hidden="true" />
         {!compact && <span>Sign out</span>}
       </Button>
     </div>
