@@ -6,6 +6,7 @@ export type OnboardingProfile = {
   weekly_review_hour: number;
   weekly_review_enabled: boolean;
   timezone: string;
+  full_name: string | null;
 };
 
 export async function getOnboardingProfile(): Promise<OnboardingProfile | null> {
@@ -14,13 +15,14 @@ export async function getOnboardingProfile(): Promise<OnboardingProfile | null> 
   const { data, error } = await supabase
     .from("profiles")
     .select(
-      "onboarding_completed_at, weekly_review_day, weekly_review_hour, weekly_review_enabled, timezone",
+      "onboarding_completed_at, weekly_review_day, weekly_review_hour, weekly_review_enabled, timezone, full_name",
     )
     .eq("id", u.user.id)
     .maybeSingle();
   if (error) throw error;
   return (data as OnboardingProfile) ?? null;
 }
+
 
 export async function saveWeeklyReview(p: {
   day: number;
