@@ -174,6 +174,7 @@ function NotesPage() {
 
   return (
     <div className="flex h-[calc(100vh-4rem)]">
+      <h1 className="sr-only">Notes</h1>
       {/* Desktop sidebar */}
       <aside className="hidden md:flex w-64 shrink-0 border-r border-border flex-col">
         {sidebar}
