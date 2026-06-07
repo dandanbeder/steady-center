@@ -128,7 +128,10 @@ function TodayPage() {
   const recentNotes = recentNotesQ.data ?? [];
 
   const active = activeId === ALL ? null : businesses.find((b) => b.id === activeId);
-  const name = (user?.user_metadata?.full_name as string | undefined)?.split(" ")[0];
+  const profileQ = useQuery({ queryKey: ["onboarding-profile"], queryFn: getOnboardingProfile });
+  const profileName = (profileQ.data?.full_name ?? "").trim();
+  const metaName = (user?.user_metadata?.full_name as string | undefined) ?? "";
+  const name = (profileName || metaName).split(" ")[0] || undefined;
 
   const today = new Date().toLocaleDateString(undefined, {
     weekday: "long",
