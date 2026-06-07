@@ -69,6 +69,7 @@ import {
 } from "@/components/ui/select";
 
 export const Route = createFileRoute("/_authenticated/notes")({
+  head: () => ({ meta: [{ title: "Notes · Heartbeat" }] }),
   component: NotesPage,
 });
 

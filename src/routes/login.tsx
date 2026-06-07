@@ -21,7 +21,18 @@ import { toast } from "sonner";
 import heartbeatLogo from "@/assets/heartbeat-horizontal.svg";
 
 export const Route = createFileRoute("/login")({
-  head: () => ({ meta: [{ title: "Sign in · Heartbeat" }] }),
+  head: () => ({
+    meta: [
+      { title: "Sign in to Heartbeat" },
+      { name: "description", content: "Sign in or create your Heartbeat account to manage every business you run from one calm, focused command center." },
+      { property: "og:title", content: "Sign in to Heartbeat" },
+      { property: "og:description", content: "Sign in or create your Heartbeat account to manage every business you run from one calm, focused command center." },
+      { property: "og:url", content: "https://heartbeatcommand.software/login" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://heartbeatcommand.software/login" },
+    ],
+  }),
   component: LoginPage,
 });
 
@@ -134,10 +145,11 @@ function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-10 bg-background">
+    <main className="min-h-screen flex items-center justify-center px-4 py-10 bg-background">
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center mb-8 text-center">
           <img src={heartbeatLogo} alt="Heartbeat" className="h-16 w-auto" />
+          <h1 className="sr-only">Sign in to Heartbeat</h1>
           <p className="mt-3 text-foreground">Organize your world. Move with purpose.</p>
         </div>
 
@@ -376,6 +388,6 @@ function LoginPage() {
           <a href="/privacy" className="hover:text-foreground">Privacy</a>
         </p>
       </div>
-    </div>
+    </main>
   );
 }
