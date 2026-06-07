@@ -46,8 +46,15 @@ export function useSubscription() {
 
   useEffect(() => {
     if (!user) return;
+    // Unique channel name per hook instance — reusing a name returns the
+    // existing channel, and calling .on() after .subscribe() throws
+    // "cannot add postgres_changes callbacks ... after subscribe()".
+    const uniqueId =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const channel = supabase
-      .channel(`subscriptions:${user.id}`)
+      .channel(`subscriptions:${user.id}:${uniqueId}`)
       .on(
         "postgres_changes",
         {
