@@ -80,7 +80,7 @@ export const shareResource = createServerFn({ method: "POST" })
           resource_id: data.resourceId,
           grantee_user_id: granteeId,
           role: data.role,
-          details,
+          details: details as never,
           granted_by: userId,
         },
         { onConflict: "resource_type,resource_id,grantee_user_id" },
