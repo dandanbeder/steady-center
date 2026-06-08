@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 async function requirePlatformAdmin(userId: string) {
@@ -48,7 +48,7 @@ async function countSuperadmins(): Promise<number> {
 
 /** Confirms caller is a superadmin (used to gate /admin route). */
 export const checkIsPlatformAdmin = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .handler(async ({ context }) => {
     const { data } = await supabaseAdmin
       .from("profiles")
@@ -60,7 +60,7 @@ export const checkIsPlatformAdmin = createServerFn({ method: "GET" })
 
 /** List every user with profile, plan, and account count. */
 export const adminListUsers = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .handler(async ({ context }) => {
     await requirePlatformAdmin(context.userId);
     const { data: authData, error } = await supabaseAdmin.auth.admin.listUsers({
@@ -114,7 +114,7 @@ export const adminListUsers = createServerFn({ method: "GET" })
 
 /** Detail bundle for a single user. */
 export const adminGetUser = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) => z.object({ user_id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     await requirePlatformAdmin(context.userId);
@@ -162,7 +162,7 @@ export const adminGetUser = createServerFn({ method: "GET" })
 
 /** Update profile fields. */
 export const adminUpdateProfile = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) =>
     z.object({
       user_id: z.string().uuid(),
@@ -191,7 +191,7 @@ export const adminUpdateProfile = createServerFn({ method: "POST" })
 
 /** Change a user's email. Sends notice to old + new addresses. */
 export const adminChangeUserEmail = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) =>
     z.object({
       user_id: z.string().uuid(),
@@ -229,7 +229,7 @@ export const adminChangeUserEmail = createServerFn({ method: "POST" })
 
 /** Send a verification (signup confirmation) email. */
 export const adminResendVerification = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) => z.object({ user_id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     await requirePlatformAdmin(context.userId);
@@ -245,7 +245,7 @@ export const adminResendVerification = createServerFn({ method: "POST" })
 
 /** Mark a user's email as verified without sending anything. */
 export const adminManuallyVerifyEmail = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) => z.object({ user_id: z.string().uuid(), reason: z.string().min(3).max(500) }).parse(i))
   .handler(async ({ data, context }) => {
     await requirePlatformAdmin(context.userId);
@@ -257,7 +257,7 @@ export const adminManuallyVerifyEmail = createServerFn({ method: "POST" })
 
 /** Generate and send a password reset link. */
 export const adminSendPasswordReset = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) => z.object({ user_id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     await requirePlatformAdmin(context.userId);
@@ -272,7 +272,7 @@ export const adminSendPasswordReset = createServerFn({ method: "POST" })
 
 /** Force sign-out from every device. */
 export const adminRevokeSessions = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) => z.object({ user_id: z.string().uuid(), reason: z.string().min(3).max(500) }).parse(i))
   .handler(async ({ data, context }) => {
     await requirePlatformAdmin(context.userId);
@@ -284,7 +284,7 @@ export const adminRevokeSessions = createServerFn({ method: "POST" })
 
 /** Set a one-time temporary password, force change at next login, sign all sessions out, and email the user. */
 export const adminSetTempPassword = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) => z.object({ user_id: z.string().uuid(), reason: z.string().min(3).max(500) }).parse(i))
   .handler(async ({ data, context }) => {
     await requirePlatformAdmin(context.userId);
@@ -321,7 +321,7 @@ export const adminSetTempPassword = createServerFn({ method: "POST" })
 
 /** Adjust the per-user team seat allotment (stored as an entitlement override). */
 export const adminAdjustSeats = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) =>
     z.object({
       user_id: z.string().uuid(),
@@ -359,7 +359,7 @@ export const adminAdjustSeats = createServerFn({ method: "POST" })
 
 /** Legacy quick-toggle: keep for back-compat. Prefers richer Suspend/Reactivate below. */
 export const adminSetUserStatus = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) => z.object({ user_id: z.string().uuid(), status: z.enum(["active", "suspended"]) }).parse(i))
   .handler(async ({ data, context }) => {
     await requirePlatformAdmin(context.userId);
@@ -382,7 +382,7 @@ export const adminSetUserStatus = createServerFn({ method: "POST" })
 
 /** Suspend with reason + optional user-visible message. */
 export const adminSuspendUser = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) =>
     z.object({
       user_id: z.string().uuid(),
@@ -421,7 +421,7 @@ export const adminSuspendUser = createServerFn({ method: "POST" })
   });
 
 export const adminReactivateUser = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) => z.object({ user_id: z.string().uuid(), reason: z.string().min(3).max(500) }).parse(i))
   .handler(async ({ data, context }) => {
     await requirePlatformAdmin(context.userId);
@@ -447,7 +447,7 @@ export const adminReactivateUser = createServerFn({ method: "POST" })
 
 /** Change a user's platform role, with last-superadmin guard. */
 export const adminSetPlatformRole = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) =>
     z.object({
       user_id: z.string().uuid(),
@@ -487,7 +487,7 @@ export const adminSetPlatformRole = createServerFn({ method: "POST" })
 // ---------- Entitlement overrides ----------
 
 export const adminUpsertEntitlementOverride = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) =>
     z.object({
       id: z.string().uuid().optional(),
@@ -528,7 +528,7 @@ export const adminUpsertEntitlementOverride = createServerFn({ method: "POST" })
   });
 
 export const adminDeleteEntitlementOverride = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     await requirePlatformAdmin(context.userId);
@@ -546,7 +546,7 @@ export const adminDeleteEntitlementOverride = createServerFn({ method: "POST" })
 // ---------- Plan / billing ----------
 
 export const adminCompSubscription = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) =>
     z.object({
       user_id: z.string().uuid(),
@@ -578,7 +578,7 @@ export const adminCompSubscription = createServerFn({ method: "POST" })
   });
 
 export const adminExtendTrial = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) =>
     z.object({
       user_id: z.string().uuid(),
@@ -625,7 +625,7 @@ export const adminExtendTrial = createServerFn({ method: "POST" })
 // ---------- Soft delete (7-day window) ----------
 
 export const adminScheduleUserDeletion = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) =>
     z.object({
       user_id: z.string().uuid(),
@@ -671,7 +671,7 @@ export const adminScheduleUserDeletion = createServerFn({ method: "POST" })
   });
 
 export const adminCancelUserDeletion = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) => z.object({ user_id: z.string().uuid(), reason: z.string().min(3).max(500) }).parse(i))
   .handler(async ({ data, context }) => {
     await requirePlatformAdmin(context.userId);
@@ -692,7 +692,7 @@ export const adminCancelUserDeletion = createServerFn({ method: "POST" })
 // ---------- Audit log readers ----------
 
 export const adminListAuditLog = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) =>
     z.object({ target_user_id: z.string().uuid().optional(), limit: z.number().int().min(1).max(500).default(200) }).parse(i),
   )
@@ -727,7 +727,7 @@ const audienceSchema = z.union([
 ]);
 
 export const adminListAnnouncements = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .handler(async ({ context }) => {
     await requirePlatformAdmin(context.userId);
     const { data, error } = await supabaseAdmin
@@ -739,7 +739,7 @@ export const adminListAnnouncements = createServerFn({ method: "GET" })
   });
 
 export const adminUpsertAnnouncement = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) =>
     z.object({
       id: z.string().uuid().optional(),
@@ -794,7 +794,7 @@ export const adminUpsertAnnouncement = createServerFn({ method: "POST" })
   });
 
 export const adminDeleteAnnouncement = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     await requirePlatformAdmin(context.userId);
@@ -809,7 +809,7 @@ export const adminDeleteAnnouncement = createServerFn({ method: "POST" })
 // ---------- Feature flags ----------
 
 export const adminListFlags = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .handler(async ({ context }) => {
     await requirePlatformAdmin(context.userId);
     const { data, error } = await supabaseAdmin.from("feature_flags").select("*").order("key", { ascending: true });
@@ -818,7 +818,7 @@ export const adminListFlags = createServerFn({ method: "GET" })
   });
 
 export const adminUpsertFlag = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) =>
     z.object({
       id: z.string().uuid().optional(),
@@ -878,7 +878,7 @@ export const adminUpsertFlag = createServerFn({ method: "POST" })
   });
 
 export const adminDeleteFlag = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     await requirePlatformAdmin(context.userId);
@@ -893,7 +893,7 @@ export const adminDeleteFlag = createServerFn({ method: "POST" })
 // ---------- Support sessions ----------
 
 export const adminStartSupportSession = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) =>
     z.object({
       target_user_id: z.string().uuid(),
@@ -923,7 +923,7 @@ export const adminStartSupportSession = createServerFn({ method: "POST" })
   });
 
 export const adminSetSupportSessionMode = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) =>
     z.object({
       session_id: z.string().uuid(),
@@ -959,7 +959,7 @@ export const adminSetSupportSessionMode = createServerFn({ method: "POST" })
   });
 
 export const adminEndSupportSession = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) => z.object({ session_id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     await requirePlatformAdmin(context.userId);
@@ -973,7 +973,7 @@ export const adminEndSupportSession = createServerFn({ method: "POST" })
   });
 
 export const adminGetActiveSession = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .handler(async ({ context }) => {
     const { data } = await supabaseAdmin
       .from("admin_access_log")
@@ -998,7 +998,7 @@ export const adminGetActiveSession = createServerFn({ method: "GET" })
   });
 
 export const adminListAccessLog = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .handler(async ({ context }) => {
     await requirePlatformAdmin(context.userId);
     const { data, error } = await supabaseAdmin

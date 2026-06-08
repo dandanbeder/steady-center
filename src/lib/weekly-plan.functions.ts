@@ -7,7 +7,7 @@
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
 import { requireFeature } from "@/lib/entitlements.server";
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
@@ -34,7 +34,7 @@ const Input = z.object({
 });
 
 export const suggestDeferrals = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((data) => Input.parse(data))
   .handler(async ({ data, context }): Promise<SuggestResult> => {
     const { supabase, userId } = context;

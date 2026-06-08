@@ -1511,6 +1511,7 @@ export type Database = {
           weekly_review_day: number
           weekly_review_enabled: boolean
           weekly_review_hour: number
+          welcome_email_sent_at: string | null
           work_days: number[]
           work_end_hour: number
           work_start_hour: number
@@ -1546,6 +1547,7 @@ export type Database = {
           weekly_review_day?: number
           weekly_review_enabled?: boolean
           weekly_review_hour?: number
+          welcome_email_sent_at?: string | null
           work_days?: number[]
           work_end_hour?: number
           work_start_hour?: number
@@ -1581,6 +1583,7 @@ export type Database = {
           weekly_review_day?: number
           weekly_review_enabled?: boolean
           weekly_review_hour?: number
+          welcome_email_sent_at?: string | null
           work_days?: number[]
           work_end_hour?: number
           work_start_hour?: number

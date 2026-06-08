@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import { createHash } from "crypto";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { brandedEmail, getAppOrigin, sendEmail } from "./email.server";
 
@@ -86,7 +86,7 @@ export const requestPasswordReset = createServerFn({ method: "POST" })
  * provided current password; the new password is then set via the admin API.
  */
 export const changePassword = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) =>
     z
       .object({

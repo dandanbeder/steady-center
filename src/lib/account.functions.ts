@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const AUDIO_BUCKET = "meeting-audio";
@@ -95,7 +95,7 @@ async function deleteBusinessAttachments(businessId: string) {
 
 /** Delete a business + all its child data (DB cascade) and its storage files. */
 export const deleteBusinessCascade = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((input) => z.object({ business_id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -109,7 +109,7 @@ export const deleteBusinessCascade = createServerFn({ method: "POST" })
 
 /** Delete one meeting's stored recording, clear audio_path + keep_recording. */
 export const deleteMeetingRecording = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((input) => z.object({ meeting_id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -133,7 +133,7 @@ export const deleteMeetingRecording = createServerFn({ method: "POST" })
 
 /** Permanently delete the signed-in user, all owned rows, and all storage files (POPIA s24). */
 export const deleteMyAccount = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((input) =>
     z.object({ confirm: z.literal("DELETE") }).parse(input),
   )

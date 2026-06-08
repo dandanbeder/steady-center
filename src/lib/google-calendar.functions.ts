@@ -6,7 +6,7 @@
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
 
 const GATEWAY = "https://connector-gateway.lovable.dev/google_calendar/calendar/v3";
 
@@ -38,7 +38,7 @@ async function gFetch(path: string, init?: RequestInit) {
 // ---------------- Remote calendar list ----------------
 
 export const listRemoteGoogleCalendars = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .handler(async () => {
     const json = await gFetch("/users/me/calendarList?minAccessRole=writer&maxResults=250");
     const items: Array<{ id: string; summary: string; backgroundColor?: string; primary?: boolean }> = json?.items ?? [];
@@ -53,7 +53,7 @@ export const listRemoteGoogleCalendars = createServerFn({ method: "GET" })
 // ---------------- Import a remote calendar ----------------
 
 export const importGoogleCalendar = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((input: unknown) =>
     z
       .object({
@@ -97,7 +97,7 @@ export const importGoogleCalendar = createServerFn({ method: "POST" })
 // ---------------- Sync a single calendar (callable from UI) ----------------
 
 export const syncGoogleCalendarNow = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((input: unknown) => z.object({ calendar_id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
@@ -121,7 +121,7 @@ const eventPushInput = z.object({
 });
 
 export const pushEventToGoogle = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((input: unknown) => eventPushInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
@@ -161,7 +161,7 @@ export const pushEventToGoogle = createServerFn({ method: "POST" })
   });
 
 export const deleteEventInGoogle = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((input: unknown) =>
     z.object({ event_id: z.string().uuid() }).parse(input),
   )

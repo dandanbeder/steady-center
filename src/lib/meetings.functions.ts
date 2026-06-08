@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const InputSchema = z.object({
@@ -123,7 +123,7 @@ async function summarizeTranscript(transcript: string): Promise<z.infer<typeof S
 }
 
 export const processMeeting = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((input) => InputSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;

@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const ASSIGNABLE_ROLES = ["admin", "member", "commenter", "viewer"] as const;
@@ -134,7 +134,7 @@ async function findUserByEmail(email: string) {
 
 /** Invite a user by email. Always returns ok:true (no account enumeration). */
 export const inviteByEmail = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) =>
     z
       .object({
@@ -223,7 +223,7 @@ export const inviteByEmail = createServerFn({ method: "POST" })
 
 /** List invitations for an account (admin+). */
 export const listInvitations = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) => z.object({ business_id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { userId } = context;
@@ -239,7 +239,7 @@ export const listInvitations = createServerFn({ method: "POST" })
 
 /** Revoke an invitation. */
 export const revokeInvitation = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) => z.object({ invitation_id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { userId } = context;
@@ -260,7 +260,7 @@ export const revokeInvitation = createServerFn({ method: "POST" })
 
 /** Resend an invitation email (refresh token + expiry). */
 export const resendInvitation = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) => z.object({ invitation_id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { userId } = context;
@@ -297,7 +297,7 @@ export const resendInvitation = createServerFn({ method: "POST" })
 
 /** Look up the invitation matching a token. Public-ish: only useful if you have the token. */
 export const getInvitationByToken = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) => z.object({ token: z.string().uuid() }).parse(i))
   .handler(async ({ data }) => {
     const { data: inv } = await supabaseAdmin
@@ -316,7 +316,7 @@ export const getInvitationByToken = createServerFn({ method: "POST" })
 
 /** List invitations matching the signed-in user's email (signed-in users). */
 export const listMyInvitations = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .handler(async ({ context }) => {
     const { userId } = context;
     const { data: u } = await supabaseAdmin.auth.admin.getUserById(userId);
@@ -360,7 +360,7 @@ export const listMyInvitations = createServerFn({ method: "POST" })
 
 /** Create an access request for the signed-in user based on an invitation token. */
 export const requestAccess = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) =>
     z.object({ token: z.string().uuid(), message: z.string().max(500).optional() }).parse(i),
   )
@@ -421,7 +421,7 @@ export const requestAccess = createServerFn({ method: "POST" })
 
 /** Admin+ — list pending access requests for an account. */
 export const listPendingRequests = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) => z.object({ business_id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { userId } = context;
@@ -454,7 +454,7 @@ export const listPendingRequests = createServerFn({ method: "POST" })
 
 /** Admin+ — approve or deny an access request. On approve, creates an active membership. */
 export const decideAccessRequest = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) =>
     z
       .object({

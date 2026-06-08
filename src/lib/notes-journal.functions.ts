@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 const MODEL = "claude-sonnet-4-20250514";
@@ -36,7 +36,7 @@ async function callClaude(opts: { system: string; user: string; maxTokens?: numb
 // attended, and notes made today. Returns markdown; user accepts/edits.
 // =============================================================
 export const journalPrefillToday = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i: unknown) =>
     z
       .object({
@@ -150,7 +150,7 @@ Keep it short, warm, and factual. Use the activity to populate "What happened to
 // Always returns the source notes so the user can verify.
 // =============================================================
 export const askNotes = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i: unknown) =>
     z
       .object({

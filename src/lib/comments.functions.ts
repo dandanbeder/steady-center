@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
 
 const PARENT = z.enum(["task", "note", "event", "meeting"]);
 const ParentInput = z.object({
@@ -9,7 +9,7 @@ const ParentInput = z.object({
 });
 
 export const listComments = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) => ParentInput.parse(i))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
@@ -66,7 +66,7 @@ export const listComments = createServerFn({ method: "POST" })
 
 
 export const addComment = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) =>
     ParentInput.extend({ body: z.string().trim().min(1).max(8000) }).parse(i),
   )
@@ -87,7 +87,7 @@ export const addComment = createServerFn({ method: "POST" })
   });
 
 export const editComment = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) =>
     z.object({ id: z.string().uuid(), body: z.string().trim().min(1).max(8000) }).parse(i),
   )
@@ -102,7 +102,7 @@ export const editComment = createServerFn({ method: "POST" })
   });
 
 export const deleteComment = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
@@ -116,7 +116,7 @@ export const deleteComment = createServerFn({ method: "POST" })
 
 /** Returns mention candidates (members of the parent's account + people tagged on the item). */
 export const suggestMentionTargets = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) => ParentInput.parse(i))
   .handler(async ({ data, context }) => {
     const { supabase } = context;

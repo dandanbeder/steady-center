@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 const MODEL = "claude-sonnet-4-5";
@@ -292,7 +292,7 @@ async function callClaude(messages: AnthropicMsg[], system: string): Promise<any
 // chat — main assistant turn (tool loop, proposes writes)
 // =================================================================
 export const assistantChat = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i: unknown) =>
     z
       .object({
@@ -400,7 +400,7 @@ user can approve a proposal. Keep answers concise (markdown ok). If a tool retur
 // applyAction — performs an approved proposal (write) with user RLS
 // =================================================================
 export const applyAssistantAction = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i: unknown) =>
     z
       .object({

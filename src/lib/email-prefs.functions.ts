@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
 import { brandedEmail, sendEmail, getAppOrigin } from "./email.server";
 
 /** Look up a token, return the masked email if valid + current opt-in state. */
@@ -74,7 +74,7 @@ export const confirmUnsubscribe = createServerFn({ method: "POST" })
 
 /** Authenticated: read the current user's marketing opt-in state. */
 export const getMarketingOptIn = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
     const { data } = await supabase
@@ -87,7 +87,7 @@ export const getMarketingOptIn = createServerFn({ method: "GET" })
 
 /** Authenticated: toggle marketing opt-in on/off from the preferences UI. */
 export const setMarketingOptIn = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) => z.object({ optedIn: z.boolean() }).parse(i))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
