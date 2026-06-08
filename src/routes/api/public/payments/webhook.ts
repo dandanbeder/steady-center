@@ -32,6 +32,11 @@ async function handleSubscriptionCreated(data: any, env: PaddleEnv) {
     });
     return;
   }
+  const quantity = Number(item.quantity ?? 1);
+  const billingCycle = item.price?.billingCycle?.interval === "year" ? "year" : "month";
+  const trialEnd = data.startedAt && data.firstBilledAt && data.startedAt !== data.firstBilledAt
+    ? data.firstBilledAt
+    : null;
 
   await getSupabase().from("subscriptions").upsert(
     {
@@ -43,6 +48,9 @@ async function handleSubscriptionCreated(data: any, env: PaddleEnv) {
       status,
       current_period_start: currentBillingPeriod?.startsAt,
       current_period_end: currentBillingPeriod?.endsAt,
+      quantity,
+      billing_cycle: billingCycle,
+      trial_end: trialEnd,
       environment: env,
       updated_at: new Date().toISOString(),
     },
@@ -56,6 +64,8 @@ async function handleSubscriptionUpdated(data: any, env: PaddleEnv) {
   const item = items?.[0];
   const priceId = item?.price?.importMeta?.externalId;
   const productId = item?.product?.importMeta?.externalId;
+  const quantity = item?.quantity != null ? Number(item.quantity) : undefined;
+  const billingCycle = item?.price?.billingCycle?.interval === "year" ? "year" : item?.price?.billingCycle?.interval === "month" ? "month" : undefined;
 
   const update: Record<string, unknown> = {
     status,
@@ -64,9 +74,10 @@ async function handleSubscriptionUpdated(data: any, env: PaddleEnv) {
     cancel_at_period_end: scheduledChange?.action === "cancel",
     updated_at: new Date().toISOString(),
   };
-  // Plan changes (upgrade/downgrade) — keep price_id/product_id in sync.
   if (priceId) update.price_id = priceId;
   if (productId) update.product_id = productId;
+  if (quantity != null) update.quantity = quantity;
+  if (billingCycle) update.billing_cycle = billingCycle;
 
   await getSupabase()
     .from("subscriptions")
