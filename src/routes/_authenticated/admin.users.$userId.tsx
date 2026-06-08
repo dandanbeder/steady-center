@@ -665,3 +665,373 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     </div>
   );
 }
+
+// ============================================================
+// Customer 360 — additional sections
+// ============================================================
+
+function ViewAsButton({ targetUserId }: { targetUserId: string }) {
+  const startFn = useServerFn(adminStartSupportSession);
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const mut = useMutation({
+    mutationFn: (reason: string) =>
+      startFn({ data: { target_user_id: targetUserId, reason, mode: "read" } }),
+    onSuccess: () => {
+      toast.success("Support session started (read-only)");
+      qc.invalidateQueries({ queryKey: ["admin"] });
+      setOpen(false);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  return (
+    <>
+      <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
+        <Eye className="h-4 w-4 mr-1" /> View as user
+      </Button>
+      <ReasonConfirmDialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Start read-only support session?"
+        description="Opens this user's account in read-only mode. You can switch to write later from the banner. All actions are logged."
+        confirmLabel="Start session"
+        pending={mut.isPending}
+        onConfirm={(r) => mut.mutate(r)}
+      />
+    </>
+  );
+}
+
+function Customer360Sections({ userId, onDone }: { userId: string; onDone: () => void }) {
+  const fn = useServerFn(adminGetCustomer360);
+  const q = useQuery({
+    queryKey: ["admin", "customer360", userId],
+    queryFn: () => fn({ data: { user_id: userId } }),
+  });
+  if (q.isLoading) return <div className="text-sm text-muted-foreground">Loading customer view…</div>;
+  if (!q.data) return null;
+  const c = q.data;
+  return (
+    <>
+      <UsageSection c={c} />
+      <SharingSection c={c} />
+      <SupportHistorySection c={c} />
+      <NotesSection targetUserId={userId} notes={c.notes} onDone={onDone} />
+      <FeatureFlagsSection userId={userId} flags={c.feature_flags} onDone={onDone} />
+    </>
+  );
+}
+
+function UsageSection({ c }: { c: any }) {
+  const aiPct =
+    c.usage.ai_actions_cap > 0
+      ? Math.min(100, Math.round((c.usage.ai_actions_used / c.usage.ai_actions_cap) * 100))
+      : 0;
+  return (
+    <Section icon={Gauge} title="Usage & activity">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-sm">
+        <Stat label="AI actions (this month)" value={`${c.usage.ai_actions_used} / ${c.usage.ai_actions_cap}`} sub={`${aiPct}% used`} />
+        <Stat label="AI spend (this month)" value={`$${(c.usage.ai_cents / 100).toFixed(2)}`} />
+        <Stat label="Accounts owned" value={c.usage.accounts_owned} />
+        <Stat label="Real connections" value={c.usage.connections_count} sub={`${c.usage.calendars.length} calendars`} />
+      </div>
+      {c.usage.ai_history.length > 0 && (
+        <div className="text-xs text-muted-foreground">
+          History:{" "}
+          {c.usage.ai_history.map((h: any) => `${h.month}: ${h.actions}`).join(" · ")}
+        </div>
+      )}
+      <div>
+        <div className="text-sm font-medium mb-1 flex items-center gap-1"><Activity className="h-3.5 w-3.5" /> Recent activity (30d)</div>
+        {c.activity.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No recorded events.</p>
+        ) : (
+          <div className="space-y-1 max-h-60 overflow-y-auto pr-1">
+            {c.activity.slice(0, 30).map((a: any) => (
+              <div key={a.id} className="text-xs flex items-center justify-between border-b pb-1">
+                <span><code>{a.type}</code>{a.account_name ? ` · ${a.account_name}` : ""}</span>
+                <span className="text-muted-foreground">{new Date(a.created_at).toLocaleString()}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </Section>
+  );
+}
+
+function SharingSection({ c }: { c: any }) {
+  return (
+    <Section icon={Users} title="Team & sharing">
+      <div>
+        <div className="text-sm font-medium mb-1">Memberships ({c.usage.memberships.length})</div>
+        {c.usage.memberships.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No team memberships.</p>
+        ) : (
+          <div className="space-y-1">
+            {c.usage.memberships.map((m: any) => (
+              <div key={m.id} className="text-sm flex items-center justify-between border rounded p-2">
+                <span>{m.business_name}</span>
+                <span className="flex items-center gap-1">
+                  <Badge variant="outline">{m.role}</Badge>
+                  <Badge variant={m.status === "active" ? "secondary" : "outline"}>{m.status}</Badge>
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <div className="text-sm font-medium mb-1">Shared by user ({c.sharing.granted.length})</div>
+          {c.sharing.granted.length === 0 ? (
+            <p className="text-xs text-muted-foreground">None.</p>
+          ) : (
+            <div className="text-xs space-y-1 max-h-40 overflow-y-auto">
+              {c.sharing.granted.slice(0, 50).map((s: any) => (
+                <div key={s.id}>{s.resource_type} → {s.grantee_email || s.grantee_user_id.slice(0, 8)} ({s.role})</div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div>
+          <div className="text-sm font-medium mb-1">Shared with user ({c.sharing.received.length})</div>
+          {c.sharing.received.length === 0 ? (
+            <p className="text-xs text-muted-foreground">None.</p>
+          ) : (
+            <div className="text-xs space-y-1 max-h-40 overflow-y-auto">
+              {c.sharing.received.slice(0, 50).map((s: any) => (
+                <div key={s.id}>{s.resource_type} from {s.granter_email || (s.granted_by ?? "—").slice(0, 8)} ({s.role})</div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+function SupportHistorySection({ c }: { c: any }) {
+  return (
+    <Section icon={Eye} title="Support history">
+      <div>
+        <div className="text-sm font-medium mb-1">View-as sessions ({c.support.sessions.length})</div>
+        {c.support.sessions.length === 0 ? (
+          <p className="text-xs text-muted-foreground">None yet.</p>
+        ) : (
+          <div className="space-y-1 max-h-44 overflow-y-auto">
+            {c.support.sessions.map((s: any) => (
+              <div key={s.id} className="text-xs border rounded p-2">
+                <div className="flex items-center justify-between">
+                  <span><Badge variant={s.mode === "write" ? "destructive" : "outline"}>{s.mode}</Badge> {s.admin_email}</span>
+                  <span className="text-muted-foreground">
+                    {new Date(s.started_at).toLocaleString()}{s.ended_at ? ` → ${new Date(s.ended_at).toLocaleTimeString()}` : " (active)"}
+                  </span>
+                </div>
+                {s.reason && <div className="text-muted-foreground mt-1">{s.reason}</div>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      <div>
+        <div className="text-sm font-medium mb-1">Admin actions ({c.support.actions.length})</div>
+        {c.support.actions.length === 0 ? (
+          <p className="text-xs text-muted-foreground">None yet.</p>
+        ) : (
+          <div className="space-y-1 max-h-60 overflow-y-auto">
+            {c.support.actions.map((a: any) => (
+              <div key={a.id} className="text-xs border rounded p-2">
+                <div className="flex items-center justify-between">
+                  <span><code>{a.action}</code> · {a.admin_email}</span>
+                  <span className="text-muted-foreground">{new Date(a.created_at).toLocaleString()}</span>
+                </div>
+                {a.reason && <div className="text-muted-foreground mt-1">{a.reason}</div>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </Section>
+  );
+}
+
+function NotesSection({
+  targetUserId,
+  notes,
+  onDone,
+}: {
+  targetUserId: string;
+  notes: any[];
+  onDone: () => void;
+}) {
+  const addFn = useServerFn(adminAddCustomerNote);
+  const updFn = useServerFn(adminUpdateCustomerNote);
+  const delFn = useServerFn(adminDeleteCustomerNote);
+  const [body, setBody] = useState("");
+  const [pinned, setPinned] = useState(false);
+  const addMut = useMutation({
+    mutationFn: () => addFn({ data: { target_user_id: targetUserId, body, pinned } }),
+    onSuccess: () => { toast.success("Note added"); setBody(""); setPinned(false); onDone(); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const pinMut = useMutation({
+    mutationFn: (n: any) => updFn({ data: { id: n.id, pinned: !n.pinned } }),
+    onSuccess: () => onDone(),
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const delMut = useMutation({
+    mutationFn: (id: string) => delFn({ data: { id } }),
+    onSuccess: () => { toast.success("Note removed"); onDone(); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  return (
+    <Section icon={StickyNote} title="Internal admin notes">
+      <div className="space-y-2">
+        <Textarea
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          placeholder="Add an internal note about this customer (not visible to them)…"
+          rows={3}
+        />
+        <div className="flex items-center justify-between">
+          <label className="flex items-center gap-2 text-sm">
+            <Switch checked={pinned} onCheckedChange={setPinned} /> Pin
+          </label>
+          <Button onClick={() => addMut.mutate()} disabled={!body.trim() || addMut.isPending}>
+            <Plus className="h-4 w-4 mr-1" /> Add note
+          </Button>
+        </div>
+      </div>
+      <div className="space-y-2">
+        {notes.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No notes yet.</p>
+        ) : (
+          notes.map((n) => (
+            <div key={n.id} className={`border rounded p-3 text-sm ${n.pinned ? "bg-accent/30" : ""}`}>
+              <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                <span>{n.author_email || "admin"} · {new Date(n.created_at).toLocaleString()}</span>
+                <div className="flex items-center gap-1">
+                  <Button size="icon" variant="ghost" onClick={() => pinMut.mutate(n)} title={n.pinned ? "Unpin" : "Pin"}>
+                    {n.pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+                  </Button>
+                  <Button size="icon" variant="ghost" onClick={() => delMut.mutate(n.id)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              <div className="whitespace-pre-wrap">{n.body}</div>
+            </div>
+          ))
+        )}
+      </div>
+    </Section>
+  );
+}
+
+function FeatureFlagsSection({
+  userId,
+  flags,
+  onDone,
+}: {
+  userId: string;
+  flags: any[];
+  onDone: () => void;
+}) {
+  const setFn = useServerFn(adminSetUserFeatureFlag);
+  const clearFn = useServerFn(adminClearUserFeatureFlag);
+  const [open, setOpen] = useState(false);
+  const [key, setKey] = useState("");
+  const [enabled, setEnabled] = useState(true);
+  const [expires, setExpires] = useState("");
+  const setMut = useMutation({
+    mutationFn: (reason: string) =>
+      setFn({
+        data: {
+          user_id: userId,
+          flag_key: key,
+          enabled,
+          expires_at: expires ? new Date(expires).toISOString() : null,
+          reason,
+        },
+      }),
+    onSuccess: () => { toast.success("Flag override saved"); setOpen(false); setKey(""); setExpires(""); onDone(); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const clearMut = useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      clearFn({ data: { id, reason } }),
+    onSuccess: () => { toast.success("Flag cleared"); onDone(); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  return (
+    <Section icon={Flag} title="Per-user feature flags">
+      {flags.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No per-user flag overrides.</p>
+      ) : (
+        <div className="space-y-2">
+          {flags.map((f) => (
+            <div key={f.id} className="border rounded p-3 text-sm flex items-center justify-between">
+              <div>
+                <div><code className="text-xs">{f.flag_key}</code> <Badge variant={f.enabled ? "default" : "outline"}>{f.enabled ? "on" : "off"}</Badge></div>
+                <div className="text-xs text-muted-foreground">
+                  {f.expires_at ? `expires ${new Date(f.expires_at).toLocaleString()}` : "no expiry"}
+                  {f.reason ? ` · ${f.reason}` : ""}
+                  {f.created_by_email ? ` · by ${f.created_by_email}` : ""}
+                </div>
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() =>
+                  clearMut.mutate({ id: f.id, reason: "cleared via Customer 360" })
+                }
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <Field label="Flag key">
+          <Input value={key} onChange={(e) => setKey(e.target.value)} placeholder="beta_meetings_v2" />
+        </Field>
+        <Field label="State">
+          <Select value={enabled ? "on" : "off"} onValueChange={(v) => setEnabled(v === "on")}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="on">Enabled</SelectItem>
+              <SelectItem value="off">Disabled</SelectItem>
+            </SelectContent>
+          </Select>
+        </Field>
+        <Field label="Expires (optional)">
+          <Input type="date" value={expires} onChange={(e) => setExpires(e.target.value)} />
+        </Field>
+      </div>
+      <div className="flex justify-end">
+        <Button disabled={!key.trim()} onClick={() => setOpen(true)}>Save override</Button>
+      </div>
+      <ReasonConfirmDialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Set per-user feature flag?"
+        description="This overrides the global flag setting for this user only."
+        confirmLabel="Save"
+        pending={setMut.isPending}
+        onConfirm={(r) => setMut.mutate(r)}
+      />
+    </Section>
+  );
+}
+
+function Stat({ label, value, sub }: { label: string; value: React.ReactNode; sub?: string }) {
+  return (
+    <div className="border rounded p-3">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="text-lg font-semibold">{value}</div>
+      {sub && <div className="text-xs text-muted-foreground">{sub}</div>}
+    </div>
+  );
+}
