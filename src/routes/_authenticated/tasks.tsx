@@ -969,6 +969,8 @@ function TaskRow({
   onToggleSelect,
   onChange,
   onOpen,
+  members = [],
+  myId = null,
 }: {
   task: Task;
   subtasks: Task[];
@@ -978,6 +980,8 @@ function TaskRow({
   onToggleSelect: () => void;
   onChange: () => void;
   onOpen: (t: Task) => void;
+  members?: AssignableMember[];
+  myId?: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const [subTitle, setSubTitle] = useState("");
