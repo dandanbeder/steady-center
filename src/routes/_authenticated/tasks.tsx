@@ -44,6 +44,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { TagPeople } from "@/components/tag-people";
+import { ActivityAndComments } from "@/components/comments/activity-and-comments";
+
 import { ReminderControls } from "@/components/reminder-controls";
 import {
   DropdownMenu,
