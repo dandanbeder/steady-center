@@ -72,7 +72,6 @@ function AdminPortal() {
 // =================== USERS ===================
 function UsersPanel() {
   const listFn = useServerFn(adminListUsers);
-  const statusFn = useServerFn(adminSetUserStatus);
   const roleFn = useServerFn(adminSetPlatformRole);
   const startFn = useServerFn(adminStartSupportSession);
   const qc = useQueryClient();
@@ -82,11 +81,6 @@ function UsersPanel() {
     queryFn: () => listFn(),
   });
 
-  const statusMut = useMutation({
-    mutationFn: (v: { user_id: string; status: "active" | "suspended" }) => statusFn({ data: v }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin", "users"] }); toast.success("Updated"); },
-    onError: (e: Error) => toast.error(e.message),
-  });
   const roleMut = useMutation({
     mutationFn: (v: { user_id: string; platform_role: "user" | "superadmin" }) => roleFn({ data: v }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin", "users"] }); toast.success("Role updated"); },
