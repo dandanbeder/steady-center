@@ -76,6 +76,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "google-site-verification", content: "CaXsy9GwOCQZAzEfagnJ4B3rUdbd5Q7VWuL8wwccKXA" },
       { title: "Heartbeat — Calm command center for your businesses" },
       { name: "description", content: "Heartbeat brings calendars, tasks, notes and meetings for every business you run into one calm, focused workspace — so you can move with purpose without switching tools." },
       { name: "theme-color", content: "#F5F0E8" },
