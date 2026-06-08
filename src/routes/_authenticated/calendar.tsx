@@ -1938,6 +1938,16 @@ function EditEventDialog({
             />
           </div>
 
+          {/* Activity & comments */}
+          <div className="border-t border-border pt-3">
+            <ActivityAndComments
+              parentType="event"
+              parentId={event.id}
+              businessId={event.business_id}
+            />
+          </div>
+
+
           {/* Linked items */}
           <div className="border-t border-border pt-3">
             <Label className="flex items-center gap-1.5 mb-2">
