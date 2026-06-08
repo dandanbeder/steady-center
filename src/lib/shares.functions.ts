@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 export type ResourceType = "folder" | "list" | "task" | "note" | "calendar";
@@ -34,7 +34,7 @@ async function assertCanManage(userId: string, type: ResourceType, id: string) {
 }
 
 export const shareResource = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((d: {
     resourceType: ResourceType;
     resourceId: string;
@@ -92,7 +92,7 @@ export const shareResource = createServerFn({ method: "POST" })
   });
 
 export const revokeShare = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((d: { shareId: string }) => d)
   .handler(async ({ data, context }) => {
     const { userId } = context;
@@ -106,7 +106,7 @@ export const revokeShare = createServerFn({ method: "POST" })
   });
 
 export const updateShareRole = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((d: { shareId: string; role: ShareRole; busyOnly?: boolean }) => d)
   .handler(async ({ data, context }) => {
     const { userId } = context;
@@ -135,7 +135,7 @@ export type ShareGrantee = {
 };
 
 export const listShares = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((d: { resourceType: ResourceType; resourceId: string }) => d)
   .handler(async ({ data, context }): Promise<ShareGrantee[]> => {
     const { userId } = context;
@@ -179,7 +179,7 @@ export type SharedItemRow = {
 };
 
 export const listSharedWithMeResources = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .handler(async ({ context }): Promise<SharedItemRow[]> => {
     const { userId } = context;
     const { data: rows } = await supabaseAdmin
@@ -240,7 +240,7 @@ export const listSharedWithMeResources = createServerFn({ method: "GET" })
   });
 
 export const suggestShareTargets = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((d: { query?: string }) => d)
   .handler(async ({ data, context }) => {
     const { userId } = context;

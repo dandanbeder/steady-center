@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 type SharedRow = {
@@ -18,7 +18,7 @@ type SharedRow = {
  * Uses admin client to bypass RLS (we explicitly scope to auth.uid()).
  */
 export const listSharedWithMe = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .handler(async ({ context }): Promise<SharedRow[]> => {
     const { userId } = context;
     const { data: tags, error } = await supabaseAdmin
@@ -105,7 +105,7 @@ export const listSharedWithMe = createServerFn({ method: "GET" })
  * digest email. Idempotent via notified_at.
  */
 export const notifyClaimedTags = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .handler(async ({ context }) => {
     const { userId } = context;
     const { data: u } = await supabaseAdmin.auth.admin.getUserById(userId);
@@ -178,7 +178,7 @@ export const notifyClaimedTags = createServerFn({ method: "POST" })
 
 /** Suggest member emails for autocomplete in tag input. */
 export const suggestMemberEmails = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .handler(async ({ context }) => {
     const { userId } = context;
     const { data: mems } = await supabaseAdmin

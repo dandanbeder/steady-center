@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
 
 const InputSchema = z.object({
   inbox_id: z.string().uuid(),
@@ -8,7 +8,7 @@ const InputSchema = z.object({
 });
 
 export const suggestInboxItem = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((input) => InputSchema.parse(input))
   .handler(async ({ data, context }) => {
     const apiKey = process.env.LOVABLE_API_KEY;

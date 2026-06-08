@@ -1,11 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
 import { generatePulseForUser } from "@/lib/daily-pulse-generator.server";
 
 /** Manually generate (or refresh) today's pulse for the signed-in user. */
 export const generateMyPulse = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) => z.object({ kind: z.enum(["morning", "evening"]) }).parse(i))
   .handler(async ({ data, context }) => {
     const { userId, supabase } = context;

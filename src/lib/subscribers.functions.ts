@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
   sendMarketingEmail,
@@ -33,7 +33,7 @@ export interface SubscriberRow {
 
 /** List every account with marketing + subscription state (superadmin only). */
 export const adminListSubscribers = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .handler(async ({ context }): Promise<SubscriberRow[]> => {
     await requirePlatformAdmin(context.userId);
 
@@ -67,7 +67,7 @@ export const adminListSubscribers = createServerFn({ method: "GET" })
 
 /** Compose & send a branded product-update email to all opted-in subscribers. */
 export const adminSendSubscriberCampaign = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) =>
     z
       .object({
@@ -160,7 +160,7 @@ export const adminSendSubscriberCampaign = createServerFn({ method: "POST" })
 
 /** Update a subscriber's subscription status (superadmin only). */
 export const adminSetSubscriptionStatus = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) =>
     z.object({
       user_id: z.string().uuid(),

@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 const MODEL = "claude-sonnet-4-20250514";
@@ -97,7 +97,7 @@ async function loadNoteContext(
 // 1. Summarize note (+ optional attachments)
 // =================================================================
 export const summarizeNote = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i: unknown) =>
     z
       .object({
@@ -130,7 +130,7 @@ Be specific. Do not invent facts. Quote names/dates verbatim when present.`;
 // 2. Organize brain dump → clean structured note
 // =================================================================
 export const organizeBrainDump = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i: unknown) =>
     z.object({ rawText: z.string().min(1).max(MAX_INPUT_CHARS) }).parse(i),
   )
@@ -165,7 +165,7 @@ Rules:
 // 3. Suggest title, folder, people
 // =================================================================
 export const suggestNoteMeta = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i: unknown) =>
     z.object({ noteId: z.string().uuid() }).parse(i),
   )
@@ -225,7 +225,7 @@ ${members.map((m) => `${m.email}${m.full_name ? ` (${m.full_name})` : ""}`).join
 // 4. Extract action items
 // =================================================================
 export const extractActions = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i: unknown) =>
     z.object({ noteId: z.string().uuid() }).parse(i),
   )
@@ -272,7 +272,7 @@ Rules:
 // 5. Guide me — concrete next steps + optional subtasks
 // =================================================================
 export const guideMe = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i: unknown) =>
     z.object({ noteId: z.string().uuid() }).parse(i),
   )
@@ -305,7 +305,7 @@ If nothing is big enough to break down, set big_item to null. Max 6 subtasks. Be
 // 6. Voice clean-up (wrapper around organizeBrainDump for clarity)
 // =================================================================
 export const cleanupTranscript = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i: unknown) =>
     z.object({ transcript: z.string().min(1).max(MAX_INPUT_CHARS) }).parse(i),
   )

@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const ATTACHMENT_BUCKET = "note-attachments";
@@ -8,7 +8,7 @@ const MAX_BYTES = 15 * 1024 * 1024;
 const MAX_TEXT_CHARS = 200_000;
 
 export const extractAttachmentText = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((input: unknown) =>
     z.object({ attachmentId: z.string().uuid() }).parse(input),
   )

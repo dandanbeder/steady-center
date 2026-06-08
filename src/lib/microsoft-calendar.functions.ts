@@ -6,14 +6,14 @@
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
 
 // ============================================================
 // Status / connection
 // ============================================================
 
 export const getMicrosoftStatus = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .handler(async ({ context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data } = await supabaseAdmin
@@ -30,7 +30,7 @@ export const getMicrosoftStatus = createServerFn({ method: "GET" })
   });
 
 export const startMicrosoftOAuth = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((input: unknown) =>
     z.object({ origin: z.string().url() }).parse(input),
   )
@@ -70,7 +70,7 @@ export const completeMicrosoftOAuth = createServerFn({ method: "POST" })
   });
 
 export const disconnectMicrosoft = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((input: unknown) =>
     z.object({ remove_events: z.boolean().default(false) }).parse(input),
   )
@@ -114,7 +114,7 @@ export const disconnectMicrosoft = createServerFn({ method: "POST" })
 // ============================================================
 
 export const listRemoteMicrosoftCalendars = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .handler(async ({ context }) => {
     const { graphJson } = await import("./microsoft-calendar.server");
     const json = await graphJson<{
@@ -131,7 +131,7 @@ export const listRemoteMicrosoftCalendars = createServerFn({ method: "GET" })
   });
 
 export const importMicrosoftCalendar = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((input: unknown) =>
     z
       .object({
@@ -182,7 +182,7 @@ export const importMicrosoftCalendar = createServerFn({ method: "POST" })
   });
 
 export const syncMicrosoftCalendarNow = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((input: unknown) => z.object({ calendar_id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -206,7 +206,7 @@ export const syncMicrosoftCalendarNow = createServerFn({ method: "POST" })
 // ============================================================
 
 export const pushEventToMicrosoft = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((input: unknown) => z.object({ event_id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
@@ -246,7 +246,7 @@ export const pushEventToMicrosoft = createServerFn({ method: "POST" })
   });
 
 export const deleteEventInMicrosoft = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((input: unknown) => z.object({ event_id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;

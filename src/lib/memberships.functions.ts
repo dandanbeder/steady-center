@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const ALL_ROLES = ["owner", "admin", "member", "commenter", "viewer"] as const;
@@ -34,7 +34,7 @@ async function requireRole(
 
 /** List active members of a business (admin+ only). */
 export const listMembers = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) => z.object({ business_id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
@@ -47,7 +47,7 @@ export const listMembers = createServerFn({ method: "POST" })
 
 /** Get the caller's role in a business (or null). */
 export const myRole = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) => z.object({ business_id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
@@ -62,7 +62,7 @@ export const myRole = createServerFn({ method: "POST" })
 
 /** Update a member's role. admin+ for non-owner; owner-only to grant/transfer owner. */
 export const updateMemberRole = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) =>
     z.object({ membership_id: z.string().uuid(), role: z.enum(ALL_ROLES) }).parse(i),
   )
@@ -88,7 +88,7 @@ export const updateMemberRole = createServerFn({ method: "POST" })
 
 /** Remove a member. admin+; can't remove the last owner. */
 export const removeMember = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .inputValidator((i) => z.object({ membership_id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { userId } = context;

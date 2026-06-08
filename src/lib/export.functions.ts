@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
 
 type JsonValue = string | number | boolean | null | JsonValue[] | { [k: string]: JsonValue };
 type Row = Record<string, JsonValue>;
@@ -41,7 +41,7 @@ const USER_TABLES = [
 
 /** Export all data owned by the current user as a single JSON object (POPIA s23 / right of access). */
 export const exportMyData = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .handler(async ({ context }): Promise<ExportPayload> => {
     const { supabase, userId } = context;
     const tables: Record<string, Row[]> = {};

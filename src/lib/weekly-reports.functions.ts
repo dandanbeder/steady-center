@@ -1,10 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
 import { generateForUser } from "@/lib/weekly-report-generator.server";
 
 /** Generate a weekly report for the current user, for the trailing 7 days. */
 export const generateWeeklyReportNow = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireActiveUser])
   .handler(async ({ context }) => {
     const { userId, supabase } = context;
     const { requireFeature } = await import("./entitlements.server");
