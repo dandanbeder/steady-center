@@ -876,6 +876,9 @@ function ListView({
   onToggleSelect,
   onChange,
   onOpen,
+  groupByAssignee = false,
+  members = [],
+  myId = null,
 }: {
   tasks: Task[];
   subtasksByParent: Map<string, Task[]>;
@@ -885,18 +888,50 @@ function ListView({
   onToggleSelect: (id: string) => void;
   onChange: () => void;
   onOpen: (t: Task) => void;
+  groupByAssignee?: boolean;
+  members?: AssignableMember[];
+  myId?: string | null;
 }) {
-  const grouped = STATUSES.map((s) => ({
-    status: s,
-    items: tasks.filter((t) => t.status === s.value),
-  }));
+  type Group = { key: string; label: string; items: Task[] };
+  let groups: Group[];
+
+  if (groupByAssignee) {
+    const map = new Map<string, Task[]>();
+    for (const t of tasks) {
+      const k = t.assignee_id ?? "__unassigned__";
+      const arr = map.get(k) ?? [];
+      arr.push(t);
+      map.set(k, arr);
+    }
+    groups = Array.from(map.entries()).map(([k, items]) => ({
+      key: k,
+      label: k === "__unassigned__"
+        ? "Unassigned"
+        : (k === myId ? "Me" : memberLabel(members, k)),
+      items,
+    }));
+    // Stable order: me first, then by name, unassigned last
+    groups.sort((a, b) => {
+      if (a.key === "__unassigned__") return 1;
+      if (b.key === "__unassigned__") return -1;
+      if (a.key === myId) return -1;
+      if (b.key === myId) return 1;
+      return a.label.localeCompare(b.label);
+    });
+  } else {
+    groups = STATUSES.map((s) => ({
+      key: s.value,
+      label: s.label,
+      items: tasks.filter((t) => t.status === s.value),
+    }));
+  }
 
   return (
     <div className="space-y-6">
-      {grouped.map((g) => (
-        <div key={g.status.value}>
+      {groups.map((g) => (
+        <div key={g.key}>
           <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
-            {g.status.label} <span className="text-foreground/40">{g.items.length}</span>
+            {g.label} <span className="text-foreground/40">{g.items.length}</span>
           </h3>
           <div className="rounded-xl border border-border bg-card divide-y divide-border" style={{ boxShadow: "var(--shadow-soft)" }}>
             {g.items.length === 0 ? (
@@ -913,6 +948,8 @@ function ListView({
                   onToggleSelect={() => onToggleSelect(t.id)}
                   onChange={onChange}
                   onOpen={onOpen}
+                  members={members}
+                  myId={myId}
                 />
               ))
             )}
