@@ -87,7 +87,8 @@ async function handleSubscriptionUpdated(data: any, env: PaddleEnv) {
 }
 
 async function handleSubscriptionCanceled(data: any, env: PaddleEnv) {
-  await getSupabase()
+  const supabase = getSupabase();
+  await supabase
     .from("subscriptions")
     .update({
       status: "canceled",
@@ -96,6 +97,45 @@ async function handleSubscriptionCanceled(data: any, env: PaddleEnv) {
     })
     .eq("paddle_subscription_id", data.id)
     .eq("environment", env);
+
+  // Apply read-only to extras when the period actually ends; for now we flag
+  // immediately on cancel so the user sees what will become read-only.
+  const userId = data.customData?.userId as string | undefined;
+  if (!userId) return;
+  await applyDowngradeReadonly(userId);
+}
+
+async function applyDowngradeReadonly(userId: string) {
+  const supabase = getSupabase();
+  // Keep the oldest 1 business + 1 calendar live; mark rest as read_only.
+  const { data: businesses } = await supabase
+    .from("businesses")
+    .select("id")
+    .eq("owner_id", userId)
+    .order("created_at", { ascending: true });
+  const keepBiz = (businesses ?? []).slice(0, 1).map((b: any) => b.id);
+  const dropBiz = (businesses ?? []).slice(1).map((b: any) => b.id);
+  if (dropBiz.length) {
+    await supabase.from("businesses").update({ read_only: true }).in("id", dropBiz);
+  }
+  if (keepBiz.length) {
+    await supabase.from("businesses").update({ read_only: false }).in("id", keepBiz);
+  }
+
+  const { data: cals } = await supabase
+    .from("calendars")
+    .select("id, provider")
+    .eq("owner_id", userId)
+    .neq("provider", "manual")
+    .order("created_at", { ascending: true });
+  const keepCal = (cals ?? []).slice(0, 1).map((c: any) => c.id);
+  const dropCal = (cals ?? []).slice(1).map((c: any) => c.id);
+  if (dropCal.length) {
+    await supabase.from("calendars").update({ read_only: true }).in("id", dropCal);
+  }
+  if (keepCal.length) {
+    await supabase.from("calendars").update({ read_only: false }).in("id", keepCal);
+  }
 }
 
 async function handleWebhook(req: Request, env: PaddleEnv) {
