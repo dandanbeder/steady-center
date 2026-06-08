@@ -459,6 +459,82 @@ export type Database = {
           },
         ]
       }
+      comment_mentions: {
+        Row: {
+          comment_id: string
+          created_at: string
+          id: string
+          mentioned_user_id: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          id?: string
+          mentioned_user_id: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          id?: string
+          mentioned_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_mentions_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comments: {
+        Row: {
+          author_id: string
+          body: string
+          business_id: string | null
+          created_at: string
+          deleted_at: string | null
+          edited_at: string | null
+          id: string
+          parent_id: string
+          parent_owner_id: string | null
+          parent_type: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          business_id?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
+          id?: string
+          parent_id: string
+          parent_owner_id?: string | null
+          parent_type: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          business_id?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
+          id?: string
+          parent_id?: string
+          parent_owner_id?: string | null
+          parent_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_pulses: {
         Row: {
           at_risk_count: number
@@ -2008,6 +2084,10 @@ export type Database = {
         Returns: {
           storage_paths: string[]
         }[]
+      }
+      resolve_comment_parent: {
+        Args: { p_id: string; p_type: string }
+        Returns: Record<string, unknown>
       }
       user_in_audience: {
         Args: { _audience: Json; _user: string }
