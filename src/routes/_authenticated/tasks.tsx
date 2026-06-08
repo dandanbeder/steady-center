@@ -19,6 +19,7 @@ import {
   CheckSquare,
   Link2,
   Focus,
+  UserCircle2,
 } from "lucide-react";
 import {
   DndContext,
@@ -98,6 +99,9 @@ import {
   restoreTask,
   bulkRestoreTasks,
 } from "@/lib/tasks";
+import { listAssignedToMe, listAssignedByMe, listAssignmentHistory, assignTask } from "@/lib/tasks";
+import { AssigneePicker, useAssignableMembers, memberLabel, type AssignableMember } from "@/components/assignee-picker";
+import { useAuth } from "@/hooks/use-auth";
 import { listBacklinks, resolveLinks } from "@/lib/note-links";
 import { showUndoToast } from "@/lib/undo-toast";
 import { listOutcomes, updateOutcome } from "@/lib/outcomes";
@@ -480,16 +484,23 @@ function ListNode({
 
 type SortKey = "priority" | "due" | "created" | "title";
 type DueFilter = "all" | "overdue" | "today" | "week" | "none";
+type AssignedFilter = "all" | "me" | "by_me" | "unassigned";
 type Filters = {
   priority: TaskPriority | "all";
   status: TaskStatus | "all";
   due: DueFilter;
+  assigned: AssignedFilter;
 };
-const DEFAULT_FILTERS: Filters = { priority: "all", status: "all", due: "all" };
+const DEFAULT_FILTERS: Filters = { priority: "all", status: "all", due: "all", assigned: "all" };
 
-function matchesFilters(t: Task, f: Filters): boolean {
+function matchesFilters(t: Task, f: Filters, myId: string | null): boolean {
   if (f.priority !== "all" && t.priority !== f.priority) return false;
   if (f.status !== "all" && t.status !== f.status) return false;
+  if (f.assigned !== "all" && myId) {
+    if (f.assigned === "me" && t.assignee_id !== myId) return false;
+    if (f.assigned === "by_me" && (t.assigned_by !== myId || !t.assignee_id || t.assignee_id === myId)) return false;
+    if (f.assigned === "unassigned" && t.assignee_id) return false;
+  }
   if (f.due !== "all") {
     if (f.due === "none") return !t.due_at;
     if (!t.due_at) return false;
@@ -567,10 +578,12 @@ function ListWorkspace({
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
+  const { user } = useAuth();
+  const myId = user?.id ?? null;
   const filteredTopLevel = useMemo(() => {
     const top = tasks.filter((t) => !t.parent_task_id);
-    return sortTasks(top.filter((t) => matchesFilters(t, filters)), sortKey);
-  }, [tasks, filters, sortKey]);
+    return sortTasks(top.filter((t) => matchesFilters(t, filters, myId)), sortKey);
+  }, [tasks, filters, sortKey, myId]);
 
   const subtasksByParent = useMemo(() => {
     const m = new Map<string, Task[]>();
@@ -624,7 +637,12 @@ function ListWorkspace({
   const activeFilterCount =
     (filters.priority !== "all" ? 1 : 0) +
     (filters.status !== "all" ? 1 : 0) +
-    (filters.due !== "all" ? 1 : 0);
+    (filters.due !== "all" ? 1 : 0) +
+    (filters.assigned !== "all" ? 1 : 0);
+
+  const [groupByAssignee, setGroupByAssignee] = useState(false);
+  const { data: members = [] } = useAssignableMembers(businessId);
+  const memberList = members as AssignableMember[];
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
@@ -705,6 +723,19 @@ function ListWorkspace({
                 {filters.due === k && <span className="ml-auto">✓</span>}
               </DropdownMenuItem>
             ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-xs">Assignment</DropdownMenuLabel>
+            {([
+              ["all", "Anyone"],
+              ["me", "Assigned to me"],
+              ["by_me", "Assigned by me"],
+              ["unassigned", "Unassigned"],
+            ] as const).map(([k, label]) => (
+              <DropdownMenuItem key={k} onClick={() => setFilters((f) => ({ ...f, assigned: k }))}>
+                {label}
+                {filters.assigned === k && <span className="ml-auto">✓</span>}
+              </DropdownMenuItem>
+            ))}
             {activeFilterCount > 0 && (
               <>
                 <DropdownMenuSeparator />
@@ -715,6 +746,18 @@ function ListWorkspace({
             )}
           </DropdownMenuContent>
         </DropdownMenu>
+
+        {view === "list" && businessId && (
+          <Button
+            variant={groupByAssignee ? "default" : "outline"}
+            size="sm"
+            onClick={() => setGroupByAssignee((v) => !v)}
+            title="Group by assignee — see who's working on what"
+          >
+            <UserCircle2 className="h-3.5 w-3.5" /> Who's on what
+          </Button>
+        )}
+
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -795,6 +838,9 @@ function ListWorkspace({
           onToggleSelect={toggleSelect}
           onChange={invalidate}
           onOpen={setOpenTask}
+          groupByAssignee={groupByAssignee}
+          members={memberList}
+          myId={myId}
         />
       )}
       {view === "board" && (
@@ -830,6 +876,9 @@ function ListView({
   onToggleSelect,
   onChange,
   onOpen,
+  groupByAssignee = false,
+  members = [],
+  myId = null,
 }: {
   tasks: Task[];
   subtasksByParent: Map<string, Task[]>;
@@ -839,18 +888,50 @@ function ListView({
   onToggleSelect: (id: string) => void;
   onChange: () => void;
   onOpen: (t: Task) => void;
+  groupByAssignee?: boolean;
+  members?: AssignableMember[];
+  myId?: string | null;
 }) {
-  const grouped = STATUSES.map((s) => ({
-    status: s,
-    items: tasks.filter((t) => t.status === s.value),
-  }));
+  type Group = { key: string; label: string; items: Task[] };
+  let groups: Group[];
+
+  if (groupByAssignee) {
+    const map = new Map<string, Task[]>();
+    for (const t of tasks) {
+      const k = t.assignee_id ?? "__unassigned__";
+      const arr = map.get(k) ?? [];
+      arr.push(t);
+      map.set(k, arr);
+    }
+    groups = Array.from(map.entries()).map(([k, items]) => ({
+      key: k,
+      label: k === "__unassigned__"
+        ? "Unassigned"
+        : (k === myId ? "Me" : memberLabel(members, k)),
+      items,
+    }));
+    // Stable order: me first, then by name, unassigned last
+    groups.sort((a, b) => {
+      if (a.key === "__unassigned__") return 1;
+      if (b.key === "__unassigned__") return -1;
+      if (a.key === myId) return -1;
+      if (b.key === myId) return 1;
+      return a.label.localeCompare(b.label);
+    });
+  } else {
+    groups = STATUSES.map((s) => ({
+      key: s.value,
+      label: s.label,
+      items: tasks.filter((t) => t.status === s.value),
+    }));
+  }
 
   return (
     <div className="space-y-6">
-      {grouped.map((g) => (
-        <div key={g.status.value}>
+      {groups.map((g) => (
+        <div key={g.key}>
           <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
-            {g.status.label} <span className="text-foreground/40">{g.items.length}</span>
+            {g.label} <span className="text-foreground/40">{g.items.length}</span>
           </h3>
           <div className="rounded-xl border border-border bg-card divide-y divide-border" style={{ boxShadow: "var(--shadow-soft)" }}>
             {g.items.length === 0 ? (
@@ -867,6 +948,8 @@ function ListView({
                   onToggleSelect={() => onToggleSelect(t.id)}
                   onChange={onChange}
                   onOpen={onOpen}
+                  members={members}
+                  myId={myId}
                 />
               ))
             )}
@@ -886,6 +969,8 @@ function TaskRow({
   onToggleSelect,
   onChange,
   onOpen,
+  members = [],
+  myId = null,
 }: {
   task: Task;
   subtasks: Task[];
@@ -895,6 +980,8 @@ function TaskRow({
   onToggleSelect: () => void;
   onChange: () => void;
   onOpen: (t: Task) => void;
+  members?: AssignableMember[];
+  myId?: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const [subTitle, setSubTitle] = useState("");
@@ -976,6 +1063,18 @@ function TaskRow({
             <span className="ml-2 text-xs text-muted-foreground">{subtasks.filter((s) => s.status === "done").length}/{subtasks.length}</span>
           )}
         </button>
+        {task.assignee_id && (
+          <Badge
+            variant={task.assignee_id === myId ? "default" : "secondary"}
+            className="text-[10px] gap-1 px-1.5"
+            title={task.assignee_id === myId && task.assigned_by && task.assigned_by !== myId
+              ? `Assigned to you by ${memberLabel(members, task.assigned_by)}`
+              : `Assigned to ${memberLabel(members, task.assignee_id)}`}
+          >
+            <UserCircle2 className="h-3 w-3" />
+            {task.assignee_id === myId ? "You" : memberLabel(members, task.assignee_id).split(" ")[0]}
+          </Badge>
+        )}
         {task.due_at && (
           <span className={cn("text-xs flex items-center gap-1", overdue ? "text-destructive font-medium" : "text-muted-foreground")}>
             <CalIcon className="h-3 w-3" />
@@ -1266,6 +1365,7 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
   const [dueAt, setDueAt] = useState<string>(task.due_at ? task.due_at.slice(0, 10) : "");
   const [recurrence, setRecurrence] = useState<RecurrenceRule | "none">(task.recurrence_rule ?? "none");
   const [outcomeId, setOutcomeId] = useState<string>(task.outcome_id ?? "");
+  const [assigneeId, setAssigneeId] = useState<string | null>(task.assignee_id);
   const [celebrate, setCelebrate] = useState<{ outcomeId: string; name: string } | null>(null);
   const [focusOn, setFocusOn] = useState(false);
 
@@ -1276,6 +1376,12 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
     queryKey: ["outcomes-for-task", task.business_id],
     queryFn: () => listOutcomes(task.business_id),
   });
+  const { data: assignHistory = [] } = useQuery({
+    queryKey: ["task-assignment-history", task.id],
+    queryFn: () => listAssignmentHistory(task.id),
+  });
+  const { data: members = [] } = useAssignableMembers(task.business_id);
+  const memberList = members as AssignableMember[];
   const activeOutcomes = outcomes.filter(
     (o) => o.status === "active" || o.id === task.outcome_id,
   );
@@ -1293,6 +1399,10 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
         recurrence_anchor: recurrence === "none" ? null : (dueIso ?? task.recurrence_anchor),
         outcome_id: nextOutcomeId,
       });
+      // Apply assignment change separately so the BEFORE trigger validates & stamps assigner.
+      if (assigneeId !== task.assignee_id) {
+        await assignTask({ task_id: task.id, assignee_id: assigneeId });
+      }
 
       // If this completion closes out an outcome, offer to celebrate
       const wasOpen = task.status !== "done";
@@ -1404,6 +1514,20 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
             )}
 
             <div>
+              <Label className="flex items-center gap-1.5"><UserCircle2 className="h-3.5 w-3.5" /> Assignee</Label>
+              <AssigneePicker
+                businessId={task.business_id}
+                value={assigneeId}
+                onChange={setAssigneeId}
+              />
+              {assigneeId && task.business_id && (
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  They'll be notified and the task will appear on their Today and My Week.
+                </p>
+              )}
+            </div>
+
+            <div>
               <Label>Outcome</Label>
               <Select
                 value={outcomeId || "__none"}
@@ -1469,11 +1593,20 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
                 parentType="task"
                 parentId={task.id}
                 businessId={task.business_id}
-                activity={activity.map((a) => ({
-                  id: a.id,
-                  at: a.changed_at,
-                  label: `${a.from_status ? `${STATUS_LABEL[a.from_status]} → ` : ""}${STATUS_LABEL[a.to_status]}`,
-                }))}
+                activity={[
+                  ...activity.map((a) => ({
+                    id: a.id,
+                    at: a.changed_at,
+                    label: `${a.from_status ? `${STATUS_LABEL[a.from_status]} → ` : ""}${STATUS_LABEL[a.to_status]}`,
+                  })),
+                  ...assignHistory.map((h) => ({
+                    id: `assign-${h.id}`,
+                    at: h.changed_at,
+                    label: h.to_assignee
+                      ? `Assigned to ${memberLabel(memberList, h.to_assignee)}${h.changed_by ? ` by ${memberLabel(memberList, h.changed_by)}` : ""}`
+                      : `Unassigned${h.changed_by ? ` by ${memberLabel(memberList, h.changed_by)}` : ""}`,
+                  })),
+                ]}
               />
             </div>
 

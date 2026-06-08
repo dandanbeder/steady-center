@@ -1680,6 +1680,44 @@ export type Database = {
         }
         Relationships: []
       }
+      task_assignment_history: {
+        Row: {
+          business_id: string | null
+          changed_at: string
+          changed_by: string | null
+          from_assignee: string | null
+          id: string
+          task_id: string
+          to_assignee: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          changed_at?: string
+          changed_by?: string | null
+          from_assignee?: string | null
+          id?: string
+          task_id: string
+          to_assignee?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          changed_at?: string
+          changed_by?: string | null
+          from_assignee?: string | null
+          id?: string
+          task_id?: string
+          to_assignee?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_assignment_history_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_status_history: {
         Row: {
           business_id: string | null
@@ -1712,6 +1750,9 @@ export type Database = {
       }
       tasks: {
         Row: {
+          assigned_at: string | null
+          assigned_by: string | null
+          assignee_id: string | null
           business_id: string | null
           committed_week: string | null
           completed_at: string | null
@@ -1736,6 +1777,9 @@ export type Database = {
           title: string
         }
         Insert: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          assignee_id?: string | null
           business_id?: string | null
           committed_week?: string | null
           completed_at?: string | null
@@ -1760,6 +1804,9 @@ export type Database = {
           title: string
         }
         Update: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          assignee_id?: string | null
           business_id?: string | null
           committed_week?: string | null
           completed_at?: string | null

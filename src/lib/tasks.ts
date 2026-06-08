@@ -77,7 +77,75 @@ export type Task = {
   committed_week: string | null;
   /** Outcome (epic) this task rolls up to. */
   outcome_id: string | null;
+  /** Member of the task's account this task is assigned to (nullable). */
+  assignee_id: string | null;
+  /** Who made the most recent assignment change. */
+  assigned_by: string | null;
+  assigned_at: string | null;
 };
+
+export type TaskAssignment = {
+  id: string;
+  task_id: string;
+  business_id: string | null;
+  from_assignee: string | null;
+  to_assignee: string | null;
+  changed_by: string | null;
+  changed_at: string;
+};
+
+export async function listAssignmentHistory(taskId: string): Promise<TaskAssignment[]> {
+  const { data, error } = await supabase
+    .from("task_assignment_history")
+    .select("id, task_id, business_id, from_assignee, to_assignee, changed_by, changed_at")
+    .eq("task_id", taskId)
+    .order("changed_at", { ascending: false })
+    .limit(50);
+  if (error) throw error;
+  return (data ?? []) as TaskAssignment[];
+}
+
+export async function listAssignedToMe(): Promise<Task[]> {
+  const { data: u } = await supabase.auth.getUser();
+  if (!u.user) return [];
+  const { data, error } = await supabase
+    .from("tasks")
+    .select("*")
+    .is("deleted_at", null)
+    .neq("status", "done")
+    .eq("assignee_id", u.user.id)
+    .order("due_at", { ascending: true, nullsFirst: false });
+  if (error) throw error;
+  return (data ?? []) as Task[];
+}
+
+export async function listAssignedByMe(): Promise<Task[]> {
+  const { data: u } = await supabase.auth.getUser();
+  if (!u.user) return [];
+  const { data, error } = await supabase
+    .from("tasks")
+    .select("*")
+    .is("deleted_at", null)
+    .eq("assigned_by", u.user.id)
+    .not("assignee_id", "is", null)
+    .neq("assignee_id", u.user.id)
+    .order("due_at", { ascending: true, nullsFirst: false });
+  if (error) throw error;
+  return (data ?? []) as Task[];
+}
+
+export async function assignTask(input: {
+  task_id: string;
+  assignee_id: string | null;
+  priority?: TaskPriority;
+  due_at?: string | null;
+}) {
+  const patch: Partial<Task> = { assignee_id: input.assignee_id };
+  if (input.priority !== undefined) patch.priority = input.priority;
+  if (input.due_at !== undefined) patch.due_at = input.due_at;
+  const { error } = await supabase.from("tasks").update(patch).eq("id", input.task_id);
+  if (error) throw error;
+}
 
 export const RECURRENCE_LABEL: Record<RecurrenceRule, string> = {
   daily: "Daily",
