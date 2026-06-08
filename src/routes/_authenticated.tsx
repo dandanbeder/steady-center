@@ -38,10 +38,19 @@ function AuthenticatedLayout() {
     profileQ.data?.must_change_password && pathname !== "/reset-password";
   if (mustChangePw) return <Navigate to="/reset-password" />;
 
+  // POPIA: every signed-in user must have accepted Terms & Privacy.
+  // OAuth signups land here without consent; gate them until they accept.
+  const needsConsent =
+    profileQ.data && !profileQ.data.terms_accepted_at && pathname !== "/accept-terms";
+  if (needsConsent) return <Navigate to="/accept-terms" />;
+
   // Only redirect once profile has loaded and confirms onboarding isn't done.
   // Don't block the shell on the profile fetch — render immediately, redirect later if needed.
   const needsOnboarding =
-    profileQ.data && !profileQ.data.onboarding_completed_at && pathname !== "/onboarding";
+    profileQ.data &&
+    profileQ.data.terms_accepted_at &&
+    !profileQ.data.onboarding_completed_at &&
+    pathname !== "/onboarding";
   if (needsOnboarding) return <Navigate to="/onboarding" />;
 
   return (

@@ -32,7 +32,11 @@ export const acceptTermsAndPrivacy = createServerFn({ method: "POST" })
       .eq("id", userId)
       .maybeSingle();
 
-    const patch: Record<string, unknown> = {};
+    const patch: {
+      terms_accepted_at?: string;
+      marketing_opt_in?: boolean;
+      marketing_opt_in_at?: string | null;
+    } = {};
     if (!existing?.terms_accepted_at) patch.terms_accepted_at = nowIso;
     if (data.marketing_opt_in && !existing?.marketing_opt_in) {
       patch.marketing_opt_in = true;
