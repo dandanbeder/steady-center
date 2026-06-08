@@ -101,6 +101,7 @@ function UserDetailPage() {
   const isSelf = me?.id === userId;
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["admin", "user", userId] });
+    qc.invalidateQueries({ queryKey: ["admin", "customer360", userId] });
     qc.invalidateQueries({ queryKey: ["admin", "users"] });
   };
 
@@ -110,9 +111,9 @@ function UserDetailPage() {
         <Button variant="ghost" size="sm" asChild>
           <Link to="/admin"><ArrowLeft className="h-4 w-4 mr-1" /> Back</Link>
         </Button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-2xl font-semibold">{data.profile?.full_name || data.auth.email}</h1>
-          <div className="text-sm text-muted-foreground flex items-center gap-2">
+          <div className="text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
             <span>{data.auth.email}</span>
             {data.profile?.status === "suspended" && <Badge variant="destructive">suspended</Badge>}
             {data.profile?.platform_role === "superadmin" && <Badge>superadmin</Badge>}
@@ -122,7 +123,10 @@ function UserDetailPage() {
             {isSelf && <Badge variant="outline">you</Badge>}
           </div>
         </div>
+        <ViewAsButton targetUserId={userId} />
       </div>
+
+      <Customer360Sections userId={userId} onDone={invalidate} />
 
       <ProfileSection data={data} userId={userId} onDone={invalidate} />
       <EmailSection data={data} userId={userId} onDone={invalidate} />
