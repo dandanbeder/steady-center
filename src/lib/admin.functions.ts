@@ -774,7 +774,7 @@ export const adminUpsertAnnouncement = createServerFn({ method: "POST" })
         patch.expires_at = new Date(new Date(pubAt).getTime() + 24 * 60 * 60 * 1000).toISOString();
       }
       const { error } = await supabaseAdmin
-        .from("announcements").update(patch).eq("id", data.id);
+        .from("announcements").update(patch as never).eq("id", data.id);
       if (error) throw new Error(error.message);
       await logAudit(context.userId, null, "announcement.update", before, { id: data.id, ...patch }, null);
       return { ok: true, id: data.id };
