@@ -19,7 +19,7 @@ import {
   CheckSquare,
   Link2,
   Focus,
-} from "lucide-react";
+  UserCircle2,
 import {
   DndContext,
   PointerSensor,
