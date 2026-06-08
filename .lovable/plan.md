@@ -1,96 +1,119 @@
-# Private-first sharing re-architecture
+# Plans, seats & entitlements rebuild
 
-This is a significant change. Today, access is membership-based: anyone in a "business" (account) sees everything in it. We will flip that to **private by default**, with explicit, per-resource shares (with inheritance through containers).
+Heartbeat goes from "$10 Pro / $35 Team flat" to:
 
-## Model
+- **Free** $0 — 1 account, 1 calendar connection, 20 AI actions/month, no sharing.
+- **Pro (solo)** $10/mo or $96/yr — 1 user, unlimited accounts + calendar connections, 400 AI actions/mo, all features except team sharing.
+- **Team** per-seat — $12/seat/mo or $10/seat/mo billed annually ($120/seat/yr). Min 2 seats. Pro features + collaboration. AI = 400 × paid seats, pooled.
 
-New table `public.shares`:
-- `resource_type` ∈ `('folder','list','task','note','note_folder','calendar')`
-- `resource_id uuid`
-- `grantee_user_id uuid` (refs `auth.users`)
-- `role` ∈ `('viewer','commenter','member','admin')`
-- `granted_by uuid`, `created_at`
-- Unique (`resource_type`, `resource_id`, `grantee_user_id`)
-- Indexes: `(grantee_user_id, resource_type, resource_id)`, `(resource_type, resource_id)`
+**Paid seat** = owner / admin / member. Viewers, commenters, tagged guests = always free, never counted.
 
-Note: we treat a "note folder" as `folders` rows that contain notes (same table); `note_folder` is accepted as a synonym of `folder` in the helper. We keep one `folders` table.
+---
 
-## Central helper
+## 1. Paddle catalog
 
-```text
-public.can_access(_user uuid, _resource_type text, _resource_id uuid, _min_role text)
-  returns boolean   -- SECURITY DEFINER, STABLE
+- Update `team_monthly`: $12, `quantity.minimum=2`, `quantity.maximum=1000`.
+- Create `pro_yearly`: $96/yr (single qty).
+- Create `team_yearly`: $120/seat/yr, min 2, max 1000.
+- Leave `pro_monthly` ($10) as is.
+
+## 2. Database (one migration)
+
+- Add columns to `public.subscriptions`: `quantity int default 1`, `billing_cycle text` (`'month' | 'year'`), `trial_end timestamptz`.
+- Add `public.user_entitlements_view` style helper in code, not a view — keep it in `entitlements.ts`.
+- Add helper `public.paid_seat_count(business_id uuid) returns int` (counts active memberships with role in owner/admin/member).
+- Add helper `public.account_owner_subscription(business_id uuid)` returning the owner's active sub `(tier, quantity, billing_cycle, status, current_period_end)`.
+- Add `BEFORE INSERT/UPDATE` trigger `memberships_enforce_seats` on `public.memberships`:
+  - Counts paid roles after the change; if it would exceed the owner's Team subscription quantity (or owner isn't on Team), raise `SEAT_LIMIT_REACHED`.
+  - Viewer/commenter rows skip the check.
+  - Bypassed for `service_role` (so the "add seat then grant" server fn can stage changes atomically).
+- New table `public.entitlement_usage_monthly(user_id, month, ai_actions int)` for per-action counting (the existing `ai_usage` is $-based). Service-role writes only; user SELECT own row. Includes GRANTs and RLS per the rules.
+
+## 3. Shared entitlements module (`src/lib/entitlements.ts`)
+
+Single source of truth, imported by client and server:
+
+```ts
+type Tier = 'free' | 'pro' | 'team';
+type BillingCycle = 'month' | 'year';
+const PAID_SEAT_ROLES = ['owner','admin','member'] as const;
+const FREE_ROLES = ['viewer','commenter'] as const;
+
+const LIMITS: Record<Tier, {
+  accounts: number;        // -1 = unlimited
+  calendarConnections: number;
+  aiActionsPerSeat: number;
+  teamSharing: boolean;
+}> = {
+  free: { accounts: 1, calendarConnections: 1, aiActionsPerSeat: 20, teamSharing: false },
+  pro:  { accounts: -1, calendarConnections: -1, aiActionsPerSeat: 400, teamSharing: false },
+  team: { accounts: -1, calendarConnections: -1, aiActionsPerSeat: 400, teamSharing: true },
+};
 ```
 
-Logic (single source of truth, used by every read/write policy):
-1. Owner of the resource → always true.
-2. Platform superadmin → true.
-3. Direct share on this resource with role ≥ `_min_role` → true.
-4. Share on any ancestor container with role ≥ `_min_role`:
-   - task → its `list` → list's `folder` → folder ancestors
-   - list → its `folder` → folder ancestors
-   - folder → its parent folder chain
-   - note → its `folder` (if any) → folder ancestors
-   - event → its `calendar`
-   - calendar → itself only (no container)
-5. Implicit task share: `tasks.assignee_id = _user` grants `viewer` on that task (and via comments helper, `commenter`).
+Exports: `getEffectiveLimits(tier, paidSeats)`, `isPaidRole(role)`, `aiActionsCap(tier, paidSeats)`, `UPGRADE_REQUIRED_PREFIX`.
 
-Role rank: viewer < commenter < member < admin (owner-only operations stay owner-only).
+## 4. Server enforcement
 
-## RLS rewrite (all policies replaced)
+- `src/lib/entitlements.server.ts` — `getUserPlanContext(userId)` returns `{ tier, billingCycle, quantity, paidSeats, trialEnd, aiCap, aiUsed }`. Resolves the owner's account when called for business-scoped checks.
+- Wrap every server fn that creates accounts / calendar connections / runs AI:
+  - `requireAccountSlot`, `requireCalendarSlot`, `requireAiAction` — throw `UPGRADE_REQUIRED:` errors caught by UI.
+- AI fns (`assistant.functions.ts`, `weekly-plan.functions.ts`, `notes-journal.functions.ts`, `ask-notes.tsx` action, `meetings.functions.ts`) call `requireAiAction` then `recordAiAction` (increments `entitlement_usage_monthly.ai_actions`).
+- `invitations.functions.ts` / membership role-change fns: before promoting to paid role, check seat headroom; if short, return `{ needsSeat: true, currentQty, neededQty }` instead of mutating — UI runs the add-seat flow then retries.
+- New `subscriptions.functions.ts`:
+  - `addSeatAndAssign({ businessId, targetUserId, role })` — Paddle `PATCH /subscriptions/{id}` with `proration_billing_mode: 'prorated_immediately'`, increment quantity by 1, then perform the membership change via service role.
+  - `removeSeatIfFreed({ businessId })` — after demotion/removal, if `paid_seats < quantity`, decrement Paddle quantity (`do_not_bill` proration so credit applies).
+  - `startTrial(userId)` — set `trial_end = now() + 14d` on a synthetic Free→Pro trial record (no Paddle row); webhook later replaces it. Called from `handle_new_user` follow-up server fn.
 
-For each of `folders`, `lists`, `tasks`, `notes`, `events`, `calendars`, `comments`, `note_attachments`:
-- SELECT: `can_access(auth.uid(), type, id, 'viewer')`
-- INSERT: owner = `auth.uid()` OR `can_access(..., 'member')` on parent container
-- UPDATE: `can_access(..., 'member')`
-- DELETE: owner OR `can_access(..., 'admin')`
-- `comments` SELECT: `can_access(auth.uid(), parent_type, parent_id, 'viewer')`
-- `comments` INSERT: `can_access(..., 'commenter')`
+## 5. Webhook updates (`api/public/payments/webhook.ts`)
 
-`businesses` / `memberships` stay (they still group a user's own workspace + super-admin/team context) but are no longer the access gate. Membership in a business no longer grants visibility into other members' folders/tasks/notes/calendars/events.
+- Persist `quantity`, `billing_cycle` (`items[0].price.billingCycle.interval`), `trial_end`.
+- On `subscription.updated` with quantity decrease, also call no-op (DB row reflects truth).
 
-## Shares table itself
-- SELECT: grantee, granter, or owner of the shared resource, or admin-share holder.
-- INSERT/DELETE: only owner of resource OR holder of an `admin` share on it (or platform admin).
-- Trigger: prevent sharing the Journal (block `note_type = 'journal'` notes and any folder whose path contains a journal-only marker — we already have `notes.note_type`; we forbid sharing notes where `note_type='journal'`).
+## 6. UI
 
-## Server functions (`src/lib/shares.functions.ts`)
-- `shareResource({ resourceType, resourceId, granteeEmail|userId, role })`
-- `revokeShare({ shareId })`
-- `listShares({ resourceType, resourceId })` — for owner/admin
-- `listSharedWithMe()` — grouped by type, returns resource + owner profile + role
-- `setCalendarShareDetail({ shareId, busyOnly: bool })` — adds `details` jsonb on share row (`{ busy_only: true }`); events RLS for shared calendars returns redacted titles when busy-only.
+### Pricing page rewrite
+- Monthly/Annual toggle (annual shows "2 months free" badge).
+- Three cards: Free / Pro / Team. Team card shows "$12 per seat/mo" with sub-text "per seat · 2-seat minimum · viewers & commenters free", and a seat stepper (min 2) that previews `quantity × price`.
+- AI shown in features as "400 AI actions / mo" (per seat for Team) — INCLUDED, not an add-on.
+- New sign-ups: surface "14-day Pro trial active until {date}" banner; CTA changes to "Add billing details before {date}".
+- Footer keeps Paddle / cancel / privacy / terms line.
 
-All use `requireSupabaseAuth`.
+### Settings → Team & seats
+- "X of Y paid seats used" + separate "Z free viewers/commenters/guests".
+- Add Seat / Remove Seat buttons calling the new server fns.
+- Invite/role-change UI catches `needsSeat` and shows an "Add a seat ($12 prorated)" confirm dialog.
 
-## UI
-- New page `/_authenticated/shared-with-me.tsx` grouped by Folders / Lists / Tasks / Notes / Calendars, each row shows owner name + role badge.
-- "Share" action on folder, list, task, note, calendar context menus → dialog: pick people from this user's team/contacts, choose role, "busy-only" toggle for calendars.
-- Share indicator (small avatars + count) on shared items in their normal lists.
-- "Manage access" panel listing grantees with role dropdown + revoke.
-- Today / My Week / Inbox: assigned tasks remain visible (implicit share covers it).
-- Journal hides the Share action entirely.
+### Usage meter
+- AI usage card on dashboard + settings: `used / cap` progress bar reading `entitlement_usage_monthly`. Red at 100%, friendly upsell when free user hits cap.
 
-## Migration of existing data
-For every existing active membership where a user is NOT the owner of the business, create direct `shares` rows on every top-level folder of that business and every calendar of that business, with role mapped from membership role (owner/admin→admin, member→member, commenter→commenter, viewer→viewer). After migration, businesses still exist but no longer leak; the helper handles all access.
+### Upgrade wall
+- Extend existing `UpgradeGate` to render per-limit copy: account limit, calendar limit, AI cap, team sharing.
 
-## Verification test
-A SQL test at the end of the migration:
-1. Create user A and user B.
-2. A owns folder F1 (with list L1, task T1) and folder F2 (with task T2); A owns calendars C1, C2.
-3. Share only F1 and C1 with B (member).
-4. Assert (set `request.jwt.claim.sub` to B): B sees F1, L1, T1, C1 — and NOT F2, T2, C2.
-5. Assign T2 to B → B sees T2 (implicit), still not F2.
-6. Revoke F1 share → B no longer sees F1/L1/T1.
+### Downgrade behaviour
+- Server fn `applyDowngradeReadonly(userId)` runs on `subscription.canceled` / tier drop: flags extra accounts/calendars as `read_only=true` instead of deleting. Add `read_only boolean default false` to `businesses` and `calendars`; UI hides write actions when set. Re-upgrading clears the flag.
 
-If any assertion fails, the migration raises and rolls back.
+## 7. RLS confirmation
 
-## Out of scope (for now)
-- Subscription/seat enforcement for grantees (kept as-is).
-- Reworking the Account Settings "Members" tab (still useful for team identity / billing context); we add a banner explaining the new model.
+- `subscriptions` already user-scoped SELECT + service-role writes. ✅
+- `entitlement_usage_monthly`: user SELECT own; service-role ALL.
+- `memberships` seat trigger fires regardless of caller role except `service_role`, so a client cannot bypass via direct insert.
+- All limit checks duplicated server-side; client checks are UX only.
 
-## Risks
-- Big-bang RLS swap: any view, RPC, or server function that joins across tables now sees less data. We audit `src/lib/*.functions.ts` for places that bypassed RLS via `supabaseAdmin` and confirm they're intentional.
-- Performance: `can_access` recurses through folder ancestors; we add a recursive CTE with depth cap (10) and the suggested indexes.
+## 8. Out of scope (will note to user)
 
-Confirm and I'll implement: migration + helper + RLS rewrite + shares server fns + UI (Share dialog, Manage access, Shared-with-me page, share indicators) + journal guard + data migration + verification test.
+- Switching currency from USD.
+- Mid-cycle proration UX preview (Paddle handles it; we just call `prorated_immediately`).
+- SCA / dunning UI beyond the existing past-due banner.
+
+---
+
+## Technical notes
+
+- File touches: ~6 new files (`subscriptions.functions.ts`, `entitlement-usage.server.ts`, seat dialog, AI meter component, downgrade fn, plus 1 migration). ~12 edits (pricing page, hook, webhook, all AI server fns, invitations, UpgradeGate, app-shell for usage badge).
+- Reuse the gateway via `getPaddleClient` for quantity changes — no new secrets.
+- Use the SDK's `subscriptions.update(id, { items: [{ priceId, quantity }], prorationBillingMode: 'prorated_immediately' })` shape.
+- Migration includes all required GRANTs and RLS per the public-schema rules.
+- Existing `pro_plan` / `team_plan` IDs stay; webhook still resolves tier via `product_id`.
+
+This will go out as a single migration + one round of code changes; I'll verify by running the seat trigger against a fake over-limit insert and round-tripping a Paddle quantity bump in test.
