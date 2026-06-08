@@ -14,6 +14,14 @@ import {
   Trash2,
   CheckCircle2,
   Plus,
+  Activity,
+  Users,
+  Eye,
+  StickyNote,
+  Flag,
+  Gauge,
+  Pin,
+  PinOff,
 } from "lucide-react";
 import { useIsPlatformAdmin } from "@/hooks/use-is-platform-admin";
 import { useAuth } from "@/hooks/use-auth";
@@ -36,12 +44,22 @@ import {
   adminAdjustSeats,
   adminScheduleUserDeletion,
   adminCancelUserDeletion,
+  adminStartSupportSession,
 } from "@/lib/admin.functions";
+import {
+  adminGetCustomer360,
+  adminAddCustomerNote,
+  adminUpdateCustomerNote,
+  adminDeleteCustomerNote,
+  adminSetUserFeatureFlag,
+  adminClearUserFeatureFlag,
+} from "@/lib/customer360.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ReasonConfirmDialog } from "@/components/admin/reason-confirm-dialog";
 import { toast } from "sonner";
