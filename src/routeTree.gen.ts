@@ -38,6 +38,7 @@ import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedBacklogRouteImport } from './routes/_authenticated/backlog'
 import { Route as AuthenticatedAskNotesRouteImport } from './routes/_authenticated/ask-notes'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedAcceptTermsRouteImport } from './routes/_authenticated/accept-terms'
 import { Route as AuthMicrosoftCallbackRouteImport } from './routes/auth/microsoft.callback'
 import { Route as AuthenticatedReportsReportIdRouteImport } from './routes/_authenticated/reports.$reportId'
 import { Route as AuthenticatedMeetingsMeetingIdRouteImport } from './routes/_authenticated/meetings.$meetingId'
@@ -196,6 +197,12 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedAcceptTermsRoute =
+  AuthenticatedAcceptTermsRouteImport.update({
+    id: '/accept-terms',
+    path: '/accept-terms',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthMicrosoftCallbackRoute = AuthMicrosoftCallbackRouteImport.update({
   id: '/auth/microsoft/callback',
   path: '/auth/microsoft/callback',
@@ -284,6 +291,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
+  '/accept-terms': typeof AuthenticatedAcceptTermsRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/ask-notes': typeof AuthenticatedAskNotesRoute
   '/backlog': typeof AuthenticatedBacklogRoute
@@ -327,6 +335,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
+  '/accept-terms': typeof AuthenticatedAcceptTermsRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/ask-notes': typeof AuthenticatedAskNotesRoute
   '/backlog': typeof AuthenticatedBacklogRoute
@@ -372,6 +381,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
+  '/_authenticated/accept-terms': typeof AuthenticatedAcceptTermsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/ask-notes': typeof AuthenticatedAskNotesRoute
   '/_authenticated/backlog': typeof AuthenticatedBacklogRoute
@@ -417,6 +427,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/terms'
     | '/unsubscribe'
+    | '/accept-terms'
     | '/admin'
     | '/ask-notes'
     | '/backlog'
@@ -460,6 +471,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/terms'
     | '/unsubscribe'
+    | '/accept-terms'
     | '/admin'
     | '/ask-notes'
     | '/backlog'
@@ -504,6 +516,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/terms'
     | '/unsubscribe'
+    | '/_authenticated/accept-terms'
     | '/_authenticated/admin'
     | '/_authenticated/ask-notes'
     | '/_authenticated/backlog'
@@ -766,6 +779,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/accept-terms': {
+      id: '/_authenticated/accept-terms'
+      path: '/accept-terms'
+      fullPath: '/accept-terms'
+      preLoaderRoute: typeof AuthenticatedAcceptTermsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/auth/microsoft/callback': {
       id: '/auth/microsoft/callback'
       path: '/auth/microsoft/callback'
@@ -896,6 +916,7 @@ const AuthenticatedReportsRouteWithChildren =
   AuthenticatedReportsRoute._addFileChildren(AuthenticatedReportsRouteChildren)
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedAcceptTermsRoute: typeof AuthenticatedAcceptTermsRoute
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedAskNotesRoute: typeof AuthenticatedAskNotesRoute
   AuthenticatedBacklogRoute: typeof AuthenticatedBacklogRoute
@@ -918,6 +939,7 @@ interface AuthenticatedRouteChildren {
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedAcceptTermsRoute: AuthenticatedAcceptTermsRoute,
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedAskNotesRoute: AuthenticatedAskNotesRoute,
   AuthenticatedBacklogRoute: AuthenticatedBacklogRoute,
