@@ -125,12 +125,12 @@ function UsersPanel() {
         </TableHeader>
         <TableBody>
           {users.map((u) => (
-            <TableRow key={u.id}>
-              <TableCell>
+            <TableRow key={u.id} className="cursor-pointer hover:bg-muted/40">
+              <TableCell onClick={() => window.location.assign(`/admin/users/${u.id}`)}>
                 <div className="font-medium">{u.full_name || "—"}</div>
                 <div className="text-xs text-muted-foreground">{u.email}</div>
               </TableCell>
-              <TableCell className="text-xs text-muted-foreground">
+              <TableCell className="text-xs text-muted-foreground" onClick={() => window.location.assign(`/admin/users/${u.id}`)}>
                 {new Date(u.created_at).toLocaleDateString()}
               </TableCell>
               <TableCell>
@@ -147,7 +147,7 @@ function UsersPanel() {
                   </SelectContent>
                 </Select>
               </TableCell>
-              <TableCell>
+              <TableCell onClick={() => window.location.assign(`/admin/users/${u.id}`)}>
                 {u.status === "suspended" ? (
                   <Badge variant="destructive">suspended</Badge>
                 ) : (
@@ -155,17 +155,11 @@ function UsersPanel() {
                 )}
               </TableCell>
               <TableCell className="text-right space-x-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() =>
-                    statusMut.mutate({
-                      user_id: u.id,
-                      status: u.status === "suspended" ? "active" : "suspended",
-                    })
-                  }
-                >
-                  {u.status === "suspended" ? "Reactivate" : "Suspend"}
+                <Button size="sm" variant="outline" asChild>
+                  <Link to="/admin/users/$userId" params={{ userId: u.id }}>
+                    <Eye className="h-3.5 w-3.5 mr-1" />
+                    {u.status === "suspended" ? "Reactivate" : "Manage / Suspend"}
+                  </Link>
                 </Button>
                 <Button size="sm" onClick={() => setSupportTarget({ id: u.id, email: u.email })}>
                   Access account
