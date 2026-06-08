@@ -15,6 +15,10 @@ export type Subscription = {
   current_period_start: string | null;
   current_period_end: string | null;
   cancel_at_period_end: boolean;
+  quantity: number;
+  billing_cycle: "month" | "year";
+  trial_end: string | null;
+  past_due_since: string | null;
   environment: "sandbox" | "live";
   created_at: string;
   updated_at: string;
