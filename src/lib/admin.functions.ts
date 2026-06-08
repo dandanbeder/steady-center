@@ -714,6 +714,18 @@ export const adminListAuditLog = createServerFn({ method: "GET" })
 
 // ---------- Announcements ----------
 
+const audienceSchema = z.union([
+  z.object({ kind: z.literal("all") }),
+  z.object({
+    kind: z.literal("segment"),
+    segment: z.enum(["free", "pro", "team", "paid", "trial"]),
+  }),
+  z.object({
+    kind: z.literal("users"),
+    user_ids: z.array(z.string().uuid()).min(1).max(500),
+  }),
+]);
+
 export const adminListAnnouncements = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -733,26 +745,51 @@ export const adminUpsertAnnouncement = createServerFn({ method: "POST" })
       id: z.string().uuid().optional(),
       title: z.string().min(1).max(200),
       body: z.string().max(2000).default(""),
+      kind: z.enum(["info", "update", "maintenance", "feature"]).default("info"),
       level: z.enum(["info", "warning", "critical"]).default("info"),
-      active: z.boolean().default(false),
+      audience: audienceSchema.default({ kind: "all" }),
+      active: z.boolean().default(true),
+      publish: z.boolean().default(true),
     }).parse(i),
   )
   .handler(async ({ data, context }) => {
     await requirePlatformAdmin(context.userId);
+    const now = new Date();
+    const expires = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const baseFields = {
+      title: data.title,
+      body: data.body,
+      kind: data.kind,
+      level: data.level,
+      audience: data.audience as unknown as never,
+      active: data.active,
+    };
     if (data.id) {
+      const { data: before } = await supabaseAdmin
+        .from("announcements").select("*").eq("id", data.id).maybeSingle();
+      const patch: Record<string, unknown> = { ...baseFields };
+      if (data.publish && data.active) {
+        const pubAt = before?.published_at ?? now.toISOString();
+        patch.published_at = pubAt;
+        patch.expires_at = new Date(new Date(pubAt).getTime() + 24 * 60 * 60 * 1000).toISOString();
+      }
       const { error } = await supabaseAdmin
-        .from("announcements")
-        .update({ title: data.title, body: data.body, level: data.level, active: data.active })
-        .eq("id", data.id);
+        .from("announcements").update(patch as never).eq("id", data.id);
       if (error) throw new Error(error.message);
+      await logAudit(context.userId, null, "announcement.update", before, { id: data.id, ...patch }, null);
       return { ok: true, id: data.id };
     }
+    const insert = {
+      ...baseFields,
+      created_by: context.userId,
+      source: "manual" as const,
+      published_at: data.publish && data.active ? now.toISOString() : null,
+      expires_at: data.publish && data.active ? expires.toISOString() : null,
+    };
     const { data: row, error } = await supabaseAdmin
-      .from("announcements")
-      .insert({ title: data.title, body: data.body, level: data.level, active: data.active, created_by: context.userId })
-      .select("id")
-      .single();
+      .from("announcements").insert(insert).select("id").single();
     if (error) throw new Error(error.message);
+    await logAudit(context.userId, null, "announcement.create", null, { id: row.id, ...insert }, null);
     return { ok: true, id: row.id };
   });
 
@@ -761,8 +798,11 @@ export const adminDeleteAnnouncement = createServerFn({ method: "POST" })
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     await requirePlatformAdmin(context.userId);
+    const { data: before } = await supabaseAdmin
+      .from("announcements").select("*").eq("id", data.id).maybeSingle();
     const { error } = await supabaseAdmin.from("announcements").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
+    await logAudit(context.userId, null, "announcement.delete", before, null, null);
     return { ok: true };
   });
 
@@ -785,25 +825,55 @@ export const adminUpsertFlag = createServerFn({ method: "POST" })
       key: z.string().min(1).max(80).regex(/^[a-z0-9_.-]+$/),
       enabled: z.boolean(),
       description: z.string().max(500).default(""),
+      announce: z.boolean().default(false),
+      feature_label: z.string().max(120).optional(),
+      audience: audienceSchema.default({ kind: "all" }),
     }).parse(i),
   )
   .handler(async ({ data, context }) => {
     await requirePlatformAdmin(context.userId);
-    if (data.id) {
+    const wasEnabled = data.id
+      ? (await supabaseAdmin.from("feature_flags").select("enabled").eq("id", data.id).maybeSingle()).data?.enabled ?? false
+      : false;
+    let flagId = data.id;
+    if (flagId) {
       const { error } = await supabaseAdmin
         .from("feature_flags")
         .update({ key: data.key, enabled: data.enabled, description: data.description, updated_by: context.userId })
-        .eq("id", data.id);
+        .eq("id", flagId);
       if (error) throw new Error(error.message);
-      return { ok: true };
+    } else {
+      const { data: row, error } = await supabaseAdmin.from("feature_flags").insert({
+        key: data.key, enabled: data.enabled, description: data.description, updated_by: context.userId,
+      }).select("id").single();
+      if (error) throw new Error(error.message);
+      flagId = row.id;
     }
-    const { error } = await supabaseAdmin.from("feature_flags").insert({
-      key: data.key,
-      enabled: data.enabled,
-      description: data.description,
-      updated_by: context.userId,
-    });
-    if (error) throw new Error(error.message);
+
+    // Flag just turned ON and admin opted to announce → 24h "feature" card
+    if (data.announce && data.enabled && !wasEnabled) {
+      const label = data.feature_label?.trim() || data.key;
+      const now = new Date();
+      const expires = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+      await supabaseAdmin.from("announcements").insert({
+        title: `New: ${label} is now available`,
+        body: data.description || "",
+        kind: "feature",
+        level: "info",
+        audience: data.audience as unknown as never,
+        active: true,
+        published_at: now.toISOString(),
+        expires_at: expires.toISOString(),
+        source: "flag",
+        source_flag_id: flagId!,
+        created_by: context.userId,
+      });
+      await logAudit(context.userId, null, "announcement.create", null,
+        { source: "flag", flag_key: data.key, audience: data.audience }, null);
+    }
+
+    await logAudit(context.userId, null, data.id ? "flag.update" : "flag.create",
+      { enabled: wasEnabled }, { id: flagId, key: data.key, enabled: data.enabled }, null);
     return { ok: true };
   });
 
@@ -812,8 +882,11 @@ export const adminDeleteFlag = createServerFn({ method: "POST" })
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     await requirePlatformAdmin(context.userId);
+    const { data: before } = await supabaseAdmin
+      .from("feature_flags").select("*").eq("id", data.id).maybeSingle();
     const { error } = await supabaseAdmin.from("feature_flags").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
+    await logAudit(context.userId, null, "flag.delete", before, null, null);
     return { ok: true };
   });
 

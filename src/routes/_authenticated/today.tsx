@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { mondayOf } from "@/lib/weekly-plan";
 import { getOnboardingProfile } from "@/lib/onboarding";
 import { MyInvitationsBanner } from "@/components/my-invitations-banner";
+import { TodayAnnouncements } from "@/components/today-announcements";
 import { UpcomingMeetings } from "@/components/upcoming-meetings";
 import { DailyPulseCard } from "@/components/daily-pulse-card";
 import { WeekPulse } from "@/components/week-pulse";
@@ -147,6 +148,8 @@ function TodayPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
       <MyInvitationsBanner />
+      <TodayAnnouncements />
+
       <p className="text-sm text-muted-foreground uppercase tracking-wider">{today}</p>
       <h1 className="text-3xl sm:text-4xl lg:text-5xl mt-3 text-primary">
         {greeting()}{name ? `, ${name}` : ""}.

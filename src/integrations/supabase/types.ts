@@ -247,38 +247,90 @@ export type Database = {
         }
         Relationships: []
       }
+      announcement_dismissals: {
+        Row: {
+          announcement_id: string
+          dismissed_at: string
+          user_id: string
+        }
+        Insert: {
+          announcement_id: string
+          dismissed_at?: string
+          user_id: string
+        }
+        Update: {
+          announcement_id?: string
+          dismissed_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcement_dismissals_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "announcements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       announcements: {
         Row: {
           active: boolean
+          audience: Json
           body: string
           created_at: string
           created_by: string | null
+          expires_at: string | null
           id: string
+          kind: string
           level: string
+          published_at: string | null
+          source: string
+          source_flag_id: string | null
           title: string
           updated_at: string
         }
         Insert: {
           active?: boolean
+          audience?: Json
           body?: string
           created_at?: string
           created_by?: string | null
+          expires_at?: string | null
           id?: string
+          kind?: string
           level?: string
+          published_at?: string | null
+          source?: string
+          source_flag_id?: string | null
           title: string
           updated_at?: string
         }
         Update: {
           active?: boolean
+          audience?: Json
           body?: string
           created_at?: string
           created_by?: string | null
+          expires_at?: string | null
           id?: string
+          kind?: string
           level?: string
+          published_at?: string | null
+          source?: string
+          source_flag_id?: string | null
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "announcements_source_flag_id_fkey"
+            columns: ["source_flag_id"]
+            isOneToOne: false
+            referencedRelation: "feature_flags"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       assistant_actions: {
         Row: {
@@ -1956,6 +2008,10 @@ export type Database = {
         Returns: {
           storage_paths: string[]
         }[]
+      }
+      user_in_audience: {
+        Args: { _audience: Json; _user: string }
+        Returns: boolean
       }
     }
     Enums: {
