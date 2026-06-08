@@ -121,6 +121,29 @@ export const exportMyData = createServerFn({ method: "GET" })
       tables.task_status_history = [];
     }
 
+    // Comments authored by the user (across any parent type).
+    const { data: myComments } = await supabase
+      .from("comments")
+      .select("*")
+      .eq("author_id", userId);
+    tables.comments = (myComments ?? []) as unknown as Row[];
+
+    // Shares granted to or by the user.
+    const { data: sharesIn } = await supabase
+      .from("shares").select("*").eq("grantee_user_id", userId);
+    const { data: sharesOut } = await supabase
+      .from("shares").select("*").eq("granted_by", userId);
+    const sharesSeen = new Set<string>();
+    const shares: Row[] = [];
+    for (const r of [...(sharesIn ?? []), ...(sharesOut ?? [])]) {
+      const id = String((r as { id: string }).id);
+      if (sharesSeen.has(id)) continue;
+      sharesSeen.add(id);
+      shares.push(r as unknown as Row);
+    }
+    tables.shares = shares;
+
+
     return {
       exported_at: new Date().toISOString(),
       user_id: userId,
