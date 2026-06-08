@@ -94,6 +94,12 @@ async function deleteBusinessAttachments(businessId: string) {
   await removeAll(ATTACHMENT_BUCKET, paths);
 }
 
+/** Delete all logo files under a business's storage prefix. */
+async function deleteBusinessLogos(businessId: string) {
+  const paths = await listAllPaths(LOGO_BUCKET, businessId);
+  await removeAll(LOGO_BUCKET, paths);
+}
+
 /** Delete a business + all its child data (DB cascade) and its storage files. */
 export const deleteBusinessCascade = createServerFn({ method: "POST" })
   .middleware([requireActiveUser])
@@ -102,6 +108,7 @@ export const deleteBusinessCascade = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     await deleteBusinessAudio(userId, data.business_id);
     await deleteBusinessAttachments(data.business_id);
+    await deleteBusinessLogos(data.business_id);
     // RLS on businesses scopes to owner — DB FKs cascade the rest.
     const { error } = await supabase.from("businesses").delete().eq("id", data.business_id);
     if (error) throw new Error(error.message);
