@@ -118,7 +118,7 @@ export const updateShareRole = createServerFn({ method: "POST" })
     if (typeof data.busyOnly === "boolean") {
       if (data.busyOnly) details.busy_only = true; else delete details.busy_only;
     }
-    const { error } = await supabaseAdmin.from("shares").update({ role: data.role, details }).eq("id", data.shareId);
+    const { error } = await supabaseAdmin.from("shares").update({ role: data.role, details: details as never }).eq("id", data.shareId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
