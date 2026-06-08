@@ -83,6 +83,8 @@ import {
 import { showUndoToast } from "@/lib/undo-toast";
 import { cn } from "@/lib/utils";
 import { TagPeople } from "@/components/tag-people";
+import { ActivityAndComments } from "@/components/comments/activity-and-comments";
+
 
 
 export const Route = createFileRoute("/_authenticated/calendar")({
