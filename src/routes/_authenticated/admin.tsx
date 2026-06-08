@@ -65,6 +65,9 @@ function AdminPortal() {
         <TabsContent value="control" className="mt-6"><AppControlPanel /></TabsContent>
         <TabsContent value="audit" className="mt-6"><AuditPanel /></TabsContent>
       </Tabs>
+      <div className="pt-2">
+        <Link to="/admin/analytics" className="text-sm underline text-primary">Open Analytics dashboard →</Link>
+      </div>
     </div>
   );
 }
