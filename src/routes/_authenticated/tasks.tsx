@@ -1514,6 +1514,20 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
             )}
 
             <div>
+              <Label className="flex items-center gap-1.5"><UserCircle2 className="h-3.5 w-3.5" /> Assignee</Label>
+              <AssigneePicker
+                businessId={task.business_id}
+                value={assigneeId}
+                onChange={setAssigneeId}
+              />
+              {assigneeId && task.business_id && (
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  They'll be notified and the task will appear on their Today and My Week.
+                </p>
+              )}
+            </div>
+
+            <div>
               <Label>Outcome</Label>
               <Select
                 value={outcomeId || "__none"}
