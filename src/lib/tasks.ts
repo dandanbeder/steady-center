@@ -140,7 +140,7 @@ export async function assignTask(input: {
   priority?: TaskPriority;
   due_at?: string | null;
 }) {
-  const patch: Record<string, unknown> = { assignee_id: input.assignee_id };
+  const patch: Partial<Task> = { assignee_id: input.assignee_id };
   if (input.priority !== undefined) patch.priority = input.priority;
   if (input.due_at !== undefined) patch.due_at = input.due_at;
   const { error } = await supabase.from("tasks").update(patch).eq("id", input.task_id);
