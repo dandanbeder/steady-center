@@ -158,8 +158,11 @@ function SettingsPage() {
         <p className="text-sm text-muted-foreground mb-6">
           Choose your default model, summary style, and monthly spend cap.
         </p>
-        <div className="rounded-2xl border border-border bg-card p-6" style={{ boxShadow: "var(--shadow-soft)" }}>
-          <AiPrefsPanel />
+        <div className="space-y-4">
+          <AiUsageMeter />
+          <div className="rounded-2xl border border-border bg-card p-6" style={{ boxShadow: "var(--shadow-soft)" }}>
+            <AiPrefsPanel />
+          </div>
         </div>
       </section>
 
