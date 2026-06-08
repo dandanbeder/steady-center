@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { recordLoginEvent } from "@/lib/security.functions";
 
 export type LoginEvent = {
   id: string;
@@ -10,13 +11,14 @@ export type LoginEvent = {
 };
 
 export async function recordLogin(event: "sign_in" | "sign_out" = "sign_in") {
-  const { data: u } = await supabase.auth.getUser();
-  if (!u.user) return;
-  await supabase.from("login_history").insert({
-    user_id: u.user.id,
-    event,
-    user_agent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 500) : null,
-  });
+  // Server-side capture so the IP is the real client IP (set by the edge),
+  // not whatever a tampered client claims. Falls back silently — login
+  // history is best-effort and must never block auth.
+  try {
+    await recordLoginEvent({ data: { event } });
+  } catch (e) {
+    console.warn("[security] recordLogin failed", e);
+  }
 }
 
 export async function listLoginHistory(limit = 25): Promise<LoginEvent[]> {
