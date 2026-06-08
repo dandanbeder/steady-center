@@ -158,7 +158,7 @@ export const listShares = createServerFn({ method: "POST" })
       id: r.id as string,
       grantee_user_id: r.grantee_user_id as string,
       role: r.role as ShareRole,
-      details: (r.details as JsonObj) ?? {},
+      details: ((r.details as Record<string, string | number | boolean | null> | null) ?? {}),
       granted_by: (r.granted_by as string | null) ?? null,
       created_at: r.created_at as string,
       email: email.get(r.grantee_user_id as string) ?? null,
