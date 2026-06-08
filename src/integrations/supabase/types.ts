@@ -985,6 +985,89 @@ export type Database = {
           },
         ]
       }
+      ms_oauth_tokens: {
+        Row: {
+          access_token: string
+          account_email: string | null
+          created_at: string
+          expires_at: string
+          needs_reconnect: boolean
+          refresh_token: string
+          scope: string | null
+          tenant_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          account_email?: string | null
+          created_at?: string
+          expires_at: string
+          needs_reconnect?: boolean
+          refresh_token: string
+          scope?: string | null
+          tenant_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          account_email?: string | null
+          created_at?: string
+          expires_at?: string
+          needs_reconnect?: boolean
+          refresh_token?: string
+          scope?: string | null
+          tenant_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ms_subscriptions: {
+        Row: {
+          calendar_id: string
+          client_state: string
+          created_at: string
+          expires_at: string
+          id: string
+          resource: string
+          subscription_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          calendar_id: string
+          client_state: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          resource: string
+          subscription_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          calendar_id?: string
+          client_state?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          resource?: string
+          subscription_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ms_subscriptions_calendar_id_fkey"
+            columns: ["calendar_id"]
+            isOneToOne: false
+            referencedRelation: "calendars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       note_attachments: {
         Row: {
           business_id: string

@@ -38,12 +38,16 @@ import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedBacklogRouteImport } from './routes/_authenticated/backlog'
 import { Route as AuthenticatedAskNotesRouteImport } from './routes/_authenticated/ask-notes'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthMicrosoftCallbackRouteImport } from './routes/auth/microsoft.callback'
 import { Route as AuthenticatedReportsReportIdRouteImport } from './routes/_authenticated/reports.$reportId'
 import { Route as AuthenticatedMeetingsMeetingIdRouteImport } from './routes/_authenticated/meetings.$meetingId'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
+import { Route as ApiPublicHooksSyncMicrosoftCalendarsRouteImport } from './routes/api/public/hooks/sync-microsoft-calendars'
 import { Route as ApiPublicHooksSyncCalendarsRouteImport } from './routes/api/public/hooks/sync-calendars'
+import { Route as ApiPublicHooksRenewMicrosoftSubscriptionsRouteImport } from './routes/api/public/hooks/renew-microsoft-subscriptions'
 import { Route as ApiPublicHooksPurgeTrashRouteImport } from './routes/api/public/hooks/purge-trash'
 import { Route as ApiPublicHooksProcessRemindersRouteImport } from './routes/api/public/hooks/process-reminders'
+import { Route as ApiPublicHooksMicrosoftGraphWebhookRouteImport } from './routes/api/public/hooks/microsoft-graph-webhook'
 import { Route as ApiPublicHooksGenerateWeeklyReportsRouteImport } from './routes/api/public/hooks/generate-weekly-reports'
 import { Route as ApiPublicHooksDailyPulseRouteImport } from './routes/api/public/hooks/daily-pulse'
 import { Route as AuthenticatedAdminUsersUserIdRouteImport } from './routes/_authenticated/admin.users.$userId'
@@ -192,6 +196,11 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthMicrosoftCallbackRoute = AuthMicrosoftCallbackRouteImport.update({
+  id: '/auth/microsoft/callback',
+  path: '/auth/microsoft/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedReportsReportIdRoute =
   AuthenticatedReportsReportIdRouteImport.update({
     id: '/$reportId',
@@ -210,10 +219,22 @@ const ApiPublicPaymentsWebhookRoute =
     path: '/api/public/payments/webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksSyncMicrosoftCalendarsRoute =
+  ApiPublicHooksSyncMicrosoftCalendarsRouteImport.update({
+    id: '/api/public/hooks/sync-microsoft-calendars',
+    path: '/api/public/hooks/sync-microsoft-calendars',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksSyncCalendarsRoute =
   ApiPublicHooksSyncCalendarsRouteImport.update({
     id: '/api/public/hooks/sync-calendars',
     path: '/api/public/hooks/sync-calendars',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicHooksRenewMicrosoftSubscriptionsRoute =
+  ApiPublicHooksRenewMicrosoftSubscriptionsRouteImport.update({
+    id: '/api/public/hooks/renew-microsoft-subscriptions',
+    path: '/api/public/hooks/renew-microsoft-subscriptions',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicHooksPurgeTrashRoute =
@@ -226,6 +247,12 @@ const ApiPublicHooksProcessRemindersRoute =
   ApiPublicHooksProcessRemindersRouteImport.update({
     id: '/api/public/hooks/process-reminders',
     path: '/api/public/hooks/process-reminders',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicHooksMicrosoftGraphWebhookRoute =
+  ApiPublicHooksMicrosoftGraphWebhookRouteImport.update({
+    id: '/api/public/hooks/microsoft-graph-webhook',
+    path: '/api/public/hooks/microsoft-graph-webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicHooksGenerateWeeklyReportsRoute =
@@ -278,12 +305,16 @@ export interface FileRoutesByFullPath {
   '/trash': typeof AuthenticatedTrashRoute
   '/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
   '/reports/$reportId': typeof AuthenticatedReportsReportIdRoute
+  '/auth/microsoft/callback': typeof AuthMicrosoftCallbackRoute
   '/admin/users/$userId': typeof AuthenticatedAdminUsersUserIdRoute
   '/api/public/hooks/daily-pulse': typeof ApiPublicHooksDailyPulseRoute
   '/api/public/hooks/generate-weekly-reports': typeof ApiPublicHooksGenerateWeeklyReportsRoute
+  '/api/public/hooks/microsoft-graph-webhook': typeof ApiPublicHooksMicrosoftGraphWebhookRoute
   '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
   '/api/public/hooks/purge-trash': typeof ApiPublicHooksPurgeTrashRoute
+  '/api/public/hooks/renew-microsoft-subscriptions': typeof ApiPublicHooksRenewMicrosoftSubscriptionsRoute
   '/api/public/hooks/sync-calendars': typeof ApiPublicHooksSyncCalendarsRoute
+  '/api/public/hooks/sync-microsoft-calendars': typeof ApiPublicHooksSyncMicrosoftCalendarsRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRoutesByTo {
@@ -317,12 +348,16 @@ export interface FileRoutesByTo {
   '/trash': typeof AuthenticatedTrashRoute
   '/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
   '/reports/$reportId': typeof AuthenticatedReportsReportIdRoute
+  '/auth/microsoft/callback': typeof AuthMicrosoftCallbackRoute
   '/admin/users/$userId': typeof AuthenticatedAdminUsersUserIdRoute
   '/api/public/hooks/daily-pulse': typeof ApiPublicHooksDailyPulseRoute
   '/api/public/hooks/generate-weekly-reports': typeof ApiPublicHooksGenerateWeeklyReportsRoute
+  '/api/public/hooks/microsoft-graph-webhook': typeof ApiPublicHooksMicrosoftGraphWebhookRoute
   '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
   '/api/public/hooks/purge-trash': typeof ApiPublicHooksPurgeTrashRoute
+  '/api/public/hooks/renew-microsoft-subscriptions': typeof ApiPublicHooksRenewMicrosoftSubscriptionsRoute
   '/api/public/hooks/sync-calendars': typeof ApiPublicHooksSyncCalendarsRoute
+  '/api/public/hooks/sync-microsoft-calendars': typeof ApiPublicHooksSyncMicrosoftCalendarsRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRoutesById {
@@ -358,12 +393,16 @@ export interface FileRoutesById {
   '/_authenticated/trash': typeof AuthenticatedTrashRoute
   '/_authenticated/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
   '/_authenticated/reports/$reportId': typeof AuthenticatedReportsReportIdRoute
+  '/auth/microsoft/callback': typeof AuthMicrosoftCallbackRoute
   '/_authenticated/admin/users/$userId': typeof AuthenticatedAdminUsersUserIdRoute
   '/api/public/hooks/daily-pulse': typeof ApiPublicHooksDailyPulseRoute
   '/api/public/hooks/generate-weekly-reports': typeof ApiPublicHooksGenerateWeeklyReportsRoute
+  '/api/public/hooks/microsoft-graph-webhook': typeof ApiPublicHooksMicrosoftGraphWebhookRoute
   '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
   '/api/public/hooks/purge-trash': typeof ApiPublicHooksPurgeTrashRoute
+  '/api/public/hooks/renew-microsoft-subscriptions': typeof ApiPublicHooksRenewMicrosoftSubscriptionsRoute
   '/api/public/hooks/sync-calendars': typeof ApiPublicHooksSyncCalendarsRoute
+  '/api/public/hooks/sync-microsoft-calendars': typeof ApiPublicHooksSyncMicrosoftCalendarsRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRouteTypes {
@@ -399,12 +438,16 @@ export interface FileRouteTypes {
     | '/trash'
     | '/meetings/$meetingId'
     | '/reports/$reportId'
+    | '/auth/microsoft/callback'
     | '/admin/users/$userId'
     | '/api/public/hooks/daily-pulse'
     | '/api/public/hooks/generate-weekly-reports'
+    | '/api/public/hooks/microsoft-graph-webhook'
     | '/api/public/hooks/process-reminders'
     | '/api/public/hooks/purge-trash'
+    | '/api/public/hooks/renew-microsoft-subscriptions'
     | '/api/public/hooks/sync-calendars'
+    | '/api/public/hooks/sync-microsoft-calendars'
     | '/api/public/payments/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -438,12 +481,16 @@ export interface FileRouteTypes {
     | '/trash'
     | '/meetings/$meetingId'
     | '/reports/$reportId'
+    | '/auth/microsoft/callback'
     | '/admin/users/$userId'
     | '/api/public/hooks/daily-pulse'
     | '/api/public/hooks/generate-weekly-reports'
+    | '/api/public/hooks/microsoft-graph-webhook'
     | '/api/public/hooks/process-reminders'
     | '/api/public/hooks/purge-trash'
+    | '/api/public/hooks/renew-microsoft-subscriptions'
     | '/api/public/hooks/sync-calendars'
+    | '/api/public/hooks/sync-microsoft-calendars'
     | '/api/public/payments/webhook'
   id:
     | '__root__'
@@ -478,12 +525,16 @@ export interface FileRouteTypes {
     | '/_authenticated/trash'
     | '/_authenticated/meetings/$meetingId'
     | '/_authenticated/reports/$reportId'
+    | '/auth/microsoft/callback'
     | '/_authenticated/admin/users/$userId'
     | '/api/public/hooks/daily-pulse'
     | '/api/public/hooks/generate-weekly-reports'
+    | '/api/public/hooks/microsoft-graph-webhook'
     | '/api/public/hooks/process-reminders'
     | '/api/public/hooks/purge-trash'
+    | '/api/public/hooks/renew-microsoft-subscriptions'
     | '/api/public/hooks/sync-calendars'
+    | '/api/public/hooks/sync-microsoft-calendars'
     | '/api/public/payments/webhook'
   fileRoutesById: FileRoutesById
 }
@@ -498,11 +549,15 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
+  AuthMicrosoftCallbackRoute: typeof AuthMicrosoftCallbackRoute
   ApiPublicHooksDailyPulseRoute: typeof ApiPublicHooksDailyPulseRoute
   ApiPublicHooksGenerateWeeklyReportsRoute: typeof ApiPublicHooksGenerateWeeklyReportsRoute
+  ApiPublicHooksMicrosoftGraphWebhookRoute: typeof ApiPublicHooksMicrosoftGraphWebhookRoute
   ApiPublicHooksProcessRemindersRoute: typeof ApiPublicHooksProcessRemindersRoute
   ApiPublicHooksPurgeTrashRoute: typeof ApiPublicHooksPurgeTrashRoute
+  ApiPublicHooksRenewMicrosoftSubscriptionsRoute: typeof ApiPublicHooksRenewMicrosoftSubscriptionsRoute
   ApiPublicHooksSyncCalendarsRoute: typeof ApiPublicHooksSyncCalendarsRoute
+  ApiPublicHooksSyncMicrosoftCalendarsRoute: typeof ApiPublicHooksSyncMicrosoftCalendarsRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
 }
 
@@ -711,6 +766,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/auth/microsoft/callback': {
+      id: '/auth/microsoft/callback'
+      path: '/auth/microsoft/callback'
+      fullPath: '/auth/microsoft/callback'
+      preLoaderRoute: typeof AuthMicrosoftCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/reports/$reportId': {
       id: '/_authenticated/reports/$reportId'
       path: '/$reportId'
@@ -732,11 +794,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicPaymentsWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/sync-microsoft-calendars': {
+      id: '/api/public/hooks/sync-microsoft-calendars'
+      path: '/api/public/hooks/sync-microsoft-calendars'
+      fullPath: '/api/public/hooks/sync-microsoft-calendars'
+      preLoaderRoute: typeof ApiPublicHooksSyncMicrosoftCalendarsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/sync-calendars': {
       id: '/api/public/hooks/sync-calendars'
       path: '/api/public/hooks/sync-calendars'
       fullPath: '/api/public/hooks/sync-calendars'
       preLoaderRoute: typeof ApiPublicHooksSyncCalendarsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/renew-microsoft-subscriptions': {
+      id: '/api/public/hooks/renew-microsoft-subscriptions'
+      path: '/api/public/hooks/renew-microsoft-subscriptions'
+      fullPath: '/api/public/hooks/renew-microsoft-subscriptions'
+      preLoaderRoute: typeof ApiPublicHooksRenewMicrosoftSubscriptionsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/hooks/purge-trash': {
@@ -751,6 +827,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/hooks/process-reminders'
       fullPath: '/api/public/hooks/process-reminders'
       preLoaderRoute: typeof ApiPublicHooksProcessRemindersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/microsoft-graph-webhook': {
+      id: '/api/public/hooks/microsoft-graph-webhook'
+      path: '/api/public/hooks/microsoft-graph-webhook'
+      fullPath: '/api/public/hooks/microsoft-graph-webhook'
+      preLoaderRoute: typeof ApiPublicHooksMicrosoftGraphWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/hooks/generate-weekly-reports': {
@@ -871,24 +954,21 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
   UnsubscribeRoute: UnsubscribeRoute,
+  AuthMicrosoftCallbackRoute: AuthMicrosoftCallbackRoute,
   ApiPublicHooksDailyPulseRoute: ApiPublicHooksDailyPulseRoute,
   ApiPublicHooksGenerateWeeklyReportsRoute:
     ApiPublicHooksGenerateWeeklyReportsRoute,
+  ApiPublicHooksMicrosoftGraphWebhookRoute:
+    ApiPublicHooksMicrosoftGraphWebhookRoute,
   ApiPublicHooksProcessRemindersRoute: ApiPublicHooksProcessRemindersRoute,
   ApiPublicHooksPurgeTrashRoute: ApiPublicHooksPurgeTrashRoute,
+  ApiPublicHooksRenewMicrosoftSubscriptionsRoute:
+    ApiPublicHooksRenewMicrosoftSubscriptionsRoute,
   ApiPublicHooksSyncCalendarsRoute: ApiPublicHooksSyncCalendarsRoute,
+  ApiPublicHooksSyncMicrosoftCalendarsRoute:
+    ApiPublicHooksSyncMicrosoftCalendarsRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

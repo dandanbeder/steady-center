@@ -2,7 +2,7 @@ import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
-import { ShieldAlert, Plus, Trash2, Edit3, Search, Download } from "lucide-react";
+import { ShieldAlert, Plus, Trash2, Edit3, Eye, Search, Download } from "lucide-react";
 import { useIsPlatformAdmin } from "@/hooks/use-is-platform-admin";
 import { SubscribersPanel } from "@/components/admin/subscribers-panel";
 import { useActiveSupportSession } from "@/hooks/use-support-session";
