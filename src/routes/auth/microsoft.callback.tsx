@@ -23,12 +23,17 @@ function MicrosoftCallback() {
 
   useEffect(() => {
     let cancelled = false;
+    // Restrict postMessage to the same origin as the popup itself — the opener
+    // must be on this origin for the message to be delivered, preventing
+    // tab-napping / cross-origin leakage of OAuth completion signals.
+    const targetOrigin = window.location.origin;
     async function run() {
       if (error) {
         const msg = error_description || error;
         setStatus("error");
         setMessage(msg);
-        try { window.opener?.postMessage({ type: "ms-oauth:error", error: msg }, "*"); } catch {}
+        // Forward only a generic code; never leak provider error_description cross-window.
+        try { window.opener?.postMessage({ type: "ms-oauth:error", error: "oauth_error" }, targetOrigin); } catch {}
         return;
       }
       if (!code || !state) {
@@ -40,7 +45,7 @@ function MicrosoftCallback() {
         await completeFn({ data: { code, state } });
         if (cancelled) return;
         setStatus("done");
-        try { window.opener?.postMessage({ type: "ms-oauth:complete" }, "*"); } catch {}
+        try { window.opener?.postMessage({ type: "ms-oauth:complete" }, targetOrigin); } catch {}
         // If this is a popup, close it; otherwise redirect to settings.
         setTimeout(() => {
           if (window.opener && !window.opener.closed) {
@@ -54,7 +59,7 @@ function MicrosoftCallback() {
         const msg = e instanceof Error ? e.message : String(e);
         setStatus("error");
         setMessage(msg);
-        try { window.opener?.postMessage({ type: "ms-oauth:error", error: msg }, "*"); } catch {}
+        try { window.opener?.postMessage({ type: "ms-oauth:error", error: "oauth_error" }, targetOrigin); } catch {}
       }
     }
     run();
