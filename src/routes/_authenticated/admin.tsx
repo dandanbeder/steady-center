@@ -8,7 +8,6 @@ import { SubscribersPanel } from "@/components/admin/subscribers-panel";
 import { useActiveSupportSession } from "@/hooks/use-support-session";
 import {
   adminListUsers,
-  adminSetUserStatus,
   adminSetPlatformRole,
   adminListAnnouncements,
   adminUpsertAnnouncement,
