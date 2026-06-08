@@ -838,6 +838,9 @@ function ListWorkspace({
           onToggleSelect={toggleSelect}
           onChange={invalidate}
           onOpen={setOpenTask}
+          groupByAssignee={groupByAssignee}
+          members={memberList}
+          myId={myId}
         />
       )}
       {view === "board" && (
