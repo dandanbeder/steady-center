@@ -483,16 +483,23 @@ function ListNode({
 
 type SortKey = "priority" | "due" | "created" | "title";
 type DueFilter = "all" | "overdue" | "today" | "week" | "none";
+type AssignedFilter = "all" | "me" | "by_me" | "unassigned";
 type Filters = {
   priority: TaskPriority | "all";
   status: TaskStatus | "all";
   due: DueFilter;
+  assigned: AssignedFilter;
 };
-const DEFAULT_FILTERS: Filters = { priority: "all", status: "all", due: "all" };
+const DEFAULT_FILTERS: Filters = { priority: "all", status: "all", due: "all", assigned: "all" };
 
-function matchesFilters(t: Task, f: Filters): boolean {
+function matchesFilters(t: Task, f: Filters, myId: string | null): boolean {
   if (f.priority !== "all" && t.priority !== f.priority) return false;
   if (f.status !== "all" && t.status !== f.status) return false;
+  if (f.assigned !== "all" && myId) {
+    if (f.assigned === "me" && t.assignee_id !== myId) return false;
+    if (f.assigned === "by_me" && (t.assigned_by !== myId || !t.assignee_id || t.assignee_id === myId)) return false;
+    if (f.assigned === "unassigned" && t.assignee_id) return false;
+  }
   if (f.due !== "all") {
     if (f.due === "none") return !t.due_at;
     if (!t.due_at) return false;
