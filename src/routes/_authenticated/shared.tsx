@@ -2,8 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { CheckSquare, FileText, Calendar as CalendarIcon, Inbox } from "lucide-react";
-import { listSharedWithMe } from "@/lib/item-tags.functions";
+import {
+  CheckSquare, FileText, Calendar as CalendarIcon, Folder, ListTodo, Inbox,
+} from "lucide-react";
+import { listSharedWithMeResources, type SharedItemRow, type ResourceType } from "@/lib/shares.functions";
+import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/shared")({
   head: () => ({ meta: [{ title: "Shared with me · Heartbeat" }] }),
@@ -16,21 +19,46 @@ export const Route = createFileRoute("/_authenticated/shared")({
   notFoundComponent: () => <div className="p-8">Not found.</div>,
 });
 
+const ICONS: Record<ResourceType, typeof Folder> = {
+  folder: Folder,
+  list: ListTodo,
+  task: CheckSquare,
+  note: FileText,
+  calendar: CalendarIcon,
+};
+
+const LINKS: Record<ResourceType, string> = {
+  folder: "/tasks",
+  list: "/tasks",
+  task: "/tasks",
+  note: "/notes",
+  calendar: "/calendar",
+};
+
+const ORDER: ResourceType[] = ["folder", "list", "task", "note", "calendar"];
+const LABELS: Record<ResourceType, string> = {
+  folder: "Folders",
+  list: "Lists",
+  task: "Tasks",
+  note: "Notes",
+  calendar: "Calendars",
+};
+
 function SharedPage() {
-  const fetchShared = useServerFn(listSharedWithMe);
+  const fetchShared = useServerFn(listSharedWithMeResources);
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["shared-with-me"],
     queryFn: () => fetchShared(),
   });
 
   const grouped = useMemo(() => {
-    const m = new Map<string, { name: string; items: typeof rows }>();
+    const m = new Map<ResourceType, SharedItemRow[]>();
     for (const r of rows) {
-      const g = m.get(r.business_id);
-      if (g) g.items.push(r);
-      else m.set(r.business_id, { name: r.business_name, items: [r] });
+      const arr = m.get(r.resource_type) ?? [];
+      arr.push(r);
+      m.set(r.resource_type, arr);
     }
-    return [...m.values()];
+    return ORDER.filter((t) => m.has(t)).map((t) => ({ type: t, items: m.get(t)! }));
   }, [rows]);
 
   return (
@@ -38,7 +66,7 @@ function SharedPage() {
       <header className="mb-6">
         <h1 className="text-2xl font-serif">Shared with me</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Tasks, notes and events you've been tagged on across every space.
+          Folders, lists, tasks, notes and calendars other people have shared with you.
         </p>
       </header>
 
@@ -48,51 +76,37 @@ function SharedPage() {
         <div className="rounded-lg border border-dashed border-border p-10 text-center">
           <Inbox className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
           <p className="text-sm text-muted-foreground">
-            Nothing shared with you yet. When someone tags you on a task, note, or event it'll show up here.
+            Nothing shared with you yet.
           </p>
         </div>
       )}
 
       <div className="space-y-8">
         {grouped.map((g) => (
-          <section key={g.name}>
+          <section key={g.type}>
             <h2 className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
-              {g.name}
+              {LABELS[g.type]}
             </h2>
             <ul className="divide-y divide-border rounded-lg border border-border overflow-hidden">
               {g.items.map((r) => {
-                const Icon =
-                  r.item_type === "task"
-                    ? CheckSquare
-                    : r.item_type === "note"
-                      ? FileText
-                      : CalendarIcon;
-                const to =
-                  r.item_type === "task"
-                    ? "/tasks"
-                    : r.item_type === "note"
-                      ? "/notes"
-                      : "/calendar";
+                const Icon = ICONS[r.resource_type];
                 return (
-                  <li key={r.tag_id} className="bg-card">
+                  <li key={r.share_id} className="bg-card">
                     <Link
-                      to={to}
+                      to={LINKS[r.resource_type]}
                       className="flex items-start gap-3 p-3 hover:bg-muted transition-colors"
                     >
                       <Icon className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
                       <div className="min-w-0 flex-1">
-                        <div className="text-sm font-medium truncate">
-                          {r.title}
+                        <div className="text-sm font-medium truncate">{r.title}</div>
+                        <div className="text-xs text-muted-foreground truncate mt-0.5">
+                          {r.subtitle ? `${r.subtitle} · ` : ""}
+                          Shared by {r.owner_name ?? "Unknown"}
                         </div>
-                        {r.subtitle && (
-                          <div className="text-xs text-muted-foreground truncate mt-0.5">
-                            {r.subtitle}
-                          </div>
-                        )}
                       </div>
-                      <span className="text-[10px] uppercase tracking-wide text-muted-foreground shrink-0">
-                        {r.item_type}
-                      </span>
+                      <Badge variant="outline" className="text-xs shrink-0 capitalize">
+                        {r.role}
+                      </Badge>
                     </Link>
                   </li>
                 );

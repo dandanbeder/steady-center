@@ -109,6 +109,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { TaskTimerInline, TaskTimePanel } from "@/components/task-timer";
 import { FocusMode } from "@/components/focus-mode";
+import { ShareDialog } from "@/components/share-dialog";
 
 export const Route = createFileRoute("/_authenticated/tasks")({
   head: () => ({ meta: [{ title: "Tasks · Heartbeat" }] }),
@@ -1368,6 +1369,7 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
   const [assigneeId, setAssigneeId] = useState<string | null>(task.assignee_id);
   const [celebrate, setCelebrate] = useState<{ outcomeId: string; name: string } | null>(null);
   const [focusOn, setFocusOn] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   const dueIso = dueAt ? new Date(`${dueAt}T12:00:00`).toISOString() : null;
 
@@ -1455,8 +1457,20 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
       <Dialog open onOpenChange={(o) => !o && onClose()}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Task details</DialogTitle>
+            <DialogTitle className="flex items-center justify-between gap-2">
+              <span>Task details</span>
+              <Button size="sm" variant="outline" onClick={() => setShareOpen(true)}>
+                Share
+              </Button>
+            </DialogTitle>
           </DialogHeader>
+          <ShareDialog
+            open={shareOpen}
+            onOpenChange={setShareOpen}
+            resourceType="task"
+            resourceId={task.id}
+            resourceName={task.title}
+          />
           <div className="space-y-4">
             <div>
               <Label>Title</Label>

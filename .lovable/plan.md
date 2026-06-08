@@ -1,84 +1,96 @@
-# Comments with @mentions
+# Private-first sharing re-architecture
 
-Add a comments system so members of a shared account can discuss work in context on tasks, notes, events, and meetings. Comments merge with each item's activity log into one "Activity & comments" feed.
+This is a significant change. Today, access is membership-based: anyone in a "business" (account) sees everything in it. We will flip that to **private by default**, with explicit, per-resource shares (with inheritance through containers).
 
-## Database
+## Model
 
-New table `public.comments`:
-- `id uuid pk`, `parent_type text check in ('task','note','event','meeting')`, `parent_id uuid`
-- `business_id uuid` (denormalized — required for RLS without per-type joins)
-- `author_id uuid references auth.users`
-- `body text not null`
-- `created_at timestamptz`, `edited_at timestamptz`, `deleted_at timestamptz` (soft-delete)
-- Index on `(parent_type, parent_id, created_at)`
-- GRANT SELECT/INSERT/UPDATE/DELETE to authenticated, ALL to service_role
+New table `public.shares`:
+- `resource_type` ∈ `('folder','list','task','note','note_folder','calendar')`
+- `resource_id uuid`
+- `grantee_user_id uuid` (refs `auth.users`)
+- `role` ∈ `('viewer','commenter','member','admin')`
+- `granted_by uuid`, `created_at`
+- Unique (`resource_type`, `resource_id`, `grantee_user_id`)
+- Indexes: `(grantee_user_id, resource_type, resource_id)`, `(resource_type, resource_id)`
 
-New table `public.comment_mentions`:
-- `id`, `comment_id` (cascade), `mentioned_user_id`, `created_at`
-- Unique `(comment_id, mentioned_user_id)`
+Note: we treat a "note folder" as `folders` rows that contain notes (same table); `note_folder` is accepted as a synonym of `folder` in the helper. We keep one `folders` table.
 
-RLS:
-- SELECT comments: caller must be a member of `business_id` (use `is_member(business_id, 'viewer')`) — viewers can read.
-- INSERT comments: `is_member(business_id, 'commenter')` AND `author_id = auth.uid()`. Personal items (business_id null) only owner can post.
-- UPDATE/DELETE comments: only `author_id = auth.uid()` (self soft-delete/edit).
-- comment_mentions SELECT: same as parent comment readability (member of business). INSERT: only via trigger from comments insert (or by author).
+## Central helper
 
-Triggers:
-- `comments_set_edited_at`: sets edited_at when body changes after insert.
-- `comments_parse_mentions`: parses `@[name](uuid)` markers from body on insert/update, inserts/upserts rows into `comment_mentions`, and inserts notifications for each mentioned user (kind='comment_mention', link='/{parent_type}s/{parent_id}#comment-{id}', business_id).
-- Trash: comments are soft-deleted only; existing `purge_trash` will need extension OR handle via comments_purge job. For now: add comments to `purge_trash` (delete where deleted_at < now() - 30 days).
+```text
+public.can_access(_user uuid, _resource_type text, _resource_id uuid, _min_role text)
+  returns boolean   -- SECURITY DEFINER, STABLE
+```
 
-## Server functions (`src/lib/comments.functions.ts`)
+Logic (single source of truth, used by every read/write policy):
+1. Owner of the resource → always true.
+2. Platform superadmin → true.
+3. Direct share on this resource with role ≥ `_min_role` → true.
+4. Share on any ancestor container with role ≥ `_min_role`:
+   - task → its `list` → list's `folder` → folder ancestors
+   - list → its `folder` → folder ancestors
+   - folder → its parent folder chain
+   - note → its `folder` (if any) → folder ancestors
+   - event → its `calendar`
+   - calendar → itself only (no container)
+5. Implicit task share: `tasks.assignee_id = _user` grants `viewer` on that task (and via comments helper, `commenter`).
 
-- `listComments({ parent_type, parent_id })` — returns comments + author profile + mentions; excludes deleted unless `include_deleted`.
-- `addComment({ parent_type, parent_id, body })` — derives business_id from parent; inserts comment (trigger handles mentions/notifications).
-- `editComment({ id, body })`
-- `deleteComment({ id })` — soft-delete (sets deleted_at).
-- `suggestMentionTargets({ parent_type, parent_id })` — returns account members + people tagged on the item.
+Role rank: viewer < commenter < member < admin (owner-only operations stay owner-only).
 
-All use `requireSupabaseAuth`. business_id derivation uses existing helpers (`business_for_list` for tasks, plus direct lookups for notes/events/meetings).
+## RLS rewrite (all policies replaced)
+
+For each of `folders`, `lists`, `tasks`, `notes`, `events`, `calendars`, `comments`, `note_attachments`:
+- SELECT: `can_access(auth.uid(), type, id, 'viewer')`
+- INSERT: owner = `auth.uid()` OR `can_access(..., 'member')` on parent container
+- UPDATE: `can_access(..., 'member')`
+- DELETE: owner OR `can_access(..., 'admin')`
+- `comments` SELECT: `can_access(auth.uid(), parent_type, parent_id, 'viewer')`
+- `comments` INSERT: `can_access(..., 'commenter')`
+
+`businesses` / `memberships` stay (they still group a user's own workspace + super-admin/team context) but are no longer the access gate. Membership in a business no longer grants visibility into other members' folders/tasks/notes/calendars/events.
+
+## Shares table itself
+- SELECT: grantee, granter, or owner of the shared resource, or admin-share holder.
+- INSERT/DELETE: only owner of resource OR holder of an `admin` share on it (or platform admin).
+- Trigger: prevent sharing the Journal (block `note_type = 'journal'` notes and any folder whose path contains a journal-only marker — we already have `notes.note_type`; we forbid sharing notes where `note_type='journal'`).
+
+## Server functions (`src/lib/shares.functions.ts`)
+- `shareResource({ resourceType, resourceId, granteeEmail|userId, role })`
+- `revokeShare({ shareId })`
+- `listShares({ resourceType, resourceId })` — for owner/admin
+- `listSharedWithMe()` — grouped by type, returns resource + owner profile + role
+- `setCalendarShareDetail({ shareId, busyOnly: bool })` — adds `details` jsonb on share row (`{ busy_only: true }`); events RLS for shared calendars returns redacted titles when busy-only.
+
+All use `requireSupabaseAuth`.
 
 ## UI
+- New page `/_authenticated/shared-with-me.tsx` grouped by Folders / Lists / Tasks / Notes / Calendars, each row shows owner name + role badge.
+- "Share" action on folder, list, task, note, calendar context menus → dialog: pick people from this user's team/contacts, choose role, "busy-only" toggle for calendars.
+- Share indicator (small avatars + count) on shared items in their normal lists.
+- "Manage access" panel listing grantees with role dropdown + revoke.
+- Today / My Week / Inbox: assigned tasks remain visible (implicit share covers it).
+- Journal hides the Share action entirely.
 
-New component `src/components/comments/activity-and-comments.tsx`:
-- Props: `{ parentType, parentId, businessId }`
-- Tabs/segmented control: "Activity & comments" (merged), "Activity only", "Comments only".
-- Merged feed: comments + existing activity items (task status history, etc.) sorted by time, newest LAST.
-- Each comment row: avatar, name, relative time (`date-fns formatDistanceToNow`), body with mentions rendered as chips, edit/delete menu for own.
-- Composer at bottom: textarea with `@` autocomplete popover using `suggestMentionTargets`. Selecting inserts `@[Name](uuid)` token; rendered as a chip in preview/sent message.
-- Real-time: subscribe to `comments` table via supabase realtime channel filtered by `parent_type=eq.X,parent_id=eq.Y`; also refetch on window focus.
+## Migration of existing data
+For every existing active membership where a user is NOT the owner of the business, create direct `shares` rows on every top-level folder of that business and every calendar of that business, with role mapped from membership role (owner/admin→admin, member→member, commenter→commenter, viewer→viewer). After migration, businesses still exist but no longer leak; the helper handles all access.
 
-Mount in:
-- Task detail panel (find existing on tasks/today/backlog) 
-- Note detail (`src/routes/_authenticated/notes.tsx`)
-- Event modal (calendar)
-- Meeting detail (`src/routes/_authenticated/meetings.$meetingId.tsx`)
+## Verification test
+A SQL test at the end of the migration:
+1. Create user A and user B.
+2. A owns folder F1 (with list L1, task T1) and folder F2 (with task T2); A owns calendars C1, C2.
+3. Share only F1 and C1 with B (member).
+4. Assert (set `request.jwt.claim.sub` to B): B sees F1, L1, T1, C1 — and NOT F2, T2, C2.
+5. Assign T2 to B → B sees T2 (implicit), still not F2.
+6. Revoke F1 share → B no longer sees F1/L1/T1.
 
-Mentions in rendered text: clickable; clicking scrolls to that person's profile chip or opens a tooltip (simple: opens mailto or highlights). For v1 → tooltip with name + role.
+If any assertion fails, the migration raises and rolls back.
 
-## Realtime
-Add comments table to realtime publication.
+## Out of scope (for now)
+- Subscription/seat enforcement for grantees (kept as-is).
+- Reworking the Account Settings "Members" tab (still useful for team identity / billing context); we add a banner explaining the new model.
 
-## Notifications
-Trigger inserts `notifications` rows with `kind='comment_mention'`. Existing reminders/notification pipeline handles email/push per prefs + quiet hours (already wired for other notification kinds — confirm `process-reminders` handles `comment_mention` or just rely on in-app + standard email-notification pipeline).
+## Risks
+- Big-bang RLS swap: any view, RPC, or server function that joins across tables now sees less data. We audit `src/lib/*.functions.ts` for places that bypassed RLS via `supabaseAdmin` and confirm they're intentional.
+- Performance: `can_access` recurses through folder ancestors; we add a recursive CTE with depth cap (10) and the suggested indexes.
 
-## Files
-
-New:
-- `supabase/migrations/<ts>_comments.sql`
-- `src/lib/comments.ts` (types + browser realtime helper)
-- `src/lib/comments.functions.ts`
-- `src/components/comments/activity-and-comments.tsx`
-- `src/components/comments/mention-input.tsx` (textarea + @ autocomplete)
-- `src/components/comments/comment-body.tsx` (renders @mentions)
-
-Edited:
-- Task detail / note detail / meeting detail / event modal — add `<ActivityAndComments .../>`
-- `src/integrations/supabase/types.ts` (regen after migration)
-
-## Roles
-Composer enabled when `useMyRole(businessId).can('commenter')`. Edit/delete own only. Viewers see thread but no composer.
-
-## Out of scope
-- Editing the underlying item from the comments thread (handled by existing role gating).
-- Push notifications setup (uses existing pipeline).
+Confirm and I'll implement: migration + helper + RLS rewrite + shares server fns + UI (Share dialog, Manage access, Shared-with-me page, share indicators) + journal guard + data migration + verification test.
