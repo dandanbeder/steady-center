@@ -1365,6 +1365,7 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
   const [dueAt, setDueAt] = useState<string>(task.due_at ? task.due_at.slice(0, 10) : "");
   const [recurrence, setRecurrence] = useState<RecurrenceRule | "none">(task.recurrence_rule ?? "none");
   const [outcomeId, setOutcomeId] = useState<string>(task.outcome_id ?? "");
+  const [assigneeId, setAssigneeId] = useState<string | null>(task.assignee_id);
   const [celebrate, setCelebrate] = useState<{ outcomeId: string; name: string } | null>(null);
   const [focusOn, setFocusOn] = useState(false);
 
@@ -1375,6 +1376,12 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
     queryKey: ["outcomes-for-task", task.business_id],
     queryFn: () => listOutcomes(task.business_id),
   });
+  const { data: assignHistory = [] } = useQuery({
+    queryKey: ["task-assignment-history", task.id],
+    queryFn: () => listAssignmentHistory(task.id),
+  });
+  const { data: members = [] } = useAssignableMembers(task.business_id);
+  const memberList = members as AssignableMember[];
   const activeOutcomes = outcomes.filter(
     (o) => o.status === "active" || o.id === task.outcome_id,
   );
@@ -1392,6 +1399,10 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
         recurrence_anchor: recurrence === "none" ? null : (dueIso ?? task.recurrence_anchor),
         outcome_id: nextOutcomeId,
       });
+      // Apply assignment change separately so the BEFORE trigger validates & stamps assigner.
+      if (assigneeId !== task.assignee_id) {
+        await assignTask({ task_id: task.id, assignee_id: assigneeId });
+      }
 
       // If this completion closes out an outcome, offer to celebrate
       const wasOpen = task.status !== "done";
