@@ -353,11 +353,15 @@ function StatusSection({ data, userId, isSelf, onDone }: { data: any; userId: st
 function PlanSection({ data, userId, onDone }: { data: any; userId: string; onDone: () => void }) {
   const compFn = useServerFn(adminCompSubscription);
   const trialFn = useServerFn(adminExtendTrial);
+  const seatsFn = useServerFn(adminAdjustSeats);
   const [compOpen, setCompOpen] = useState(false);
   const [trialOpen, setTrialOpen] = useState(false);
+  const [seatsOpen, setSeatsOpen] = useState(false);
   const [plan, setPlan] = useState<"pro_plan" | "team_plan">("pro_plan");
   const [months, setMonths] = useState(1);
   const [days, setDays] = useState(14);
+  const currentSeats = (data.overrides ?? []).find((o: any) => o.key === "team_seats")?.value ?? 0;
+  const [seats, setSeats] = useState<number>(currentSeats);
   const compMut = useMutation({
     mutationFn: (reason: string) => compFn({ data: { user_id: userId, plan, months, reason } }),
     onSuccess: () => { toast.success("Subscription comped"); setCompOpen(false); onDone(); },
@@ -366,6 +370,11 @@ function PlanSection({ data, userId, onDone }: { data: any; userId: string; onDo
   const trialMut = useMutation({
     mutationFn: (reason: string) => trialFn({ data: { user_id: userId, days, reason } }),
     onSuccess: () => { toast.success("Trial extended"); setTrialOpen(false); onDone(); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const seatsMut = useMutation({
+    mutationFn: (reason: string) => seatsFn({ data: { user_id: userId, seats, reason } }),
+    onSuccess: () => { toast.success("Seats updated"); setSeatsOpen(false); onDone(); },
     onError: (e: Error) => toast.error(e.message),
   });
   const sub = data.subscription;
@@ -386,6 +395,7 @@ function PlanSection({ data, userId, onDone }: { data: any; userId: string; onDo
               Open in Paddle ↗
             </a>
           )}
+          <div><span className="text-muted-foreground">Seats override: </span><strong>{currentSeats || "—"}</strong></div>
         </div>
       ) : (
         <p className="text-sm text-muted-foreground">No subscription on record (Free).</p>
@@ -393,6 +403,7 @@ function PlanSection({ data, userId, onDone }: { data: any; userId: string; onDo
       <div className="flex flex-wrap gap-2 pt-2">
         <Button variant="outline" onClick={() => setCompOpen(true)}>Comp a plan…</Button>
         <Button variant="outline" onClick={() => setTrialOpen(true)}>Extend trial…</Button>
+        <Button variant="outline" onClick={() => { setSeats(currentSeats); setSeatsOpen(true); }}>Adjust seats…</Button>
       </div>
       <ReasonConfirmDialog
         open={compOpen}
@@ -430,6 +441,19 @@ function PlanSection({ data, userId, onDone }: { data: any; userId: string; onDo
         <div className="space-y-1">
           <Label>Days to add</Label>
           <Input type="number" min={1} max={365} value={days} onChange={(e) => setDays(parseInt(e.target.value || "7", 10))} />
+        </div>
+      </ReasonConfirmDialog>
+      <ReasonConfirmDialog
+        open={seatsOpen}
+        onOpenChange={setSeatsOpen}
+        title="Adjust seats"
+        confirmLabel="Save seats"
+        pending={seatsMut.isPending}
+        onConfirm={(r) => seatsMut.mutate(r)}
+      >
+        <div className="space-y-1">
+          <Label>Seats (0 to clear override)</Label>
+          <Input type="number" min={0} max={10000} value={seats} onChange={(e) => setSeats(parseInt(e.target.value || "0", 10))} />
         </div>
       </ReasonConfirmDialog>
     </Section>
