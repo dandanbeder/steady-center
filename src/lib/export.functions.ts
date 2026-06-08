@@ -18,6 +18,7 @@ const OWNER_TABLES = [
   "notes",
   "meetings",
   "action_items",
+  "outcomes",
   "reminders",
   "inbox_items",
   "daily_pulses",
@@ -37,6 +38,10 @@ const USER_TABLES = [
   "notifications",
   "time_entries",
   "weekly_goals",
+  "subscriptions",
+  "announcement_dismissals",
+  "user_entitlement_overrides",
+  "email_unsubscribe_tokens",
 ] as const;
 
 /** Export all data owned by the current user as a single JSON object (POPIA s23 / right of access). */
