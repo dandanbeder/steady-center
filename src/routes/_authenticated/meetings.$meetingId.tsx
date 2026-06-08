@@ -31,6 +31,8 @@ import {
 } from "@/lib/meetings";
 import { deleteMeetingRecording } from "@/lib/account.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { ActivityAndComments } from "@/components/comments/activity-and-comments";
+
 
 import { UpgradeGate } from "@/components/upgrade-gate";
 
@@ -196,6 +198,15 @@ function MeetingDetail() {
           </pre>
         </details>
       </section>
+
+      <section>
+        <ActivityAndComments
+          parentType="meeting"
+          parentId={meeting.id}
+          businessId={meeting.business_id}
+        />
+      </section>
+
 
       <ConvertDialog
         item={convertItem}

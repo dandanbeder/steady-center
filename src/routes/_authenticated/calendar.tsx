@@ -83,6 +83,8 @@ import {
 import { showUndoToast } from "@/lib/undo-toast";
 import { cn } from "@/lib/utils";
 import { TagPeople } from "@/components/tag-people";
+import { ActivityAndComments } from "@/components/comments/activity-and-comments";
+
 
 
 export const Route = createFileRoute("/_authenticated/calendar")({
@@ -1935,6 +1937,16 @@ function EditEventDialog({
               businessId={event.business_id}
             />
           </div>
+
+          {/* Activity & comments */}
+          <div className="border-t border-border pt-3">
+            <ActivityAndComments
+              parentType="event"
+              parentId={event.id}
+              businessId={event.business_id}
+            />
+          </div>
+
 
           {/* Linked items */}
           <div className="border-t border-border pt-3">
