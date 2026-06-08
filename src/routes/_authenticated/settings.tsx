@@ -21,6 +21,7 @@ import { MicrosoftSyncPanel } from "@/components/microsoft-sync-panel";
 import { WeeklyReviewSettings } from "@/components/weekly-review-settings";
 import { NotificationsPanel } from "@/components/settings/notifications-panel";
 import { AiPrefsPanel } from "@/components/settings/ai-prefs-panel";
+import { AiUsageMeter } from "@/components/ai-usage-meter";
 import { WorkingHoursPanel } from "@/components/settings/working-hours-panel";
 import { PrivacyDataPanel } from "@/components/settings/privacy-data-panel";
 import { AppearancePanel } from "@/components/settings/appearance-panel";
