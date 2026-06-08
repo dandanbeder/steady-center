@@ -25,6 +25,7 @@ import {
   adminManuallyVerifyEmail,
   adminSendPasswordReset,
   adminRevokeSessions,
+  adminSetTempPassword,
   adminSuspendUser,
   adminReactivateUser,
   adminSetPlatformRole,
@@ -32,6 +33,7 @@ import {
   adminDeleteEntitlementOverride,
   adminCompSubscription,
   adminExtendTrial,
+  adminAdjustSeats,
   adminScheduleUserDeletion,
   adminCancelUserDeletion,
 } from "@/lib/admin.functions";
