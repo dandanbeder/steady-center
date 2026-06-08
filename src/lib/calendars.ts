@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { pushEventToGoogle, deleteEventInGoogle } from "@/lib/google-calendar.functions";
+import { pushEventToMicrosoft, deleteEventInMicrosoft } from "@/lib/microsoft-calendar.functions";
 
 
 
@@ -119,7 +120,7 @@ export async function createEvent(input: {
     .select("provider")
     .eq("id", input.calendar_id)
     .maybeSingle();
-  const isSynced = cal?.provider === "google";
+  const isSynced = cal?.provider === "google" || cal?.provider === "microsoft";
 
   const { data: inserted, error } = await supabase
     .from("events")
@@ -193,11 +194,21 @@ export async function bulkInsertEvents(rows: Array<Omit<EventRow, "id" | "owner_
 
 export async function deleteEvent(id: string) {
   // Push delete to provider first (so it disappears for invitees), then soft-delete locally.
-  // We also clear external_id so a future restore creates a fresh Google event.
+  // We also clear external_id so a future restore creates a fresh event upstream.
+  const { data: ev } = await supabase
+    .from("events")
+    .select("calendar:calendars!inner(provider)")
+    .eq("id", id)
+    .maybeSingle();
+  const provider = (ev?.calendar as { provider?: string } | null)?.provider;
   try {
-    await deleteEventInGoogle({ data: { event_id: id } });
+    if (provider === "google") {
+      await deleteEventInGoogle({ data: { event_id: id } });
+    } else if (provider === "microsoft") {
+      await deleteEventInMicrosoft({ data: { event_id: id } });
+    }
   } catch (e) {
-    console.warn("Failed to delete remote Google event", e);
+    console.warn("Failed to delete remote event", e);
   }
   const { error } = await supabase
     .from("events")
@@ -226,9 +237,14 @@ async function maybePushToGoogle(eventId: string, calendarId: string): Promise<s
     .select("provider")
     .eq("id", calendarId)
     .maybeSingle();
-  if (cal?.provider !== "google") return null;
+  const provider = cal?.provider;
+  if (provider !== "google" && provider !== "microsoft") return null;
   try {
-    await pushEventToGoogle({ data: { event_id: eventId } });
+    if (provider === "google") {
+      await pushEventToGoogle({ data: { event_id: eventId } });
+    } else {
+      await pushEventToMicrosoft({ data: { event_id: eventId } });
+    }
     await supabase
       .from("events")
       .update({ sync_status: "synced", sync_error: null })
@@ -236,15 +252,16 @@ async function maybePushToGoogle(eventId: string, calendarId: string): Promise<s
     return null;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    const reconnect = /401|403|invalid_grant|unauthorized|not configured/i.test(msg);
+    const providerLabel = provider === "google" ? "Google" : "Microsoft";
+    const reconnect = /401|403|invalid_grant|unauthorized|not configured|MS_NEEDS_RECONNECT|MS_NOT_CONNECTED|MS_REFRESH_FAILED/i.test(msg);
     const friendly = reconnect
-      ? "Event saved locally, but Google sync failed — reconnect Google in Settings › Connections."
-      : `Event saved locally, but Google sync failed: ${msg.slice(0, 200)}`;
+      ? `Event saved locally, but ${providerLabel} sync failed — reconnect ${providerLabel} in Settings › Connections.`
+      : `Event saved locally, but ${providerLabel} sync failed: ${msg.slice(0, 200)}`;
     await supabase
       .from("events")
       .update({ sync_status: "failed", sync_error: friendly })
       .eq("id", eventId);
-    console.warn("Failed to push event to Google", e);
+    console.warn(`Failed to push event to ${providerLabel}`, e);
     return friendly;
   }
 }

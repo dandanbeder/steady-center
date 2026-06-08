@@ -17,6 +17,7 @@ import {
 } from "@/lib/calendars";
 import { deleteBusinessCascade, deleteMyAccount } from "@/lib/account.functions";
 import { GoogleSyncPanel } from "@/components/google-sync-panel";
+import { MicrosoftSyncPanel } from "@/components/microsoft-sync-panel";
 import { WeeklyReviewSettings } from "@/components/weekly-review-settings";
 import { NotificationsPanel } from "@/components/settings/notifications-panel";
 import { AiPrefsPanel } from "@/components/settings/ai-prefs-panel";
@@ -112,10 +113,12 @@ function SettingsPage() {
       <section>
         <h2 className="text-2xl mb-1">Calendar sync</h2>
         <p className="text-sm text-muted-foreground mb-6">
-          Connect Google Calendar. Imported calendars sync every hour and changes you make here push back to Google.
+          Connect Google or Microsoft / Outlook. Imported calendars sync hourly and changes you make here push back to the source.
         </p>
-        <div className="rounded-2xl border border-border bg-card p-6" style={{ boxShadow: "var(--shadow-soft)" }}>
+        <div className="rounded-2xl border border-border bg-card p-6 space-y-8" style={{ boxShadow: "var(--shadow-soft)" }}>
           <GoogleSyncPanel businesses={businesses} />
+          <div className="border-t border-border" />
+          <MicrosoftSyncPanel businesses={businesses} />
         </div>
       </section>
 
