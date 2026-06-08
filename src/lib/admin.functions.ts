@@ -282,6 +282,81 @@ export const adminRevokeSessions = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/** Set a one-time temporary password, force change at next login, sign all sessions out, and email the user. */
+export const adminSetTempPassword = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ user_id: z.string().uuid(), reason: z.string().min(3).max(500) }).parse(i))
+  .handler(async ({ data, context }) => {
+    await requirePlatformAdmin(context.userId);
+    const { data: u } = await supabaseAdmin.auth.admin.getUserById(data.user_id);
+    const email = u?.user?.email;
+    if (!email) throw new Error("User has no email");
+    // Generate a strong-ish but readable temp password.
+    const bytes = new Uint8Array(12);
+    crypto.getRandomValues(bytes);
+    const tempPassword =
+      "Tmp-" + Buffer.from(bytes).toString("base64").replace(/[+/=]/g, "").slice(0, 14) + "9!";
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(data.user_id, { password: tempPassword });
+    if (error) throw new Error(error.message);
+    await supabaseAdmin.from("profiles").update({ must_change_password: true }).eq("id", data.user_id);
+    // Sign out everywhere so the user must use the new temp password next.
+    await supabaseAdmin.auth.admin.signOut(data.user_id, "global");
+    try {
+      const { sendEmail, escapeHtml } = await import("@/lib/email.server");
+      await sendEmail({
+        to: email,
+        subject: "Your Heartbeat password was reset by support",
+        html:
+          `<p>Hi,</p><p>Heartbeat support set a temporary password on your account at your request.</p>` +
+          `<p><strong>Temporary password:</strong> <code>${escapeHtml(tempPassword)}</code></p>` +
+          `<p>Sign in with it now — you'll be required to choose a new password immediately.</p>` +
+          `<p>If you didn't request this, contact support right away.</p>`,
+      });
+    } catch (e) {
+      console.error("[admin] temp-password email failed", e);
+    }
+    await logAudit(context.userId, data.user_id, "auth.password.temp_set", null, { must_change: true }, data.reason);
+    return { ok: true };
+  });
+
+/** Adjust the per-user team seat allotment (stored as an entitlement override). */
+export const adminAdjustSeats = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z.object({
+      user_id: z.string().uuid(),
+      seats: z.number().int().min(0).max(10000),
+      reason: z.string().min(3).max(500),
+    }).parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    await requirePlatformAdmin(context.userId);
+    const { data: existing } = await supabaseAdmin
+      .from("user_entitlement_overrides")
+      .select("*")
+      .eq("user_id", data.user_id)
+      .eq("key", "team_seats")
+      .maybeSingle();
+    if (existing) {
+      const { error } = await supabaseAdmin
+        .from("user_entitlement_overrides")
+        .update({ value: data.seats, note: data.reason })
+        .eq("id", existing.id);
+      if (error) throw new Error(error.message);
+    } else {
+      const { error } = await supabaseAdmin.from("user_entitlement_overrides").insert({
+        user_id: data.user_id,
+        key: "team_seats",
+        value: data.seats,
+        note: data.reason,
+        created_by: context.userId,
+      });
+      if (error) throw new Error(error.message);
+    }
+    await logAudit(context.userId, data.user_id, "billing.seats.adjust", existing, { seats: data.seats }, data.reason);
+    return { ok: true };
+  });
+
 /** Legacy quick-toggle: keep for back-compat. Prefers richer Suspend/Reactivate below. */
 export const adminSetUserStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
