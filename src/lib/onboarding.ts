@@ -8,6 +8,7 @@ export type OnboardingProfile = {
   timezone: string;
   full_name: string | null;
   must_change_password: boolean;
+  terms_accepted_at: string | null;
 };
 
 export async function getOnboardingProfile(): Promise<OnboardingProfile | null> {
@@ -16,7 +17,7 @@ export async function getOnboardingProfile(): Promise<OnboardingProfile | null> 
   const { data, error } = await supabase
     .from("profiles")
     .select(
-      "onboarding_completed_at, weekly_review_day, weekly_review_hour, weekly_review_enabled, timezone, full_name, must_change_password",
+      "onboarding_completed_at, weekly_review_day, weekly_review_hour, weekly_review_enabled, timezone, full_name, must_change_password, terms_accepted_at",
     )
     .eq("id", u.user.id)
     .maybeSingle();
