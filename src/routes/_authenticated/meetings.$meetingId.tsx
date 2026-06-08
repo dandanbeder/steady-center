@@ -197,6 +197,15 @@ function MeetingDetail() {
         </details>
       </section>
 
+      <section>
+        <ActivityAndComments
+          parentType="meeting"
+          parentId={meeting.id}
+          businessId={meeting.business_id}
+        />
+      </section>
+
+
       <ConvertDialog
         item={convertItem}
         onClose={() => setConvertItem(null)}
