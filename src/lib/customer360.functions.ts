@@ -264,7 +264,7 @@ export const adminUpdateCustomerNote = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await requirePlatformAdmin(context.userId);
-    const patch: Record<string, unknown> = {};
+    const patch: { body?: string; pinned?: boolean } = {};
     if (data.body !== undefined) patch.body = data.body;
     if (data.pinned !== undefined) patch.pinned = data.pinned;
     const { data: before } = await supabaseAdmin
