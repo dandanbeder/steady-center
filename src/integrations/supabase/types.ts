@@ -1365,6 +1365,7 @@ export type Database = {
           id: string
           marketing_opt_in: boolean
           marketing_opt_in_at: string | null
+          must_change_password: boolean
           onboarding_completed_at: string | null
           organisation: string | null
           phone: string | null
@@ -1399,6 +1400,7 @@ export type Database = {
           id: string
           marketing_opt_in?: boolean
           marketing_opt_in_at?: string | null
+          must_change_password?: boolean
           onboarding_completed_at?: string | null
           organisation?: string | null
           phone?: string | null
@@ -1433,6 +1435,7 @@ export type Database = {
           id?: string
           marketing_opt_in?: boolean
           marketing_opt_in_at?: string | null
+          must_change_password?: boolean
           onboarding_completed_at?: string | null
           organisation?: string | null
           phone?: string | null
