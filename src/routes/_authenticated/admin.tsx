@@ -220,6 +220,82 @@ function AppControlPanel() {
   );
 }
 
+type AudienceState =
+  | { kind: "all" }
+  | { kind: "segment"; segment: "free" | "pro" | "team" | "paid" | "trial" }
+  | { kind: "users"; user_ids: string[] };
+
+function audienceLabel(a: AudienceState | null | undefined): string {
+  if (!a || a.kind === "all") return "All users";
+  if (a.kind === "segment") return `Segment: ${a.segment}`;
+  return `${a.user_ids.length} user${a.user_ids.length === 1 ? "" : "s"}`;
+}
+
+function AudiencePicker({
+  value, onChange,
+}: { value: AudienceState; onChange: (v: AudienceState) => void }) {
+  const seg = value.kind === "segment" ? value.segment : "free";
+  return (
+    <div className="space-y-2">
+      <Label>Audience</Label>
+      <Select
+        value={value.kind}
+        onValueChange={(v) => {
+          if (v === "all") onChange({ kind: "all" });
+          else if (v === "segment") onChange({ kind: "segment", segment: seg });
+          else onChange({ kind: "users", user_ids: [] });
+        }}
+      >
+        <SelectTrigger><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Everyone</SelectItem>
+          <SelectItem value="segment">Plan segment</SelectItem>
+          <SelectItem value="users">Specific user IDs</SelectItem>
+        </SelectContent>
+      </Select>
+      {value.kind === "segment" && (
+        <Select
+          value={value.segment}
+          onValueChange={(v) => onChange({ kind: "segment", segment: v as AudienceState extends { kind: "segment"; segment: infer S } ? S : never })}
+        >
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="free">Free (no active plan)</SelectItem>
+            <SelectItem value="trial">Trial</SelectItem>
+            <SelectItem value="paid">Paid (Pro or Team)</SelectItem>
+            <SelectItem value="pro">Pro</SelectItem>
+            <SelectItem value="team">Team</SelectItem>
+          </SelectContent>
+        </Select>
+      )}
+      {value.kind === "users" && (
+        <Textarea
+          rows={3}
+          placeholder="One user UUID per line"
+          value={value.user_ids.join("\n")}
+          onChange={(e) =>
+            onChange({
+              kind: "users",
+              user_ids: e.target.value.split(/\s+/).map((s) => s.trim()).filter(Boolean),
+            })
+          }
+        />
+      )}
+    </div>
+  );
+}
+
+type AnnouncementDraft = {
+  id?: string;
+  title: string;
+  body: string;
+  kind: "info" | "update" | "maintenance" | "feature";
+  level: "info" | "warning" | "critical";
+  audience: AudienceState;
+  active: boolean;
+  publish: boolean;
+};
+
 function AnnouncementsSection() {
   const listFn = useServerFn(adminListAnnouncements);
   const upsertFn = useServerFn(adminUpsertAnnouncement);
@@ -229,13 +305,10 @@ function AnnouncementsSection() {
     queryKey: ["admin", "announcements"],
     queryFn: () => listFn(),
   });
-  const [editing, setEditing] = useState<
-    | null
-    | { id?: string; title: string; body: string; level: "info" | "warning" | "critical"; active: boolean }
-  >(null);
+  const [editing, setEditing] = useState<AnnouncementDraft | null>(null);
 
   const mut = useMutation({
-    mutationFn: (v: NonNullable<typeof editing>) => upsertFn({ data: v }),
+    mutationFn: (v: AnnouncementDraft) => upsertFn({ data: v }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin", "announcements"] });
       qc.invalidateQueries({ queryKey: ["announcements"] });
@@ -252,13 +325,24 @@ function AnnouncementsSection() {
     },
   });
 
+  const now = Date.now();
   return (
     <div className="border rounded-lg p-4">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="font-semibold">Announcements</h2>
+        <div>
+          <h2 className="font-semibold">Announcements</h2>
+          <p className="text-xs text-muted-foreground">
+            Live for 24 hours on the Today page for the chosen audience.
+          </p>
+        </div>
         <Button
           size="sm"
-          onClick={() => setEditing({ title: "", body: "", level: "info", active: true })}
+          onClick={() =>
+            setEditing({
+              title: "", body: "", kind: "info", level: "info",
+              audience: { kind: "all" }, active: true, publish: true,
+            })
+          }
         >
           <Plus className="h-4 w-4 mr-1" /> New
         </Button>
@@ -267,21 +351,28 @@ function AnnouncementsSection() {
         {data.length === 0 && (
           <div className="text-sm text-muted-foreground">No announcements yet.</div>
         )}
-        {data.map((a) => (
-          <div
-            key={a.id}
-            className="flex items-start justify-between gap-3 border rounded p-3"
-          >
+        {data.map((a) => {
+          const live = a.active && a.published_at && a.expires_at &&
+            new Date(a.published_at).getTime() <= now && new Date(a.expires_at).getTime() > now;
+          return (
+          <div key={a.id} className="flex items-start justify-between gap-3 border rounded p-3">
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-medium">{a.title}</span>
-                <Badge variant={a.active ? "default" : "outline"}>
-                  {a.active ? "active" : "inactive"}
+                <Badge variant={live ? "default" : "outline"}>
+                  {live ? "live" : a.expires_at && new Date(a.expires_at).getTime() <= now ? "expired" : "draft"}
                 </Badge>
-                <Badge variant="secondary">{a.level}</Badge>
+                <Badge variant="secondary">{a.kind ?? "info"}</Badge>
+                <Badge variant="outline">{audienceLabel(a.audience as AudienceState)}</Badge>
+                {a.source === "flag" && <Badge variant="outline">from flag</Badge>}
               </div>
               {a.body && (
                 <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{a.body}</div>
+              )}
+              {a.expires_at && (
+                <div className="text-[10px] text-muted-foreground/70 mt-1">
+                  Expires {new Date(a.expires_at).toLocaleString()}
+                </div>
               )}
             </div>
             <div className="flex gap-1">
@@ -293,8 +384,11 @@ function AnnouncementsSection() {
                     id: a.id,
                     title: a.title,
                     body: a.body,
-                    level: a.level as "info" | "warning" | "critical",
+                    kind: (a.kind as AnnouncementDraft["kind"]) ?? "info",
+                    level: (a.level as AnnouncementDraft["level"]) ?? "info",
+                    audience: (a.audience as AudienceState) ?? { kind: "all" },
                     active: a.active,
+                    publish: true,
                   })
                 }
               >
@@ -305,13 +399,16 @@ function AnnouncementsSection() {
               </Button>
             </div>
           </div>
-        ))}
+        );})}
       </div>
 
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{editing?.id ? "Edit announcement" : "New announcement"}</DialogTitle>
+            <DialogDescription>
+              Publishing sets the 24-hour live window starting now.
+            </DialogDescription>
           </DialogHeader>
           {editing && (
             <div className="space-y-3">
@@ -323,27 +420,26 @@ function AnnouncementsSection() {
                 />
               </div>
               <div>
-                <Label>Body</Label>
+                <Label>Message</Label>
                 <Textarea
                   value={editing.body}
                   onChange={(e) => setEditing({ ...editing, body: e.target.value })}
                   rows={4}
                 />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Level</Label>
+                  <Label>Type</Label>
                   <Select
-                    value={editing.level}
-                    onValueChange={(v) =>
-                      setEditing({ ...editing, level: v as "info" | "warning" | "critical" })
-                    }
+                    value={editing.kind}
+                    onValueChange={(v) => setEditing({ ...editing, kind: v as AnnouncementDraft["kind"] })}
                   >
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="info">Info</SelectItem>
-                      <SelectItem value="warning">Warning</SelectItem>
-                      <SelectItem value="critical">Critical</SelectItem>
+                      <SelectItem value="update">Update</SelectItem>
+                      <SelectItem value="maintenance">Maintenance</SelectItem>
+                      <SelectItem value="feature">Feature</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -355,6 +451,10 @@ function AnnouncementsSection() {
                   />
                 </div>
               </div>
+              <AudiencePicker
+                value={editing.audience}
+                onChange={(v) => setEditing({ ...editing, audience: v })}
+              />
             </div>
           )}
           <DialogFooter>
@@ -363,7 +463,7 @@ function AnnouncementsSection() {
               onClick={() => editing && mut.mutate(editing)}
               disabled={!editing?.title || mut.isPending}
             >
-              Save
+              {editing?.id ? "Save" : "Publish (24h)"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -371,6 +471,16 @@ function AnnouncementsSection() {
     </div>
   );
 }
+
+type FlagDraft = {
+  id?: string;
+  key: string;
+  enabled: boolean;
+  description: string;
+  announce: boolean;
+  feature_label: string;
+  audience: AudienceState;
+};
 
 function FlagsSection() {
   const listFn = useServerFn(adminListFlags);
@@ -381,44 +491,46 @@ function FlagsSection() {
     queryKey: ["admin", "flags"],
     queryFn: () => listFn(),
   });
-  const [editing, setEditing] = useState<
-    null | { id?: string; key: string; enabled: boolean; description: string }
-  >(null);
+  const [editing, setEditing] = useState<FlagDraft | null>(null);
+
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ["admin", "flags"] });
+    qc.invalidateQueries({ queryKey: ["admin", "announcements"] });
+    qc.invalidateQueries({ queryKey: ["announcements"] });
+    qc.invalidateQueries({ queryKey: ["feature-flags"] });
+  };
 
   const mut = useMutation({
-    mutationFn: (v: NonNullable<typeof editing>) => upsertFn({ data: v }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["admin", "flags"] });
-      qc.invalidateQueries({ queryKey: ["feature-flags"] });
-      setEditing(null);
-      toast.success("Saved");
-    },
+    mutationFn: (v: FlagDraft) => upsertFn({ data: v }),
+    onSuccess: () => { invalidate(); setEditing(null); toast.success("Saved"); },
     onError: (e: Error) => toast.error(e.message),
   });
   const toggle = useMutation({
-    mutationFn: (f: { id: string; key: string; enabled: boolean; description: string }) =>
-      upsertFn({ data: f }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["admin", "flags"] });
-      qc.invalidateQueries({ queryKey: ["feature-flags"] });
-    },
+    mutationFn: (f: FlagDraft) => upsertFn({ data: f }),
+    onSuccess: invalidate,
     onError: (e: Error) => toast.error(e.message),
   });
   const del = useMutation({
     mutationFn: (id: string) => deleteFn({ data: { id } }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["admin", "flags"] });
-      qc.invalidateQueries({ queryKey: ["feature-flags"] });
-    },
+    onSuccess: invalidate,
   });
 
   return (
     <div className="border rounded-lg p-4">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="font-semibold">Feature flags</h2>
+        <div>
+          <h2 className="font-semibold">Feature flags</h2>
+          <p className="text-xs text-muted-foreground">
+            Optionally drop a 24h "New feature" card on Today when you turn one on.
+          </p>
+        </div>
         <Button
           size="sm"
-          onClick={() => setEditing({ key: "", enabled: false, description: "" })}
+          onClick={() => setEditing({
+            key: "", enabled: false, description: "",
+            announce: false, feature_label: "",
+            audience: { kind: "all" },
+          })}
         >
           <Plus className="h-4 w-4 mr-1" /> New
         </Button>
@@ -440,10 +552,8 @@ function FlagsSection() {
                 checked={f.enabled}
                 onCheckedChange={(c) =>
                   toggle.mutate({
-                    id: f.id,
-                    key: f.key,
-                    enabled: c,
-                    description: f.description,
+                    id: f.id, key: f.key, enabled: c, description: f.description,
+                    announce: false, feature_label: "", audience: { kind: "all" },
                   })
                 }
               />
@@ -452,10 +562,8 @@ function FlagsSection() {
                 variant="ghost"
                 onClick={() =>
                   setEditing({
-                    id: f.id,
-                    key: f.key,
-                    enabled: f.enabled,
-                    description: f.description,
+                    id: f.id, key: f.key, enabled: f.enabled, description: f.description,
+                    announce: false, feature_label: f.key, audience: { kind: "all" },
                   })
                 }
               >
@@ -501,6 +609,36 @@ function FlagsSection() {
                   checked={editing.enabled}
                   onCheckedChange={(c) => setEditing({ ...editing, enabled: c })}
                 />
+              </div>
+              <div className="rounded border p-3 space-y-3 bg-muted/30">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>Announce on Today</Label>
+                    <p className="text-xs text-muted-foreground">
+                      When enabling, post a 24h "New: &lt;feature&gt; is now available" card.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={editing.announce}
+                    onCheckedChange={(c) => setEditing({ ...editing, announce: c })}
+                  />
+                </div>
+                {editing.announce && (
+                  <>
+                    <div>
+                      <Label>Feature label</Label>
+                      <Input
+                        value={editing.feature_label}
+                        onChange={(e) => setEditing({ ...editing, feature_label: e.target.value })}
+                        placeholder="Defaults to the flag key"
+                      />
+                    </div>
+                    <AudiencePicker
+                      value={editing.audience}
+                      onChange={(v) => setEditing({ ...editing, audience: v })}
+                    />
+                  </>
+                )}
               </div>
             </div>
           )}
