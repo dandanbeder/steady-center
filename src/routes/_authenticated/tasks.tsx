@@ -1455,8 +1455,20 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
       <Dialog open onOpenChange={(o) => !o && onClose()}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Task details</DialogTitle>
+            <DialogTitle className="flex items-center justify-between gap-2">
+              <span>Task details</span>
+              <Button size="sm" variant="outline" onClick={() => setShareOpen(true)}>
+                Share
+              </Button>
+            </DialogTitle>
           </DialogHeader>
+          <ShareDialog
+            open={shareOpen}
+            onOpenChange={setShareOpen}
+            resourceType="task"
+            resourceId={task.id}
+            resourceName={task.title}
+          />
           <div className="space-y-4">
             <div>
               <Label>Title</Label>
