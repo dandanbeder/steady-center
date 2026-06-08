@@ -1632,6 +1632,39 @@ export type Database = {
         }
         Relationships: []
       }
+      shares: {
+        Row: {
+          created_at: string
+          details: Json
+          granted_by: string | null
+          grantee_user_id: string
+          id: string
+          resource_id: string
+          resource_type: string
+          role: string
+        }
+        Insert: {
+          created_at?: string
+          details?: Json
+          granted_by?: string | null
+          grantee_user_id: string
+          id?: string
+          resource_id: string
+          resource_type: string
+          role: string
+        }
+        Update: {
+          created_at?: string
+          details?: Json
+          granted_by?: string | null
+          grantee_user_id?: string
+          id?: string
+          resource_id?: string
+          resource_type?: string
+          role?: string
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           cancel_at_period_end: boolean | null
@@ -2074,6 +2107,10 @@ export type Database = {
     }
     Functions: {
       business_for_list: { Args: { p_list_id: string }; Returns: string }
+      can_access: {
+        Args: { _id: string; _min_role: string; _type: string; _user: string }
+        Returns: boolean
+      }
       current_membership_role: { Args: { p_business: string }; Returns: string }
       empty_my_trash: {
         Args: never
@@ -2136,6 +2173,8 @@ export type Database = {
         Args: { p_id: string; p_type: string }
         Returns: Record<string, unknown>
       }
+      resource_owner: { Args: { _id: string; _type: string }; Returns: string }
+      role_rank: { Args: { _role: string }; Returns: number }
       user_in_audience: {
         Args: { _audience: Json; _user: string }
         Returns: boolean
