@@ -29,10 +29,7 @@ export const listComments = createServerFn({ method: "POST" })
 
     const [profilesRes, mentionsRes] = await Promise.all([
       authorIds.length
-        ? supabase
-            .from("profiles")
-            .select("id, full_name, avatar_url")
-            .in("id", authorIds)
+        ? supabase.from("profiles").select("id, full_name").in("id", authorIds)
         : Promise.resolve({ data: [], error: null } as const),
       commentIds.length
         ? supabase
@@ -44,11 +41,10 @@ export const listComments = createServerFn({ method: "POST" })
     if (profilesRes.error) throw new Error(profilesRes.error.message);
     if (mentionsRes.error) throw new Error(mentionsRes.error.message);
 
-    const profileMap = new Map(
-      (profilesRes.data ?? []).map((p: { id: string; full_name: string | null; avatar_url: string | null }) => [
-        p.id,
-        p,
-      ]),
+    const profileMap = new Map<string, { full_name: string | null }>(
+      (profilesRes.data ?? []).map(
+        (p: { id: string; full_name: string | null }) => [p.id, { full_name: p.full_name }],
+      ),
     );
     const mentionsByComment = new Map<string, { mentioned_user_id: string }[]>();
     for (const m of mentionsRes.data ?? []) {
@@ -58,17 +54,16 @@ export const listComments = createServerFn({ method: "POST" })
       mentionsByComment.set(row.comment_id, arr);
     }
     return list.map((c) => {
-      const p = profileMap.get(c.author_id) as
-        | { full_name: string | null; avatar_url: string | null }
-        | undefined;
+      const p = profileMap.get(c.author_id);
       return {
         ...c,
         author_name: p?.full_name ?? null,
-        author_avatar: p?.avatar_url ?? null,
+        author_avatar: null as string | null,
         mentions: mentionsByComment.get(c.id) ?? [],
       };
     });
   });
+
 
 export const addComment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
