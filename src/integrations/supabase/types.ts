@@ -1688,6 +1688,7 @@ export type Database = {
           id: string
           paddle_customer_id: string
           paddle_subscription_id: string
+          past_due_since: string | null
           price_id: string
           product_id: string
           quantity: number
@@ -1706,6 +1707,7 @@ export type Database = {
           id?: string
           paddle_customer_id: string
           paddle_subscription_id: string
+          past_due_since?: string | null
           price_id: string
           product_id: string
           quantity?: number
@@ -1724,6 +1726,7 @@ export type Database = {
           id?: string
           paddle_customer_id?: string
           paddle_subscription_id?: string
+          past_due_since?: string | null
           price_id?: string
           product_id?: string
           quantity?: number

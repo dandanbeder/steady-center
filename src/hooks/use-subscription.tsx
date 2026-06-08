@@ -15,12 +15,17 @@ export type Subscription = {
   current_period_start: string | null;
   current_period_end: string | null;
   cancel_at_period_end: boolean;
+  quantity: number;
+  billing_cycle: "month" | "year";
+  trial_end: string | null;
+  past_due_since: string | null;
   environment: "sandbox" | "live";
   created_at: string;
   updated_at: string;
 };
 
-const ACTIVE_STATUSES = new Set(["active", "trialing", "past_due"]);
+const ACTIVE_STATUSES = new Set(["active", "trialing"]);
+const PAST_DUE_GRACE_DAYS = 3;
 
 export function useSubscription() {
   const { user } = useAuth();
@@ -76,8 +81,16 @@ export function useSubscription() {
   const sub = query.data;
   const periodEnd = sub?.current_period_end ? new Date(sub.current_period_end) : null;
   const inPeriod = !periodEnd || periodEnd > new Date();
+  // past_due keeps access for a short grace window — after that the paywall
+  // engages even though Paddle hasn't transitioned the row to canceled yet.
+  const pastDueSince = sub?.past_due_since ? new Date(sub.past_due_since) : null;
+  const inPastDueGrace =
+    sub?.status === "past_due" &&
+    !!pastDueSince &&
+    Date.now() - pastDueSince.getTime() < PAST_DUE_GRACE_DAYS * 86_400_000;
   const isActive = !!sub && (
     (ACTIVE_STATUSES.has(sub.status) && inPeriod) ||
+    inPastDueGrace ||
     (sub.status === "canceled" && !!periodEnd && periodEnd > new Date())
   );
 

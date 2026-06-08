@@ -35,6 +35,7 @@ import { Route as AuthenticatedMeetingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedJournalRouteImport } from './routes/_authenticated/journal'
 import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated/inbox'
 import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticated/calendar'
+import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticated/billing'
 import { Route as AuthenticatedBacklogRouteImport } from './routes/_authenticated/backlog'
 import { Route as AuthenticatedAskNotesRouteImport } from './routes/_authenticated/ask-notes'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
@@ -182,6 +183,11 @@ const AuthenticatedCalendarRoute = AuthenticatedCalendarRouteImport.update({
   path: '/calendar',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedBillingRoute = AuthenticatedBillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedBacklogRoute = AuthenticatedBacklogRouteImport.update({
   id: '/backlog',
   path: '/backlog',
@@ -295,6 +301,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/ask-notes': typeof AuthenticatedAskNotesRoute
   '/backlog': typeof AuthenticatedBacklogRoute
+  '/billing': typeof AuthenticatedBillingRoute
   '/calendar': typeof AuthenticatedCalendarRoute
   '/inbox': typeof AuthenticatedInboxRoute
   '/journal': typeof AuthenticatedJournalRoute
@@ -339,6 +346,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/ask-notes': typeof AuthenticatedAskNotesRoute
   '/backlog': typeof AuthenticatedBacklogRoute
+  '/billing': typeof AuthenticatedBillingRoute
   '/calendar': typeof AuthenticatedCalendarRoute
   '/inbox': typeof AuthenticatedInboxRoute
   '/journal': typeof AuthenticatedJournalRoute
@@ -385,6 +393,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/ask-notes': typeof AuthenticatedAskNotesRoute
   '/_authenticated/backlog': typeof AuthenticatedBacklogRoute
+  '/_authenticated/billing': typeof AuthenticatedBillingRoute
   '/_authenticated/calendar': typeof AuthenticatedCalendarRoute
   '/_authenticated/inbox': typeof AuthenticatedInboxRoute
   '/_authenticated/journal': typeof AuthenticatedJournalRoute
@@ -431,6 +440,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/ask-notes'
     | '/backlog'
+    | '/billing'
     | '/calendar'
     | '/inbox'
     | '/journal'
@@ -475,6 +485,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/ask-notes'
     | '/backlog'
+    | '/billing'
     | '/calendar'
     | '/inbox'
     | '/journal'
@@ -520,6 +531,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/ask-notes'
     | '/_authenticated/backlog'
+    | '/_authenticated/billing'
     | '/_authenticated/calendar'
     | '/_authenticated/inbox'
     | '/_authenticated/journal'
@@ -758,6 +770,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCalendarRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/billing': {
+      id: '/_authenticated/billing'
+      path: '/billing'
+      fullPath: '/billing'
+      preLoaderRoute: typeof AuthenticatedBillingRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/backlog': {
       id: '/_authenticated/backlog'
       path: '/backlog'
@@ -920,6 +939,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedAskNotesRoute: typeof AuthenticatedAskNotesRoute
   AuthenticatedBacklogRoute: typeof AuthenticatedBacklogRoute
+  AuthenticatedBillingRoute: typeof AuthenticatedBillingRoute
   AuthenticatedCalendarRoute: typeof AuthenticatedCalendarRoute
   AuthenticatedInboxRoute: typeof AuthenticatedInboxRoute
   AuthenticatedJournalRoute: typeof AuthenticatedJournalRoute
@@ -943,6 +963,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedAskNotesRoute: AuthenticatedAskNotesRoute,
   AuthenticatedBacklogRoute: AuthenticatedBacklogRoute,
+  AuthenticatedBillingRoute: AuthenticatedBillingRoute,
   AuthenticatedCalendarRoute: AuthenticatedCalendarRoute,
   AuthenticatedInboxRoute: AuthenticatedInboxRoute,
   AuthenticatedJournalRoute: AuthenticatedJournalRoute,
