@@ -69,7 +69,7 @@ export const shareResource = createServerFn({ method: "POST" })
       throw new Error("Owner already has full access");
     }
 
-    const details: Record<string, unknown> = {};
+    const details: JsonObj = {};
     if (data.resourceType === "calendar" && data.busyOnly) details.busy_only = true;
 
     const { data: row, error } = await supabaseAdmin
@@ -114,7 +114,7 @@ export const updateShareRole = createServerFn({ method: "POST" })
       .from("shares").select("resource_type, resource_id, details").eq("id", data.shareId).maybeSingle();
     if (!row) throw new Error("Share not found");
     await assertCanManage(userId, row.resource_type as ResourceType, row.resource_id as string);
-    const details = { ...(row.details as Record<string, unknown> | null ?? {}) };
+    const details = { ...(row.details as JsonObj | null ?? {}) };
     if (typeof data.busyOnly === "boolean") {
       if (data.busyOnly) details.busy_only = true; else delete details.busy_only;
     }
@@ -127,7 +127,7 @@ export type ShareGrantee = {
   id: string;
   grantee_user_id: string;
   role: ShareRole;
-  details: Record<string, unknown>;
+  details: JsonObj;
   granted_by: string | null;
   created_at: string;
   email: string | null;
@@ -158,7 +158,7 @@ export const listShares = createServerFn({ method: "POST" })
       id: r.id as string,
       grantee_user_id: r.grantee_user_id as string,
       role: r.role as ShareRole,
-      details: (r.details as Record<string, unknown>) ?? {},
+      details: (r.details as JsonObj) ?? {},
       granted_by: (r.granted_by as string | null) ?? null,
       created_at: r.created_at as string,
       email: email.get(r.grantee_user_id as string) ?? null,
