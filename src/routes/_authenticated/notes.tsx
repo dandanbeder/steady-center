@@ -36,6 +36,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { TagPeople } from "@/components/tag-people";
+import { ActivityAndComments } from "@/components/comments/activity-and-comments";
+
 import { MarkdownEditor, useAutosave } from "@/components/notes/markdown-editor";
 import { NewNoteDialog } from "@/components/notes/new-note-dialog";
 import { AttachmentsPanel } from "@/components/notes/attachments-panel";
