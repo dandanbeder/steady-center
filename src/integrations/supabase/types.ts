@@ -250,6 +250,66 @@ export type Database = {
         }
         Relationships: []
       }
+      analytics_daily_metrics: {
+        Row: {
+          accounts_created: number
+          ai_actions: number
+          calendars_connected: number
+          dau: number
+          day: string
+          logins: number
+          mau: number
+          meetings_created: number
+          notes_created: number
+          payment_failed: number
+          refreshed_at: string
+          signups: number
+          subscription_canceled: number
+          tasks_created: number
+          trial_converted: number
+          trial_started: number
+          wau: number
+        }
+        Insert: {
+          accounts_created?: number
+          ai_actions?: number
+          calendars_connected?: number
+          dau?: number
+          day: string
+          logins?: number
+          mau?: number
+          meetings_created?: number
+          notes_created?: number
+          payment_failed?: number
+          refreshed_at?: string
+          signups?: number
+          subscription_canceled?: number
+          tasks_created?: number
+          trial_converted?: number
+          trial_started?: number
+          wau?: number
+        }
+        Update: {
+          accounts_created?: number
+          ai_actions?: number
+          calendars_connected?: number
+          dau?: number
+          day?: string
+          logins?: number
+          mau?: number
+          meetings_created?: number
+          notes_created?: number
+          payment_failed?: number
+          refreshed_at?: string
+          signups?: number
+          subscription_canceled?: number
+          tasks_created?: number
+          trial_converted?: number
+          trial_started?: number
+          wau?: number
+        }
+        Relationships: []
+      }
       analytics_events: {
         Row: {
           account_id: string | null
@@ -284,6 +344,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      analytics_subscription_snapshots: {
+        Row: {
+          annual_subs: number
+          canceled: number
+          day: string
+          free_users: number
+          monthly_subs: number
+          mrr_pro_cents: number
+          mrr_team_cents: number
+          mrr_total_cents: number
+          past_due: number
+          pro_users: number
+          refreshed_at: string
+          team_seats_sold: number
+          team_users: number
+          trialing: number
+        }
+        Insert: {
+          annual_subs?: number
+          canceled?: number
+          day: string
+          free_users?: number
+          monthly_subs?: number
+          mrr_pro_cents?: number
+          mrr_team_cents?: number
+          mrr_total_cents?: number
+          past_due?: number
+          pro_users?: number
+          refreshed_at?: string
+          team_seats_sold?: number
+          team_users?: number
+          trialing?: number
+        }
+        Update: {
+          annual_subs?: number
+          canceled?: number
+          day?: string
+          free_users?: number
+          monthly_subs?: number
+          mrr_pro_cents?: number
+          mrr_team_cents?: number
+          mrr_total_cents?: number
+          past_due?: number
+          pro_users?: number
+          refreshed_at?: string
+          team_seats_sold?: number
+          team_users?: number
+          trialing?: number
+        }
+        Relationships: []
       }
       announcement_dismissals: {
         Row: {
@@ -2245,6 +2356,11 @@ export type Database = {
       realtime_comments_can_subscribe: {
         Args: { _topic: string }
         Returns: boolean
+      }
+      refresh_analytics_for_day: { Args: { p_day: string }; Returns: undefined }
+      refresh_subscription_snapshot_for_day: {
+        Args: { p_day: string }
+        Returns: undefined
       }
       resolve_comment_parent: {
         Args: { p_id: string; p_type: string }
