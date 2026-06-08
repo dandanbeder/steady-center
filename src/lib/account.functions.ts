@@ -176,7 +176,6 @@ export const deleteMyAccount = createServerFn({ method: "POST" })
       "reminders",
       "action_items",
       "outcomes",
-      "templates",
       "meetings",
       "notes",
       "tasks",
@@ -190,6 +189,9 @@ export const deleteMyAccount = createServerFn({ method: "POST" })
       const { error } = await supabaseAdmin.from(t).delete().eq("owner_id", userId);
       if (error) throw new Error(`${t}: ${error.message}`);
     }
+
+    // Templates have no owner_id — scope by created_by.
+    await supabaseAdmin.from("templates").delete().eq("created_by", userId);
 
     // 4. Delete all rows keyed by user_id.
     const userTables = [
