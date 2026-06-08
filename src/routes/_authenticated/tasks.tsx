@@ -1593,11 +1593,20 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
                 parentType="task"
                 parentId={task.id}
                 businessId={task.business_id}
-                activity={activity.map((a) => ({
-                  id: a.id,
-                  at: a.changed_at,
-                  label: `${a.from_status ? `${STATUS_LABEL[a.from_status]} → ` : ""}${STATUS_LABEL[a.to_status]}`,
-                }))}
+                activity={[
+                  ...activity.map((a) => ({
+                    id: a.id,
+                    at: a.changed_at,
+                    label: `${a.from_status ? `${STATUS_LABEL[a.from_status]} → ` : ""}${STATUS_LABEL[a.to_status]}`,
+                  })),
+                  ...assignHistory.map((h) => ({
+                    id: `assign-${h.id}`,
+                    at: h.changed_at,
+                    label: h.to_assignee
+                      ? `Assigned to ${memberLabel(memberList, h.to_assignee)}${h.changed_by ? ` by ${memberLabel(memberList, h.changed_by)}` : ""}`
+                      : `Unassigned${h.changed_by ? ` by ${memberLabel(memberList, h.changed_by)}` : ""}`,
+                  })),
+                ]}
               />
             </div>
 
