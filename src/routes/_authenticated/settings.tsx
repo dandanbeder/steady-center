@@ -21,6 +21,7 @@ import { MicrosoftSyncPanel } from "@/components/microsoft-sync-panel";
 import { WeeklyReviewSettings } from "@/components/weekly-review-settings";
 import { NotificationsPanel } from "@/components/settings/notifications-panel";
 import { AiPrefsPanel } from "@/components/settings/ai-prefs-panel";
+import { AiUsageMeter } from "@/components/ai-usage-meter";
 import { WorkingHoursPanel } from "@/components/settings/working-hours-panel";
 import { PrivacyDataPanel } from "@/components/settings/privacy-data-panel";
 import { AppearancePanel } from "@/components/settings/appearance-panel";
@@ -157,8 +158,11 @@ function SettingsPage() {
         <p className="text-sm text-muted-foreground mb-6">
           Choose your default model, summary style, and monthly spend cap.
         </p>
-        <div className="rounded-2xl border border-border bg-card p-6" style={{ boxShadow: "var(--shadow-soft)" }}>
-          <AiPrefsPanel />
+        <div className="space-y-4">
+          <AiUsageMeter />
+          <div className="rounded-2xl border border-border bg-card p-6" style={{ boxShadow: "var(--shadow-soft)" }}>
+            <AiPrefsPanel />
+          </div>
         </div>
       </section>
 
