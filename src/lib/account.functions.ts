@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const AUDIO_BUCKET = "meeting-audio";
 const ATTACHMENT_BUCKET = "note-attachments";
+const LOGO_BUCKET = "account-logos";
 
 /** Recursively list all files under a storage prefix and return their full paths. */
 async function listAllPaths(bucket: string, prefix: string): Promise<string[]> {
