@@ -148,19 +148,26 @@ export const deleteMyAccount = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     const { userId } = context;
 
-    // 1. Wipe storage objects owned by the user, BEFORE deleting their DB rows
-    //    so we still have the paths to look up.
+    // 1. Wipe storage objects owned by the user BEFORE deleting their DB rows,
+    //    so we still have paths to look up. Also wipe logos for businesses they own.
     await deleteUserNoteAttachments(userId);
     await deleteUserAudio(userId);
+    const { data: ownedBiz } = await supabaseAdmin
+      .from("businesses").select("id").eq("owner_id", userId);
+    for (const b of ownedBiz ?? []) {
+      await deleteBusinessLogos((b as { id: string }).id);
+    }
 
-    // 2. Delete item_tags the user created or that target the user.
+    // 2. Delete cross-user link rows where this user is the target/author.
     await supabaseAdmin.from("item_tags").delete().eq("created_by", userId);
     await supabaseAdmin.from("item_tags").delete().eq("tagged_user_id", userId);
-
-    // 3. Delete access_requests the user made.
+    await supabaseAdmin.from("comment_mentions").delete().eq("mentioned_user_id", userId);
+    await supabaseAdmin.from("comments").delete().eq("author_id", userId);
+    await supabaseAdmin.from("shares").delete().eq("grantee_user_id", userId);
+    await supabaseAdmin.from("shares").delete().eq("granted_by", userId);
     await supabaseAdmin.from("access_requests").delete().eq("requester_user_id", userId);
 
-    // 4. Delete all rows keyed by owner_id. Order matters where no FK cascade exists.
+    // 3. Delete all rows keyed by owner_id. Order matters where no FK cascade exists.
     //    Businesses cascade most child tables; we also clean rows where business_id is null.
     const ownerTables = [
       "daily_pulses",
@@ -168,6 +175,8 @@ export const deleteMyAccount = createServerFn({ method: "POST" })
       "inbox_items",
       "reminders",
       "action_items",
+      "outcomes",
+      "templates",
       "meetings",
       "notes",
       "tasks",
@@ -182,7 +191,7 @@ export const deleteMyAccount = createServerFn({ method: "POST" })
       if (error) throw new Error(`${t}: ${error.message}`);
     }
 
-    // 5. Delete all rows keyed by user_id.
+    // 4. Delete all rows keyed by user_id.
     const userTables = [
       "ai_prefs",
       "ai_usage",
@@ -194,13 +203,18 @@ export const deleteMyAccount = createServerFn({ method: "POST" })
       "time_entries",
       "weekly_goals",
       "email_unsubscribe_tokens",
+      "announcement_dismissals",
+      "user_entitlement_overrides",
+      "ms_oauth_tokens",
+      "ms_subscriptions",
+      "subscriptions",
     ] as const;
     for (const t of userTables) {
       const { error } = await supabaseAdmin.from(t).delete().eq("user_id", userId);
       if (error) throw new Error(`${t}: ${error.message}`);
     }
 
-    // 6. Profile + auth user
+    // 5. Profile + auth user
     await supabaseAdmin.from("profiles").delete().eq("id", userId);
     const { error: dErr } = await supabaseAdmin.auth.admin.deleteUser(userId);
     if (dErr) throw new Error(dErr.message);
