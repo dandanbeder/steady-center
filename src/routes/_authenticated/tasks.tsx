@@ -20,6 +20,7 @@ import {
   Link2,
   Focus,
   UserCircle2,
+} from "lucide-react";
 import {
   DndContext,
   PointerSensor,
