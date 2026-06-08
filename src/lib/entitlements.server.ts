@@ -38,7 +38,7 @@ export async function getUserPlanContext(userId: string): Promise<PlanContext> {
   const [{ data: sub }, { data: usage }] = await Promise.all([
     supabaseAdmin
       .from("subscriptions")
-      .select("status, product_id, current_period_end, quantity, billing_cycle, trial_end")
+      .select("status, product_id, current_period_end, quantity, billing_cycle, trial_end, past_due_since")
       .eq("user_id", userId)
       .eq("environment", env)
       .order("created_at", { ascending: false })
@@ -55,10 +55,18 @@ export async function getUserPlanContext(userId: string): Promise<PlanContext> {
   const now = new Date();
   const periodEnd = sub?.current_period_end ? new Date(sub.current_period_end as string) : null;
   const trialEnd = sub?.trial_end ? new Date(sub.trial_end as string) : null;
+  const pastDueSince = (sub as any)?.past_due_since
+    ? new Date((sub as any).past_due_since)
+    : null;
   const inPeriod = !periodEnd || periodEnd > now;
+  const inPastDueGrace =
+    sub?.status === "past_due" &&
+    !!pastDueSince &&
+    now.getTime() - pastDueSince.getTime() < 3 * 86_400_000;
   const active =
     !!sub &&
-    ((["active", "trialing", "past_due"].includes(sub.status as string) && inPeriod) ||
+    ((["active", "trialing"].includes(sub.status as string) && inPeriod) ||
+      inPastDueGrace ||
       (sub.status === "canceled" && !!periodEnd && periodEnd > now));
   const trialing = !!trialEnd && trialEnd > now;
 
