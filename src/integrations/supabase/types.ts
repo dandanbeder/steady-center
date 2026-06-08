@@ -219,6 +219,7 @@ export type Database = {
       }
       ai_usage: {
         Row: {
+          actions: number
           cents: number
           created_at: string
           id: string
@@ -228,6 +229,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          actions?: number
           cents?: number
           created_at?: string
           id?: string
@@ -237,6 +239,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          actions?: number
           cents?: number
           created_at?: string
           id?: string
@@ -383,6 +386,7 @@ export type Database = {
           name: string
           owner_id: string
           priority_labels: Json
+          read_only: boolean
           task_statuses: Json
         }
         Insert: {
@@ -394,6 +398,7 @@ export type Database = {
           name: string
           owner_id: string
           priority_labels?: Json
+          read_only?: boolean
           task_statuses?: Json
         }
         Update: {
@@ -405,6 +410,7 @@ export type Database = {
           name?: string
           owner_id?: string
           priority_labels?: Json
+          read_only?: boolean
           task_statuses?: Json
         }
         Relationships: []
@@ -421,6 +427,7 @@ export type Database = {
           name: string
           owner_id: string
           provider: string
+          read_only: boolean
           sync_token: string | null
         }
         Insert: {
@@ -434,6 +441,7 @@ export type Database = {
           name: string
           owner_id: string
           provider?: string
+          read_only?: boolean
           sync_token?: string | null
         }
         Update: {
@@ -447,6 +455,7 @@ export type Database = {
           name?: string
           owner_id?: string
           provider?: string
+          read_only?: boolean
           sync_token?: string | null
         }
         Relationships: [
@@ -1670,6 +1679,7 @@ export type Database = {
       }
       subscriptions: {
         Row: {
+          billing_cycle: string
           cancel_at_period_end: boolean | null
           created_at: string
           current_period_end: string | null
@@ -1680,11 +1690,14 @@ export type Database = {
           paddle_subscription_id: string
           price_id: string
           product_id: string
+          quantity: number
           status: string
+          trial_end: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          billing_cycle?: string
           cancel_at_period_end?: boolean | null
           created_at?: string
           current_period_end?: string | null
@@ -1695,11 +1708,14 @@ export type Database = {
           paddle_subscription_id: string
           price_id: string
           product_id: string
+          quantity?: number
           status?: string
+          trial_end?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          billing_cycle?: string
           cancel_at_period_end?: boolean | null
           created_at?: string
           current_period_end?: string | null
@@ -1710,7 +1726,9 @@ export type Database = {
           paddle_subscription_id?: string
           price_id?: string
           product_id?: string
+          quantity?: number
           status?: string
+          trial_end?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -2135,6 +2153,10 @@ export type Database = {
         Returns: boolean
       }
       is_platform_admin: { Args: never; Returns: boolean }
+      is_sub_active: {
+        Args: { p_period_end: string; p_status: string }
+        Returns: boolean
+      }
       is_tagged: {
         Args: { p_item_id: string; p_item_type: string }
         Returns: boolean
@@ -2166,6 +2188,7 @@ export type Database = {
           title: string
         }[]
       }
+      paid_seat_count: { Args: { p_business: string }; Returns: number }
       purge_trash: {
         Args: never
         Returns: {
@@ -2182,6 +2205,17 @@ export type Database = {
       }
       resource_owner: { Args: { _id: string; _type: string }; Returns: string }
       role_rank: { Args: { _role: string }; Returns: number }
+      user_effective_plan: {
+        Args: { p_user: string }
+        Returns: {
+          billing_cycle: string
+          current_period_end: string
+          quantity: number
+          status: string
+          tier: string
+          trial_end: string
+        }[]
+      }
       user_in_audience: {
         Args: { _audience: Json; _user: string }
         Returns: boolean
