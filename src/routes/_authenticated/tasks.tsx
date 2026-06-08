@@ -722,6 +722,19 @@ function ListWorkspace({
                 {filters.due === k && <span className="ml-auto">✓</span>}
               </DropdownMenuItem>
             ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-xs">Assignment</DropdownMenuLabel>
+            {([
+              ["all", "Anyone"],
+              ["me", "Assigned to me"],
+              ["by_me", "Assigned by me"],
+              ["unassigned", "Unassigned"],
+            ] as const).map(([k, label]) => (
+              <DropdownMenuItem key={k} onClick={() => setFilters((f) => ({ ...f, assigned: k }))}>
+                {label}
+                {filters.assigned === k && <span className="ml-auto">✓</span>}
+              </DropdownMenuItem>
+            ))}
             {activeFilterCount > 0 && (
               <>
                 <DropdownMenuSeparator />
@@ -732,6 +745,18 @@ function ListWorkspace({
             )}
           </DropdownMenuContent>
         </DropdownMenu>
+
+        {view === "list" && businessId && (
+          <Button
+            variant={groupByAssignee ? "default" : "outline"}
+            size="sm"
+            onClick={() => setGroupByAssignee((v) => !v)}
+            title="Group by assignee — see who's working on what"
+          >
+            <UserCircle2 className="h-3.5 w-3.5" /> Who's on what
+          </Button>
+        )}
+
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
