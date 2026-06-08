@@ -109,6 +109,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { TaskTimerInline, TaskTimePanel } from "@/components/task-timer";
 import { FocusMode } from "@/components/focus-mode";
+import { ShareDialog } from "@/components/share-dialog";
 
 export const Route = createFileRoute("/_authenticated/tasks")({
   head: () => ({ meta: [{ title: "Tasks · Heartbeat" }] }),
