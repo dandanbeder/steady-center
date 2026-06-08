@@ -24,7 +24,8 @@ export type Subscription = {
   updated_at: string;
 };
 
-const ACTIVE_STATUSES = new Set(["active", "trialing", "past_due"]);
+const ACTIVE_STATUSES = new Set(["active", "trialing"]);
+const PAST_DUE_GRACE_DAYS = 3;
 
 export function useSubscription() {
   const { user } = useAuth();
