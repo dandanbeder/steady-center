@@ -6,6 +6,7 @@ export type ResourceType = "folder" | "list" | "task" | "note" | "calendar";
 export type ShareRole = "viewer" | "commenter" | "member" | "admin";
 
 type ResourceOwnerResp = { owner_id: string | null };
+type JsonObj = { [k: string]: string | number | boolean | null };
 
 async function fetchOwner(type: ResourceType, id: string): Promise<string | null> {
   const table =
