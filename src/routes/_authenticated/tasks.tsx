@@ -1063,6 +1063,18 @@ function TaskRow({
             <span className="ml-2 text-xs text-muted-foreground">{subtasks.filter((s) => s.status === "done").length}/{subtasks.length}</span>
           )}
         </button>
+        {task.assignee_id && (
+          <Badge
+            variant={task.assignee_id === myId ? "default" : "secondary"}
+            className="text-[10px] gap-1 px-1.5"
+            title={task.assignee_id === myId && task.assigned_by && task.assigned_by !== myId
+              ? `Assigned to you by ${memberLabel(members, task.assigned_by)}`
+              : `Assigned to ${memberLabel(members, task.assignee_id)}`}
+          >
+            <UserCircle2 className="h-3 w-3" />
+            {task.assignee_id === myId ? "You" : memberLabel(members, task.assignee_id).split(" ")[0]}
+          </Badge>
+        )}
         {task.due_at && (
           <span className={cn("text-xs flex items-center gap-1", overdue ? "text-destructive font-medium" : "text-muted-foreground")}>
             <CalIcon className="h-3 w-3" />
