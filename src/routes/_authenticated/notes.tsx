@@ -503,6 +503,8 @@ function NoteEditor({
         <ConnectionsPanel noteId={note.id} businessId={note.business_id} />
         <AttachmentsPanel note={note} />
         <TagPeople itemType="note" itemId={note.id} businessId={note.business_id} />
+        <ActivityAndComments parentType="note" parentId={note.id} businessId={note.business_id} />
+
       </div>
     </div>
   );
