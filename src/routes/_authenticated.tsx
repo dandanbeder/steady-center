@@ -34,6 +34,10 @@ function AuthenticatedLayout() {
   }
   if (!user) return <Navigate to="/login" />;
 
+  const mustChangePw =
+    profileQ.data?.must_change_password && pathname !== "/reset-password";
+  if (mustChangePw) return <Navigate to="/reset-password" />;
+
   // Only redirect once profile has loaded and confirms onboarding isn't done.
   // Don't block the shell on the profile fetch — render immediately, redirect later if needed.
   const needsOnboarding =
