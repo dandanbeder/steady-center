@@ -1461,24 +1461,20 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
               )}
             </div>
 
-            {/* Activity */}
+            {/* Activity & comments */}
             <div className="pt-2 border-t border-border">
-              <div className="text-sm text-muted-foreground mb-2">Activity</div>
-              {activity.length === 0 ? (
-                <p className="text-xs text-muted-foreground italic">No status changes yet.</p>
-              ) : (
-                <ul className="space-y-1 text-xs text-muted-foreground max-h-32 overflow-y-auto">
-                  {activity.map((a) => (
-                    <li key={a.id}>
-                      {new Date(a.changed_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-                      {" — "}
-                      {a.from_status ? `${STATUS_LABEL[a.from_status]} → ` : ""}
-                      {STATUS_LABEL[a.to_status]}
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <ActivityAndComments
+                parentType="task"
+                parentId={task.id}
+                businessId={task.business_id}
+                activity={activity.map((a) => ({
+                  id: a.id,
+                  at: a.changed_at,
+                  label: `${a.from_status ? `${STATUS_LABEL[a.from_status]} → ` : ""}${STATUS_LABEL[a.to_status]}`,
+                }))}
+              />
             </div>
+
           </div>
           <DialogFooter className="gap-2 sm:gap-2">
             <Button variant="outline" onClick={() => setFocusOn(true)}>
