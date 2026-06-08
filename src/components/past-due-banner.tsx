@@ -7,8 +7,8 @@ const GRACE_DAYS = 3;
 export function PastDueBanner() {
   const { subscription } = useSubscription();
   if (!subscription || subscription.status !== "past_due") return null;
-  const since = (subscription as any).past_due_since
-    ? new Date((subscription as any).past_due_since)
+  const since = subscription.past_due_since
+    ? new Date(subscription.past_due_since)
     : new Date();
   const elapsedMs = Date.now() - since.getTime();
   const elapsedDays = elapsedMs / 86_400_000;
