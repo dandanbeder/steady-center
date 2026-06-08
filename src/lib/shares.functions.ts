@@ -127,7 +127,7 @@ export type ShareGrantee = {
   id: string;
   grantee_user_id: string;
   role: ShareRole;
-  details: JsonObj;
+  details: Record<string, string | number | boolean | null>;
   granted_by: string | null;
   created_at: string;
   email: string | null;
