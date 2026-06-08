@@ -2169,6 +2169,10 @@ export type Database = {
           storage_paths: string[]
         }[]
       }
+      realtime_comments_can_subscribe: {
+        Args: { _topic: string }
+        Returns: boolean
+      }
       resolve_comment_parent: {
         Args: { p_id: string; p_type: string }
         Returns: Record<string, unknown>
