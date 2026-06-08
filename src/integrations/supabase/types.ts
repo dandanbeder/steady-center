@@ -250,6 +250,41 @@ export type Database = {
         }
         Relationships: []
       }
+      analytics_events: {
+        Row: {
+          account_id: string | null
+          created_at: string
+          id: string
+          metadata: Json
+          type: string
+          user_id: string | null
+        }
+        Insert: {
+          account_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          type: string
+          user_id?: string | null
+        }
+        Update: {
+          account_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          type?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analytics_events_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       announcement_dismissals: {
         Row: {
           announcement_id: string
@@ -2190,6 +2225,15 @@ export type Database = {
           parent_id: string
           title: string
         }[]
+      }
+      log_analytics_event: {
+        Args: {
+          p_account_id: string
+          p_metadata?: Json
+          p_type: string
+          p_user_id: string
+        }
+        Returns: undefined
       }
       paid_seat_count: { Args: { p_business: string }; Returns: number }
       purge_trash: {
