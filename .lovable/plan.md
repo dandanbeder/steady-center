@@ -1,95 +1,84 @@
-# Microsoft / Outlook Calendar Integration
+# Comments with @mentions
 
-Mirrors the existing Google Calendar sync. Same `calendars` + `events` tables, same UI patterns, same sync-status badges. Nothing about Google sync changes.
+Add a comments system so members of a shared account can discuss work in context on tasks, notes, events, and meetings. Comments merge with each item's activity log into one "Activity & comments" feed.
 
-## 1. Entra app registration (you do this)
+## Database
 
-**Redirect URI to register in Entra (Web platform):**
+New table `public.comments`:
+- `id uuid pk`, `parent_type text check in ('task','note','event','meeting')`, `parent_id uuid`
+- `business_id uuid` (denormalized — required for RLS without per-type joins)
+- `author_id uuid references auth.users`
+- `body text not null`
+- `created_at timestamptz`, `edited_at timestamptz`, `deleted_at timestamptz` (soft-delete)
+- Index on `(parent_type, parent_id, created_at)`
+- GRANT SELECT/INSERT/UPDATE/DELETE to authenticated, ALL to service_role
 
-```
-https://www.heartbeatcommand.software/auth/microsoft/callback
-```
+New table `public.comment_mentions`:
+- `id`, `comment_id` (cascade), `mentioned_user_id`, `created_at`
+- Unique `(comment_id, mentioned_user_id)`
 
-Also add (for preview + lovable subdomain):
-```
-https://heartbeatcommand.software/auth/microsoft/callback
-https://steady-center.lovable.app/auth/microsoft/callback
-```
+RLS:
+- SELECT comments: caller must be a member of `business_id` (use `is_member(business_id, 'viewer')`) — viewers can read.
+- INSERT comments: `is_member(business_id, 'commenter')` AND `author_id = auth.uid()`. Personal items (business_id null) only owner can post.
+- UPDATE/DELETE comments: only `author_id = auth.uid()` (self soft-delete/edit).
+- comment_mentions SELECT: same as parent comment readability (member of business). INSERT: only via trigger from comments insert (or by author).
 
-- Supported account types: **Accounts in any organizational directory and personal Microsoft accounts** (multi-tenant + personal — `/common` authority).
-- API permissions (delegated): `Calendars.ReadWrite`, `offline_access`, `openid`, `email`, `profile`.
-- Create a client secret → give me the values via the secrets prompt.
+Triggers:
+- `comments_set_edited_at`: sets edited_at when body changes after insert.
+- `comments_parse_mentions`: parses `@[name](uuid)` markers from body on insert/update, inserts/upserts rows into `comment_mentions`, and inserts notifications for each mentioned user (kind='comment_mention', link='/{parent_type}s/{parent_id}#comment-{id}', business_id).
+- Trash: comments are soft-deleted only; existing `purge_trash` will need extension OR handle via comments_purge job. For now: add comments to `purge_trash` (delete where deleted_at < now() - 30 days).
 
-I'll request `MS_CLIENT_ID` and `MS_CLIENT_SECRET` after you approve this plan.
+## Server functions (`src/lib/comments.functions.ts`)
 
-## 2. Database (migration)
+- `listComments({ parent_type, parent_id })` — returns comments + author profile + mentions; excludes deleted unless `include_deleted`.
+- `addComment({ parent_type, parent_id, body })` — derives business_id from parent; inserts comment (trigger handles mentions/notifications).
+- `editComment({ id, body })`
+- `deleteComment({ id })` — soft-delete (sets deleted_at).
+- `suggestMentionTargets({ parent_type, parent_id })` — returns account members + people tagged on the item.
 
-- New table `ms_oauth_tokens` (server-side only, RLS denies all to authenticated):
-  - `user_id uuid PK`, `access_token text`, `refresh_token text`, `expires_at timestamptz`, `account_email text`, `scope text`, `tenant_id text`, `created_at`, `updated_at`.
-  - GRANT only to `service_role`. No `authenticated` grant — tokens never reach the client.
-- New table `ms_subscriptions` for Graph change-notification subscriptions:
-  - `id uuid PK`, `user_id`, `calendar_id` (FK → calendars), `subscription_id text` (Graph id), `client_state text`, `expires_at timestamptz`, `created_at`. RLS: service_role only.
-- Extend `calendars`: nothing new — `provider='microsoft'`, `external_id` = Graph calendar id, existing `sync_token` reused as Graph delta link.
-- Extend `events`: nothing new — `source='microsoft'`, `external_id` = Graph event id.
-- pg_cron: hourly sync + 12-hourly subscription renewal calling new public routes.
+All use `requireSupabaseAuth`. business_id derivation uses existing helpers (`business_for_list` for tasks, plus direct lookups for notes/events/meetings).
 
-## 3. Server functions — `src/lib/microsoft-calendar.functions.ts`
+## UI
 
-Pattern mirrors `google-calendar.functions.ts`. All gated by `requireSupabaseAuth`. Token helpers (`getValidAccessToken(userId)`) live in `microsoft-calendar.server.ts` and refresh tokens automatically using `refresh_token` when within 5 min of expiry.
+New component `src/components/comments/activity-and-comments.tsx`:
+- Props: `{ parentType, parentId, businessId }`
+- Tabs/segmented control: "Activity & comments" (merged), "Activity only", "Comments only".
+- Merged feed: comments + existing activity items (task status history, etc.) sorted by time, newest LAST.
+- Each comment row: avatar, name, relative time (`date-fns formatDistanceToNow`), body with mentions rendered as chips, edit/delete menu for own.
+- Composer at bottom: textarea with `@` autocomplete popover using `suggestMentionTargets`. Selecting inserts `@[Name](uuid)` token; rendered as a chip in preview/sent message.
+- Real-time: subscribe to `comments` table via supabase realtime channel filtered by `parent_type=eq.X,parent_id=eq.Y`; also refetch on window focus.
 
-- `startMicrosoftOAuth()` → returns Microsoft authorize URL with `state` (signed, contains userId + nonce) and PKCE.
-- `listRemoteMicrosoftCalendars()` → `GET /me/calendars` via Graph.
-- `importMicrosoftCalendar({ external_id, name, color, business_id })` → inserts row in `calendars` with `provider='microsoft'`, kicks off initial delta sync, registers Graph subscription.
-- `syncMicrosoftCalendarNow({ calendar_id })` → delta query: `GET /me/calendars/{id}/calendarView/delta` (or stored `@odata.deltaLink`). Stores new delta link in `calendars.sync_token`. Upserts events keyed on `(calendar_id, external_id)` — same de-dupe behavior as Google. Handles recurrence (uses calendarView so series instances are expanded), all-day (`isAllDay`), timezones (`start.timeZone` / `end.timeZone`).
-- `pushEventToMicrosoft({ event_id })` and `deleteEventInMicrosoft({ event_id })` — mirror Google counterparts; called from `src/lib/calendars.ts`.
-- `disconnectMicrosoft({ remove_events })` → deletes tokens, subscriptions, optionally events with `source='microsoft'`, and marks calendars.
+Mount in:
+- Task detail panel (find existing on tasks/today/backlog) 
+- Note detail (`src/routes/_authenticated/notes.tsx`)
+- Event modal (calendar)
+- Meeting detail (`src/routes/_authenticated/meetings.$meetingId.tsx`)
 
-## 4. Wire into existing helpers
+Mentions in rendered text: clickable; clicking scrolls to that person's profile chip or opens a tooltip (simple: opens mailto or highlights). For v1 → tooltip with name + role.
 
-`src/lib/calendars.ts` `maybePushToGoogle()` becomes provider-aware (`maybePushToProvider()`): if `provider === 'microsoft'` route to MS push/delete. Same `sync_status` lifecycle (`pending` / `synced` / `failed`). Same warning string format with "Reconnect Microsoft in Settings › Connections" on 401.
+## Realtime
+Add comments table to realtime publication.
 
-## 5. Public routes
-
-- `src/routes/auth/microsoft/callback.tsx` — handles OAuth code → exchanges for tokens → stores via server fn → closes popup / redirects to `/settings`.
-- `src/routes/api/public/hooks/sync-microsoft-calendars.ts` — hourly cron: iterates all `calendars` with `provider='microsoft'`, runs delta sync.
-- `src/routes/api/public/hooks/renew-microsoft-subscriptions.ts` — runs every 12h: renews any `ms_subscriptions` expiring within 24h.
-- `src/routes/api/public/hooks/microsoft-graph-webhook.ts` — receives Graph change notifications. Validates `clientState`, returns `validationToken` plaintext on initial handshake, otherwise enqueues a delta sync for affected calendars.
-
-All hook routes use the existing `x-cron-secret` / `apikey` pattern.
-
-## 6. UI
-
-- `src/components/microsoft-sync-panel.tsx` — clone of `GoogleSyncPanel`: "Connect Outlook" button (opens OAuth popup) → after connect, lists remote calendars with Import + business assignment + colour picker; per-synced-calendar Sync Now / Disconnect; shows account email + last_synced_at; "Reconnect Microsoft" state when token revoked.
-- `src/routes/_authenticated/settings.tsx` — replace disabled Microsoft card with `<MicrosoftSyncPanel />`. Google panel untouched.
-- Sync status badges already provider-agnostic — reused as-is.
-
-## 7. Safety & verification
-
-- RLS verified: `ms_oauth_tokens` + `ms_subscriptions` deny all access from `authenticated`; only server-side service-role queries reach them.
-- Google sync paths untouched — provider check is additive (`=== 'google'` branch preserved).
-- 401/invalid_grant from Graph → marks tokens as needing reconnect and surfaces in UI.
-- Webhook signature: validates `clientState` matches stored value per subscription.
+## Notifications
+Trigger inserts `notifications` rows with `kind='comment_mention'`. Existing reminders/notification pipeline handles email/push per prefs + quiet hours (already wired for other notification kinds — confirm `process-reminders` handles `comment_mention` or just rely on in-app + standard email-notification pipeline).
 
 ## Files
 
-**Migration**
-- Create `ms_oauth_tokens`, `ms_subscriptions` (+ grants + RLS deny-all to authenticated)
-- pg_cron: hourly sync + 12-hourly subscription renewal
+New:
+- `supabase/migrations/<ts>_comments.sql`
+- `src/lib/comments.ts` (types + browser realtime helper)
+- `src/lib/comments.functions.ts`
+- `src/components/comments/activity-and-comments.tsx`
+- `src/components/comments/mention-input.tsx` (textarea + @ autocomplete)
+- `src/components/comments/comment-body.tsx` (renders @mentions)
 
-**New**
-- `src/lib/microsoft-calendar.functions.ts`
-- `src/lib/microsoft-calendar.server.ts` (token refresh, Graph fetch helper)
-- `src/components/microsoft-sync-panel.tsx`
-- `src/routes/auth/microsoft/callback.tsx`
-- `src/routes/api/public/hooks/sync-microsoft-calendars.ts`
-- `src/routes/api/public/hooks/renew-microsoft-subscriptions.ts`
-- `src/routes/api/public/hooks/microsoft-graph-webhook.ts`
+Edited:
+- Task detail / note detail / meeting detail / event modal — add `<ActivityAndComments .../>`
+- `src/integrations/supabase/types.ts` (regen after migration)
 
-**Edited**
-- `src/lib/calendars.ts` — `maybePushToProvider()` dispatches to Google or Microsoft
-- `src/routes/_authenticated/settings.tsx` — activate Microsoft card
+## Roles
+Composer enabled when `useMyRole(businessId).can('commenter')`. Edit/delete own only. Viewers see thread but no composer.
 
-**Secrets requested after approval**
-- `MS_CLIENT_ID`
-- `MS_CLIENT_SECRET`
-- (existing `CRON_SECRET` reused)
+## Out of scope
+- Editing the underlying item from the comments thread (handled by existing role gating).
+- Push notifications setup (uses existing pipeline).
