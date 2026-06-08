@@ -31,6 +31,8 @@ import {
 } from "@/lib/meetings";
 import { deleteMeetingRecording } from "@/lib/account.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { ActivityAndComments } from "@/components/comments/activity-and-comments";
+
 
 import { UpgradeGate } from "@/components/upgrade-gate";
 
