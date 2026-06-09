@@ -10,14 +10,11 @@ export const Route = createFileRoute("/api/public/hooks/renew-microsoft-subscrip
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const apikey = request.headers.get("apikey");
         const xcron = request.headers.get("x-cron-secret");
-        const expectedApiKey = process.env.SUPABASE_PUBLISHABLE_KEY ?? "";
         const expectedCron = process.env.CRON_SECRET ?? "";
-        const ok =
-          (expectedApiKey && apikey === expectedApiKey) ||
-          (expectedCron && xcron === expectedCron);
-        if (!ok) return new Response("Unauthorized", { status: 401 });
+        if (!expectedCron || xcron !== expectedCron) {
+          return new Response("Unauthorized", { status: 401 });
+        }
 
         const cutoff = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
         const { data: subs, error } = await supabaseAdmin

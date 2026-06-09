@@ -1,6 +1,6 @@
 /**
  * Hourly Microsoft Graph delta sync. Called by pg_cron.
- * Auth: Supabase publishable key in `apikey` header, OR x-cron-secret.
+ * Auth: private CRON_SECRET via x-cron-secret header.
  */
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
@@ -10,14 +10,11 @@ export const Route = createFileRoute("/api/public/hooks/sync-microsoft-calendars
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const apikey = request.headers.get("apikey");
         const xcron = request.headers.get("x-cron-secret");
-        const expectedApiKey = process.env.SUPABASE_PUBLISHABLE_KEY ?? "";
         const expectedCron = process.env.CRON_SECRET ?? "";
-        const ok =
-          (expectedApiKey && apikey === expectedApiKey) ||
-          (expectedCron && xcron === expectedCron);
-        if (!ok) return new Response("Unauthorized", { status: 401 });
+        if (!expectedCron || xcron !== expectedCron) {
+          return new Response("Unauthorized", { status: 401 });
+        }
 
         const { data: cals, error } = await supabaseAdmin
           .from("calendars")
