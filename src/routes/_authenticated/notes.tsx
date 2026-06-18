@@ -85,10 +85,11 @@ const TYPE_ICONS: Record<NoteType, typeof FileText> = {
 
 function NotesPage() {
   const { activeId } = useActiveBusiness();
+  const { ready } = useAuthReady();
   const qc = useQueryClient();
-  const { data: businesses = [] } = useQuery({ queryKey: ["businesses"], queryFn: listBusinesses });
-  const { data: folders = [] } = useQuery({ queryKey: ["folders"], queryFn: listFolders });
-  const { data: notes = [] } = useQuery({ queryKey: ["notes"], queryFn: listNotes });
+  const { data: businesses = [] } = useQuery({ queryKey: ["businesses"], queryFn: listBusinesses, enabled: ready });
+  const { data: folders = [] } = useQuery({ queryKey: ["folders"], queryFn: listFolders, enabled: ready });
+  const { data: notes = [] } = useQuery({ queryKey: ["notes"], queryFn: listNotes, enabled: ready });
 
   const [scope, setScope] = useState<Scope>({ kind: "smart", view: "all", businessId: null });
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
