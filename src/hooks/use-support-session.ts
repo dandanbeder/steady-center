@@ -26,7 +26,7 @@ export function useActiveSupportSession() {
   // loop in the network tab for ordinary users.
   const adminQ = useQuery({
     queryKey: ["is-platform-admin", user?.id],
-    queryFn: () => isAdminFn() as Promise<boolean>,
+    queryFn: () => isAdminFn().then((r) => !!(r as { isAdmin?: boolean }).isAdmin),
     enabled: !!user,
     staleTime: 5 * 60_000,
   });
