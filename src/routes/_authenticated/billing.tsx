@@ -379,8 +379,7 @@ function BillingPage() {
         </Card>
 
         <p className="text-center text-xs text-muted-foreground">
-          Payments handled by Paddle as merchant of record. Need a different plan?{" "}
-          <Link to="/pricing" className="underline">View all plans</Link>.
+          Payments handled by Paddle as merchant of record.
         </p>
       </div>
     </div>
