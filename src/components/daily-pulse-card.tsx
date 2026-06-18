@@ -141,6 +141,8 @@ function MorningPulseCard({ pulse, onRefresh, busy }: { pulse: DailyPulse; onRef
           </ol>
         </div>
       )}
+
+      <DailyQuote />
     </div>
   );
 }
