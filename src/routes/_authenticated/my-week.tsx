@@ -90,23 +90,28 @@ function MyWeekPage() {
 
   const weekKey = weekStart.toISOString();
 
+  const { ready } = useAuthReady();
   const { data: tasks = [] } = useQuery({
     queryKey: ["my-week-tasks", weekKey],
     queryFn: () => listTasksInRange(weekStart, weekEnd),
+    enabled: ready,
   });
   const { data: events = [] } = useQuery({
     queryKey: ["my-week-events", weekKey],
     queryFn: () => listEvents(weekStart, weekEnd),
+    enabled: ready,
   });
   const { data: businesses = [] } = useQuery({
     queryKey: ["businesses"],
     queryFn: listBusinesses,
+    enabled: ready,
   });
-  const { data: lists = [] } = useQuery({ queryKey: ["lists"], queryFn: listLists });
-  const { data: folders = [] } = useQuery({ queryKey: ["folders"], queryFn: listFolders });
+  const { data: lists = [] } = useQuery({ queryKey: ["lists"], queryFn: listLists, enabled: ready });
+  const { data: folders = [] } = useQuery({ queryKey: ["folders"], queryFn: listFolders, enabled: ready });
   const { data: hours } = useQuery({
     queryKey: ["working-hours"],
     queryFn: getWorkingHours,
+    enabled: ready,
   });
 
   const dailyCap = hours?.daily_capacity_hours ?? 6;
