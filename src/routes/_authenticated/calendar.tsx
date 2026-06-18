@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuthReady } from "@/hooks/use-auth-ready";
 import {
   ChevronLeft,
   ChevronRight,
@@ -198,13 +199,16 @@ function CalendarPage() {
   }, [expanded]);
 
 
+  const { ready } = useAuthReady();
   const { data: businesses = [] } = useQuery({
     queryKey: ["businesses"],
     queryFn: listBusinesses,
+    enabled: ready,
   });
   const { data: calendars = [] } = useQuery({
     queryKey: ["calendars"],
     queryFn: listCalendars,
+    enabled: ready,
   });
 
   const range = useMemo(() => {
@@ -227,6 +231,7 @@ function CalendarPage() {
   const { data: events = [] } = useQuery({
     queryKey: ["events", range.start.toISOString(), range.end.toISOString()],
     queryFn: () => listEvents(range.start, range.end),
+    enabled: ready,
   });
 
   const visibleCalendars = useMemo(

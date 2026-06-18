@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuthReady } from "@/hooks/use-auth-ready";
 import {
   Plus,
   Trash2,
@@ -85,10 +86,11 @@ const TYPE_ICONS: Record<NoteType, typeof FileText> = {
 
 function NotesPage() {
   const { activeId } = useActiveBusiness();
+  const { ready } = useAuthReady();
   const qc = useQueryClient();
-  const { data: businesses = [] } = useQuery({ queryKey: ["businesses"], queryFn: listBusinesses });
-  const { data: folders = [] } = useQuery({ queryKey: ["folders"], queryFn: listFolders });
-  const { data: notes = [] } = useQuery({ queryKey: ["notes"], queryFn: listNotes });
+  const { data: businesses = [] } = useQuery({ queryKey: ["businesses"], queryFn: listBusinesses, enabled: ready });
+  const { data: folders = [] } = useQuery({ queryKey: ["folders"], queryFn: listFolders, enabled: ready });
+  const { data: notes = [] } = useQuery({ queryKey: ["notes"], queryFn: listNotes, enabled: ready });
 
   const [scope, setScope] = useState<Scope>({ kind: "smart", view: "all", businessId: null });
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
