@@ -45,7 +45,7 @@ export function UpgradeGate({
         </CardHeader>
         <CardContent className="flex justify-center">
           <Button asChild>
-            <Link to="/pricing">View plans</Link>
+            <Link to="/billing">Manage plan</Link>
           </Button>
         </CardContent>
       </Card>

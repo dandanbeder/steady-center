@@ -164,10 +164,8 @@ function BillingPage() {
           <p className="mt-2 text-muted-foreground">
             You're on the Free plan. Upgrade to unlock Pro or Team features.
           </p>
-          <div className="mt-6">
-            <Button asChild>
-              <Link to="/pricing">View plans</Link>
-            </Button>
+          <div className="mt-6 text-sm text-muted-foreground">
+            Contact support to change your plan.
           </div>
           <div className="mt-10">
             <AiUsageMeter />
@@ -381,8 +379,7 @@ function BillingPage() {
         </Card>
 
         <p className="text-center text-xs text-muted-foreground">
-          Payments handled by Paddle as merchant of record. Need a different plan?{" "}
-          <Link to="/pricing" className="underline">View all plans</Link>.
+          Payments handled by Paddle as merchant of record.
         </p>
       </div>
     </div>

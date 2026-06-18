@@ -27,13 +27,13 @@ export function AiUsageMeter({ compact = false }: { compact?: boolean }) {
             You've hit your monthly limit. Upgrade for more.
           </span>
           <Button size="sm" asChild>
-            <Link to="/pricing">Upgrade</Link>
+            <Link to="/billing">Manage</Link>
           </Button>
         </div>
       )}
       {!compact && !over && plan.tier === "free" && pct >= 75 && (
         <p className="mt-2 text-xs text-muted-foreground">
-          Approaching your Free limit — <Link to="/pricing" className="underline">upgrade to Pro</Link> for 400 actions/month.
+          Approaching your Free limit — <Link to="/billing" className="underline">manage your plan</Link> for more actions.
         </p>
       )}
     </div>
