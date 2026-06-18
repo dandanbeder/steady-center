@@ -164,10 +164,8 @@ function BillingPage() {
           <p className="mt-2 text-muted-foreground">
             You're on the Free plan. Upgrade to unlock Pro or Team features.
           </p>
-          <div className="mt-6">
-            <Button asChild>
-              <Link to="/pricing">View plans</Link>
-            </Button>
+          <div className="mt-6 text-sm text-muted-foreground">
+            Contact support to change your plan.
           </div>
           <div className="mt-10">
             <AiUsageMeter />
