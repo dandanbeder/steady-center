@@ -8,6 +8,21 @@ import {
   completeTask, confirmFocus3, getTodaysPulses, rollForwardTask, type DailyPulse, type FocusItem,
 } from "@/lib/daily-pulse";
 import { generateMyPulse } from "@/lib/daily-pulse.functions";
+import { getQuoteOfTheDay } from "@/lib/daily-quotes";
+
+function DailyQuote() {
+  const q = getQuoteOfTheDay();
+  return (
+    <figure className="border-l-2 border-accent/40 pl-3 py-1">
+      <blockquote className="font-serif italic text-sm leading-relaxed text-muted-foreground">
+        “{q.quote}”
+      </blockquote>
+      <figcaption className="mt-1 text-xs not-italic text-muted-foreground/70">
+        — {q.author}
+      </figcaption>
+    </figure>
+  );
+}
 
 export function DailyPulseCard() {
   const qc = useQueryClient();
@@ -71,21 +86,24 @@ export function DailyPulseCard() {
 function EmptyPulse({ kind, onGenerate, busy }: { kind: "morning" | "evening"; onGenerate: () => void; busy: boolean }) {
   const Icon = kind === "morning" ? Sunrise : Moon;
   return (
-    <div className="rounded-xl border bg-card p-5 flex items-center gap-3">
-      <Icon className="h-5 w-5 text-muted-foreground" />
-      <div className="flex-1">
-        <p className="text-sm font-medium">
-          {kind === "morning" ? "Morning pulse" : "Evening wind-down"}
-        </p>
-        <p className="text-xs text-muted-foreground">
-          {kind === "morning"
-            ? "Not generated yet today. Generate a calm brief now or wait for your scheduled time."
-            : "Take 2 minutes to close the loop and set tomorrow's focus."}
-        </p>
+    <div className="rounded-xl border bg-card p-5 space-y-4">
+      <div className="flex items-center gap-3">
+        <Icon className="h-5 w-5 text-muted-foreground" />
+        <div className="flex-1">
+          <p className="text-sm font-medium">
+            {kind === "morning" ? "Morning pulse" : "Evening wind-down"}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {kind === "morning"
+              ? "Not generated yet today. Generate a calm brief now or wait for your scheduled time."
+              : "Take 2 minutes to close the loop and set tomorrow's focus."}
+          </p>
+        </div>
+        <Button size="sm" variant="outline" onClick={onGenerate} disabled={busy}>
+          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Generate"}
+        </Button>
       </div>
-      <Button size="sm" variant="outline" onClick={onGenerate} disabled={busy}>
-        {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Generate"}
-      </Button>
+      {kind === "morning" && <DailyQuote />}
     </div>
   );
 }
@@ -123,6 +141,8 @@ function MorningPulseCard({ pulse, onRefresh, busy }: { pulse: DailyPulse; onRef
           </ol>
         </div>
       )}
+
+      <DailyQuote />
     </div>
   );
 }
