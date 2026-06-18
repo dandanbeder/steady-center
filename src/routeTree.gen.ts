@@ -25,7 +25,6 @@ import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedSharedRouteImport } from './routes/_authenticated/shared'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
-import { Route as AuthenticatedPricingRouteImport } from './routes/_authenticated/pricing'
 import { Route as AuthenticatedPlanWeekRouteImport } from './routes/_authenticated/plan-week'
 import { Route as AuthenticatedOutcomesRouteImport } from './routes/_authenticated/outcomes'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
@@ -132,11 +131,6 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
 const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedPricingRoute = AuthenticatedPricingRouteImport.update({
-  id: '/pricing',
-  path: '/pricing',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedPlanWeekRoute = AuthenticatedPlanWeekRouteImport.update({
@@ -318,7 +312,6 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/outcomes': typeof AuthenticatedOutcomesRoute
   '/plan-week': typeof AuthenticatedPlanWeekRoute
-  '/pricing': typeof AuthenticatedPricingRoute
   '/reports': typeof AuthenticatedReportsRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
   '/shared': typeof AuthenticatedSharedRoute
@@ -364,7 +357,6 @@ export interface FileRoutesByTo {
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/outcomes': typeof AuthenticatedOutcomesRoute
   '/plan-week': typeof AuthenticatedPlanWeekRoute
-  '/pricing': typeof AuthenticatedPricingRoute
   '/reports': typeof AuthenticatedReportsRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
   '/shared': typeof AuthenticatedSharedRoute
@@ -412,7 +404,6 @@ export interface FileRoutesById {
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/outcomes': typeof AuthenticatedOutcomesRoute
   '/_authenticated/plan-week': typeof AuthenticatedPlanWeekRoute
-  '/_authenticated/pricing': typeof AuthenticatedPricingRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/shared': typeof AuthenticatedSharedRoute
@@ -460,7 +451,6 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/outcomes'
     | '/plan-week'
-    | '/pricing'
     | '/reports'
     | '/settings'
     | '/shared'
@@ -506,7 +496,6 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/outcomes'
     | '/plan-week'
-    | '/pricing'
     | '/reports'
     | '/settings'
     | '/shared'
@@ -553,7 +542,6 @@ export interface FileRouteTypes {
     | '/_authenticated/onboarding'
     | '/_authenticated/outcomes'
     | '/_authenticated/plan-week'
-    | '/_authenticated/pricing'
     | '/_authenticated/reports'
     | '/_authenticated/settings'
     | '/_authenticated/shared'
@@ -711,13 +699,6 @@ declare module '@tanstack/react-router' {
       path: '/reports'
       fullPath: '/reports'
       preLoaderRoute: typeof AuthenticatedReportsRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/pricing': {
-      id: '/_authenticated/pricing'
-      path: '/pricing'
-      fullPath: '/pricing'
-      preLoaderRoute: typeof AuthenticatedPricingRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/plan-week': {
@@ -971,7 +952,6 @@ interface AuthenticatedRouteChildren {
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedOutcomesRoute: typeof AuthenticatedOutcomesRoute
   AuthenticatedPlanWeekRoute: typeof AuthenticatedPlanWeekRoute
-  AuthenticatedPricingRoute: typeof AuthenticatedPricingRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRouteWithChildren
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedSharedRoute: typeof AuthenticatedSharedRoute
@@ -995,7 +975,6 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedOutcomesRoute: AuthenticatedOutcomesRoute,
   AuthenticatedPlanWeekRoute: AuthenticatedPlanWeekRoute,
-  AuthenticatedPricingRoute: AuthenticatedPricingRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRouteWithChildren,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedSharedRoute: AuthenticatedSharedRoute,

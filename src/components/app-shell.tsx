@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Calendar, CalendarRange, CheckSquare, FileText, Home, Settings, Users, LogOut, ChevronDown, BarChart3, PanelLeftClose, PanelLeftOpen, Shield, Menu, AtSign, BookOpen, Sparkles, Search, Inbox, Bell, CreditCard, Trash2, BrainCircuit, Target } from "lucide-react";
+import { Calendar, CalendarRange, CheckSquare, FileText, Home, Settings, Users, LogOut, ChevronDown, BarChart3, PanelLeftClose, PanelLeftOpen, Shield, Menu, AtSign, BookOpen, Sparkles, Search, Inbox, Bell, Trash2, BrainCircuit, Target } from "lucide-react";
 import { PaymentTestModeBanner } from "@/components/payment-test-mode-banner";
 import { PastDueBanner } from "@/components/past-due-banner";
 import { countPendingInbox } from "@/lib/inbox";
