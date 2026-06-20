@@ -66,16 +66,32 @@ export async function sendEmail(opts: SendEmailOpts): Promise<void> {
   }
 }
 
-function footerCopyright(): string {
+// Company / support constants for email footers.
+export const SUPPORT_EMAIL = "hello@flightmed.software";
+export const COMPANY_LEGAL_NAME = "FlightMed (PTY) Ltd";
+export const COMPANY_ADDRESS = "Cape Town, South Africa";
+
+function brandFooter(): string {
   const year = new Date().getUTCFullYear();
-  return `© ${year} FlightMed (PTY) Ltd. All rights reserved.`;
+  const origin = getAppOrigin();
+  return `
+    <hr style="border:none;border-top:1px solid #eee;margin:32px 0 16px"/>
+    <p style="color:#888;font-size:12px;line-height:1.6;margin:0">
+      © ${year} ${escapeHtml(COMPANY_LEGAL_NAME)} ·
+      <a href="${origin}/terms" style="color:#7A8471;text-decoration:none">Terms</a> ·
+      <a href="${origin}/privacy" style="color:#7A8471;text-decoration:none">Privacy</a> ·
+      <a href="mailto:${SUPPORT_EMAIL}" style="color:#7A8471;text-decoration:none">${SUPPORT_EMAIL}</a>
+    </p>
+    <p style="color:#aaa;font-size:11px;line-height:1.5;margin:6px 0 0">
+      ${escapeHtml(COMPANY_LEGAL_NAME)} · ${escapeHtml(COMPANY_ADDRESS)}
+    </p>`;
 }
 
 function shellHead(): string {
-  const logo = `${getAppOrigin()}/favicon.svg`;
-  return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:24px">
-      <img src="${logo}" alt="Heartbeat" width="28" height="28" style="display:inline-block;vertical-align:middle"/>
-      <strong style="font-size:18px;color:#3D4A36">Heartbeat</strong>
+  // Hosted PNG (works in every email client; SVG is not reliable in mail).
+  const logo = `${getAppOrigin()}/__l5e/assets-v1/3c0015b6-31f1-42ce-927f-58c5397b38f4/heartbeat-email-logo.png`;
+  return `<div style="margin-bottom:24px">
+      <img src="${logo}" alt="Heartbeat" width="220" style="display:block;height:auto;max-width:220px;border:0;outline:none;text-decoration:none"/>
     </div>`;
 }
 
@@ -86,14 +102,20 @@ export function brandedEmail(opts: {
   bodyHtml?: string;
   ctaLabel?: string;
   ctaUrl?: string;
+  /** Optional small note rendered just under the CTA. */
+  ctaNoteHtml?: string;
+  /** Optional small grey line above the legal footer. */
   footer?: string;
 }): string {
   const cta =
     opts.ctaLabel && opts.ctaUrl
-      ? `<p style="margin:28px 0">
+      ? `<p style="margin:28px 0 8px">
            <a href="${opts.ctaUrl}" style="background:#7A8471;color:#fff;padding:12px 22px;border-radius:10px;text-decoration:none;display:inline-block;font-weight:500">${escapeHtml(opts.ctaLabel)}</a>
          </p>`
       : "";
+  const ctaNote = opts.ctaNoteHtml
+    ? `<p style="margin:4px 0 0;color:#6b6b6b;font-size:13px;line-height:1.55">${opts.ctaNoteHtml}</p>`
+    : "";
   return `<!doctype html>
 <html><body style="margin:0;background:#ffffff;font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:#1a1a1a">
   <div style="max-width:560px;margin:0 auto;padding:32px 24px">
@@ -102,8 +124,10 @@ export function brandedEmail(opts: {
     <p style="margin:0 0 16px;line-height:1.55;color:#3a3a3a">${escapeHtml(opts.intro)}</p>
     ${opts.bodyHtml ?? ""}
     ${cta}
-    ${opts.footer ? `<p style="color:#888;font-size:12px;margin-top:32px;line-height:1.5">${escapeHtml(opts.footer)}</p>` : ""}
-    <p style="color:#aaa;font-size:11px;margin-top:24px">${footerCopyright()} · This is a service notification from Heartbeat. You're receiving it because of activity on your account.</p>
+    ${ctaNote}
+    ${opts.footer ? `<p style="color:#888;font-size:12px;margin-top:24px;line-height:1.5">${escapeHtml(opts.footer)}</p>` : ""}
+    ${brandFooter()}
+    <p style="color:#aaa;font-size:11px;margin-top:12px">This is a service notification from Heartbeat. You're receiving it because of activity on your account.</p>
   </div>
 </body></html>`;
 }
@@ -144,7 +168,7 @@ export function brandedMarketingEmail(opts: {
       &nbsp;·&nbsp;
       <a href="${opts.unsubscribeUrl}" style="color:#7A8471">Unsubscribe in one click</a>
     </p>
-    <p style="color:#aaa;font-size:11px;margin-top:16px">${footerCopyright()}</p>
+    <p style="color:#aaa;font-size:11px;margin-top:16px">© ${new Date().getUTCFullYear()} ${escapeHtml(COMPANY_LEGAL_NAME)} · ${escapeHtml(COMPANY_ADDRESS)}</p>
   </div>
 </body></html>`;
 }

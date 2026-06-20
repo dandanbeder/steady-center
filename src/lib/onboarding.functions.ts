@@ -94,16 +94,17 @@ export const sendWelcomeAndNotifyAdmins = createServerFn({ method: "POST" })
           <li>Open <strong>Today</strong> to see what's on your plate.</li>
           <li>Add your first <strong>account</strong> in Settings — each gets its own color and calendars.</li>
           <li>Connect <strong>Google</strong> or <strong>Microsoft / Outlook</strong> in Connections to sync your calendar.</li>
-        </ul>`,
+        </ul>
+        <p style="margin:0 0 16px;line-height:1.55;color:#3a3a3a">Each morning you'll get a calm <strong>Morning Pulse</strong>, and a gentle review each Friday.</p>`,
       ctaLabel: "Open Heartbeat",
       ctaUrl: `${origin}/today`,
-      footer:
-        "If you didn't create this account, you can safely ignore this email.",
+      ctaNoteHtml: `Questions? Just reply to this email, or reach us at <a href="mailto:hello@flightmed.software" style="color:#7A8471;text-decoration:none">hello@flightmed.software</a>.`,
     });
     await sendEmail({
       to: targetUser.email,
       subject: "Welcome to Heartbeat 🌿",
       html: welcomeHtml,
+      replyTo: "hello@flightmed.software",
     });
 
     // 3) Notify platform admins (using the verified email, not client input).
