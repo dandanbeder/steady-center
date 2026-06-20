@@ -501,3 +501,134 @@ function SegmentDialog({ segment, onClose }: { segment: AnalyticsSegment | null;
     </Dialog>
   );
 }
+
+// ============ USERS ============
+function UsersPanel({ range }: { range: { from: string; to: string } }) {
+  const fn = useServerFn(analyticsUsers);
+  const q = useQuery({ queryKey: ["analytics", "users", range], queryFn: () => fn({ data: range }) });
+  const d = q.data;
+  const [segment, setSegment] = useState<AnalyticsSegment | null>(null);
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <StatCard
+          label="Total users"
+          value={d?.total ?? "—"}
+          sub={<button className="underline" onClick={() => setSegment("all")}>view all</button>}
+        />
+        <StatCard
+          label="Active"
+          value={d?.statusBreakdown.active ?? 0}
+          sub={<button className="underline" onClick={() => setSegment("active")}>view</button>}
+        />
+        <StatCard
+          label="Suspended"
+          value={d?.statusBreakdown.suspended ?? 0}
+          sub={<button className="underline" onClick={() => setSegment("suspended")}>view</button>}
+        />
+        <StatCard
+          label="Scheduled deletion"
+          value={d?.scheduledDeletion ?? 0}
+          sub={<button className="underline" onClick={() => setSegment("scheduled_deletion")}>view</button>}
+        />
+        <StatCard
+          label="Super admins"
+          value={d?.roleBreakdown.superadmin ?? 0}
+          sub={<button className="underline" onClick={() => setSegment("superadmin")}>view</button>}
+        />
+        <StatCard label="Regular users" value={d?.roleBreakdown.user ?? 0} />
+      </div>
+
+      <Card>
+        <CardHeader><CardTitle>Signups by day (cohort)</CardTitle></CardHeader>
+        <CardContent className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={d?.growth ?? []}>
+              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+              <XAxis dataKey="day" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} />
+              <Tooltip />
+              <Bar dataKey="signups" fill="hsl(var(--primary))" />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Cumulative user growth</CardTitle></CardHeader>
+        <CardContent className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={d?.cumulative ?? []}>
+              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+              <XAxis dataKey="day" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} />
+              <Tooltip />
+              <Line type="monotone" dataKey="total" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Breakdown</CardTitle></CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader><TableRow><TableHead>Segment</TableHead><TableHead>Count</TableHead><TableHead></TableHead></TableRow></TableHeader>
+            <TableBody>
+              {[
+                { label: "Active", key: "active" as const, count: d?.statusBreakdown.active ?? 0 },
+                { label: "Suspended", key: "suspended" as const, count: d?.statusBreakdown.suspended ?? 0 },
+                { label: "Scheduled deletion", key: "scheduled_deletion" as const, count: d?.scheduledDeletion ?? 0 },
+                { label: "Super admins", key: "superadmin" as const, count: d?.roleBreakdown.superadmin ?? 0 },
+              ].map((row) => (
+                <TableRow key={row.key}>
+                  <TableCell>{row.label}</TableCell>
+                  <TableCell>{row.count}</TableCell>
+                  <TableCell><Button size="sm" variant="ghost" onClick={() => setSegment(row.key)}>View users</Button></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <SegmentDialog segment={segment} onClose={() => setSegment(null)} />
+    </div>
+  );
+}
+
+// ============ STORAGE CARD (used inside Engagement panel) ============
+function StorageCard() {
+  const fn = useServerFn(analyticsStorage);
+  const q = useQuery({ queryKey: ["analytics", "storage"], queryFn: () => fn() });
+  const d = q.data;
+  const fmtBytes = (n: number) => {
+    if (!n) return "0 B";
+    const units = ["B", "KB", "MB", "GB", "TB"];
+    const i = Math.min(units.length - 1, Math.floor(Math.log(n) / Math.log(1024)));
+    return `${(n / Math.pow(1024, i)).toFixed(1)} ${units[i]}`;
+  };
+  return (
+    <Card>
+      <CardHeader><CardTitle>Storage used (attachments)</CardTitle></CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <StatCard label="Total" value={fmtBytes(d?.totalBytes ?? 0)} />
+          <StatCard label="Files" value={d?.fileCount ?? 0} />
+        </div>
+        <Table>
+          <TableHeader><TableRow><TableHead>Mime type</TableHead><TableHead>Size</TableHead></TableRow></TableHeader>
+          <TableBody>
+            {(d?.byMime ?? []).map((r) => (
+              <TableRow key={r.mime}>
+                <TableCell className="text-xs">{r.mime}</TableCell>
+                <TableCell>{fmtBytes(r.bytes)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
