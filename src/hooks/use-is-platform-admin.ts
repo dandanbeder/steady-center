@@ -4,7 +4,7 @@ import { checkIsPlatformAdmin } from "@/lib/admin.functions";
 import { useAuth } from "@/hooks/use-auth";
 
 export function useIsPlatformAdmin() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const fn = useServerFn(checkIsPlatformAdmin);
   const q = useQuery({
     queryKey: ["is-platform-admin", user?.id],
@@ -12,5 +12,5 @@ export function useIsPlatformAdmin() {
     enabled: !!user,
     staleTime: 60_000,
   });
-  return { isAdmin: !!q.data?.isAdmin, isLoading: q.isLoading };
+  return { isAdmin: !!q.data?.isAdmin, isLoading: loading || q.isPending };
 }
