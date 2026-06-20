@@ -545,12 +545,33 @@ export const analyticsSegmentUsers = createServerFn({ method: "POST" })
       userIds = (all ?? []).map((p) => p.id as string).filter((id) => !paidIds.has(id));
     }
 
+    if (data.segment === "all") {
+      const { data: rows } = await supabaseAdmin.from("profiles").select("id").limit(limit);
+      userIds = (rows ?? []).map((r) => r.id as string);
+    } else if (data.segment === "active") {
+      const { data: rows } = await supabaseAdmin
+        .from("profiles").select("id").eq("status", "active").limit(limit);
+      userIds = (rows ?? []).map((r) => r.id as string);
+    } else if (data.segment === "suspended") {
+      const { data: rows } = await supabaseAdmin
+        .from("profiles").select("id").eq("status", "suspended").limit(limit);
+      userIds = (rows ?? []).map((r) => r.id as string);
+    } else if (data.segment === "scheduled_deletion") {
+      const { data: rows } = await supabaseAdmin
+        .from("profiles").select("id").not("deletion_scheduled_at", "is", null).limit(limit);
+      userIds = (rows ?? []).map((r) => r.id as string);
+    } else if (data.segment === "superadmin") {
+      const { data: rows } = await supabaseAdmin
+        .from("profiles").select("id").eq("platform_role", "superadmin").limit(limit);
+      userIds = (rows ?? []).map((r) => r.id as string);
+    }
+
     userIds = userIds.slice(0, limit);
     if (!userIds.length) return { users: [] };
 
     const { data: profiles } = await supabaseAdmin
       .from("profiles")
-      .select("id, full_name, organisation, status, created_at")
+      .select("id, full_name, organisation, status, created_at, platform_role, deletion_scheduled_at")
       .in("id", userIds);
 
     return { users: profiles ?? [] };
