@@ -659,6 +659,7 @@ export const adminScheduleUserDeletion = createServerFn({ method: "POST" })
       .select("platform_role")
       .eq("id", data.user_id)
       .maybeSingle();
+    await assertNotProtectedPrimary(data.user_id, "deleted");
     if (tgt?.platform_role === "superadmin" && (await countSuperadmins()) <= 1) {
       throw new Error("Cannot delete the last superadmin.");
     }
