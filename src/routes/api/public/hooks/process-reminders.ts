@@ -9,8 +9,8 @@
  */
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { brandedEmail, escapeHtml, getAppOrigin, sendEmail } from "@/lib/email.server";
 
-const RESEND_URL = "https://connector-gateway.lovable.dev/resend/emails";
 const TWILIO_URL = "https://connector-gateway.lovable.dev/twilio/Messages.json";
 
 type ReminderRow = {
