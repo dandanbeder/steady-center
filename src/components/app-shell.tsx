@@ -15,6 +15,7 @@ import { useIsPlatformAdmin } from "@/hooks/use-is-platform-admin";
 import { listBusinesses } from "@/lib/businesses";
 import { AnnouncementBanner } from "@/components/announcement-banner";
 import { SupportSessionBanner } from "@/components/support-session-banner";
+import { getLocalSupportSession } from "@/lib/support-session.client";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -64,11 +65,22 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [assistantPrompt, setAssistantPrompt] = useState<string | undefined>(undefined);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [localSupportSession, setLocalSupportSession] = useState(() => getLocalSupportSession());
 
   // Close mobile drawer on route change
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    const update = () => setLocalSupportSession(getLocalSupportSession());
+    window.addEventListener("storage", update);
+    window.addEventListener("focus", update);
+    return () => {
+      window.removeEventListener("storage", update);
+      window.removeEventListener("focus", update);
+    };
+  }, []);
 
   // Global Cmd/Ctrl+K to open command palette
   useEffect(() => {
@@ -120,7 +132,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const navList = (compact: boolean, onNavigate?: () => void) => (
     <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
-      {NAV.map((item) => {
+      {NAV.filter((item) => !(localSupportSession && item.to === "/journal")).map((item) => {
         const Icon = item.icon;
         const active = isActive(item.to);
         const showBadge = item.to === "/inbox" && inboxCount > 0;
