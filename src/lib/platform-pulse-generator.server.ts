@@ -121,11 +121,11 @@ export async function computePulse(window: PulseWindow): Promise<PulseStats> {
   // --- AI credit revenue in window (sum cost_cents from ai_usage rows with charge type)
   const { data: aiRev } = await supabaseAdmin
     .from("ai_usage")
-    .select("cost_cents")
+    .select("cents")
     .gte("created_at", start.toISOString())
     .lt("created_at", end.toISOString());
   const aiCreditRevenueCents = (aiRev ?? []).reduce(
-    (acc, r) => acc + (typeof r.cost_cents === "number" ? r.cost_cents : 0),
+    (acc, r) => acc + (typeof r.cents === "number" ? r.cents : 0),
     0,
   );
 
