@@ -23,8 +23,9 @@ async function requirePlatformAdmin(userId: string) {
 const cadenceSchema = z.enum(["off", "daily", "weekly"]);
 
 export const adminListPulseRecipients = createServerFn({ method: "GET" })
-  .middleware([requirePlatformAdmin])
-  .handler(async () => {
+  .middleware([requireActiveUser])
+  .handler(async ({ context }) => {
+    await requirePlatformAdmin(context.userId);
     const { data, error } = await supabaseAdmin
       .from("profiles")
       .select("id, platform_pulse_cadence, platform_pulse_last_sent_at, full_name")
@@ -54,12 +55,12 @@ export const adminListPulseRecipients = createServerFn({ method: "GET" })
   });
 
 export const adminSetPulseCadence = createServerFn({ method: "POST" })
-  .middleware([requirePlatformAdmin])
+  .middleware([requireActiveUser])
   .inputValidator((i) =>
     z.object({ user_id: z.string().uuid(), cadence: cadenceSchema }).parse(i),
   )
-  .handler(async ({ data }) => {
-    // Only super-admins can be recipients.
+  .handler(async ({ data, context }) => {
+    await requirePlatformAdmin(context.userId);
     const { data: target } = await supabaseAdmin
       .from("profiles")
       .select("platform_role")
@@ -78,11 +79,12 @@ export const adminSetPulseCadence = createServerFn({ method: "POST" })
 
 /** Send a one-off test digest to the calling super-admin immediately. */
 export const adminSendPulseTest = createServerFn({ method: "POST" })
-  .middleware([requirePlatformAdmin])
+  .middleware([requireActiveUser])
   .inputValidator((i) =>
     z.object({ window: z.enum(["daily", "weekly"]).default("daily") }).parse(i),
   )
   .handler(async ({ data, context }) => {
+    await requirePlatformAdmin(context.userId);
     const { data: u } = await supabaseAdmin.auth.admin.getUserById(context.userId);
     const email = u.user?.email;
     if (!email) throw new Error("Calling super-admin has no email on file.");
