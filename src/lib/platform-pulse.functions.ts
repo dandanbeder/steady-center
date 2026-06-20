@@ -6,9 +6,19 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { requirePlatformAdmin } from "@/integrations/supabase/admin-middleware";
+import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
 import { sendEmail } from "./email.server";
 import { computePulse, renderPulseEmail } from "./platform-pulse-generator.server";
+
+async function requirePlatformAdmin(userId: string) {
+  const { data, error } = await supabaseAdmin
+    .from("profiles")
+    .select("platform_role")
+    .eq("id", userId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (data?.platform_role !== "superadmin") throw new Error("Not authorized");
+}
 
 const cadenceSchema = z.enum(["off", "daily", "weekly"]);
 
