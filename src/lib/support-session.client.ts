@@ -15,6 +15,7 @@ export type SupportSessionStartResult = {
   target_email: string;
   target_name: string;
   action_link: string;
+  email_otp: string;
 };
 
 export type LocalSupportSession = Omit<SupportSessionStartResult, "action_link">;
@@ -34,7 +35,13 @@ export async function beginSupportSession(session: SupportSessionStartResult) {
   if (!data.session) throw new Error("No admin session to restore later");
   window.localStorage.setItem(SUPPORT_SESSION_ADMIN_BACKUP_KEY, JSON.stringify(data.session));
   window.localStorage.setItem(SUPPORT_SESSION_STATE_KEY, JSON.stringify(stripActionLink(session)));
-  window.location.assign(session.action_link);
+  const { error } = await supabase.auth.verifyOtp({
+    email: session.target_email,
+    token: session.email_otp,
+    type: "magiclink",
+  });
+  if (error) throw error;
+  window.location.assign("/today");
 }
 
 export async function restoreAdminSession(): Promise<Session | null> {
@@ -55,6 +62,6 @@ export function clearSupportSessionState() {
 }
 
 function stripActionLink(session: SupportSessionStartResult): LocalSupportSession {
-  const { action_link: _actionLink, ...safeSession } = session;
+  const { action_link: _actionLink, email_otp: _emailOtp, ...safeSession } = session;
   return safeSession;
 }
