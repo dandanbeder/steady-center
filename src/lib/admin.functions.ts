@@ -409,6 +409,7 @@ export const adminSuspendUser = createServerFn({ method: "POST" })
       .select("platform_role, status")
       .eq("id", data.user_id)
       .maybeSingle();
+    await assertNotProtectedPrimary(data.user_id, "suspended");
     if (tgt?.platform_role === "superadmin" && (await countSuperadmins()) <= 1) {
       throw new Error("Cannot suspend the last superadmin.");
     }
