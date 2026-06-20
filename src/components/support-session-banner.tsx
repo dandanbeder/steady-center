@@ -13,7 +13,7 @@ import {
   restoreAdminSession,
   type LocalSupportSession,
   type SupportSessionStartResult,
-} from "@/lib/support-session.client";
+} from "@/lib/support-session";
 import { useEffect, useState } from "react";
 
 export function SupportSessionBanner() {

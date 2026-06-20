@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { getLocalSupportSession } from "@/lib/support-session.client";
+import { getLocalSupportSession } from "@/lib/support-session";
 
 export const Route = createFileRoute("/support-session/callback")({
   component: SupportSessionCallback,

@@ -13,7 +13,7 @@ import { MarkdownEditor, useAutosave } from "@/components/notes/markdown-editor"
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { getLocalSupportSession } from "@/lib/support-session.client";
+import { getLocalSupportSession } from "@/lib/support-session";
 
 export const Route = createFileRoute("/_authenticated/journal")({
   component: JournalPage,
