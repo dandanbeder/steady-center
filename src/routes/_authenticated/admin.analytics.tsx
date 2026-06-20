@@ -384,6 +384,7 @@ function EngagementPanel({ range }: { range: { from: string; to: string } }) {
           <p className="text-xs text-muted-foreground mt-1">{d?.retentionNote}</p>
         </CardContent>
       </Card>
+      <StorageCard />
     </div>
   );
 }
