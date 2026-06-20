@@ -49,6 +49,7 @@ import { Route as ApiPublicHooksSyncCalendarsRouteImport } from './routes/api/pu
 import { Route as ApiPublicHooksRenewMicrosoftSubscriptionsRouteImport } from './routes/api/public/hooks/renew-microsoft-subscriptions'
 import { Route as ApiPublicHooksPurgeTrashRouteImport } from './routes/api/public/hooks/purge-trash'
 import { Route as ApiPublicHooksProcessRemindersRouteImport } from './routes/api/public/hooks/process-reminders'
+import { Route as ApiPublicHooksProcessPlatformPulseRouteImport } from './routes/api/public/hooks/process-platform-pulse'
 import { Route as ApiPublicHooksMicrosoftGraphWebhookRouteImport } from './routes/api/public/hooks/microsoft-graph-webhook'
 import { Route as ApiPublicHooksGenerateWeeklyReportsRouteImport } from './routes/api/public/hooks/generate-weekly-reports'
 import { Route as ApiPublicHooksDailyPulseRouteImport } from './routes/api/public/hooks/daily-pulse'
@@ -263,6 +264,12 @@ const ApiPublicHooksProcessRemindersRoute =
     path: '/api/public/hooks/process-reminders',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksProcessPlatformPulseRoute =
+  ApiPublicHooksProcessPlatformPulseRouteImport.update({
+    id: '/api/public/hooks/process-platform-pulse',
+    path: '/api/public/hooks/process-platform-pulse',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksMicrosoftGraphWebhookRoute =
   ApiPublicHooksMicrosoftGraphWebhookRouteImport.update({
     id: '/api/public/hooks/microsoft-graph-webhook',
@@ -326,6 +333,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/daily-pulse': typeof ApiPublicHooksDailyPulseRoute
   '/api/public/hooks/generate-weekly-reports': typeof ApiPublicHooksGenerateWeeklyReportsRoute
   '/api/public/hooks/microsoft-graph-webhook': typeof ApiPublicHooksMicrosoftGraphWebhookRoute
+  '/api/public/hooks/process-platform-pulse': typeof ApiPublicHooksProcessPlatformPulseRoute
   '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
   '/api/public/hooks/purge-trash': typeof ApiPublicHooksPurgeTrashRoute
   '/api/public/hooks/renew-microsoft-subscriptions': typeof ApiPublicHooksRenewMicrosoftSubscriptionsRoute
@@ -371,6 +379,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/daily-pulse': typeof ApiPublicHooksDailyPulseRoute
   '/api/public/hooks/generate-weekly-reports': typeof ApiPublicHooksGenerateWeeklyReportsRoute
   '/api/public/hooks/microsoft-graph-webhook': typeof ApiPublicHooksMicrosoftGraphWebhookRoute
+  '/api/public/hooks/process-platform-pulse': typeof ApiPublicHooksProcessPlatformPulseRoute
   '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
   '/api/public/hooks/purge-trash': typeof ApiPublicHooksPurgeTrashRoute
   '/api/public/hooks/renew-microsoft-subscriptions': typeof ApiPublicHooksRenewMicrosoftSubscriptionsRoute
@@ -418,6 +427,7 @@ export interface FileRoutesById {
   '/api/public/hooks/daily-pulse': typeof ApiPublicHooksDailyPulseRoute
   '/api/public/hooks/generate-weekly-reports': typeof ApiPublicHooksGenerateWeeklyReportsRoute
   '/api/public/hooks/microsoft-graph-webhook': typeof ApiPublicHooksMicrosoftGraphWebhookRoute
+  '/api/public/hooks/process-platform-pulse': typeof ApiPublicHooksProcessPlatformPulseRoute
   '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
   '/api/public/hooks/purge-trash': typeof ApiPublicHooksPurgeTrashRoute
   '/api/public/hooks/renew-microsoft-subscriptions': typeof ApiPublicHooksRenewMicrosoftSubscriptionsRoute
@@ -465,6 +475,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/daily-pulse'
     | '/api/public/hooks/generate-weekly-reports'
     | '/api/public/hooks/microsoft-graph-webhook'
+    | '/api/public/hooks/process-platform-pulse'
     | '/api/public/hooks/process-reminders'
     | '/api/public/hooks/purge-trash'
     | '/api/public/hooks/renew-microsoft-subscriptions'
@@ -510,6 +521,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/daily-pulse'
     | '/api/public/hooks/generate-weekly-reports'
     | '/api/public/hooks/microsoft-graph-webhook'
+    | '/api/public/hooks/process-platform-pulse'
     | '/api/public/hooks/process-reminders'
     | '/api/public/hooks/purge-trash'
     | '/api/public/hooks/renew-microsoft-subscriptions'
@@ -556,6 +568,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/daily-pulse'
     | '/api/public/hooks/generate-weekly-reports'
     | '/api/public/hooks/microsoft-graph-webhook'
+    | '/api/public/hooks/process-platform-pulse'
     | '/api/public/hooks/process-reminders'
     | '/api/public/hooks/purge-trash'
     | '/api/public/hooks/renew-microsoft-subscriptions'
@@ -579,6 +592,7 @@ export interface RootRouteChildren {
   ApiPublicHooksDailyPulseRoute: typeof ApiPublicHooksDailyPulseRoute
   ApiPublicHooksGenerateWeeklyReportsRoute: typeof ApiPublicHooksGenerateWeeklyReportsRoute
   ApiPublicHooksMicrosoftGraphWebhookRoute: typeof ApiPublicHooksMicrosoftGraphWebhookRoute
+  ApiPublicHooksProcessPlatformPulseRoute: typeof ApiPublicHooksProcessPlatformPulseRoute
   ApiPublicHooksProcessRemindersRoute: typeof ApiPublicHooksProcessRemindersRoute
   ApiPublicHooksPurgeTrashRoute: typeof ApiPublicHooksPurgeTrashRoute
   ApiPublicHooksRenewMicrosoftSubscriptionsRoute: typeof ApiPublicHooksRenewMicrosoftSubscriptionsRoute
@@ -869,6 +883,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksProcessRemindersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/process-platform-pulse': {
+      id: '/api/public/hooks/process-platform-pulse'
+      path: '/api/public/hooks/process-platform-pulse'
+      fullPath: '/api/public/hooks/process-platform-pulse'
+      preLoaderRoute: typeof ApiPublicHooksProcessPlatformPulseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/microsoft-graph-webhook': {
       id: '/api/public/hooks/microsoft-graph-webhook'
       path: '/api/public/hooks/microsoft-graph-webhook'
@@ -1004,6 +1025,8 @@ const rootRouteChildren: RootRouteChildren = {
     ApiPublicHooksGenerateWeeklyReportsRoute,
   ApiPublicHooksMicrosoftGraphWebhookRoute:
     ApiPublicHooksMicrosoftGraphWebhookRoute,
+  ApiPublicHooksProcessPlatformPulseRoute:
+    ApiPublicHooksProcessPlatformPulseRoute,
   ApiPublicHooksProcessRemindersRoute: ApiPublicHooksProcessRemindersRoute,
   ApiPublicHooksPurgeTrashRoute: ApiPublicHooksPurgeTrashRoute,
   ApiPublicHooksRenewMicrosoftSubscriptionsRoute:
