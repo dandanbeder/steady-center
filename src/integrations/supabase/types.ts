@@ -2385,6 +2385,14 @@ export type Database = {
         Args: { p_item_id: string; p_item_type: string }
         Returns: boolean
       }
+      is_user_under_active_readonly_support_session: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
+      is_user_under_active_support_session: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       list_business_members: {
         Args: { p_business: string }
         Returns: {

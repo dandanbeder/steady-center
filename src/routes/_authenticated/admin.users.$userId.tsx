@@ -58,6 +58,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { beginSupportSession, type SupportSessionStartResult } from "@/lib/support-session";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -676,11 +677,14 @@ function ViewAsButton({ targetUserId }: { targetUserId: string }) {
   const [open, setOpen] = useState(false);
   const mut = useMutation({
     mutationFn: (reason: string) =>
-      startFn({ data: { target_user_id: targetUserId, reason, mode: "read" } }),
-    onSuccess: () => {
+      startFn({
+        data: { target_user_id: targetUserId, reason, mode: "read", redirect_origin: window.location.origin },
+      }),
+    onSuccess: (session) => {
       toast.success("Support session started (read-only)");
       qc.invalidateQueries({ queryKey: ["admin"] });
       setOpen(false);
+      beginSupportSession(session as SupportSessionStartResult);
     },
     onError: (e: Error) => toast.error(e.message),
   });

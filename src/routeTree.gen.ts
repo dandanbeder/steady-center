@@ -19,6 +19,7 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AcceptInviteRouteImport } from './routes/accept-invite'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SupportSessionCallbackRouteImport } from './routes/support-session.callback'
 import { Route as AuthenticatedTrashRouteImport } from './routes/_authenticated/trash'
 import { Route as AuthenticatedTodayRouteImport } from './routes/_authenticated/today'
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
@@ -103,6 +104,11 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SupportSessionCallbackRoute = SupportSessionCallbackRouteImport.update({
+  id: '/support-session/callback',
+  path: '/support-session/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedTrashRoute = AuthenticatedTrashRouteImport.update({
@@ -331,6 +337,7 @@ export interface FileRoutesByFullPath {
   '/tasks': typeof AuthenticatedTasksRoute
   '/today': typeof AuthenticatedTodayRoute
   '/trash': typeof AuthenticatedTrashRoute
+  '/support-session/callback': typeof SupportSessionCallbackRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
   '/reports/$reportId': typeof AuthenticatedReportsReportIdRoute
@@ -377,6 +384,7 @@ export interface FileRoutesByTo {
   '/tasks': typeof AuthenticatedTasksRoute
   '/today': typeof AuthenticatedTodayRoute
   '/trash': typeof AuthenticatedTrashRoute
+  '/support-session/callback': typeof SupportSessionCallbackRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
   '/reports/$reportId': typeof AuthenticatedReportsReportIdRoute
@@ -426,6 +434,7 @@ export interface FileRoutesById {
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
   '/_authenticated/today': typeof AuthenticatedTodayRoute
   '/_authenticated/trash': typeof AuthenticatedTrashRoute
+  '/support-session/callback': typeof SupportSessionCallbackRoute
   '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/_authenticated/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
   '/_authenticated/reports/$reportId': typeof AuthenticatedReportsReportIdRoute
@@ -475,6 +484,7 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/today'
     | '/trash'
+    | '/support-session/callback'
     | '/admin/analytics'
     | '/meetings/$meetingId'
     | '/reports/$reportId'
@@ -521,6 +531,7 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/today'
     | '/trash'
+    | '/support-session/callback'
     | '/admin/analytics'
     | '/meetings/$meetingId'
     | '/reports/$reportId'
@@ -569,6 +580,7 @@ export interface FileRouteTypes {
     | '/_authenticated/tasks'
     | '/_authenticated/today'
     | '/_authenticated/trash'
+    | '/support-session/callback'
     | '/_authenticated/admin/analytics'
     | '/_authenticated/meetings/$meetingId'
     | '/_authenticated/reports/$reportId'
@@ -598,6 +610,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
+  SupportSessionCallbackRoute: typeof SupportSessionCallbackRoute
   AuthMicrosoftCallbackRoute: typeof AuthMicrosoftCallbackRoute
   ApiPublicHooksDailyPulseRoute: typeof ApiPublicHooksDailyPulseRoute
   ApiPublicHooksGenerateWeeklyReportsRoute: typeof ApiPublicHooksGenerateWeeklyReportsRoute
@@ -681,6 +694,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/support-session/callback': {
+      id: '/support-session/callback'
+      path: '/support-session/callback'
+      fullPath: '/support-session/callback'
+      preLoaderRoute: typeof SupportSessionCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/trash': {
@@ -1038,6 +1058,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
   UnsubscribeRoute: UnsubscribeRoute,
+  SupportSessionCallbackRoute: SupportSessionCallbackRoute,
   AuthMicrosoftCallbackRoute: AuthMicrosoftCallbackRoute,
   ApiPublicHooksDailyPulseRoute: ApiPublicHooksDailyPulseRoute,
   ApiPublicHooksGenerateWeeklyReportsRoute:

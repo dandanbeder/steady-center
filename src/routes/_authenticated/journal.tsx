@@ -13,12 +13,14 @@ import { MarkdownEditor, useAutosave } from "@/components/notes/markdown-editor"
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { getLocalSupportSession } from "@/lib/support-session";
 
 export const Route = createFileRoute("/_authenticated/journal")({
   component: JournalPage,
 });
 
 function JournalPage() {
+  const supportSession = getLocalSupportSession();
   const qc = useQueryClient();
   const { activeId } = useActiveBusiness();
   const { data: businesses = [] } = useQuery({ queryKey: ["businesses"], queryFn: listBusinesses });
@@ -70,6 +72,19 @@ function JournalPage() {
       toast.error(e instanceof Error ? e.message : "Failed");
     }
   };
+
+  if (supportSession) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-6 text-center">
+        <div className="max-w-md space-y-2">
+          <h1 className="text-2xl text-primary">Journal is private</h1>
+          <p className="text-sm text-muted-foreground">
+            Journal entries are not available during admin support sessions.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-[calc(100vh-4rem)]">

@@ -913,10 +913,35 @@ export const adminStartSupportSession = createServerFn({ method: "POST" })
       target_user_id: z.string().uuid(),
       reason: z.string().min(3).max(500),
       mode: z.enum(["read", "write"]).default("read"),
+      redirect_origin: z.string().url().max(500),
     }).parse(i),
   )
   .handler(async ({ data, context }) => {
     await requirePlatformAdmin(context.userId);
+    const origin = new URL(data.redirect_origin).origin;
+    const allowedHost = /(^localhost$)|(^127\.0\.0\.1$)|(\.lovable\.app$)|(^heartbeatcommand\.software$)|(^www\.heartbeatcommand\.software$)|(^steady-center\.lovable\.app$)/.test(
+      new URL(origin).hostname,
+    );
+    if (!allowedHost) throw new Error("Unsupported support-session redirect origin");
+
+    const { data: targetAuth, error: targetErr } = await supabaseAdmin.auth.admin.getUserById(data.target_user_id);
+    if (targetErr) throw new Error(targetErr.message);
+    const targetEmail = targetAuth.user?.email;
+    if (!targetEmail) throw new Error("Target user has no email address");
+    const { data: targetProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("full_name")
+      .eq("id", data.target_user_id)
+      .maybeSingle();
+
+    const { data: linkData, error: linkErr } = await supabaseAdmin.auth.admin.generateLink({
+      type: "magiclink",
+      email: targetEmail,
+      options: { redirectTo: `${origin}/support-session/callback` },
+    });
+    if (linkErr || !linkData?.properties?.action_link) {
+      throw new Error(linkErr?.message ?? "Could not create support sign-in link");
+    }
     await supabaseAdmin
       .from("admin_access_log")
       .update({ ended_at: new Date().toISOString() })
@@ -933,7 +958,13 @@ export const adminStartSupportSession = createServerFn({ method: "POST" })
       .select("*")
       .single();
     if (error) throw new Error(error.message);
-    return row;
+    return {
+      ...row,
+      action_link: linkData.properties.action_link,
+      email_otp: linkData.properties.email_otp,
+      target_email: targetEmail,
+      target_name: targetProfile?.full_name ?? "",
+    };
   });
 
 export const adminSetSupportSessionMode = createServerFn({ method: "POST" })
@@ -943,10 +974,16 @@ export const adminSetSupportSessionMode = createServerFn({ method: "POST" })
       session_id: z.string().uuid(),
       mode: z.enum(["read", "write"]),
       reason: z.string().min(3).max(500).optional(),
+      redirect_origin: z.string().url().max(500),
     }).parse(i),
   )
   .handler(async ({ data, context }) => {
     await requirePlatformAdmin(context.userId);
+    const origin = new URL(data.redirect_origin).origin;
+    const allowedHost = /(^localhost$)|(^127\.0\.0\.1$)|(\.lovable\.app$)|(^heartbeatcommand\.software$)|(^www\.heartbeatcommand\.software$)|(^steady-center\.lovable\.app$)/.test(
+      new URL(origin).hostname,
+    );
+    if (!allowedHost) throw new Error("Unsupported support-session redirect origin");
     const { data: existing, error: sErr } = await supabaseAdmin
       .from("admin_access_log")
       .select("*")
@@ -956,6 +993,23 @@ export const adminSetSupportSessionMode = createServerFn({ method: "POST" })
       .maybeSingle();
     if (sErr) throw new Error(sErr.message);
     if (!existing) throw new Error("Session not found or already ended");
+    const { data: targetAuth, error: targetErr } = await supabaseAdmin.auth.admin.getUserById(existing.target_user_id);
+    if (targetErr) throw new Error(targetErr.message);
+    const targetEmail = targetAuth.user?.email;
+    if (!targetEmail) throw new Error("Target user has no email address");
+    const { data: targetProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("full_name")
+      .eq("id", existing.target_user_id)
+      .maybeSingle();
+    const { data: linkData, error: linkErr } = await supabaseAdmin.auth.admin.generateLink({
+      type: "magiclink",
+      email: targetEmail,
+      options: { redirectTo: `${origin}/support-session/callback` },
+    });
+    if (linkErr || !linkData?.properties?.action_link) {
+      throw new Error(linkErr?.message ?? "Could not create support sign-in link");
+    }
     const now = new Date().toISOString();
     await supabaseAdmin.from("admin_access_log").update({ ended_at: now }).eq("id", data.session_id);
     const { data: row, error } = await supabaseAdmin
@@ -969,7 +1023,13 @@ export const adminSetSupportSessionMode = createServerFn({ method: "POST" })
       .select("*")
       .single();
     if (error) throw new Error(error.message);
-    return row;
+    return {
+      ...row,
+      action_link: linkData.properties.action_link,
+      email_otp: linkData.properties.email_otp,
+      target_email: targetEmail,
+      target_name: targetProfile?.full_name ?? "",
+    };
   });
 
 export const adminEndSupportSession = createServerFn({ method: "POST" })
