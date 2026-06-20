@@ -168,7 +168,7 @@ export function brandedMarketingEmail(opts: {
       &nbsp;·&nbsp;
       <a href="${opts.unsubscribeUrl}" style="color:#7A8471">Unsubscribe in one click</a>
     </p>
-    <p style="color:#aaa;font-size:11px;margin-top:16px">${footerCopyright()}</p>
+    <p style="color:#aaa;font-size:11px;margin-top:16px">© ${new Date().getUTCFullYear()} ${escapeHtml(COMPANY_LEGAL_NAME)} · ${escapeHtml(COMPANY_ADDRESS)}</p>
   </div>
 </body></html>`;
 }
