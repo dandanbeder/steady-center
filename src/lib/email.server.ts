@@ -151,7 +151,7 @@ function footerRow(opts: { marketing?: { unsubscribeUrl: string; preferencesUrl:
         <a href="${origin}/privacy" style="color:${BRAND.sage};text-decoration:none">Privacy</a>
       </p>
       <p style="margin:6px 0 0;font-family:Arial,Helvetica,sans-serif;color:${BRAND.muted};font-size:11px;line-height:1.5">
-        ${escapeHtml(COMPANY_LEGAL_NAME)} · ${escapeHtml(COMPANY_ADDRESS)}
+        ${escapeHtml(COMPANY_LEGAL_NAME)}
       </p>
       ${marketing}
     </td>
