@@ -55,14 +55,24 @@ function downloadCsv(filename: string, rows: Record<string, unknown>[]) {
 
 function AnalyticsPage() {
   const { isAdmin, isLoading } = useIsPlatformAdmin();
-  const [days, setDays] = useState(30);
+  const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const defaultFrom = useMemo(
+    () => new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10),
+    [],
+  );
+  const [fromDate, setFromDate] = useState(defaultFrom);
+  const [toDate, setToDate] = useState(today);
+
   const range = useMemo(() => {
-    const to = new Date();
-    const from = new Date(to.getTime() - days * 86_400_000);
-    return { from: from.toISOString(), to: to.toISOString() };
-  }, [days]);
+    // Inclusive end-of-day for "to"
+    const fromISO = new Date(`${fromDate}T00:00:00Z`).toISOString();
+    const toISO = new Date(`${toDate}T23:59:59Z`).toISOString();
+    return { from: fromISO, to: toISO };
+  }, [fromDate, toDate]);
 
   const refresh = useServerFn(analyticsRefreshNow);
+  const fullUsers = useServerFn(analyticsFullReportUsers);
+  const fullSubs = useServerFn(analyticsFullReportSubscriptions);
 
   if (isLoading) return <div className="p-8 text-muted-foreground">Checking access…</div>;
   if (!isAdmin) return <Navigate to="/today" />;
@@ -75,17 +85,32 @@ function AnalyticsPage() {
           <div>
             <h1 className="text-2xl font-semibold">Analytics</h1>
             <p className="text-sm text-muted-foreground">
-              All figures gated by superadmin server-side. Reads from daily rollups.
+              Super-admin only, gated server-side. Reads from daily rollups.
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Input
-            type="number" min={1} max={365} value={days}
-            onChange={(e) => setDays(Math.max(1, Math.min(365, Number(e.target.value) || 30)))}
-            className="w-24"
-          />
-          <span className="text-sm text-muted-foreground">days</span>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Input type="date" value={fromDate} max={toDate} onChange={(e) => setFromDate(e.target.value)} className="w-[150px]" />
+          <span className="text-sm text-muted-foreground">to</span>
+          <Input type="date" value={toDate} min={fromDate} max={today} onChange={(e) => setToDate(e.target.value)} className="w-[150px]" />
+          <Button
+            variant="outline" size="sm"
+            onClick={async () => {
+              const r = await fullUsers();
+              downloadCsv(`users-full-report-${today}.csv`, r.rows as any);
+            }}
+          >
+            <Download className="h-4 w-4 mr-1" /> Users CSV
+          </Button>
+          <Button
+            variant="outline" size="sm"
+            onClick={async () => {
+              const r = await fullSubs();
+              downloadCsv(`subscriptions-full-report-${today}.csv`, r.rows as any);
+            }}
+          >
+            <Download className="h-4 w-4 mr-1" /> Subs CSV
+          </Button>
           <Button
             variant="outline" size="sm"
             onClick={async () => {
@@ -101,15 +126,17 @@ function AnalyticsPage() {
       <Tabs defaultValue="overview">
         <TabsList className="flex flex-wrap">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="plans">By plan</TabsTrigger>
+          <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="plans">Subscriptions</TabsTrigger>
           <TabsTrigger value="revenue">Revenue</TabsTrigger>
           <TabsTrigger value="funnel">Funnel</TabsTrigger>
-          <TabsTrigger value="engagement">Engagement</TabsTrigger>
+          <TabsTrigger value="engagement">Platform usage</TabsTrigger>
           <TabsTrigger value="ai">AI economics</TabsTrigger>
           <TabsTrigger value="churn">Churn & risk</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-6"><OverviewPanel range={range} /></TabsContent>
+        <TabsContent value="users" className="mt-6"><UsersPanel range={range} /></TabsContent>
         <TabsContent value="plans" className="mt-6"><PlansPanel /></TabsContent>
         <TabsContent value="revenue" className="mt-6"><RevenuePanel range={range} /></TabsContent>
         <TabsContent value="funnel" className="mt-6"><FunnelPanel range={range} /></TabsContent>
