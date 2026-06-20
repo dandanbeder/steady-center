@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { beginSupportSession, type SupportSessionStartResult } from "@/lib/support-session.client";
+import { beginSupportSession, type SupportSessionStartResult } from "@/lib/support-session";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   component: AdminPortal,

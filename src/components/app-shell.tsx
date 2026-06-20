@@ -15,7 +15,7 @@ import { useIsPlatformAdmin } from "@/hooks/use-is-platform-admin";
 import { listBusinesses } from "@/lib/businesses";
 import { AnnouncementBanner } from "@/components/announcement-banner";
 import { SupportSessionBanner } from "@/components/support-session-banner";
-import { getLocalSupportSession } from "@/lib/support-session.client";
+import { getLocalSupportSession } from "@/lib/support-session";
 import {
   DropdownMenu,
   DropdownMenuContent,
