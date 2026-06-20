@@ -127,7 +127,7 @@ export function brandedEmail(opts: {
     ${ctaNote}
     ${opts.footer ? `<p style="color:#888;font-size:12px;margin-top:24px;line-height:1.5">${escapeHtml(opts.footer)}</p>` : ""}
     ${brandFooter()}
-    <p style="color:#aaa;font-size:11px;margin-top:24px">${footerCopyright()} · This is a service notification from Heartbeat. You're receiving it because of activity on your account.</p>
+    <p style="color:#aaa;font-size:11px;margin-top:12px">This is a service notification from Heartbeat. You're receiving it because of activity on your account.</p>
   </div>
 </body></html>`;
 }
