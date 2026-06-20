@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,22 +6,42 @@ import {
   adminEndSupportSession,
   adminSetSupportSessionMode,
 } from "@/lib/admin.functions";
-import { useActiveSupportSession } from "@/hooks/use-support-session";
+import {
+  beginSupportSession,
+  clearSupportSessionState,
+  getLocalSupportSession,
+  restoreAdminSession,
+  type LocalSupportSession,
+} from "@/lib/support-session.client";
+import { useEffect, useState } from "react";
 
 export function SupportSessionBanner() {
-  const { data: session } = useActiveSupportSession();
-  const qc = useQueryClient();
+  const [session, setSession] = useState<LocalSupportSession | null>(() => getLocalSupportSession());
   const endFn = useServerFn(adminEndSupportSession);
   const modeFn = useServerFn(adminSetSupportSessionMode);
 
+  useEffect(() => {
+    const onStorage = () => setSession(getLocalSupportSession());
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
   const endMut = useMutation({
-    mutationFn: () => endFn({ data: { session_id: session!.id } }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin"] }),
+    mutationFn: async () => {
+      await restoreAdminSession();
+      await endFn({ data: { session_id: session!.id } });
+      clearSupportSessionState();
+    },
+    onSuccess: () => window.location.assign("/admin"),
   });
   const modeMut = useMutation({
-    mutationFn: (mode: "read" | "write") =>
-      modeFn({ data: { session_id: session!.id, mode } }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin"] }),
+    mutationFn: async (mode: "read" | "write") => {
+      await restoreAdminSession();
+      return modeFn({
+        data: { session_id: session!.id, mode, redirect_origin: window.location.origin },
+      });
+    },
+    onSuccess: (nextSession) => beginSupportSession(nextSession),
   });
 
   if (!session) return null;
