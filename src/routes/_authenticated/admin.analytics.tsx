@@ -124,7 +124,7 @@ function AnalyticsPage() {
       </div>
 
       <Tabs defaultValue="overview">
-        <TabsList className="flex flex-wrap">
+        <TabsList className="flex w-full overflow-x-auto whitespace-nowrap justify-start">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="plans">Subscriptions</TabsTrigger>
@@ -150,11 +150,11 @@ function AnalyticsPage() {
 
 function StatCard({ label, value, sub }: { label: string; value: React.ReactNode; sub?: React.ReactNode }) {
   return (
-    <Card>
-      <CardHeader className="pb-2"><CardTitle className="text-xs font-normal text-muted-foreground uppercase tracking-wider">{label}</CardTitle></CardHeader>
-      <CardContent>
-        <div className="text-2xl font-semibold">{value}</div>
-        {sub != null && <div className="text-xs text-muted-foreground mt-1">{sub}</div>}
+    <Card className="min-w-0">
+      <CardHeader className="pb-2"><CardTitle className="text-xs font-normal text-muted-foreground uppercase tracking-wider truncate">{label}</CardTitle></CardHeader>
+      <CardContent className="min-w-0">
+        <div className="text-lg sm:text-xl lg:text-2xl font-semibold tabular-nums break-words leading-tight">{value}</div>
+        {sub != null && <div className="text-xs text-muted-foreground mt-1 break-words">{sub}</div>}
       </CardContent>
     </Card>
   );
