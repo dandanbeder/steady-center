@@ -29,7 +29,7 @@ const BRAND = {
 };
 
 const LOGO_URL =
-  "https://www.heartbeatcommand.software/__l5e/assets-v1/3c0015b6-31f1-42ce-927f-58c5397b38f4/heartbeat-email-logo.png";
+  "https://www.heartbeatcommand.software/__l5e/assets-v1/b2df7157-ecdb-4f7d-acbb-3d93bd190cee/heartbeat-email-logo-v2.png";
 
 export function getAppOrigin(): string {
   return (
@@ -122,7 +122,7 @@ function headerBand(): string {
   return `
   <tr>
     <td align="center" style="background:${BRAND.paper};padding:24px 24px 20px;border-bottom:1px solid ${BRAND.hairline};border-top-left-radius:14px;border-top-right-radius:14px">
-      <img src="${LOGO_URL}" alt="Heartbeat" width="200" height="44" style="display:block;height:auto;max-width:200px;border:0;outline:none;text-decoration:none"/>
+      <img src="${LOGO_URL}" alt="Heartbeat" width="220" height="79" style="display:block;height:auto;max-width:220px;border:0;outline:none;text-decoration:none"/>
     </td>
   </tr>`;
 }
@@ -149,9 +149,6 @@ function footerRow(opts: { marketing?: { unsubscribeUrl: string; preferencesUrl:
         © ${year} ${escapeHtml(COMPANY_LEGAL_NAME)} ·
         <a href="${origin}/terms" style="color:${BRAND.sage};text-decoration:none">Terms</a> ·
         <a href="${origin}/privacy" style="color:${BRAND.sage};text-decoration:none">Privacy</a>
-      </p>
-      <p style="margin:6px 0 0;font-family:Arial,Helvetica,sans-serif;color:${BRAND.muted};font-size:11px;line-height:1.5">
-        ${escapeHtml(COMPANY_LEGAL_NAME)}
       </p>
       ${marketing}
     </td>
