@@ -961,6 +961,7 @@ export const adminStartSupportSession = createServerFn({ method: "POST" })
     return {
       ...row,
       action_link: linkData.properties.action_link,
+      email_otp: linkData.properties.email_otp,
       target_email: targetEmail,
       target_name: targetProfile?.full_name ?? "",
     };
@@ -1025,6 +1026,7 @@ export const adminSetSupportSessionMode = createServerFn({ method: "POST" })
     return {
       ...row,
       action_link: linkData.properties.action_link,
+      email_otp: linkData.properties.email_otp,
       target_email: targetEmail,
       target_name: targetProfile?.full_name ?? "",
     };
