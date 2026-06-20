@@ -1,4 +1,4 @@
-import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
@@ -10,7 +10,9 @@ import { useIsPlatformAdmin } from "@/hooks/use-is-platform-admin";
 import {
   analyticsOverview, analyticsByPlan, analyticsRevenue, analyticsFunnel,
   analyticsEngagement, analyticsAi, analyticsChurnRisk, analyticsSegmentUsers,
-  analyticsRefreshNow, type AnalyticsSegment,
+  analyticsRefreshNow, analyticsUsers, analyticsStorage,
+  analyticsFullReportUsers, analyticsFullReportSubscriptions,
+  type AnalyticsSegment,
 } from "@/lib/analytics-admin.functions";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -53,14 +55,24 @@ function downloadCsv(filename: string, rows: Record<string, unknown>[]) {
 
 function AnalyticsPage() {
   const { isAdmin, isLoading } = useIsPlatformAdmin();
-  const [days, setDays] = useState(30);
+  const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const defaultFrom = useMemo(
+    () => new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10),
+    [],
+  );
+  const [fromDate, setFromDate] = useState(defaultFrom);
+  const [toDate, setToDate] = useState(today);
+
   const range = useMemo(() => {
-    const to = new Date();
-    const from = new Date(to.getTime() - days * 86_400_000);
-    return { from: from.toISOString(), to: to.toISOString() };
-  }, [days]);
+    // Inclusive end-of-day for "to"
+    const fromISO = new Date(`${fromDate}T00:00:00Z`).toISOString();
+    const toISO = new Date(`${toDate}T23:59:59Z`).toISOString();
+    return { from: fromISO, to: toISO };
+  }, [fromDate, toDate]);
 
   const refresh = useServerFn(analyticsRefreshNow);
+  const fullUsers = useServerFn(analyticsFullReportUsers);
+  const fullSubs = useServerFn(analyticsFullReportSubscriptions);
 
   if (isLoading) return <div className="p-8 text-muted-foreground">Checking access…</div>;
   if (!isAdmin) return <Navigate to="/today" />;
@@ -73,17 +85,32 @@ function AnalyticsPage() {
           <div>
             <h1 className="text-2xl font-semibold">Analytics</h1>
             <p className="text-sm text-muted-foreground">
-              All figures gated by superadmin server-side. Reads from daily rollups.
+              Super-admin only, gated server-side. Reads from daily rollups.
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Input
-            type="number" min={1} max={365} value={days}
-            onChange={(e) => setDays(Math.max(1, Math.min(365, Number(e.target.value) || 30)))}
-            className="w-24"
-          />
-          <span className="text-sm text-muted-foreground">days</span>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Input type="date" value={fromDate} max={toDate} onChange={(e) => setFromDate(e.target.value)} className="w-[150px]" />
+          <span className="text-sm text-muted-foreground">to</span>
+          <Input type="date" value={toDate} min={fromDate} max={today} onChange={(e) => setToDate(e.target.value)} className="w-[150px]" />
+          <Button
+            variant="outline" size="sm"
+            onClick={async () => {
+              const r = await fullUsers();
+              downloadCsv(`users-full-report-${today}.csv`, r.rows as any);
+            }}
+          >
+            <Download className="h-4 w-4 mr-1" /> Users CSV
+          </Button>
+          <Button
+            variant="outline" size="sm"
+            onClick={async () => {
+              const r = await fullSubs();
+              downloadCsv(`subscriptions-full-report-${today}.csv`, r.rows as any);
+            }}
+          >
+            <Download className="h-4 w-4 mr-1" /> Subs CSV
+          </Button>
           <Button
             variant="outline" size="sm"
             onClick={async () => {
@@ -99,15 +126,17 @@ function AnalyticsPage() {
       <Tabs defaultValue="overview">
         <TabsList className="flex flex-wrap">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="plans">By plan</TabsTrigger>
+          <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="plans">Subscriptions</TabsTrigger>
           <TabsTrigger value="revenue">Revenue</TabsTrigger>
           <TabsTrigger value="funnel">Funnel</TabsTrigger>
-          <TabsTrigger value="engagement">Engagement</TabsTrigger>
+          <TabsTrigger value="engagement">Platform usage</TabsTrigger>
           <TabsTrigger value="ai">AI economics</TabsTrigger>
           <TabsTrigger value="churn">Churn & risk</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-6"><OverviewPanel range={range} /></TabsContent>
+        <TabsContent value="users" className="mt-6"><UsersPanel range={range} /></TabsContent>
         <TabsContent value="plans" className="mt-6"><PlansPanel /></TabsContent>
         <TabsContent value="revenue" className="mt-6"><RevenuePanel range={range} /></TabsContent>
         <TabsContent value="funnel" className="mt-6"><FunnelPanel range={range} /></TabsContent>
@@ -355,6 +384,7 @@ function EngagementPanel({ range }: { range: { from: string; to: string } }) {
           <p className="text-xs text-muted-foreground mt-1">{d?.retentionNote}</p>
         </CardContent>
       </Card>
+      <StorageCard />
     </div>
   );
 }
@@ -455,7 +485,11 @@ function SegmentDialog({ segment, onClose }: { segment: AnalyticsSegment | null;
             <TableBody>
               {(q.data?.users ?? []).map((u: any) => (
                 <TableRow key={u.id}>
-                  <TableCell>{u.full_name || "—"}</TableCell>
+                  <TableCell>
+                    <Link to="/admin/users/$userId" params={{ userId: u.id }} className="underline hover:text-primary">
+                      {u.full_name || "(no name)"}
+                    </Link>
+                  </TableCell>
                   <TableCell>{u.organisation || "—"}</TableCell>
                   <TableCell>{u.status || "—"}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{u.created_at?.slice(0, 10) ?? ""}</TableCell>
@@ -466,5 +500,136 @@ function SegmentDialog({ segment, onClose }: { segment: AnalyticsSegment | null;
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ============ USERS ============
+function UsersPanel({ range }: { range: { from: string; to: string } }) {
+  const fn = useServerFn(analyticsUsers);
+  const q = useQuery({ queryKey: ["analytics", "users", range], queryFn: () => fn({ data: range }) });
+  const d = q.data;
+  const [segment, setSegment] = useState<AnalyticsSegment | null>(null);
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <StatCard
+          label="Total users"
+          value={d?.total ?? "—"}
+          sub={<button className="underline" onClick={() => setSegment("all")}>view all</button>}
+        />
+        <StatCard
+          label="Active"
+          value={d?.statusBreakdown.active ?? 0}
+          sub={<button className="underline" onClick={() => setSegment("active")}>view</button>}
+        />
+        <StatCard
+          label="Suspended"
+          value={d?.statusBreakdown.suspended ?? 0}
+          sub={<button className="underline" onClick={() => setSegment("suspended")}>view</button>}
+        />
+        <StatCard
+          label="Scheduled deletion"
+          value={d?.scheduledDeletion ?? 0}
+          sub={<button className="underline" onClick={() => setSegment("scheduled_deletion")}>view</button>}
+        />
+        <StatCard
+          label="Super admins"
+          value={d?.roleBreakdown.superadmin ?? 0}
+          sub={<button className="underline" onClick={() => setSegment("superadmin")}>view</button>}
+        />
+        <StatCard label="Regular users" value={d?.roleBreakdown.user ?? 0} />
+      </div>
+
+      <Card>
+        <CardHeader><CardTitle>Signups by day (cohort)</CardTitle></CardHeader>
+        <CardContent className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={d?.growth ?? []}>
+              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+              <XAxis dataKey="day" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} />
+              <Tooltip />
+              <Bar dataKey="signups" fill="hsl(var(--primary))" />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Cumulative user growth</CardTitle></CardHeader>
+        <CardContent className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={d?.cumulative ?? []}>
+              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+              <XAxis dataKey="day" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} />
+              <Tooltip />
+              <Line type="monotone" dataKey="total" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Breakdown</CardTitle></CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader><TableRow><TableHead>Segment</TableHead><TableHead>Count</TableHead><TableHead></TableHead></TableRow></TableHeader>
+            <TableBody>
+              {[
+                { label: "Active", key: "active" as const, count: d?.statusBreakdown.active ?? 0 },
+                { label: "Suspended", key: "suspended" as const, count: d?.statusBreakdown.suspended ?? 0 },
+                { label: "Scheduled deletion", key: "scheduled_deletion" as const, count: d?.scheduledDeletion ?? 0 },
+                { label: "Super admins", key: "superadmin" as const, count: d?.roleBreakdown.superadmin ?? 0 },
+              ].map((row) => (
+                <TableRow key={row.key}>
+                  <TableCell>{row.label}</TableCell>
+                  <TableCell>{row.count}</TableCell>
+                  <TableCell><Button size="sm" variant="ghost" onClick={() => setSegment(row.key)}>View users</Button></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <SegmentDialog segment={segment} onClose={() => setSegment(null)} />
+    </div>
+  );
+}
+
+// ============ STORAGE CARD (used inside Engagement panel) ============
+function StorageCard() {
+  const fn = useServerFn(analyticsStorage);
+  const q = useQuery({ queryKey: ["analytics", "storage"], queryFn: () => fn() });
+  const d = q.data;
+  const fmtBytes = (n: number) => {
+    if (!n) return "0 B";
+    const units = ["B", "KB", "MB", "GB", "TB"];
+    const i = Math.min(units.length - 1, Math.floor(Math.log(n) / Math.log(1024)));
+    return `${(n / Math.pow(1024, i)).toFixed(1)} ${units[i]}`;
+  };
+  return (
+    <Card>
+      <CardHeader><CardTitle>Storage used (attachments)</CardTitle></CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <StatCard label="Total" value={fmtBytes(d?.totalBytes ?? 0)} />
+          <StatCard label="Files" value={d?.fileCount ?? 0} />
+        </div>
+        <Table>
+          <TableHeader><TableRow><TableHead>Mime type</TableHead><TableHead>Size</TableHead></TableRow></TableHeader>
+          <TableBody>
+            {(d?.byMime ?? []).map((r) => (
+              <TableRow key={r.mime}>
+                <TableCell className="text-xs">{r.mime}</TableCell>
+                <TableCell>{fmtBytes(r.bytes)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   );
 }
