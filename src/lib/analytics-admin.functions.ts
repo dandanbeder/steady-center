@@ -465,6 +465,11 @@ const Segment = z.enum([
   "canceled",
   "trial_ending",
   "inactive_14d",
+  "all",
+  "active",
+  "suspended",
+  "scheduled_deletion",
+  "superadmin",
 ]);
 export type AnalyticsSegment = z.infer<typeof Segment>;
 
