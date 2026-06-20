@@ -18,7 +18,7 @@ export type SupportSessionStartResult = {
   email_otp: string;
 };
 
-export type LocalSupportSession = Omit<SupportSessionStartResult, "action_link">;
+export type LocalSupportSession = Omit<SupportSessionStartResult, "action_link" | "email_otp">;
 
 export function getLocalSupportSession(): LocalSupportSession | null {
   if (typeof window === "undefined") return null;
