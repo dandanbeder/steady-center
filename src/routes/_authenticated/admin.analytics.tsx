@@ -484,7 +484,11 @@ function SegmentDialog({ segment, onClose }: { segment: AnalyticsSegment | null;
             <TableBody>
               {(q.data?.users ?? []).map((u: any) => (
                 <TableRow key={u.id}>
-                  <TableCell>{u.full_name || "—"}</TableCell>
+                  <TableCell>
+                    <Link to="/admin/users/$userId" params={{ userId: u.id }} className="underline hover:text-primary">
+                      {u.full_name || "(no name)"}
+                    </Link>
+                  </TableCell>
                   <TableCell>{u.organisation || "—"}</TableCell>
                   <TableCell>{u.status || "—"}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{u.created_at?.slice(0, 10) ?? ""}</TableCell>
