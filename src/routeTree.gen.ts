@@ -37,6 +37,7 @@ import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticated/billing'
 import { Route as AuthenticatedBacklogRouteImport } from './routes/_authenticated/backlog'
 import { Route as AuthenticatedAskNotesRouteImport } from './routes/_authenticated/ask-notes'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAcceptTermsRouteImport } from './routes/_authenticated/accept-terms'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthMicrosoftCallbackRouteImport } from './routes/auth/microsoft.callback'
@@ -194,6 +195,11 @@ const AuthenticatedAskNotesRoute = AuthenticatedAskNotesRouteImport.update({
   path: '/ask-notes',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedAcceptTermsRoute =
   AuthenticatedAcceptTermsRouteImport.update({
     id: '/accept-terms',
@@ -201,9 +207,9 @@ const AuthenticatedAcceptTermsRoute =
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
-  id: '/admin/',
-  path: '/admin/',
-  getParentRoute: () => AuthenticatedRoute,
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
 const AuthMicrosoftCallbackRoute = AuthMicrosoftCallbackRouteImport.update({
   id: '/auth/microsoft/callback',
@@ -224,9 +230,9 @@ const AuthenticatedMeetingsMeetingIdRoute =
   } as any)
 const AuthenticatedAdminAnalyticsRoute =
   AuthenticatedAdminAnalyticsRouteImport.update({
-    id: '/admin/analytics',
-    path: '/admin/analytics',
-    getParentRoute: () => AuthenticatedRoute,
+    id: '/analytics',
+    path: '/analytics',
+    getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
 const ApiPublicPaymentsWebhookRoute =
   ApiPublicPaymentsWebhookRouteImport.update({
@@ -290,9 +296,9 @@ const ApiPublicHooksDailyPulseRoute =
   } as any)
 const AuthenticatedAdminUsersUserIdRoute =
   AuthenticatedAdminUsersUserIdRouteImport.update({
-    id: '/admin/users/$userId',
-    path: '/admin/users/$userId',
-    getParentRoute: () => AuthenticatedRoute,
+    id: '/users/$userId',
+    path: '/users/$userId',
+    getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -306,6 +312,7 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/accept-terms': typeof AuthenticatedAcceptTermsRoute
+  '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/ask-notes': typeof AuthenticatedAskNotesRoute
   '/backlog': typeof AuthenticatedBacklogRoute
   '/billing': typeof AuthenticatedBillingRoute
@@ -400,6 +407,7 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/_authenticated/accept-terms': typeof AuthenticatedAcceptTermsRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/ask-notes': typeof AuthenticatedAskNotesRoute
   '/_authenticated/backlog': typeof AuthenticatedBacklogRoute
   '/_authenticated/billing': typeof AuthenticatedBillingRoute
@@ -448,6 +456,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/unsubscribe'
     | '/accept-terms'
+    | '/admin'
     | '/ask-notes'
     | '/backlog'
     | '/billing'
@@ -541,6 +550,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/unsubscribe'
     | '/_authenticated/accept-terms'
+    | '/_authenticated/admin'
     | '/_authenticated/ask-notes'
     | '/_authenticated/backlog'
     | '/_authenticated/billing'
@@ -799,6 +809,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAskNotesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/accept-terms': {
       id: '/_authenticated/accept-terms'
       path: '/accept-terms'
@@ -808,10 +825,10 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/admin/': {
       id: '/_authenticated/admin/'
-      path: '/admin'
+      path: '/'
       fullPath: '/admin/'
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
-      parentRoute: typeof AuthenticatedRoute
+      parentRoute: typeof AuthenticatedAdminRoute
     }
     '/auth/microsoft/callback': {
       id: '/auth/microsoft/callback'
@@ -836,10 +853,10 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/admin/analytics': {
       id: '/_authenticated/admin/analytics'
-      path: '/admin/analytics'
+      path: '/analytics'
       fullPath: '/admin/analytics'
       preLoaderRoute: typeof AuthenticatedAdminAnalyticsRouteImport
-      parentRoute: typeof AuthenticatedRoute
+      parentRoute: typeof AuthenticatedAdminRoute
     }
     '/api/public/payments/webhook': {
       id: '/api/public/payments/webhook'
@@ -913,13 +930,28 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/admin/users/$userId': {
       id: '/_authenticated/admin/users/$userId'
-      path: '/admin/users/$userId'
+      path: '/users/$userId'
       fullPath: '/admin/users/$userId'
       preLoaderRoute: typeof AuthenticatedAdminUsersUserIdRouteImport
-      parentRoute: typeof AuthenticatedRoute
+      parentRoute: typeof AuthenticatedAdminRoute
     }
   }
 }
+
+interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminAnalyticsRoute: typeof AuthenticatedAdminAnalyticsRoute
+  AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
+  AuthenticatedAdminUsersUserIdRoute: typeof AuthenticatedAdminUsersUserIdRoute
+}
+
+const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminAnalyticsRoute: AuthenticatedAdminAnalyticsRoute,
+  AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
+  AuthenticatedAdminUsersUserIdRoute: AuthenticatedAdminUsersUserIdRoute,
+}
+
+const AuthenticatedAdminRouteWithChildren =
+  AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
 
 interface AuthenticatedMeetingsRouteChildren {
   AuthenticatedMeetingsMeetingIdRoute: typeof AuthenticatedMeetingsMeetingIdRoute
@@ -947,6 +979,7 @@ const AuthenticatedReportsRouteWithChildren =
 
 interface AuthenticatedRouteChildren {
   AuthenticatedAcceptTermsRoute: typeof AuthenticatedAcceptTermsRoute
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedAskNotesRoute: typeof AuthenticatedAskNotesRoute
   AuthenticatedBacklogRoute: typeof AuthenticatedBacklogRoute
   AuthenticatedBillingRoute: typeof AuthenticatedBillingRoute
@@ -965,13 +998,11 @@ interface AuthenticatedRouteChildren {
   AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
   AuthenticatedTodayRoute: typeof AuthenticatedTodayRoute
   AuthenticatedTrashRoute: typeof AuthenticatedTrashRoute
-  AuthenticatedAdminAnalyticsRoute: typeof AuthenticatedAdminAnalyticsRoute
-  AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
-  AuthenticatedAdminUsersUserIdRoute: typeof AuthenticatedAdminUsersUserIdRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAcceptTermsRoute: AuthenticatedAcceptTermsRoute,
+  AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedAskNotesRoute: AuthenticatedAskNotesRoute,
   AuthenticatedBacklogRoute: AuthenticatedBacklogRoute,
   AuthenticatedBillingRoute: AuthenticatedBillingRoute,
@@ -990,9 +1021,6 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedTasksRoute: AuthenticatedTasksRoute,
   AuthenticatedTodayRoute: AuthenticatedTodayRoute,
   AuthenticatedTrashRoute: AuthenticatedTrashRoute,
-  AuthenticatedAdminAnalyticsRoute: AuthenticatedAdminAnalyticsRoute,
-  AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
-  AuthenticatedAdminUsersUserIdRoute: AuthenticatedAdminUsersUserIdRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
