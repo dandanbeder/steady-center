@@ -188,7 +188,7 @@ export async function generatePulseForUser(
     ? "No meetings scheduled."
     : meetings.map((m: any) => {
         const t = new Intl.DateTimeFormat("en-US", { timeZone: opts.tz, hour: "numeric", minute: "2-digit" }).format(new Date(m.start_at));
-        return `${t} — ${m.title}`;
+        return `${t}, ${m.title}`;
       }).join("; ");
 
   const summaryInput = kind === "morning"
@@ -197,7 +197,7 @@ Meetings: ${meetingsLine}
 Focus 3 picks: ${focus3.map((f) => f.title).join("; ") || "none"}.
 Overdue: ${overdue.length}. Due today: ${dueToday.length}. At risk (next 2 days): ${atRisk.length}.
 Capacity: ${capacity}h. Estimated load: ${scheduled}h.`
-    : `Date: ${dateStr} — evening wind-down.
+    : `Date: ${dateStr}, evening wind-down.
 Completed-eligible tasks remaining today: ${dueToday.length}.
 Open total: ${allOpen.length}. Overdue: ${overdue.length}.`;
 
@@ -255,7 +255,7 @@ Open total: ${allOpen.length}. Overdue: ${overdue.length}.`;
           ? '<p style="color:#666">No meetings today.</p>'
           : `<ul style="padding-left:18px;line-height:1.7;color:#333">${meetings.map((m: any) => {
               const t = new Intl.DateTimeFormat("en-US", { timeZone: opts.tz, hour: "numeric", minute: "2-digit" }).format(new Date(m.start_at));
-              return `<li><strong>${t}</strong> — ${escapeHtml(m.title)}</li>`;
+              return `<li><strong>${t}</strong>, ${escapeHtml(m.title)}</li>`;
             }).join("")}</ul>`;
         const focusHtml = focus3.length === 0
           ? '<p style="color:#666">No priorities queued.</p>'

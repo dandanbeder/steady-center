@@ -87,12 +87,12 @@ export const sendWelcomeAndNotifyAdmins = createServerFn({ method: "POST" })
     const welcomeHtml = brandedEmail({
       heading: `Welcome to Heartbeat, ${rawName}`,
       intro:
-        "We're glad you're here. Heartbeat is a quiet place to track your week — your tasks, calendar, notes, and meetings, all in one calm view.",
+        "We're glad you're here. Heartbeat is a quiet place to track your week, your tasks, calendar, notes, and meetings, all in one calm view.",
       bodyHtml: `
         <p style="margin:0 0 10px;line-height:1.55;color:#3a3a3a">A few good first steps:</p>
         <ul style="margin:0 0 16px 18px;padding:0;color:#3a3a3a;line-height:1.7">
           <li>Open <strong>Today</strong> to see what's on your plate.</li>
-          <li>Add your first <strong>account</strong> in Settings — each gets its own color and calendars.</li>
+          <li>Add your first <strong>account</strong> in Settings, each gets its own color and calendars.</li>
           <li>Connect <strong>Google</strong> or <strong>Microsoft / Outlook</strong> in Connections to sync your calendar.</li>
         </ul>
         <p style="margin:0 0 16px;line-height:1.55;color:#3a3a3a">Each morning you'll get a calm <strong>Morning Pulse</strong>, and a gentle review each Friday.</p>`,

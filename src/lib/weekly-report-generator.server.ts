@@ -715,7 +715,7 @@ function parseNarrative(text: string): ReportNarrative | null {
 function withLegacyFields(n: ReportNarrative, _m: ReportMetrics): ReportNarrative {
   return {
     ...n,
-    wins: (n.strengths ?? []).map((s) => s.point + (s.evidence ? ` — ${s.evidence}` : "")),
+    wins: (n.strengths ?? []).map((s) => s.point + (s.evidence ? `, ${s.evidence}` : "")),
     slipped: (n.growth_areas ?? []).map((g) => `${g.point}${g.why ? ` (${g.why})` : ""}`),
     at_risk: [],
     suggestions: [
@@ -764,7 +764,7 @@ function fallbackNarrative(m: ReportMetrics): ReportNarrative {
   const n: ReportNarrative = {
     headline:
       o.tasks_completed === 0 && o.tasks_created === 0 && hours === 0
-        ? "Quiet week — almost no activity logged."
+        ? "Quiet week, almost no activity logged."
         : `${o.tasks_completed} done · ${hours}h tracked · ${o.dropped_balls.length} overdue`,
     strengths,
     growth_areas: growth,
@@ -812,36 +812,36 @@ async function sendReportEmail(
           .map(
             (s) =>
               `<li style="margin:6px 0"><strong>${escapeHtml(s.point)}</strong>${
-                s.evidence ? ` — <span style="color:#555">${escapeHtml(s.evidence)}</span>` : ""
+                s.evidence ? `, <span style="color:#555">${escapeHtml(s.evidence)}</span>` : ""
               }</li>`,
           )
           .join("")}</ul>`
-      : `<p style="color:#888;margin:8px 0 16px">—</p>`;
+      : `<p style="color:#888;margin:8px 0 16px">None</p>`;
   const growthList = (items: GrowthArea[]) =>
     items.length
       ? `<ul style="margin:8px 0 16px 18px;padding:0">${items
           .map(
             (g) =>
               `<li style="margin:8px 0"><strong>${escapeHtml(g.point)}</strong>${
-                g.why ? ` — <span style="color:#555">${escapeHtml(g.why)}</span>` : ""
+                g.why ? `, <span style="color:#555">${escapeHtml(g.why)}</span>` : ""
               }<br/><span style="color:#7A8471">→ ${escapeHtml(g.suggestion)}</span></li>`,
           )
           .join("")}</ul>`
-      : `<p style="color:#888;margin:8px 0 16px">—</p>`;
+      : `<p style="color:#888;margin:8px 0 16px">None</p>`;
   const plainList = (arr: string[]) =>
     arr.length
       ? `<ul style="margin:8px 0 16px 18px;padding:0">${arr
           .map((x) => `<li style="margin:4px 0">${escapeHtml(x)}</li>`)
           .join("")}</ul>`
-      : `<p style="color:#888;margin:8px 0 16px">—</p>`;
+      : `<p style="color:#888;margin:8px 0 16px">None</p>`;
   const bodyHtml = `
-      <p style="color:#666;margin:0 0 20px">${weekStart.toDateString()} – ${weekEnd.toDateString()}</p>
+      <p style="color:#666;margin:0 0 20px">${weekStart.toDateString()} to ${weekEnd.toDateString()}</p>
       <table style="border-collapse:collapse;width:100%;margin-bottom:20px">
         <tr>
           ${statCell("Hours", (o.tracked_hours ?? 0) + "h")}
           ${statCell("Done", o.tasks_completed)}
           ${statCell("On time %", Math.round(((o.completed_on_time / Math.max(1, o.tasks_completed)) * 100)) + "%")}
-          ${statCell("Cycle", (metrics.flow?.avg_cycle_days ?? "—") + (metrics.flow?.avg_cycle_days != null ? "d" : ""))}
+          ${statCell("Cycle", (metrics.flow?.avg_cycle_days ?? "n/a") + (metrics.flow?.avg_cycle_days != null ? "d" : ""))}
         </tr>
         <tr>
           ${statCell("Completion", Math.round(o.completion_rate * 100) + "%")}
@@ -861,7 +861,7 @@ async function sendReportEmail(
     to,
     subject,
     heading: narrative.headline || "Your weekly review",
-    intro: "A calm look back at the week — what moved, what stalled, what to pick up next.",
+    intro: "A calm look back at the week, what moved, what stalled, what to pick up next.",
     bodyHtml,
   });
 }

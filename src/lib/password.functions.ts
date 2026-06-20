@@ -68,7 +68,7 @@ export const requestPasswordReset = createServerFn({ method: "POST" })
       ctaLabel: "Set a new password",
       ctaUrl: actionLink,
       footer:
-        "If you didn't request this, you can safely ignore this email — your password won't change.",
+        "If you didn't request this, you can safely ignore this email, your password won't change.",
     });
 
     await sendEmail({
