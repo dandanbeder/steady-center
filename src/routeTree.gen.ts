@@ -39,6 +39,7 @@ import { Route as AuthenticatedBacklogRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedAskNotesRouteImport } from './routes/_authenticated/ask-notes'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAcceptTermsRouteImport } from './routes/_authenticated/accept-terms'
+import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthMicrosoftCallbackRouteImport } from './routes/auth/microsoft.callback'
 import { Route as AuthenticatedReportsReportIdRouteImport } from './routes/_authenticated/reports.$reportId'
 import { Route as AuthenticatedMeetingsMeetingIdRouteImport } from './routes/_authenticated/meetings.$meetingId'
@@ -205,6 +206,11 @@ const AuthenticatedAcceptTermsRoute =
     path: '/accept-terms',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
 const AuthMicrosoftCallbackRoute = AuthMicrosoftCallbackRouteImport.update({
   id: '/auth/microsoft/callback',
   path: '/auth/microsoft/callback',
@@ -329,6 +335,7 @@ export interface FileRoutesByFullPath {
   '/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
   '/reports/$reportId': typeof AuthenticatedReportsReportIdRoute
   '/auth/microsoft/callback': typeof AuthMicrosoftCallbackRoute
+  '/admin/': typeof AuthenticatedAdminIndexRoute
   '/admin/users/$userId': typeof AuthenticatedAdminUsersUserIdRoute
   '/api/public/hooks/daily-pulse': typeof ApiPublicHooksDailyPulseRoute
   '/api/public/hooks/generate-weekly-reports': typeof ApiPublicHooksGenerateWeeklyReportsRoute
@@ -352,7 +359,6 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/accept-terms': typeof AuthenticatedAcceptTermsRoute
-  '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/ask-notes': typeof AuthenticatedAskNotesRoute
   '/backlog': typeof AuthenticatedBacklogRoute
   '/billing': typeof AuthenticatedBillingRoute
@@ -375,6 +381,7 @@ export interface FileRoutesByTo {
   '/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
   '/reports/$reportId': typeof AuthenticatedReportsReportIdRoute
   '/auth/microsoft/callback': typeof AuthMicrosoftCallbackRoute
+  '/admin': typeof AuthenticatedAdminIndexRoute
   '/admin/users/$userId': typeof AuthenticatedAdminUsersUserIdRoute
   '/api/public/hooks/daily-pulse': typeof ApiPublicHooksDailyPulseRoute
   '/api/public/hooks/generate-weekly-reports': typeof ApiPublicHooksGenerateWeeklyReportsRoute
@@ -423,6 +430,7 @@ export interface FileRoutesById {
   '/_authenticated/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
   '/_authenticated/reports/$reportId': typeof AuthenticatedReportsReportIdRoute
   '/auth/microsoft/callback': typeof AuthMicrosoftCallbackRoute
+  '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/admin/users/$userId': typeof AuthenticatedAdminUsersUserIdRoute
   '/api/public/hooks/daily-pulse': typeof ApiPublicHooksDailyPulseRoute
   '/api/public/hooks/generate-weekly-reports': typeof ApiPublicHooksGenerateWeeklyReportsRoute
@@ -471,6 +479,7 @@ export interface FileRouteTypes {
     | '/meetings/$meetingId'
     | '/reports/$reportId'
     | '/auth/microsoft/callback'
+    | '/admin/'
     | '/admin/users/$userId'
     | '/api/public/hooks/daily-pulse'
     | '/api/public/hooks/generate-weekly-reports'
@@ -494,7 +503,6 @@ export interface FileRouteTypes {
     | '/terms'
     | '/unsubscribe'
     | '/accept-terms'
-    | '/admin'
     | '/ask-notes'
     | '/backlog'
     | '/billing'
@@ -517,6 +525,7 @@ export interface FileRouteTypes {
     | '/meetings/$meetingId'
     | '/reports/$reportId'
     | '/auth/microsoft/callback'
+    | '/admin'
     | '/admin/users/$userId'
     | '/api/public/hooks/daily-pulse'
     | '/api/public/hooks/generate-weekly-reports'
@@ -564,6 +573,7 @@ export interface FileRouteTypes {
     | '/_authenticated/meetings/$meetingId'
     | '/_authenticated/reports/$reportId'
     | '/auth/microsoft/callback'
+    | '/_authenticated/admin/'
     | '/_authenticated/admin/users/$userId'
     | '/api/public/hooks/daily-pulse'
     | '/api/public/hooks/generate-weekly-reports'
@@ -813,6 +823,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAcceptTermsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/admin/': {
+      id: '/_authenticated/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/auth/microsoft/callback': {
       id: '/auth/microsoft/callback'
       path: '/auth/microsoft/callback'
@@ -923,11 +940,13 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminAnalyticsRoute: typeof AuthenticatedAdminAnalyticsRoute
+  AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedAdminUsersUserIdRoute: typeof AuthenticatedAdminUsersUserIdRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminAnalyticsRoute: AuthenticatedAdminAnalyticsRoute,
+  AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   AuthenticatedAdminUsersUserIdRoute: AuthenticatedAdminUsersUserIdRoute,
 }
 
