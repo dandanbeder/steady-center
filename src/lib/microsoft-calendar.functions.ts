@@ -221,6 +221,7 @@ export const pushEventToMicrosoft = createServerFn({ method: "POST" })
       .single();
     if (error) throw error;
     const cal = ev.calendar as { provider: string; external_id: string | null; owner_id: string };
+    if (cal.owner_id !== context.userId) throw new Error("Not authorized");
     if (cal.provider !== "microsoft" || !cal.external_id) return { skipped: true };
 
     const body = toMsPayload(ev);
