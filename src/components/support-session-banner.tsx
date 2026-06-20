@@ -12,6 +12,7 @@ import {
   getLocalSupportSession,
   restoreAdminSession,
   type LocalSupportSession,
+  type SupportSessionStartResult,
 } from "@/lib/support-session.client";
 import { useEffect, useState } from "react";
 
@@ -41,7 +42,7 @@ export function SupportSessionBanner() {
         data: { session_id: session!.id, mode, redirect_origin: window.location.origin },
       });
     },
-    onSuccess: (nextSession) => beginSupportSession(nextSession),
+    onSuccess: (nextSession) => beginSupportSession(nextSession as SupportSessionStartResult),
   });
 
   if (!session) return null;

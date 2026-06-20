@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
+import { beginSupportSession, type SupportSessionStartResult } from "@/lib/support-session.client";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   component: AdminPortal,
@@ -94,13 +95,16 @@ function UsersPanel() {
   const [reason, setReason] = useState("");
   const [mode, setMode] = useState<"read" | "write">("read");
   const startMut = useMutation({
-    mutationFn: () => startFn({ data: { target_user_id: supportTarget!.id, reason, mode } }),
-    onSuccess: () => {
+    mutationFn: () => startFn({
+      data: { target_user_id: supportTarget!.id, reason, mode, redirect_origin: window.location.origin },
+    }),
+    onSuccess: (session) => {
       qc.invalidateQueries({ queryKey: ["admin"] });
       toast.success("Support session started");
       setSupportTarget(null);
       setReason("");
       setMode("read");
+      beginSupportSession(session as SupportSessionStartResult);
     },
     onError: (e: Error) => toast.error(e.message),
   });
