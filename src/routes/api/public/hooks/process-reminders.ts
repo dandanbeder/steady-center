@@ -9,8 +9,8 @@
  */
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { brandedEmail, escapeHtml, getAppOrigin, sendEmail } from "@/lib/email.server";
 
-const RESEND_URL = "https://connector-gateway.lovable.dev/resend/emails";
 const TWILIO_URL = "https://connector-gateway.lovable.dev/twilio/Messages.json";
 
 type ReminderRow = {
@@ -77,7 +77,7 @@ export const Route = createFileRoute("/api/public/hooks/process-reminders")({
 
             if (r.channel === "email") {
               if (!email) throw new Error("No email on account");
-              await sendEmail(email, subject, body);
+              await sendReminderEmail(email, subject, body);
             } else if (r.channel === "sms") {
               if (!phone) throw new Error("No phone number on profile");
               if (!process.env.TWILIO_API_KEY) throw new Error("SMS not enabled (connect Twilio)");
@@ -162,27 +162,24 @@ async function buildBody(r: ReminderRow): Promise<string | null> {
   }
 }
 
-async function sendEmail(to: string, subject: string, body: string) {
-  const lovableKey = process.env.LOVABLE_API_KEY;
-  const resendKey = process.env.RESEND_API_KEY;
-  if (!lovableKey || !resendKey) throw new Error("Resend not configured");
-  const res = await fetch(RESEND_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${lovableKey}`,
-      "X-Connection-Api-Key": resendKey,
-    },
-    body: JSON.stringify({
-      from: "Heartbeat <noreply@flightmed.software>",
-      to: [to],
-      subject,
-      text: body,
-    }),
+async function sendReminderEmail(to: string, subject: string, body: string) {
+  const lines = body.split("\n").filter(Boolean);
+  const intro = lines.shift() ?? subject;
+  const extra = lines
+    .map(
+      (l) =>
+        `<p style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#3a3a3a">${escapeHtml(l)}</p>`,
+    )
+    .join("");
+  const html = brandedEmail({
+    heading: subject,
+    intro,
+    preheader: intro,
+    bodyHtml: extra,
+    ctaLabel: "Open Heartbeat",
+    ctaUrl: `${getAppOrigin()}/today`,
   });
-  if (!res.ok) {
-    throw new Error(`Resend ${res.status}: ${(await res.text()).slice(0, 300)}`);
-  }
+  await sendEmail({ to, subject, html });
 }
 
 async function sendSms(to: string, body: string) {

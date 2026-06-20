@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { brandedEmail, escapeHtml, sendEmail } from "./email.server";
 
 const ASSIGNABLE_ROLES = ["admin", "member", "commenter", "viewer"] as const;
 type AssignableRole = (typeof ASSIGNABLE_ROLES)[number];
@@ -33,47 +34,8 @@ async function getPublishedOrigin(): Promise<string> {
   return (
     process.env.PUBLIC_APP_URL ||
     process.env.VITE_PUBLIC_APP_URL ||
-    "https://steady-center.lovable.app"
+    "https://www.heartbeatcommand.software"
   );
-}
-
-function escapeHtml(s: string) {
-  return s.replace(/[&<>"']/g, (c) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!),
-  );
-}
-
-async function sendEmail(opts: {
-  to: string;
-  subject: string;
-  html: string;
-  replyTo?: string;
-}) {
-  const apiKey = process.env.LOVABLE_API_KEY;
-  const conn = process.env.RESEND_API_KEY;
-  if (!apiKey || !conn) {
-    console.warn("[invitations] missing email credentials; skipping email to", opts.to);
-    return;
-  }
-  const body: Record<string, unknown> = {
-    from: "Heartbeat <noreply@flightmed.software>",
-    to: [opts.to],
-    subject: opts.subject,
-    html: opts.html,
-  };
-  if (opts.replyTo) body.reply_to = opts.replyTo;
-  const res = await fetch("https://connector-gateway.lovable.dev/resend/emails", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-      "X-Connection-Api-Key": conn,
-    },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    console.error("[invitations] resend failed", res.status, await res.text());
-  }
 }
 
 async function sendInviteEmail(opts: {
@@ -85,17 +47,15 @@ async function sendInviteEmail(opts: {
   acceptUrl: string;
 }) {
   const subject = `${opts.inviterName} invited you to ${opts.businessName} on Heartbeat`;
-  const html = `
-    <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#1a1a1a">
-      <h1 style="font-size:20px;margin:0 0 16px">You've been invited to Heartbeat</h1>
-      <p>${escapeHtml(opts.inviterName)} invited you to join <strong>${escapeHtml(opts.businessName)}</strong> as <strong>${escapeHtml(opts.role)}</strong>.</p>
-      <p style="margin:24px 0">
-        <a href="${opts.acceptUrl}" style="background:#7A8471;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;display:inline-block">Sign up &amp; request access</a>
-      </p>
-      <p style="color:#666;font-size:13px">After you create your account, you'll be able to request access. ${escapeHtml(opts.inviterName)} will review and approve.</p>
-      <p style="color:#666;font-size:13px;margin-top:16px">Or open this link directly:<br>${opts.acceptUrl}</p>
-      <p style="color:#999;font-size:12px;margin-top:32px">If you weren't expecting this, you can ignore this email.</p>
-    </div>`;
+  const html = brandedEmail({
+    heading: "You've been invited to Heartbeat",
+    intro: `${opts.inviterName} invited you to join ${opts.businessName} as ${opts.role}.`,
+    preheader: `Join ${opts.businessName} on Heartbeat`,
+    bodyHtml: `<p style="margin:0 0 12px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#6b6b6b">After you create your account, you'll be able to request access. ${escapeHtml(opts.inviterName)} will review and approve.</p>`,
+    ctaLabel: "Sign up & request access",
+    ctaUrl: opts.acceptUrl,
+    ctaNoteHtml: `Or open this link directly:<br/><a href="${opts.acceptUrl}" style="color:#7A8471;word-break:break-all">${opts.acceptUrl}</a>`,
+  });
   await sendEmail({
     to: opts.to,
     subject,
@@ -106,14 +66,13 @@ async function sendInviteEmail(opts: {
 
 async function sendApprovalEmail(opts: { to: string; businessName: string; appUrl: string }) {
   const subject = `You're in: ${opts.businessName} on Heartbeat`;
-  const html = `
-    <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#1a1a1a">
-      <h1 style="font-size:20px;margin:0 0 16px">You've been approved</h1>
-      <p>Your request to join <strong>${escapeHtml(opts.businessName)}</strong> has been approved.</p>
-      <p style="margin:24px 0">
-        <a href="${opts.appUrl}" style="background:#7A8471;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;display:inline-block">Open Heartbeat</a>
-      </p>
-    </div>`;
+  const html = brandedEmail({
+    heading: "You've been approved",
+    intro: `Your request to join ${opts.businessName} has been approved.`,
+    preheader: `Welcome to ${opts.businessName}`,
+    ctaLabel: "Open Heartbeat",
+    ctaUrl: opts.appUrl,
+  });
   await sendEmail({ to: opts.to, subject, html });
 }
 
