@@ -595,3 +595,124 @@ export const analyticsRefreshNow = createServerFn({ method: "POST" })
   });
 
 export const PRICE_REFS = { PRICE_PRO_MONTH, PRICE_PRO_YEAR, PRICE_TEAM_MONTH, PRICE_TEAM_YEAR };
+
+// ============= USERS (growth, role/status breakdown) =============
+export const analyticsUsers = createServerFn({ method: "POST" })
+  .middleware([requireActiveUser])
+  .inputValidator((d: DateRangeInput) => DateRange.parse(d ?? {}))
+  .handler(async ({ data, context }) => {
+    await requirePlatformAdmin(context.userId);
+    const { from, to } = rangeDays(data ?? {}, 30);
+
+    const [profilesAll, profilesInRange] = await Promise.all([
+      supabaseAdmin
+        .from("profiles")
+        .select("id, status, platform_role, deletion_scheduled_at, created_at")
+        .limit(20000),
+      supabaseAdmin
+        .from("profiles")
+        .select("created_at")
+        .gte("created_at", from.toISOString())
+        .lte("created_at", to.toISOString())
+        .limit(20000),
+    ]);
+
+    const all = profilesAll.data ?? [];
+    const total = all.length;
+    let active = 0, suspended = 0, otherStatus = 0;
+    let superadmin = 0, regular = 0;
+    let scheduledDeletion = 0;
+    for (const p of all) {
+      const s = (p as any).status as string;
+      if (s === "active") active++;
+      else if (s === "suspended") suspended++;
+      else otherStatus++;
+      if ((p as any).platform_role === "superadmin") superadmin++;
+      else regular++;
+      if ((p as any).deletion_scheduled_at) scheduledDeletion++;
+    }
+
+    // Bucket signups by day across the range
+    const buckets = new Map<string, number>();
+    const dayMs = 86_400_000;
+    const startDay = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+    const endDay = new Date(to.getFullYear(), to.getMonth(), to.getDate());
+    for (let t = +startDay; t <= +endDay; t += dayMs) {
+      buckets.set(new Date(t).toISOString().slice(0, 10), 0);
+    }
+    for (const r of profilesInRange.data ?? []) {
+      const k = ((r as any).created_at as string).slice(0, 10);
+      if (buckets.has(k)) buckets.set(k, (buckets.get(k) ?? 0) + 1);
+    }
+    const growth = Array.from(buckets.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([day, signups]) => ({ day, signups }));
+
+    // Cumulative total over the range
+    let cum = total - (profilesInRange.data?.length ?? 0);
+    const cumulative = growth.map((g) => {
+      cum += g.signups;
+      return { day: g.day, total: cum };
+    });
+
+    return {
+      total,
+      statusBreakdown: { active, suspended, other: otherStatus },
+      roleBreakdown: { user: regular, superadmin },
+      scheduledDeletion,
+      growth,
+      cumulative,
+    };
+  });
+
+// ============= STORAGE =============
+export const analyticsStorage = createServerFn({ method: "POST" })
+  .middleware([requireActiveUser])
+  .inputValidator(() => ({}))
+  .handler(async ({ context }) => {
+    await requirePlatformAdmin(context.userId);
+    const { data } = await supabaseAdmin
+      .from("note_attachments")
+      .select("size_bytes, mime_type")
+      .limit(50000);
+    let totalBytes = 0;
+    const byType = new Map<string, number>();
+    for (const r of data ?? []) {
+      const b = Number((r as any).size_bytes ?? 0);
+      totalBytes += b;
+      const t = ((r as any).mime_type as string) || "unknown";
+      byType.set(t, (byType.get(t) ?? 0) + b);
+    }
+    const byMime = Array.from(byType.entries())
+      .map(([mime, bytes]) => ({ mime, bytes }))
+      .sort((a, b) => b.bytes - a.bytes)
+      .slice(0, 10);
+    return { totalBytes, fileCount: data?.length ?? 0, byMime };
+  });
+
+// ============= FULL REPORT EXPORTS =============
+export const analyticsFullReportUsers = createServerFn({ method: "POST" })
+  .middleware([requireActiveUser])
+  .inputValidator(() => ({}))
+  .handler(async ({ context }) => {
+    await requirePlatformAdmin(context.userId);
+    const { data } = await supabaseAdmin
+      .from("profiles")
+      .select("id, full_name, organisation, role_title, status, platform_role, created_at, onboarding_completed_at, deletion_scheduled_at, marketing_opt_in, timezone")
+      .order("created_at", { ascending: false })
+      .limit(20000);
+    return { rows: data ?? [] };
+  });
+
+export const analyticsFullReportSubscriptions = createServerFn({ method: "POST" })
+  .middleware([requireActiveUser])
+  .inputValidator(() => ({}))
+  .handler(async ({ context }) => {
+    await requirePlatformAdmin(context.userId);
+    const { data } = await supabaseAdmin
+      .from("subscriptions")
+      .select("id, user_id, environment, product_id, price_id, status, billing_cycle, quantity, current_period_start, current_period_end, cancel_at_period_end, past_due_since, created_at, updated_at")
+      .order("created_at", { ascending: false })
+      .limit(20000);
+    return { rows: data ?? [] };
+  });
