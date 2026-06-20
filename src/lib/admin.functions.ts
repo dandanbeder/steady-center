@@ -46,6 +46,17 @@ async function countSuperadmins(): Promise<number> {
   return count ?? 0;
 }
 
+async function assertNotProtectedPrimary(userId: string, action: string) {
+  const { data } = await supabaseAdmin
+    .from("profiles")
+    .select("is_protected_primary")
+    .eq("id", userId)
+    .maybeSingle();
+  if ((data as { is_protected_primary?: boolean } | null)?.is_protected_primary) {
+    throw new Error(`The primary super admin cannot be ${action}.`);
+  }
+}
+
 /** Confirms caller is a superadmin (used to gate /admin route). */
 export const checkIsPlatformAdmin = createServerFn({ method: "GET" })
   .middleware([requireActiveUser])
@@ -398,6 +409,7 @@ export const adminSuspendUser = createServerFn({ method: "POST" })
       .select("platform_role, status")
       .eq("id", data.user_id)
       .maybeSingle();
+    await assertNotProtectedPrimary(data.user_id, "suspended");
     if (tgt?.platform_role === "superadmin" && (await countSuperadmins()) <= 1) {
       throw new Error("Cannot suspend the last superadmin.");
     }
@@ -461,6 +473,7 @@ export const adminSetPlatformRole = createServerFn({ method: "POST" })
       throw new Error("You cannot demote your own account.");
     }
     if (data.platform_role === "user") {
+      await assertNotProtectedPrimary(data.user_id, "demoted");
       const { data: target } = await supabaseAdmin
         .from("profiles")
         .select("platform_role")
@@ -646,6 +659,7 @@ export const adminScheduleUserDeletion = createServerFn({ method: "POST" })
       .select("platform_role")
       .eq("id", data.user_id)
       .maybeSingle();
+    await assertNotProtectedPrimary(data.user_id, "deleted");
     if (tgt?.platform_role === "superadmin" && (await countSuperadmins()) <= 1) {
       throw new Error("Cannot delete the last superadmin.");
     }

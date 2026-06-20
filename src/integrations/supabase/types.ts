@@ -1676,6 +1676,7 @@ export type Database = {
           full_name: string | null
           hear_about_us: string | null
           id: string
+          is_protected_primary: boolean
           marketing_opt_in: boolean
           marketing_opt_in_at: string | null
           must_change_password: boolean
@@ -1712,6 +1713,7 @@ export type Database = {
           full_name?: string | null
           hear_about_us?: string | null
           id: string
+          is_protected_primary?: boolean
           marketing_opt_in?: boolean
           marketing_opt_in_at?: string | null
           must_change_password?: boolean
@@ -1748,6 +1750,7 @@ export type Database = {
           full_name?: string | null
           hear_about_us?: string | null
           id?: string
+          is_protected_primary?: boolean
           marketing_opt_in?: boolean
           marketing_opt_in_at?: string | null
           must_change_password?: boolean
