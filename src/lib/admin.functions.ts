@@ -46,6 +46,17 @@ async function countSuperadmins(): Promise<number> {
   return count ?? 0;
 }
 
+async function assertNotProtectedPrimary(userId: string, action: string) {
+  const { data } = await supabaseAdmin
+    .from("profiles")
+    .select("is_protected_primary")
+    .eq("id", userId)
+    .maybeSingle();
+  if ((data as { is_protected_primary?: boolean } | null)?.is_protected_primary) {
+    throw new Error(`The primary super admin cannot be ${action}.`);
+  }
+}
+
 /** Confirms caller is a superadmin (used to gate /admin route). */
 export const checkIsPlatformAdmin = createServerFn({ method: "GET" })
   .middleware([requireActiveUser])
