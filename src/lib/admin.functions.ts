@@ -473,6 +473,7 @@ export const adminSetPlatformRole = createServerFn({ method: "POST" })
       throw new Error("You cannot demote your own account.");
     }
     if (data.platform_role === "user") {
+      await assertNotProtectedPrimary(data.user_id, "demoted");
       const { data: target } = await supabaseAdmin
         .from("profiles")
         .select("platform_role")
