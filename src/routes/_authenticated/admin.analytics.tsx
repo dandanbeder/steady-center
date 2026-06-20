@@ -1,4 +1,4 @@
-import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
@@ -10,7 +10,9 @@ import { useIsPlatformAdmin } from "@/hooks/use-is-platform-admin";
 import {
   analyticsOverview, analyticsByPlan, analyticsRevenue, analyticsFunnel,
   analyticsEngagement, analyticsAi, analyticsChurnRisk, analyticsSegmentUsers,
-  analyticsRefreshNow, type AnalyticsSegment,
+  analyticsRefreshNow, analyticsUsers, analyticsStorage,
+  analyticsFullReportUsers, analyticsFullReportSubscriptions,
+  type AnalyticsSegment,
 } from "@/lib/analytics-admin.functions";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
