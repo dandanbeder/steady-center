@@ -77,7 +77,7 @@ export const Route = createFileRoute("/api/public/hooks/process-reminders")({
 
             if (r.channel === "email") {
               if (!email) throw new Error("No email on account");
-              await sendEmail(email, subject, body);
+              await sendReminderEmail(email, subject, body);
             } else if (r.channel === "sms") {
               if (!phone) throw new Error("No phone number on profile");
               if (!process.env.TWILIO_API_KEY) throw new Error("SMS not enabled (connect Twilio)");
