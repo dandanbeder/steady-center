@@ -677,11 +677,14 @@ function ViewAsButton({ targetUserId }: { targetUserId: string }) {
   const [open, setOpen] = useState(false);
   const mut = useMutation({
     mutationFn: (reason: string) =>
-      startFn({ data: { target_user_id: targetUserId, reason, mode: "read" } }),
-    onSuccess: () => {
+      startFn({
+        data: { target_user_id: targetUserId, reason, mode: "read", redirect_origin: window.location.origin },
+      }),
+    onSuccess: (session) => {
       toast.success("Support session started (read-only)");
       qc.invalidateQueries({ queryKey: ["admin"] });
       setOpen(false);
+      beginSupportSession(session as SupportSessionStartResult);
     },
     onError: (e: Error) => toast.error(e.message),
   });
