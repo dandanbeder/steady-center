@@ -131,7 +131,7 @@ function LearnPage() {
     icon: typeof Building2;
     title: string;
     body: string;
-    tourId: keyof typeof import("@/lib/tours").TOURS;
+    tourId: keyof typeof TOURS;
     cta: string;
   }> = [
     {
