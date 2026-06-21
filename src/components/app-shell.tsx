@@ -33,6 +33,7 @@ import { PlanIndicator } from "@/components/plan-indicator";
 import { welcomedStorageKey } from "@/routes/_authenticated/learn";
 
 const NAV: { to: string; label: string; icon: typeof Home }[] = [
+  { to: "/learn", label: "Tutorial", icon: GraduationCap },
   { to: "/today", label: "Today", icon: Home },
   { to: "/inbox", label: "Inbox", icon: Inbox },
   { to: "/my-week", label: "My Week", icon: CalendarRange },
@@ -49,7 +50,6 @@ const NAV: { to: string; label: string; icon: typeof Home }[] = [
   { to: "/reports", label: "Reports", icon: BarChart3 },
 
   
-  { to: "/learn", label: "Tutorial", icon: GraduationCap },
   { to: "/trash", label: "Trash", icon: Trash2 },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
