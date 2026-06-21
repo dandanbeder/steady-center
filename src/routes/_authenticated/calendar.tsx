@@ -68,7 +68,7 @@ import {
 import { Calendar as MiniCalendar } from "@/components/ui/calendar";
 import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
 import { useColorBy, useHiddenSet, type ColorBy } from "@/lib/calendar-prefs";
-import { EventPopover } from "@/components/calendar/event-popover";
+import { EventQuickView } from "@/components/calendar/event-popover";
 
 import { createBusiness, listBusinesses, updateBusiness, type Business } from "@/lib/businesses";
 import {
