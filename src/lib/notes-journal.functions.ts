@@ -317,7 +317,7 @@ export const askNotes = createServerFn({ method: "POST" })
         id: m.id,
         title: `${m.title || "Meeting"} (${fmtDate(m.created_at)})`,
         body: `Meeting: ${m.title || "Untitled"} on ${fmtDate(m.created_at)}\n${parts}`,
-        snippet: clip(m.summary || m.decisions || m.transcript, 220),
+        snippet: clip(m.summary || (m.decisions ? String(m.decisions) : "") || (m.transcript as string | null), 220),
       });
     }
     for (const t of (tasksRes.data ?? []).slice(0, perType)) {
