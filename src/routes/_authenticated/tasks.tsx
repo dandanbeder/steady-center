@@ -28,8 +28,24 @@ import {
   useDroppable,
   useSensor,
   useSensors,
+  closestCenter,
   type DragEndEvent,
 } from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  horizontalListSortingStrategy,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
+  fetchStages,
+  reorderStages,
+  moveTaskToStage,
+  reorderTasksInStage,
+  type TaskStage,
+} from "@/lib/task-stages";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
