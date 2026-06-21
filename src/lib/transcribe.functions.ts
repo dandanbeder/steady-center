@@ -51,6 +51,24 @@ export const transcribeAudio = createServerFn({ method: "POST" })
       if (res.status === 400) throw new Error("Couldn't transcribe that recording, try again.");
       throw new Error(`Transcription failed (${res.status}). ${body.slice(0, 120)}`);
     }
-    const json = (await res.json()) as { text?: string };
+    const json = (await res.json()) as { text?: string; duration?: number };
+    // Estimate audio duration: prefer API-reported, fall back to byte-rate guess
+    // (~16kbps for opus/aac) so the ledger has something usable.
+    const audioSeconds = Math.max(
+      1,
+      Math.round(json.duration ?? binary.byteLength / 2000),
+    );
+    try {
+      const { logAiUsageEvent } = await import("./ai-budget.server");
+      await logAiUsageEvent({
+        userId: context.userId,
+        actionType: "transcribe",
+        model: "openai/gpt-4o-mini-transcribe",
+        audioSeconds,
+        creditsCharged: Math.max(1, Math.ceil(audioSeconds / 60)),
+      });
+    } catch {
+      /* never break the user-facing call */
+    }
     return { text: (json.text ?? "").trim() };
   });
