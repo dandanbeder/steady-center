@@ -52,7 +52,7 @@ const ACTION_LABEL: Record<string, string> = {
   notes_journal: "Notes → journal",
   outcomes_ai: "Outcomes AI",
   task_views_ai: "Task views AI",
-  inbox_ai: "Inbox triage",
+  inbox_ai: "Capture triage",
   daily_pulse: "Daily pulse",
   weekly_plan: "Weekly plan",
   weekly_report: "Weekly report",

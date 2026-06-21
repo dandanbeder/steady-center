@@ -45,7 +45,7 @@ import { TourProvider } from "@/components/tour/tour-engine";
 const NAV: { to: string; label: string; icon: typeof Home }[] = [
   { to: "/learn", label: "Tutorial", icon: GraduationCap },
   { to: "/today", label: "Today", icon: Home },
-  { to: "/inbox", label: "Inbox", icon: Inbox },
+  { to: "/capture", label: "Capture", icon: Inbox },
   { to: "/my-week", label: "My Week", icon: CalendarRange },
   { to: "/plan-week", label: "Plan my week", icon: BrainCircuit },
   { to: "/calendar", label: "Calendar", icon: Calendar },
@@ -161,7 +161,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {NAV.filter((item) => !(localSupportSession && item.to === "/journal")).map((item) => {
         const Icon = item.icon;
         const active = isActive(item.to);
-        const showBadge = item.to === "/inbox" && inboxCount > 0;
+        const showBadge = item.to === "/capture" && inboxCount > 0;
         return (
           <Link
             key={item.to}

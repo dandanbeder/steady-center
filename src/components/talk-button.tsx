@@ -84,7 +84,7 @@ export function TalkButton() {
         .catch(() => {});
       qc.invalidateQueries({ queryKey: ["inbox"] });
       qc.invalidateQueries({ queryKey: ["inbox", "count"] });
-      toast.success("Captured to Inbox", { description: "Triage when ready." });
+      toast.success("Saved to Capture", { description: "File it when ready." });
       setOpen(false);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to capture");
@@ -132,11 +132,11 @@ export function TalkButton() {
           <DialogHeader>
             <DialogTitle>
               {phase === "listening" && "Listening…"}
-              {phase === "saving" && "Saving to Inbox…"}
+              {phase === "saving" && "Saving…"}
               {phase === "idle" && "Talk"}
             </DialogTitle>
             <DialogDescription>
-              {phase === "listening" && "Speak naturally. We'll drop it in your Inbox and AI will suggest how to file it."}
+              {phase === "listening" && "Speak naturally. It lands in Capture and AI will suggest how to file it."}
               {phase === "saving" && "Just a sec…"}
             </DialogDescription>
           </DialogHeader>
@@ -168,7 +168,7 @@ export function TalkButton() {
                     disabled={!liveText.trim()}
                     className="flex-1"
                   >
-                    Send to Inbox
+                    Capture
                   </Button>
                 </>
               )}
