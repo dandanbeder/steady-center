@@ -1337,10 +1337,12 @@ function TimeGrid({
 function AgendaList({
   events,
   calById,
+  colorFor,
   onEventClick,
 }: {
   events: EventRow[];
   calById: Map<string, Cal>;
+  colorFor?: (e: EventRow) => string;
   onEventClick: (e: EventRow) => void;
 }) {
   const sorted = [...events].sort(
