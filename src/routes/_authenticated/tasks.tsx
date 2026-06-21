@@ -1501,9 +1501,14 @@ function BoardView({
   }
   if (stages.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground p-4">
-        No stages yet. Default stages will appear when the list is set up.
-      </p>
+      <div className="rounded-xl border border-border bg-card p-6 text-center space-y-3">
+        <p className="text-sm text-muted-foreground">
+          No stages yet. Stages organise your board columns.
+        </p>
+        <Button size="sm" onClick={onManageStages}>
+          <Plus className="h-3.5 w-3.5" /> Set up stages
+        </Button>
+      </div>
     );
   }
 
@@ -1540,6 +1545,13 @@ function BoardView({
                 </SortableColumn>
               );
             })}
+            <button
+              type="button"
+              onClick={onManageStages}
+              className="w-72 shrink-0 rounded-xl border border-dashed border-border text-sm text-muted-foreground hover:text-accent hover:border-accent/40 transition-colors flex items-center justify-center gap-1.5 min-h-[120px]"
+            >
+              <Plus className="h-4 w-4" /> Add or edit stages
+            </button>
           </div>
         </SortableContext>
       </div>
