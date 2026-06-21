@@ -351,6 +351,21 @@ function MyWeekPage() {
         />
       </section>
 
+      {/* Subtle outcome ladder hint */}
+      {(() => {
+        const linked = new Set(
+          visibleTasks.filter((t) => t.outcome_id).map((t) => t.outcome_id as string),
+        );
+        if (linked.size === 0) return null;
+        const taskCount = visibleTasks.filter((t) => t.outcome_id).length;
+        return (
+          <p className="mt-4 text-xs text-muted-foreground/80 italic">
+            {taskCount} task{taskCount === 1 ? "" : "s"} this week moving {linked.size} outcome
+            {linked.size === 1 ? "" : "s"} forward.
+          </p>
+        );
+      })()}
+
       {/* Week grid — 7 cols on lg, stacks on mobile */}
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3">
         {byDay.map((day, i) => {
