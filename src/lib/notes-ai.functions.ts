@@ -245,7 +245,9 @@ ${folders.map((f) => `${f.id}, ${f.name}`).join("\n") || "(none)"}
 Candidate members:
 ${members.map((m) => `${m.email}${m.full_name ? ` (${m.full_name})` : ""}`).join("\n") || "(none)"}`;
 
-    const text = await callClaude({ system: sys, user, maxTokens: 800 });
+    // Light-tier override: extraction, not synthesis.
+    const subRoute = routeModel("notes_ai", "suggest_meta");
+    const text = await callClaude({ system: sys, user, maxTokens: subRoute.maxOutputTokens, model: subRoute.model });
     const parsed = parseJsonBlock<{
       title: string;
       folder: { id: string | null; name: string };
