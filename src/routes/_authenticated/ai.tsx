@@ -110,7 +110,7 @@ function AiPage() {
         <CreditBalanceCard />
 
         {/* Plain-language explainer */}
-        <AiCreditsExplainer allowance={usageQ.data?.allowanceCap ?? null} />
+        <AiCreditsExplainer />
 
 
         {/* Predictable pricing */}
