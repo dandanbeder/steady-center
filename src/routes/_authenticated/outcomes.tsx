@@ -57,6 +57,7 @@ import {
   type OutcomeStatus,
   type OutcomeWithProgress,
 } from "@/lib/outcomes";
+import { OutcomeWizard } from "@/components/outcomes/outcome-wizard";
 
 export const Route = createFileRoute("/_authenticated/outcomes")({
   head: () => ({
@@ -172,9 +173,12 @@ function OutcomesPage() {
       </Tabs>
 
       {creating && (
-        <OutcomeDialog
+        <OutcomeWizard
           onClose={() => setCreating(false)}
-          onSaved={() => qc.invalidateQueries({ queryKey: ["outcomes"] })}
+          onCreated={() => {
+            qc.invalidateQueries({ queryKey: ["outcomes"] });
+            qc.invalidateQueries({ queryKey: ["tasks"] });
+          }}
         />
       )}
       {editing && (
