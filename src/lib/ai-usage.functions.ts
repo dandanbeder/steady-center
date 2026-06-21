@@ -39,12 +39,25 @@ export const getMyAiUsage = createServerFn({ method: "GET" })
     // For team accounts, gather all member ids so we can show every member's
     // usage to anyone in the pool. For solo accounts this is just [userId].
     const memberIds = new Set<string>([billingAccount]);
-    const { data: members } = await supabaseAdmin
+    // Find businesses the billing account owns, then all active members.
+    const { data: ownedBusinesses } = await supabaseAdmin
       .from("memberships")
-      .select("user_id")
-      .eq("owner_user_id", billingAccount);
-    for (const m of (members ?? []) as Array<{ user_id: string }>) {
-      if (m.user_id) memberIds.add(m.user_id);
+      .select("business_id")
+      .eq("user_id", billingAccount)
+      .eq("role", "owner")
+      .eq("status", "active");
+    const bizIds = ((ownedBusinesses ?? []) as Array<{ business_id: string }>).map(
+      (b) => b.business_id,
+    );
+    if (bizIds.length > 0) {
+      const { data: siblings } = await supabaseAdmin
+        .from("memberships")
+        .select("user_id")
+        .in("business_id", bizIds)
+        .eq("status", "active");
+      for (const m of (siblings ?? []) as Array<{ user_id: string | null }>) {
+        if (m.user_id) memberIds.add(m.user_id);
+      }
     }
 
     let q = supabaseAdmin
