@@ -32,6 +32,9 @@ import {
   type GroupByKey,
   type ListViewConfig,
 } from "@/lib/user-list-views";
+import { ViewBar, type ActiveViewState } from "@/components/tasks/view-bar";
+import { TimelineView } from "@/components/tasks/timeline-view";
+import { listTaskViews } from "@/lib/task-views";
 import {
   DndContext,
   PointerSensor,
@@ -163,7 +166,7 @@ export const Route = createFileRoute("/_authenticated/tasks")({
   component: TasksPage,
 });
 
-type ViewMode = "list" | "board" | "calendar";
+type ViewMode = "list" | "board" | "calendar" | "timeline";
 
 function TasksPage() {
   const { activeId } = useActiveBusiness();
