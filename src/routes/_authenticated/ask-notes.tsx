@@ -130,15 +130,15 @@ function AskNotesPage() {
           <ol className="space-y-2">
             {matches.map((m) => (
               <li key={`${m.type}-${m.id}`} className="rounded-md border border-border p-3 bg-card">
-                <Link
-                  to={m.link}
+                <a
+                  href={m.link}
                   className="text-sm font-medium hover:underline flex items-start gap-2"
                 >
                   <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-muted text-muted-foreground shrink-0 mt-0.5">
                     {TYPE_LABEL[m.type]}
                   </span>
                   <span>[{m.n}] {m.title}</span>
-                </Link>
+                </a>
                 {m.snippet && (
                   <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{m.snippet}</p>
                 )}
