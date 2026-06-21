@@ -499,7 +499,18 @@ function NoteEditor({
         placeholder="Untitled"
       />
 
-      <MarkdownEditor value={body} onChange={setBody} />
+      <MarkdownEditor
+        value={body}
+        onChange={setBody}
+        onCreateTask={(hint) => setCreateTaskFor(hint)}
+      />
+
+      <CreateTaskFromNoteDialog
+        note={note}
+        titleHint={createTaskFor ?? ""}
+        open={createTaskFor !== null}
+        onClose={() => setCreateTaskFor(null)}
+      />
 
       <div className="pt-4 border-t border-border space-y-6">
         <AIPanel note={note} onChanged={onChanged} />
