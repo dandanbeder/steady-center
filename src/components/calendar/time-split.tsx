@@ -30,6 +30,11 @@ export function TimeSplitSummary({
   );
 
   const segments = useMemo(() => {
+    // Treat each day as a 10-hour working window (cap per-day contribution
+    // so multi-day or all-day events don't drown out real meetings).
+    const WORK_DAY_MIN = 10 * 60;
+    const ALL_DAY_MIN = 8 * 60; // symbolic working day for all-day events
+    const DAY_MS = 24 * 60 * 60 * 1000;
     const totals = new Map<string, number>(); // bizId | "__personal" → minutes
     const rs = rangeStart.getTime();
     const re = rangeEnd.getTime();
@@ -37,8 +42,16 @@ export function TimeSplitSummary({
       const s = Math.max(new Date(e.start_at).getTime(), rs);
       const en = Math.min(new Date(e.end_at).getTime(), re);
       if (en <= s) continue;
-      // All-day events: count as 1 hour symbolic so they show up
-      const mins = e.all_day ? 60 : (en - s) / 60_000;
+      let mins: number;
+      if (e.all_day) {
+        const days = Math.max(1, Math.round((en - s) / DAY_MS));
+        mins = days * ALL_DAY_MIN;
+      } else {
+        const raw = (en - s) / 60_000;
+        const spannedDays = Math.max(1, Math.ceil(raw / (24 * 60)));
+        // Cap each event at WORK_DAY_MIN per day it spans
+        mins = Math.min(raw, spannedDays * WORK_DAY_MIN);
+      }
       const cal = calById.get(e.calendar_id);
       const key = cal?.business_id ?? "__personal";
       totals.set(key, (totals.get(key) ?? 0) + mins);
