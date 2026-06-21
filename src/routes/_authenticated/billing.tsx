@@ -31,6 +31,7 @@ import {
   switchBillingCycle,
   updateSeats,
 } from "@/lib/subscriptions.functions";
+import { getTrialEligibility, startFreeTrial } from "@/lib/trial.functions";
 import {
   AlertDialog,
   AlertDialogAction,
