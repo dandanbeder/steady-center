@@ -518,8 +518,9 @@ type Filters = {
   status: TaskStatus | "all";
   due: DueFilter;
   assigned: AssignedFilter;
+  outcome: string; // "all" | "none" | outcome id
 };
-const DEFAULT_FILTERS: Filters = { priority: "all", status: "all", due: "all", assigned: "all" };
+const DEFAULT_FILTERS: Filters = { priority: "all", status: "all", due: "all", assigned: "all", outcome: "all" };
 
 function matchesFilters(t: Task, f: Filters, myId: string | null): boolean {
   if (f.priority !== "all" && t.priority !== f.priority) return false;
@@ -528,6 +529,10 @@ function matchesFilters(t: Task, f: Filters, myId: string | null): boolean {
     if (f.assigned === "me" && t.assignee_id !== myId) return false;
     if (f.assigned === "by_me" && (t.assigned_by !== myId || !t.assignee_id || t.assignee_id === myId)) return false;
     if (f.assigned === "unassigned" && t.assignee_id) return false;
+  }
+  if (f.outcome !== "all") {
+    if (f.outcome === "none" && t.outcome_id) return false;
+    if (f.outcome !== "none" && t.outcome_id !== f.outcome) return false;
   }
   if (f.due !== "all") {
     if (f.due === "none") return !t.due_at;
