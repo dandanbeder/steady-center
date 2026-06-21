@@ -596,16 +596,20 @@ function TypeRow({
   onEnabledChange,
   channels,
   onChannelChange,
+  smsAvailable,
   extra,
 }: {
   label: string;
   helper: string;
   enabled: boolean;
   onEnabledChange: (v: boolean) => void;
-  channels: { email: boolean; browser: boolean };
-  onChannelChange: (c: "email" | "browser", v: boolean) => void;
+  channels: { email: boolean; sms: boolean; browser: boolean };
+  onChannelChange: (c: "email" | "sms" | "browser", v: boolean) => void;
+  smsAvailable?: boolean;
   extra?: React.ReactNode;
 }) {
+  const noneOn =
+    !channels.email && !channels.browser && !(smsAvailable && channels.sms);
   return (
     <div className="space-y-2 rounded-md border border-border/60 p-3">
       <div className="flex items-start justify-between gap-4">
@@ -620,7 +624,15 @@ function TypeRow({
           <span className="text-xs text-muted-foreground mr-1">Deliver via:</span>
           <ChannelChip label="Email" icon={<Mail className="h-3 w-3" />} active={channels.email} onChange={(v) => onChannelChange("email", v)} />
           <ChannelChip label="Browser" icon={<Monitor className="h-3 w-3" />} active={channels.browser} onChange={(v) => onChannelChange("browser", v)} />
-          {!channels.email && !channels.browser && (
+          {smsAvailable && (
+            <ChannelChip
+              label="SMS"
+              icon={<MessageSquare className="h-3 w-3" />}
+              active={channels.sms}
+              onChange={(v) => onChannelChange("sms", v)}
+            />
+          )}
+          {noneOn && (
             <span className="text-xs text-amber-600 dark:text-amber-400">Pick at least one channel.</span>
           )}
         </div>
