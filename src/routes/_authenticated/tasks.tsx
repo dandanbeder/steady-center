@@ -155,7 +155,10 @@ import { listOutcomes, updateOutcome } from "@/lib/outcomes";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { TaskTimerInline, TaskTimePanel } from "@/components/task-timer";
-import { FocusMode } from "@/components/focus-mode";
+// Lazy: Focus Mode is a heavy full-screen panel; only ship its chunk on demand.
+const FocusMode = lazy(() =>
+  import("@/components/focus-mode").then((m) => ({ default: m.FocusMode })),
+);
 import { ShareDialog } from "@/components/share-dialog";
 
 export const Route = createFileRoute("/_authenticated/tasks")({
