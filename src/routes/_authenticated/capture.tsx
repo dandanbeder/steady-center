@@ -26,10 +26,10 @@ import { createNote } from "@/lib/notes";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/capture")({
-  component: InboxPage,
+  component: CapturePage,
 });
 
-function InboxPage() {
+function CapturePage() {
   const qc = useQueryClient();
   const [capture, setCapture] = useState("");
   const suggest = useServerFn(suggestInboxItem);
