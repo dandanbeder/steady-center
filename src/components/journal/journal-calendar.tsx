@@ -4,7 +4,6 @@ import {
   eachDayOfInterval,
   endOfMonth,
   format,
-  isSameDay,
   isSameMonth,
   isToday,
   startOfMonth,
