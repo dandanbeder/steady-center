@@ -168,10 +168,10 @@ function OverviewPanel({ range }: { range: { from: string; to: string } }) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-        <StatCard label="Total users" value={d?.totalUsers ?? "—"} sub={`+${d?.signupsToday ?? 0} today · +${d?.signups7d ?? 0} / 7d · +${d?.signups30d ?? 0} / 30d`} />
+        <StatCard label="Total users" value={d?.totalUsers ?? ","} sub={`+${d?.signupsToday ?? 0} today · +${d?.signups7d ?? 0} / 7d · +${d?.signups30d ?? 0} / 30d`} />
         <StatCard label="DAU / WAU / MAU" value={`${d?.dau ?? 0} / ${d?.wau ?? 0} / ${d?.mau ?? 0}`} sub={`stickiness ${pct(d?.stickiness)}`} />
-        <StatCard label="Total accounts" value={d?.totalAccounts ?? "—"} />
-        <StatCard label="Paying customers" value={d?.payingCustomers ?? "—"} />
+        <StatCard label="Total accounts" value={d?.totalAccounts ?? ","} />
+        <StatCard label="Paying customers" value={d?.payingCustomers ?? ","} />
         <StatCard label="MRR" value={fmtCents(d?.mrrCents)} sub={`ARR ${fmtCents(d?.arrCents)}`} />
         <StatCard label="ARPU" value={fmtCents(d?.arpuCents)} />
         <StatCard label="Trial conversion (30d)" value={pct(d?.trialConversionRate)} />
@@ -225,7 +225,7 @@ function PlansPanel() {
                   <TableCell>{r.users}</TableCell>
                   <TableCell>{pct(r.pct)}</TableCell>
                   <TableCell>{fmtCents(r.mrrCents)}</TableCell>
-                  <TableCell>{("seats" in r ? r.seats : "—") as any}</TableCell>
+                  <TableCell>{("seats" in r ? r.seats : ",") as any}</TableCell>
                   <TableCell>
                     <Button size="sm" variant="ghost" onClick={() => setSegment(r.plan as AnalyticsSegment)}>View</Button>
                   </TableCell>
@@ -490,8 +490,8 @@ function SegmentDialog({ segment, onClose }: { segment: AnalyticsSegment | null;
                       {u.full_name || "(no name)"}
                     </Link>
                   </TableCell>
-                  <TableCell>{u.organisation || "—"}</TableCell>
-                  <TableCell>{u.status || "—"}</TableCell>
+                  <TableCell>{u.organisation || ","}</TableCell>
+                  <TableCell>{u.status || ","}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{u.created_at?.slice(0, 10) ?? ""}</TableCell>
                 </TableRow>
               ))}
@@ -515,7 +515,7 @@ function UsersPanel({ range }: { range: { from: string; to: string } }) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard
           label="Total users"
-          value={d?.total ?? "—"}
+          value={d?.total ?? ","}
           sub={<button className="underline" onClick={() => setSegment("all")}>view all</button>}
         />
         <StatCard

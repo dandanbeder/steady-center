@@ -15,7 +15,7 @@ async function requirePlatformAdmin(userId: string) {
   }
 }
 
-/** Append-only audit-log writer. Never fails the parent action — logs server-side. */
+/** Append-only audit-log writer. Never fails the parent action, logs server-side. */
 async function logAudit(
   adminId: string,
   targetUserId: string | null,
@@ -225,7 +225,7 @@ export const adminChangeUserEmail = createServerFn({ method: "POST" })
       const { sendEmail, escapeHtml } = await import("@/lib/email.server");
       const html = (addr: string) =>
         `<p>Hi,</p><p>The email address on your Heartbeat account was changed by support.</p>` +
-        `<p><strong>Previous:</strong> ${escapeHtml(oldEmail ?? "—")}<br/><strong>New:</strong> ${escapeHtml(data.new_email)}</p>` +
+        `<p><strong>Previous:</strong> ${escapeHtml(oldEmail ?? ",")}<br/><strong>New:</strong> ${escapeHtml(data.new_email)}</p>` +
         `<p>If you didn't request this change, contact support immediately.</p>` +
         `<p><em>Sent to ${escapeHtml(addr)} for your security.</em></p>`;
       if (oldEmail && oldEmail !== data.new_email) {
@@ -247,7 +247,7 @@ export const adminResendVerification = createServerFn({ method: "POST" })
     const { data: u } = await supabaseAdmin.auth.admin.getUserById(data.user_id);
     const email = u?.user?.email;
     if (!email) throw new Error("User has no email");
-    // Use magiclink as a verification re-send — works for confirmed and unconfirmed users.
+    // Use magiclink as a verification re-send, works for confirmed and unconfirmed users.
     const { error } = await supabaseAdmin.auth.admin.generateLink({ type: "magiclink", email });
     if (error) throw new Error(error.message);
     await logAudit(context.userId, data.user_id, "auth.verification.resend", null, { email }, null);
@@ -320,7 +320,7 @@ export const adminSetTempPassword = createServerFn({ method: "POST" })
         html:
           `<p>Hi,</p><p>Heartbeat support set a temporary password on your account at your request.</p>` +
           `<p><strong>Temporary password:</strong> <code>${escapeHtml(tempPassword)}</code></p>` +
-          `<p>Sign in with it now — you'll be required to choose a new password immediately.</p>` +
+          `<p>Sign in with it now, you'll be required to choose a new password immediately.</p>` +
           `<p>If you didn't request this, contact support right away.</p>`,
       });
     } catch (e) {

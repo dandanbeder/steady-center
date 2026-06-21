@@ -71,7 +71,7 @@ function UnsubscribePage() {
                 product updates and weekly review emails?
               </p>
               <p className="text-xs text-muted-foreground">
-                We'll still send essential account messages — password resets, security alerts,
+                We'll still send essential account messages, password resets, security alerts,
                 and billing notices.
               </p>
               <div className="flex gap-2 pt-2">
@@ -85,7 +85,7 @@ function UnsubscribePage() {
               </div>
               {info.data.alreadyOptedOut && (
                 <p className="text-xs text-muted-foreground">
-                  You're already opted out — confirming again is fine.
+                  You're already opted out, confirming again is fine.
                 </p>
               )}
             </>

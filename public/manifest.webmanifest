@@ -1,7 +1,7 @@
 {
   "name": "Heartbeat",
   "short_name": "Heartbeat",
-  "description": "A calm command center for your accounts — calendars, tasks, notes and meetings in one place.",
+  "description": "A calm command center for your accounts, calendars, tasks, notes and meetings in one place.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

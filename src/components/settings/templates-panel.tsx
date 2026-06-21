@@ -78,7 +78,7 @@ export function TemplatesPanel({ businessId }: { businessId: string }) {
           <Input placeholder="Template name" value={name} onChange={(e) => setName(e.target.value)} />
         </div>
         <Textarea
-          placeholder="Body — markdown for notes, plain title/description for tasks"
+          placeholder="Body, markdown for notes, plain title/description for tasks"
           rows={3}
           value={body}
           onChange={(e) => setBody(e.target.value)}

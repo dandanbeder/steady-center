@@ -335,7 +335,7 @@ function MyWeekPage() {
         </Button>
       </div>
 
-      {/* Week pulse — a quiet heartbeat strip of the week's load */}
+      {/* Week pulse, a quiet heartbeat strip of the week's load */}
       <section className="mt-6 rounded-xl border border-border bg-card/40 px-4 pt-3 pb-2" style={{ boxShadow: "var(--shadow-soft)" }}>
         <div className="flex items-baseline justify-between mb-1">
           <h2 className="text-xs uppercase tracking-wider text-muted-foreground">Week pulse</h2>
@@ -366,7 +366,7 @@ function MyWeekPage() {
         );
       })()}
 
-      {/* Week grid — 7 cols on lg, stacks on mobile */}
+      {/* Week grid, 7 cols on lg, stacks on mobile */}
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3">
         {byDay.map((day, i) => {
           const isToday = sameDay(day.date, today);

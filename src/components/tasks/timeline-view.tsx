@@ -143,7 +143,7 @@ export function TimelineView({
                     width: `${width}%`,
                     background: overdue ? "#dc2626" : PRIORITY_COLOR[t.priority],
                   }}
-                  title={`${t.title} — due ${new Date(due).toLocaleDateString()}`}
+                  title={`${t.title}, due ${new Date(due).toLocaleDateString()}`}
                 >
                   {t.title}
                 </button>

@@ -23,7 +23,7 @@ function MicrosoftCallback() {
 
   useEffect(() => {
     let cancelled = false;
-    // Restrict postMessage to the same origin as the popup itself — the opener
+    // Restrict postMessage to the same origin as the popup itself, the opener
     // must be on this origin for the message to be delivered, preventing
     // tab-napping / cross-origin leakage of OAuth completion signals.
     const targetOrigin = window.location.origin;
@@ -70,7 +70,7 @@ function MicrosoftCallback() {
     <div className="min-h-screen flex items-center justify-center bg-background p-6">
       <div className="max-w-md w-full text-center space-y-3">
         {status === "working" && <p className="text-muted-foreground">Connecting Microsoft…</p>}
-        {status === "done" && <p>Connected — you can close this window.</p>}
+        {status === "done" && <p>Connected, you can close this window.</p>}
         {status === "error" && (
           <>
             <p className="text-destructive">Microsoft sign-in failed</p>

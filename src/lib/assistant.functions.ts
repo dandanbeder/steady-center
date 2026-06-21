@@ -63,7 +63,7 @@ const TOOLS = [
   {
     name: "propose_create_task",
     description:
-      "Propose creating a new task. The action is NOT applied — it is shown to the user for confirmation. Provide list_id when known.",
+      "Propose creating a new task. The action is NOT applied, it is shown to the user for confirmation. Provide list_id when known.",
     input_schema: {
       type: "object",
       properties: {
@@ -289,7 +289,7 @@ async function callClaude(messages: AnthropicMsg[], system: string): Promise<any
 }
 
 // =================================================================
-// chat — main assistant turn (tool loop, proposes writes)
+// chat, main assistant turn (tool loop, proposes writes)
 // =================================================================
 export const assistantChat = createServerFn({ method: "POST" })
   .middleware([requireActiveUser])
@@ -321,7 +321,7 @@ export const assistantChat = createServerFn({ method: "POST" })
     const system = `You are Heartbeat Assistant, a focused productivity copilot.
 Today: ${now}. Active account scope: ${businessId ? `business_id=${businessId}` : "ALL accounts"}.
 Use the provided tools to look up the user's tasks, events, notes and meeting summaries before answering.
-When the user wants to create, edit, complete or move something, ALWAYS use the propose_* tools — these surface
+When the user wants to create, edit, complete or move something, ALWAYS use the propose_* tools, these surface
 a preview card the user must approve in the UI. NEVER claim that you have written or changed data; only the
 user can approve a proposal. Keep answers concise (markdown ok). If a tool returns no rows, say so plainly.`;
 
@@ -397,7 +397,7 @@ user can approve a proposal. Keep answers concise (markdown ok). If a tool retur
   });
 
 // =================================================================
-// applyAction — performs an approved proposal (write) with user RLS
+// applyAction, performs an approved proposal (write) with user RLS
 // =================================================================
 export const applyAssistantAction = createServerFn({ method: "POST" })
   .middleware([requireActiveUser])

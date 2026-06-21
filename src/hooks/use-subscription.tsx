@@ -51,7 +51,7 @@ export function useSubscription() {
 
   useEffect(() => {
     if (!user) return;
-    // Unique channel name per hook instance — reusing a name returns the
+    // Unique channel name per hook instance, reusing a name returns the
     // existing channel, and calling .on() after .subscribe() throws
     // "cannot add postgres_changes callbacks ... after subscribe()".
     const uniqueId =
@@ -81,7 +81,7 @@ export function useSubscription() {
   const sub = query.data;
   const periodEnd = sub?.current_period_end ? new Date(sub.current_period_end) : null;
   const inPeriod = !periodEnd || periodEnd > new Date();
-  // past_due keeps access for a short grace window — after that the paywall
+  // past_due keeps access for a short grace window, after that the paywall
   // engages even though Paddle hasn't transitioned the row to canceled yet.
   const pastDueSince = sub?.past_due_since ? new Date(sub.past_due_since) : null;
   const inPastDueGrace =

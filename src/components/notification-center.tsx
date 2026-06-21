@@ -40,7 +40,7 @@ export function NotificationCenter({
     enabled: open,
   });
 
-  // Realtime subscription — keep cache fresh.
+  // Realtime subscription, keep cache fresh.
   // The cleanup must be returned synchronously from useEffect, so we set up
   // the channel inside a then-able and hold a ref so cleanup can remove it
   // whether or not the auth lookup has resolved by unmount.

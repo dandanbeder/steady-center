@@ -148,7 +148,7 @@ function JournalPage() {
       setSelectedId(match.id);
       setSidebarTab("list");
     } else {
-      toast("No entry that day — and that's okay.", { duration: 2000 });
+      toast("No entry that day, and that's okay.", { duration: 2000 });
     }
   };
 
@@ -348,7 +348,7 @@ function JournalPage() {
               <p className="text-sm text-muted-foreground text-center py-8 px-4">
                 {query
                   ? "No entries match that search."
-                  : "No entries yet. Start when you feel like it — there's no streak to break."}
+                  : "No entries yet. Start when you feel like it, there's no streak to break."}
               </p>
             )}
             {filteredEntries.map((e) => {

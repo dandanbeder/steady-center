@@ -54,7 +54,7 @@ export const sendWelcomeAndNotifyAdmins = createServerFn({ method: "POST" })
     }
 
     if (!targetUser) {
-      // No matching auth user — refuse to send. Return ok to avoid leaking
+      // No matching auth user, refuse to send. Return ok to avoid leaking
       // whether an account exists.
       return { ok: true };
     }

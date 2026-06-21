@@ -3,7 +3,7 @@
  * Gated behind the existing `ai_assistant` (Pro) entitlement.
  *
  * The fallback (no API key, error, bad JSON) is deterministic: lowest priority
- * first, then latest due date, then no-due-date — so the UX never blocks.
+ * first, then latest due date, then no-due-date, so the UX never blocks.
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
@@ -54,7 +54,7 @@ export const suggestDeferrals = createServerFn({ method: "POST" })
     const committed = (rows ?? []) as TaskLite[];
 
     if (committed.length <= max) {
-      return { defer_task_ids: [], reason: "Your week looks balanced — no need to trim." };
+      return { defer_task_ids: [], reason: "Your week looks balanced, no need to trim." };
     }
 
     const deterministic = fallbackPick(committed, max);
@@ -162,7 +162,7 @@ function fallbackPick(tasks: TaskLite[], max: number): SuggestResult {
     defer_task_ids: ids,
     reason:
       ids.length > 0
-        ? "Gently sorted by priority and due date — you stay in the driver's seat."
-        : "Nothing obvious to defer — your week looks well-shaped.",
+        ? "Gently sorted by priority and due date, you stay in the driver's seat."
+        : "Nothing obvious to defer, your week looks well-shaped.",
   };
 }

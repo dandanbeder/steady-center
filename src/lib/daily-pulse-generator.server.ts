@@ -133,7 +133,7 @@ export async function generatePulseForUser(
   const dateStr = pulseDate(now, opts.tz);
   const { start, end } = dayStartEndUtc(dateStr, opts.tz);
 
-  // Today's meetings — RLS bypassed (service role); scoped by owner_id and tz date.
+  // Today's meetings, RLS bypassed (service role); scoped by owner_id and tz date.
   const { data: events } = await (supabaseAdmin.from("events") as any)
     .select("id, title, start_at, end_at, business_id, is_meeting")
     .eq("owner_id", userId)

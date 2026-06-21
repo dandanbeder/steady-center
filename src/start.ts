@@ -6,7 +6,7 @@ import { renderErrorPage } from "./lib/error-page";
 /**
  * Adds defence-in-depth HTTP security headers to every response. The edge
  * already enforces HTTPS, but HSTS pins it; the rest reduce clickjacking,
- * MIME-sniffing, and referrer leakage. CSP is intentionally not set yet —
+ * MIME-sniffing, and referrer leakage. CSP is intentionally not set yet ,
  * the app uses inline scripts via TanStack's <Scripts/> shell.
  */
 const SECURITY_HEADERS: Record<string, string> = {
@@ -22,7 +22,7 @@ const SECURITY_HEADERS: Record<string, string> = {
 
 function applySecurityHeaders(res: Response): Response {
   // Don't clobber explicit overrides set by a handler (e.g. a route that
-  // wants to be embeddable — none today, but be defensive).
+  // wants to be embeddable, none today, but be defensive).
   for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
     if (!res.headers.has(k)) res.headers.set(k, v);
   }

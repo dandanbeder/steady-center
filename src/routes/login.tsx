@@ -36,7 +36,7 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-// A small, curated list — covers the common cases without being overwhelming.
+// A small, curated list, covers the common cases without being overwhelming.
 const TIMEZONES = [
   "Africa/Johannesburg",
   "Africa/Cairo",

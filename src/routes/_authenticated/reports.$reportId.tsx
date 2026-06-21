@@ -115,11 +115,11 @@ function ReportDetail() {
         <Stat label="Tasks completed" value={o?.tasks_completed ?? 0} />
         <Stat
           label="On-time %"
-          value={onTimePct === null ? "—" : `${onTimePct}%`}
+          value={onTimePct === null ? "," : `${onTimePct}%`}
         />
         <Stat
           label="Avg cycle"
-          value={flow?.avg_cycle_days != null ? `${flow.avg_cycle_days}d` : "—"}
+          value={flow?.avg_cycle_days != null ? `${flow.avg_cycle_days}d` : ","}
         />
         <Stat label="Completion" value={`${rate}%`} />
       </div>
@@ -370,7 +370,7 @@ function ReportDetail() {
           <PlainSection title="Wins" items={n.wins ?? []} empty="No standout wins this week." />
           <PlainSection title="What slipped" items={n.slipped ?? []} empty="Nothing major slipped." />
           <PlainSection title="At risk" items={n.at_risk ?? []} empty="Nothing flagged for the week ahead." />
-          <PlainSection title="Suggestions" items={n.suggestions ?? []} empty="No suggestions — keep going." />
+          <PlainSection title="Suggestions" items={n.suggestions ?? []} empty="No suggestions, keep going." />
         </>
       ) : (
         <>
@@ -378,7 +378,7 @@ function ReportDetail() {
             <h2 className="text-sm font-medium">Strengths</h2>
             {strengths.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                Not much to celebrate yet — light week.
+                Not much to celebrate yet, light week.
               </p>
             ) : (
               <ul className="space-y-3 text-sm">

@@ -42,7 +42,7 @@ export const acceptTermsAndPrivacy = createServerFn({ method: "POST" })
       patch.marketing_opt_in = true;
       patch.marketing_opt_in_at = nowIso;
     } else if (!data.marketing_opt_in && existing?.marketing_opt_in) {
-      // User opted out at the consent screen — clear the flag.
+      // User opted out at the consent screen, clear the flag.
       patch.marketing_opt_in = false;
     }
 

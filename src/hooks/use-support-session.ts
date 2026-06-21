@@ -22,7 +22,7 @@ export function useActiveSupportSession() {
   const { isAdmin } = useIsPlatformAdmin();
 
   // Only platform admins can read admin_access_log. For everyone else, skip
-  // the polling entirely — otherwise the protected server fn 401s on a 30s
+  // the polling entirely, otherwise the protected server fn 401s on a 30s
   // loop in the network tab for ordinary users.
   return useQuery({
     queryKey: ["admin", "active-session"],

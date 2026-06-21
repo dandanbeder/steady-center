@@ -12,7 +12,7 @@ export type LoginEvent = {
 
 export async function recordLogin(event: "sign_in" | "sign_out" = "sign_in") {
   // Server-side capture so the IP is the real client IP (set by the edge),
-  // not whatever a tampered client claims. Falls back silently — login
+  // not whatever a tampered client claims. Falls back silently, login
   // history is best-effort and must never block auth.
   try {
     await recordLoginEvent({ data: { event } });
@@ -33,7 +33,7 @@ export async function listLoginHistory(limit = 25): Promise<LoginEvent[]> {
 
 // ---------- MFA (TOTP) ----------
 // Server-side enforcement: Supabase Auth verifies TOTP codes on its own
-// server and elevates the session AAL — clients cannot bypass.
+// server and elevates the session AAL, clients cannot bypass.
 
 export async function listMfaFactors() {
   const { data, error } = await supabase.auth.mfa.listFactors();

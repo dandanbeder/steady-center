@@ -23,7 +23,7 @@ function AcceptTermsPage() {
     mutationFn: () => accept({ data: { marketing_opt_in: marketing } }),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["onboarding-profile"] });
-      toast.success("Thanks — you're all set.");
+      toast.success("Thanks, you're all set.");
       navigate({ to: "/today" });
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),

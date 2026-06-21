@@ -33,7 +33,7 @@ export const Route = createFileRoute("/_authenticated/trash")({
   component: TrashPage,
   head: () => ({
     meta: [
-      { title: "Trash — Heartbeat" },
+      { title: "Trash, Heartbeat" },
       { name: "description", content: "Restore or permanently delete items you removed in the last 30 days." },
     ],
   }),

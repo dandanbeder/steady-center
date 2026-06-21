@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 /**
- * AccountSelector — the canonical first-class Account picker.
+ * AccountSelector, the canonical first-class Account picker.
  *
  * Use this in Calendar, Tasks, Outcomes, Notes, Meetings and Connections
  * any time the user needs to pick which Account a thing belongs to.

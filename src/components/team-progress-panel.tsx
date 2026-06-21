@@ -68,7 +68,7 @@ export function TeamProgressPanel({ businessId }: { businessId: string | null })
       <p className="text-xs text-muted-foreground flex items-start gap-1.5">
         <ShieldCheck className="h-3.5 w-3.5 mt-0.5 shrink-0" />
         <span>
-          Only shared work — tasks assigned in accounts you share with each teammate.
+          Only shared work, tasks assigned in accounts you share with each teammate.
           Private tasks, notes, and journals are never shown here.
         </span>
       </p>
@@ -127,7 +127,7 @@ export function TeamProgressPanel({ businessId }: { businessId: string | null })
                   {m.overdue.length > 0 && (
                     <div className="space-y-1">
                       <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                        Could use support — overdue
+                        Could use support, overdue
                       </div>
                       <ul className="text-sm space-y-0.5">
                         {m.overdue.map((t) => (

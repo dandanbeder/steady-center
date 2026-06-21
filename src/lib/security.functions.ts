@@ -6,7 +6,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 /**
  * Records a login / sign-out event for the authenticated user, including
- * the client IP (server-derived — clients cannot spoof it) and a sanitized
+ * the client IP (server-derived, clients cannot spoof it) and a sanitized
  * user-agent string. Used for breach-readiness audit trails (#12).
  *
  * Writes go through service-role because login_history's INSERT policy only

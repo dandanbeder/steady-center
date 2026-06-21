@@ -25,7 +25,7 @@ export function PastDueBanner() {
       <AlertTriangle className="h-4 w-4 shrink-0" />
       <span>
         {expired
-          ? "Your subscription is past due — premium features are paused."
+          ? "Your subscription is past due, premium features are paused."
           : `Payment failed. ${daysLeft} day${daysLeft === 1 ? "" : "s"} left to update your payment method.`}{" "}
         <Link to="/billing" className="font-medium underline">
           Update billing

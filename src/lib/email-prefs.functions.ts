@@ -29,7 +29,7 @@ export const getUnsubscribeInfo = createServerFn({ method: "POST" })
     };
   });
 
-/** Confirm one-click unsubscribe — flips marketing_opt_in off + sends a receipt. */
+/** Confirm one-click unsubscribe, flips marketing_opt_in off + sends a receipt. */
 export const confirmUnsubscribe = createServerFn({ method: "POST" })
   .inputValidator((i) => z.object({ token: z.string().min(8).max(128) }).parse(i))
   .handler(async ({ data }) => {

@@ -206,7 +206,7 @@ export function OutcomeWizard({
             {step === 1 && "Start with the result you want."}
             {step === 2 && "Optionally add a measurable target and a date."}
             {step === 3 && "Give yourself a clear first step."}
-            {step === 4 && "Review your starter plan — you can tweak anything."}
+            {step === 4 && "Review your starter plan, you can tweak anything."}
           </DialogDescription>
         </DialogHeader>
 
@@ -254,7 +254,7 @@ export function OutcomeWizard({
           <div className="space-y-4">
             <div className="rounded-md border border-border/60 p-3 space-y-3">
               <p className="text-xs text-muted-foreground">
-                Measurable target — leave blank if not numeric.
+                Measurable target, leave blank if not numeric.
               </p>
               <div>
                 <Label>Metric name</Label>
@@ -361,7 +361,7 @@ export function OutcomeWizard({
               </Select>
               {scopedLists.length === 0 && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Create a list in Tasks first, then come back — or Skip the starter plan.
+                  Create a list in Tasks first, then come back, or Skip the starter plan.
                 </p>
               )}
             </div>
@@ -447,7 +447,7 @@ export function OutcomeWizard({
               </Button>
               {planMode === "ai" && (
                 <p className="text-[11px] text-muted-foreground">
-                  AI suggestion — edit freely. Nothing is created until you confirm.
+                  AI suggestion, edit freely. Nothing is created until you confirm.
                 </p>
               )}
             </div>

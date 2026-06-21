@@ -28,7 +28,7 @@ function ForgotPasswordPage() {
     try {
       await submitFn({ data: { email } });
     } catch {
-      // Swallow — message stays generic on purpose.
+      // Swallow, message stays generic on purpose.
     } finally {
       setSent(true);
       setBusy(false);

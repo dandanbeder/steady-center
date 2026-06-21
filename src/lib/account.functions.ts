@@ -109,7 +109,7 @@ export const deleteBusinessCascade = createServerFn({ method: "POST" })
     await deleteBusinessAudio(userId, data.business_id);
     await deleteBusinessAttachments(data.business_id);
     await deleteBusinessLogos(data.business_id);
-    // RLS on businesses scopes to owner — DB FKs cascade the rest.
+    // RLS on businesses scopes to owner, DB FKs cascade the rest.
     const { error } = await supabase.from("businesses").delete().eq("id", data.business_id);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -190,7 +190,7 @@ export const deleteMyAccount = createServerFn({ method: "POST" })
       if (error) throw new Error(`${t}: ${error.message}`);
     }
 
-    // Templates have no owner_id — scope by created_by.
+    // Templates have no owner_id, scope by created_by.
     await supabaseAdmin.from("templates").delete().eq("created_by", userId);
 
     // 4. Delete all rows keyed by user_id.

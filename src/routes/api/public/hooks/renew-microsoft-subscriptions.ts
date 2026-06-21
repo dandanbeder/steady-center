@@ -30,7 +30,7 @@ export const Route = createFileRoute("/api/public/hooks/renew-microsoft-subscrip
             if (renewed) {
               results.push({ id: s.subscription_id, ok: true, detail: `renewed → ${renewed.expires_at}` });
             } else {
-              // Subscription is gone — recreate from calendar info
+              // Subscription is gone, recreate from calendar info
               const { data: cal } = await supabaseAdmin
                 .from("calendars")
                 .select("external_id")

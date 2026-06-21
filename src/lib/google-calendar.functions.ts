@@ -14,7 +14,7 @@ function gatewayHeaders() {
   const lovableKey = process.env.LOVABLE_API_KEY;
   const googleKey = process.env.GOOGLE_CALENDAR_API_KEY;
   if (!lovableKey) throw new Error("LOVABLE_API_KEY is not configured");
-  if (!googleKey) throw new Error("GOOGLE_CALENDAR_API_KEY is not configured — connect Google Calendar first.");
+  if (!googleKey) throw new Error("GOOGLE_CALENDAR_API_KEY is not configured, connect Google Calendar first.");
   return {
     Authorization: `Bearer ${lovableKey}`,
     "X-Connection-Api-Key": googleKey,
@@ -254,7 +254,7 @@ export async function runSyncForCalendar(
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (msg.includes(" 410:") && useSyncToken) {
-        // Sync token expired — restart with full sync
+        // Sync token expired, restart with full sync
         useSyncToken = false;
         pageToken = null;
         continue;

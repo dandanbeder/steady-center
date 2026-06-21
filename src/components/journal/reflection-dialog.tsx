@@ -51,7 +51,7 @@ export function ReflectionDialog({ open, onOpenChange }: Props) {
             <Sparkles className="h-4 w-4" /> Looking back
           </DialogTitle>
           <DialogDescription>
-            A gentle, private reflection across your recent entries. Just for you — never shared,
+            A gentle, private reflection across your recent entries. Just for you, never shared,
             never used for anything else. Counts toward your AI allowance.
           </DialogDescription>
         </DialogHeader>

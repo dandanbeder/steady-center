@@ -47,14 +47,14 @@ export const Route = createFileRoute("/_authenticated/billing")({
   component: BillingPage,
   head: () => ({
     meta: [
-      { title: "Billing — Heartbeat" },
+      { title: "Billing, Heartbeat" },
       { name: "description", content: "Manage your Heartbeat subscription, seats, and invoices." },
     ],
   }),
 });
 
 function fmtDate(d: string | null | undefined): string {
-  if (!d) return "—";
+  if (!d) return ",";
   return new Date(d).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 
@@ -144,7 +144,7 @@ function BillingPage() {
     setBusy("resume");
     try {
       await resumeFn({ data: { environment: env } });
-      toast.success("Cancellation removed — subscription continues");
+      toast.success("Cancellation removed, subscription continues");
       await refetchAll();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not resume");
@@ -224,12 +224,12 @@ function BillingPage() {
               <div>
                 <div className="text-xs uppercase tracking-wider text-muted-foreground">Paid seats</div>
                 <div className="mt-1 text-sm font-medium tabular-nums">
-                  {s ? `${s.paidUsed} / ${s.paidPurchased}` : "—"}
+                  {s ? `${s.paidUsed} / ${s.paidPurchased}` : ","}
                 </div>
               </div>
               <div>
                 <div className="text-xs uppercase tracking-wider text-muted-foreground">Free collaborators</div>
-                <div className="mt-1 text-sm font-medium tabular-nums">{s?.freeUsed ?? "—"}</div>
+                <div className="mt-1 text-sm font-medium tabular-nums">{s?.freeUsed ?? ","}</div>
               </div>
             </div>
 

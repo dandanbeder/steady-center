@@ -378,7 +378,7 @@ export const requestAccess = createServerFn({ method: "POST" })
     return { ok: true, status: "pending" as const };
   });
 
-/** Admin+ — list pending access requests for an account. */
+/** Admin+, list pending access requests for an account. */
 export const listPendingRequests = createServerFn({ method: "POST" })
   .middleware([requireActiveUser])
   .inputValidator((i) => z.object({ business_id: z.string().uuid() }).parse(i))
@@ -411,7 +411,7 @@ export const listPendingRequests = createServerFn({ method: "POST" })
     }));
   });
 
-/** Admin+ — approve or deny an access request. On approve, creates an active membership. */
+/** Admin+, approve or deny an access request. On approve, creates an active membership. */
 export const decideAccessRequest = createServerFn({ method: "POST" })
   .middleware([requireActiveUser])
   .inputValidator((i) =>

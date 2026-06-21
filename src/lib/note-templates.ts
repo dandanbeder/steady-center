@@ -23,7 +23,7 @@ export function templateFor(type: NoteType): string {
     case "decision":
       return `# Decision\n\n## Context\n\n\n## Options\n1. \n2. \n\n## Decision\n\n\n## Rationale\n`;
     case "journal":
-      return `# Journal — ${today}\n\n## What happened\n\n\n## Reflection\n`;
+      return `# Journal, ${today}\n\n## What happened\n\n\n## Reflection\n`;
     default:
       return "";
   }
@@ -32,10 +32,10 @@ export function templateFor(type: NoteType): string {
 export function suggestedTitle(type: NoteType): string {
   const d = new Date().toLocaleDateString(undefined, { month: "short", day: "numeric" });
   switch (type) {
-    case "meeting": return `Meeting — ${d}`;
-    case "journal": return `Journal — ${d}`;
-    case "project": return `Project — Untitled`;
-    case "decision": return `Decision — ${d}`;
-    default: return `Note — ${d}`;
+    case "meeting": return `Meeting, ${d}`;
+    case "journal": return `Journal, ${d}`;
+    case "project": return `Project, Untitled`;
+    case "decision": return `Decision, ${d}`;
+    default: return `Note, ${d}`;
   }
 }

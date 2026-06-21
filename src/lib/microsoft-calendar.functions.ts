@@ -87,7 +87,7 @@ export const disconnectMicrosoft = createServerFn({ method: "POST" })
       try {
         await graphFetch(context.userId, `/subscriptions/${s.subscription_id}`, { method: "DELETE" });
       } catch {
-        // ignore — token may already be revoked
+        // ignore, token may already be revoked
       }
     }
     await supabaseAdmin.from("ms_subscriptions").delete().eq("user_id", context.userId);
@@ -175,7 +175,7 @@ export const importMicrosoftCalendar = createServerFn({ method: "POST" })
     try {
       await ensureSubscription(userId, row.id, data.external_id);
     } catch (e) {
-      // Subscriptions are best-effort — cron still keeps things fresh.
+      // Subscriptions are best-effort, cron still keeps things fresh.
       console.warn("Failed to create MS Graph subscription", e);
     }
     return { calendar_id: row.id, alreadyImported: false };

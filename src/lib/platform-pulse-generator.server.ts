@@ -216,7 +216,7 @@ function riskList(title: string, rows: AtRiskRow[], origin: string): string {
   const items = rows
     .map(
       (r) =>
-        `<li style="margin:0 0 4px;font-family:Arial,sans-serif;font-size:14px;color:#3A3A3A"><a href="${origin}/admin/users/${r.user_id}" style="color:#5F6A56;text-decoration:none">${escapeHtml(r.email)}</a> — ${escapeHtml(r.reason)}</li>`,
+        `<li style="margin:0 0 4px;font-family:Arial,sans-serif;font-size:14px;color:#3A3A3A"><a href="${origin}/admin/users/${r.user_id}" style="color:#5F6A56;text-decoration:none">${escapeHtml(r.email)}</a>, ${escapeHtml(r.reason)}</li>`,
     )
     .join("");
   return `
@@ -228,8 +228,8 @@ export function renderPulseEmail(stats: PulseStats): { subject: string; html: st
   const origin = getAppOrigin();
   const subject =
     stats.window === "daily"
-      ? `Platform Pulse — ${stats.signups} new, ${fmtMoney(stats.mrrCents)} MRR`
-      : `Weekly Platform Pulse — ${stats.signups} new, ${fmtMoney(stats.mrrCents)} MRR`;
+      ? `Platform Pulse, ${stats.signups} new, ${fmtMoney(stats.mrrCents)} MRR`
+      : `Weekly Platform Pulse, ${stats.signups} new, ${fmtMoney(stats.mrrCents)} MRR`;
 
   const grid = `
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 4px">

@@ -16,7 +16,7 @@ async function requirePlatformAdmin(userId: string) {
   if (data?.platform_role !== "superadmin") throw new Error("Not authorized");
 }
 
-// Cents — must match src/lib/entitlements.ts PRICING and the SQL refresher.
+// Cents, must match src/lib/entitlements.ts PRICING and the SQL refresher.
 const PRICE_PRO_MONTH = 1000;
 const PRICE_PRO_YEAR = 9600;
 const PRICE_TEAM_MONTH = 1200;
@@ -213,7 +213,7 @@ export const analyticsRevenue = createServerFn({ method: "POST" })
     const paying = latest ? Number((snaps?.at(-1)?.pro_users ?? 0)) + Number((snaps?.at(-1)?.team_users ?? 0)) : 0;
     const arpu = latest && paying > 0 ? latest.mrrCents / paying : 0;
 
-    // AI revenue placeholder — wire to credits invoicing when implemented.
+    // AI revenue placeholder, wire to credits invoicing when implemented.
     return {
       series,
       arpuCents: arpu,
@@ -329,7 +329,7 @@ export const analyticsEngagement = createServerFn({ method: "POST" })
       },
       adoptionCounts: { calendar_sync: calUsers, meetings: meetingUsers, ai: aiUsersCount, sharing: sharingUsers, total_users: total },
       retentionNote:
-        "Week-over-week cohort retention table coming in v2 — needs per-user weekly active flag.",
+        "Week-over-week cohort retention table coming in v2, needs per-user weekly active flag.",
     };
   });
 

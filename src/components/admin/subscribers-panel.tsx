@@ -275,7 +275,7 @@ export function SubscribersPanel() {
               <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">No subscribers match.</TableCell></TableRow>
             ) : filtered.map((r) => (
               <TableRow key={r.id}>
-                <TableCell className="font-medium">{r.full_name || <span className="text-muted-foreground">—</span>}</TableCell>
+                <TableCell className="font-medium">{r.full_name || <span className="text-muted-foreground">,</span>}</TableCell>
                 <TableCell>{r.email}</TableCell>
                 <TableCell className="text-muted-foreground text-sm">{new Date(r.created_at).toLocaleDateString()}</TableCell>
                 <TableCell>

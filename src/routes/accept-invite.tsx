@@ -75,7 +75,7 @@ function AcceptInvitePage() {
         <h1 className="text-xl mb-2">You've been invited to Heartbeat</h1>
         <p className="text-sm text-muted-foreground mb-6">
           Sign up or sign in with the email that received this invite. Once signed in,
-          you'll be able to request access — the inviter will review and approve.
+          you'll be able to request access, the inviter will review and approve.
         </p>
         <Button asChild>
           <Link to="/login">Continue to sign up / sign in</Link>

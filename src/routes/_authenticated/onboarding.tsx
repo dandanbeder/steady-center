@@ -59,17 +59,17 @@ function OnboardingPage() {
   const profileQ = useQuery({ queryKey: ["onboarding-profile"], queryFn: getOnboardingProfile });
   const businessesQ = useQuery({ queryKey: ["businesses"], queryFn: listBusinesses });
 
-  // Path C — pending invitations
+  // Path C, pending invitations
   const listInvites = useServerFn(listMyInvitations);
   const invitesQ = useQuery({ queryKey: ["my-invitations"], queryFn: () => listInvites() });
   const pendingInvites = (invitesQ.data ?? []).filter((i) => !i.request_status);
 
-  // Step 1 — solo account / team
+  // Step 1, solo account / team
   const [accountName, setAccountName] = useState("");
   const [color, setColor] = useState(COLORS[0]);
   const [inviteEmails, setInviteEmails] = useState<string[]>([""]);
 
-  // Step 3 — weekly review
+  // Step 3, weekly review
   const [reviewDay, setReviewDay] = useState<number>(5);
   const [reviewHour, setReviewHour] = useState<number>(16);
   const [reviewEnabled, setReviewEnabled] = useState(true);
@@ -190,7 +190,7 @@ function OnboardingPage() {
               <header>
                 <h1 className="text-2xl text-primary">How will you use Heartbeat?</h1>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Pick what fits today — you can change this anytime. Solo is the
+                  Pick what fits today, you can change this anytime. Solo is the
                   quickest way in; you can invite people later from any account.
                 </p>
               </header>
@@ -241,7 +241,7 @@ function OnboardingPage() {
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Your private workspace — accounts, tasks, calendar, notes,
+                        Your private workspace, accounts, tasks, calendar, notes,
                         journal. Free or Pro. Invite a teammate anytime.
                       </p>
                     </div>
@@ -270,7 +270,7 @@ function OnboardingPage() {
               </div>
 
               <p className="text-xs text-muted-foreground pt-1">
-                You can switch later — solo accounts can invite a teammate anytime
+                You can switch later, solo accounts can invite a teammate anytime
                 without moving any data.
               </p>
             </section>
@@ -281,7 +281,7 @@ function OnboardingPage() {
               <header>
                 <h1 className="text-2xl text-primary">Create your first Account</h1>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Accounts let you keep different areas of work separate — each gets
+                  Accounts let you keep different areas of work separate, each gets
                   its own color, calendars, and tasks. You can add more later.
                 </p>
               </header>
@@ -310,7 +310,7 @@ function OnboardingPage() {
               </div>
               {hasAccount && (
                 <p className="text-xs text-muted-foreground">
-                  You already have an account set up — you can skip this step.{" "}
+                  You already have an account set up, you can skip this step.{" "}
                   <button onClick={() => setStep(2)} className="text-accent hover:underline">
                     Continue
                   </button>
@@ -324,7 +324,7 @@ function OnboardingPage() {
               <header>
                 <h1 className="text-2xl text-primary">Name your team</h1>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Your team is also your first Account — shared work lives here.
+                  Your team is also your first Account, shared work lives here.
                   You'll be the owner, and you still get your own private workspace.
                 </p>
               </header>
@@ -369,7 +369,7 @@ function OnboardingPage() {
                 </div>
                 <p className="text-xs text-muted-foreground">
                   They'll receive an email invite. Billing engages per seat when a
-                  paid teammate accepts — you can also do this later.
+                  paid teammate accepts, you can also do this later.
                 </p>
               </div>
               <div className="flex items-center justify-between pt-2">
@@ -422,7 +422,7 @@ function OnboardingPage() {
               <header>
                 <h1 className="text-2xl text-primary">Your weekly review</h1>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Heartbeat can prepare a short summary of your week — wins, what
+                  Heartbeat can prepare a short summary of your week, wins, what
                   shifted, and what's next. Pick a day and time that suits you.
                 </p>
               </header>
@@ -472,7 +472,7 @@ function OnboardingPage() {
                 </div>
               </div>
               <p className="text-xs text-muted-foreground">
-                Timezone: {profileQ.data?.timezone ?? "—"}
+                Timezone: {profileQ.data?.timezone ?? ","}
               </p>
 
               <div className="flex justify-between pt-2">

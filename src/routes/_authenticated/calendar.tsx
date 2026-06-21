@@ -342,7 +342,7 @@ function CalendarPage() {
     },
     onError: (err, _vars, ctx) => {
       if (ctx?.prev) qc.setQueryData(eventsKey, ctx.prev);
-      toast.error(err instanceof Error ? err.message : "Move failed — reverted");
+      toast.error(err instanceof Error ? err.message : "Move failed, reverted");
     },
     onSuccess: (res) => {
       if (res.syncWarning) toast.warning(res.syncWarning);
@@ -2289,7 +2289,7 @@ function EditEventDialog({
       const note = await createNote({
         business_id: event.business_id,
         folder_id: null,
-        title: `Notes — ${event.title}`,
+        title: `Notes, ${event.title}`,
         body: `From event on ${new Date(event.start_at).toLocaleString()}${event.location ? `\nLocation: ${event.location}` : ""}${event.description ? `\n\n${event.description}` : ""}`,
         source: "event",
         linked_event_id: event.id,
