@@ -375,7 +375,11 @@ function SettingsPage() {
             </>
           )}
 
-          {active === "danger" && <DangerZone />}
+        </div>
+        </div>
+        </div>
+        </div>
+        </div>
         </div>
       </div>
     </div>
