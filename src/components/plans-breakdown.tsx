@@ -27,20 +27,20 @@ const PLANS: PlanRow[] = [
     price: "$0",
     priceSub: "forever",
     features: [
-      `${LIMITS.free.maxBusinesses} business`,
+      `${LIMITS.free.maxBusinesses} space`,
       `${LIMITS.free.aiAllowanceCreditsPerSeat} AI credits / month`,
       "Calendar, tasks, notes & journal",
-      "Personal use",
+      "Just for you",
     ],
   },
   {
     id: "pro",
     name: "Pro",
-    tagline: "For the solo multi-business operator.",
+    tagline: "For everything you're juggling.",
     price: fmtUsd(PRICING.pro_monthly.amount),
     priceSub: "/mo · or save with annual",
     features: [
-      "Unlimited businesses & calendars",
+      "Unlimited spaces & calendars",
       `${LIMITS.pro.aiAllowanceCreditsPerSeat} AI credits / month`,
       "Meetings, summaries & weekly coach",
       "Top up AI credits anytime",
@@ -73,7 +73,7 @@ export function PlansBreakdown({ currentTier }: { currentTier: Tier }) {
       <CardHeader>
         <CardTitle>Plans</CardTitle>
         <CardDescription>
-          Compare what's included. Upgrades, downgrades, and seat changes are handled through Lovable Payments.
+          Compare what's included. Upgrades, downgrades, and seat changes are handled securely at checkout.
         </CardDescription>
       </CardHeader>
       <CardContent>

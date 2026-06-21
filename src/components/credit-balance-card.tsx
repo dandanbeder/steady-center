@@ -17,7 +17,7 @@ const TopUpDialog = lazy(() =>
 );
 
 function fmtDate(d: string | null | undefined): string {
-  if (!d) return ",";
+  if (!d) return "—";
   return new Date(d).toLocaleDateString(undefined, {
     year: "numeric",
     month: "short",
@@ -182,7 +182,7 @@ export function CreditBalanceCard() {
             </div>
             <Progress value={allowancePct} />
             <div className="mt-1 text-xs text-muted-foreground">
-              Resets on {fmtDate(b.cycleEnd)}
+              {b.cycleEnd ? `Resets on ${fmtDate(b.cycleEnd)}` : "Resets on your next billing date"}
             </div>
           </div>
 

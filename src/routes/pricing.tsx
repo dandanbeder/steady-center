@@ -28,13 +28,13 @@ export const Route = createFileRoute("/pricing")({
       {
         name: "description",
         content:
-          "Run your businesses calmly with AI built in. Free forever, Pro for solo operators, Team for collaboration. AI included, viewers free.",
+          "One calm place for everything you're juggling, with AI built in. Free forever, Pro for everyday focus, Team for collaboration. AI included, viewers free.",
       },
       { property: "og:title", content: "Pricing, Heartbeat" },
       {
         property: "og:description",
         content:
-          "Calm command of multiple businesses with AI built in. AI included, not a $9 add-on. Viewers & guests free.",
+          "One calm place for everything you're juggling, with AI built in. AI included, not a $9 add-on. Viewers & guests free.",
       },
     ],
   }),
@@ -163,10 +163,10 @@ function PricingPage() {
       <section className="px-6 pt-12 pb-8">
         <div className="mx-auto max-w-3xl text-center">
           <h1 className="font-serif text-4xl leading-tight tracking-tight md:text-5xl" style={{ color: "#26382F" }}>
-            Calm command of your businesses, with AI built in.
+            One calm place for everything you're juggling.
           </h1>
           <p className="mt-5 text-lg" style={{ color: "#26382F", opacity: 0.78 }}>
-            One steady place for calendars, tasks, notes and Ask Heartbeat AI. Free to start, pay only when you outgrow it.
+            For students, freelancers, creatives and business owners. Calendars, tasks, notes and Ask Heartbeat AI in one steady place. Free to start, pay only when you outgrow it.
           </p>
 
           <div className="mt-7 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm" style={{ color: "#26382F" }}>
@@ -200,6 +200,9 @@ function PricingPage() {
 
       {/* Plan cards */}
       <section className="px-6 pb-16">
+        <p className="mx-auto mb-6 max-w-3xl text-center text-sm" style={{ color: "#26382F", opacity: 0.72 }}>
+          A space is a separate area you keep organised — your studies, your work, a side project, your personal life.
+        </p>
         <div className="mx-auto grid max-w-6xl gap-6 md:grid-cols-3">
           {/* Free */}
           <PlanCard
@@ -208,12 +211,10 @@ function PricingPage() {
             priceMain={<span className="font-serif text-5xl">$0</span>}
             priceSub="forever"
             features={[
-              `${LIMITS.free.maxBusinesses} business`,
-              "Calendar, tasks, notes & journal",
-              `${LIMITS.free.maxCalendarConnections} calendar connection`,
+              `${LIMITS.free.maxBusinesses} space`,
               `${LIMITS.free.aiAllowanceCreditsPerSeat} AI credits / month`,
-              "Top up AI credits anytime",
-              "Personal use, no sharing",
+              "Calendar, tasks, notes & journal",
+              "Just for you",
             ]}
             cta={
               <PlanCta
@@ -234,7 +235,7 @@ function PricingPage() {
             highlighted
             badge="Most popular"
             name="Pro"
-            tagline="The solo multi-business operator."
+            tagline="For everything you're juggling."
             priceMain={
               <>
                 <span className="font-serif text-5xl">{fmtUsd(proMonthlyEquivCents)}</span>
@@ -247,12 +248,9 @@ function PricingPage() {
                 : `Billed monthly`
             }
             features={[
-              "Unlimited businesses",
-              "Calendar, time-blocking & AI scheduling",
-              "Tasks, outcomes, notes & journal",
-              `Ask Heartbeat AI, ${LIMITS.pro.aiAllowanceCreditsPerSeat} credits / month`,
-              "Daily Pulse & weekly coach",
-              "Meetings & AI summaries",
+              "Unlimited spaces & calendars",
+              `${LIMITS.pro.aiAllowanceCreditsPerSeat} AI credits / month`,
+              "Meetings, summaries & weekly coach",
               "Top up AI credits anytime",
             ]}
             cta={
@@ -277,7 +275,7 @@ function PricingPage() {
           {/* Team */}
           <PlanCard
             name="Team"
-            tagline="Teams that collaborate."
+            tagline="For teams that collaborate."
             priceMain={
               <>
                 <span className="font-serif text-5xl">{fmtUsd(teamMonthlyEquivCents)}</span>
@@ -291,11 +289,9 @@ function PricingPage() {
             }
             features={[
               "Everything in Pro",
-              "Sharing & collaboration",
-              "Team progress & shared calendar",
-              "Workload & roles",
-              "Viewers & guests free (no seat)",
               `${LIMITS.team.aiAllowanceCreditsPerSeat} AI credits per seat, pooled`,
+              "Sharing, roles & team progress",
+              "Viewers & guests free (no seat)",
             ]}
             extra={
               <div className="mt-4 rounded-lg border px-3 py-2.5 text-sm"
@@ -356,7 +352,7 @@ function PricingPage() {
         </div>
 
         <p className="mx-auto mt-6 max-w-3xl text-center text-xs" style={{ color: "#26382F", opacity: 0.65 }}>
-          Prices in USD. Local currency, taxes and VAT handled at checkout by our merchant of record.
+          Prices in USD. Local currency, taxes and VAT handled securely at checkout.
         </p>
       </section>
 

@@ -27,7 +27,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { CreditBalanceCard } from "@/components/credit-balance-card";
 import { AiCreditsExplainer } from "@/components/ai-credits-explainer";
 import { getMyAiUsage } from "@/lib/ai-usage.functions";
-import { ACTION_WEIGHTS, CREDIT_ANCHOR_MICROS } from "@/lib/credits";
+import { ACTION_WEIGHTS } from "@/lib/credits";
 
 export const Route = createFileRoute("/_authenticated/ai")({
   component: AiPage,
@@ -120,9 +120,8 @@ function AiPage() {
               <Sparkles className="h-5 w-5" /> What each action costs
             </CardTitle>
             <CardDescription>
-              You're only ever charged for the model time you actually use, these are
-              the typical credit costs when we don't have an exact measurement.
-              {" "}1 credit ≈ ${(CREDIT_ANCHOR_MICROS / 1_000_000).toFixed(4)} of model cost.
+              Credits power AI features — a quick action costs about 1 credit, longer ones cost more. Your
+              monthly allowance refills on your billing date; purchased top-ups last 12 months.
             </CardDescription>
           </CardHeader>
           <CardContent>
