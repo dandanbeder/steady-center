@@ -10,7 +10,8 @@ import {
 } from "@/lib/google-calendar.functions";
 import { listCalendars } from "@/lib/calendars";
 import { Button } from "@/components/ui/button";
-import type { Business } from "@/lib/businesses";
+import { setCalendarBusiness, type Business } from "@/lib/businesses";
+import { AccountSelector } from "@/components/account-selector";
 
 type Props = { businesses: Business[] };
 
@@ -63,6 +64,16 @@ export function GoogleSyncPanel({ businesses }: Props) {
     onError: (e) => toast.error(e instanceof Error ? e.message : "Sync failed"),
   });
 
+  const remapMut = useMutation({
+    mutationFn: ({ calendar_id, business_id }: { calendar_id: string; business_id: string | null }) =>
+      setCalendarBusiness(calendar_id, business_id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["calendars"] });
+      toast.success("Account updated");
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -85,15 +96,27 @@ export function GoogleSyncPanel({ businesses }: Props) {
           {syncedGoogleCals.map((c) => (
             <div
               key={c.id}
-              className="flex items-center justify-between rounded-md border border-border bg-muted/30 px-3 py-2 text-sm"
+              className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
                 <span
-                  className="inline-block h-3 w-3 rounded-full"
+                  className="inline-block h-3 w-3 rounded-full shrink-0"
                   style={{ background: c.color }}
                 />
-                <span>{c.name}</span>
+                <span className="truncate">{c.name}</span>
+                {c.last_synced_at && (
+                  <span className="text-xs text-muted-foreground shrink-0">
+                    · synced {new Date(c.last_synced_at).toLocaleString()}
+                  </span>
+                )}
               </div>
+              <AccountSelector
+                businesses={businesses}
+                value={c.business_id}
+                onChange={(business_id) => remapMut.mutate({ calendar_id: c.id, business_id })}
+                size="sm"
+                noneLabel="No account"
+              />
               <Button
                 size="sm"
                 variant="ghost"
@@ -110,19 +133,16 @@ export function GoogleSyncPanel({ businesses }: Props) {
 
       {open && (
         <div className="rounded-md border border-border bg-card p-4 space-y-3">
-          <label className="block text-sm">
-            Tag imported calendars to account:
-            <select
-              value={selectedBusiness}
-              onChange={(e) => setSelectedBusiness(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            >
-              <option value="">— No account —</option>
-              {businesses.map((b) => (
-                <option key={b.id} value={b.id}>{b.name}</option>
-              ))}
-            </select>
-          </label>
+          <div className="block text-sm space-y-1">
+            <span>Tag newly imported calendars to account:</span>
+            <AccountSelector
+              businesses={businesses}
+              value={selectedBusiness || null}
+              onChange={(id) => setSelectedBusiness(id ?? "")}
+              noneLabel="No account"
+              className="w-full"
+            />
+          </div>
 
           {remote.isLoading && <p className="text-sm text-muted-foreground">Loading from Google…</p>}
           {remote.isError && (

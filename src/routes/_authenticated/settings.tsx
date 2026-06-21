@@ -2,11 +2,14 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { Plus, Trash2, Check, X, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, Check, X, AlertTriangle, ArrowUp, ArrowDown, Archive, ArchiveRestore } from "lucide-react";
 import {
   createBusiness,
-  listBusinesses,
+  listAllBusinesses,
   updateBusiness,
+  archiveBusiness,
+  unarchiveBusiness,
+  reorderBusinesses,
   type Business,
 } from "@/lib/businesses";
 import {
@@ -56,10 +59,12 @@ const PALETTE = [
 
 function SettingsPage() {
   const qc = useQueryClient();
-  const { data: businesses = [], isLoading } = useQuery({
-    queryKey: ["businesses"],
-    queryFn: listBusinesses,
+  const { data: allBusinesses = [], isLoading } = useQuery({
+    queryKey: ["businesses-all"],
+    queryFn: listAllBusinesses,
   });
+  const businesses = allBusinesses.filter((b) => !b.archived_at);
+  const archived = allBusinesses.filter((b) => b.archived_at);
   const { data: calendars = [] } = useQuery({
     queryKey: ["calendars"],
     queryFn: listCalendars,
@@ -67,6 +72,7 @@ function SettingsPage() {
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["businesses"] });
+    qc.invalidateQueries({ queryKey: ["businesses-all"] });
     qc.invalidateQueries({ queryKey: ["calendars"] });
   };
 
@@ -84,6 +90,20 @@ function SettingsPage() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
+  const moveMut = useMutation({
+    mutationFn: (orderedIds: string[]) => reorderBusinesses(orderedIds),
+    onSuccess: invalidate,
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
+  const move = (idx: number, dir: -1 | 1) => {
+    const next = [...businesses];
+    const target = idx + dir;
+    if (target < 0 || target >= next.length) return;
+    [next[idx], next[target]] = [next[target], next[idx]];
+    moveMut.mutate(next.map((b) => b.id));
+  };
+
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 space-y-12">
       <header>
@@ -91,6 +111,95 @@ function SettingsPage() {
         <p className="mt-2 text-muted-foreground">Shape your command center.</p>
       </header>
 
+      {/* ============ ACCOUNTS ============ */}
+      <section id="accounts">
+        <h2 className="text-2xl mb-1">Accounts</h2>
+        <p className="text-sm text-muted-foreground mb-6">
+          The business contexts your work belongs to — EvacoMed, FlightMed, Personal.
+          Each Account's colour is reused everywhere it appears across Calendar, Tasks,
+          Outcomes, Notes and Meetings.
+        </p>
+
+        <div
+          className="rounded-2xl border border-border bg-card p-6"
+          style={{ boxShadow: "var(--shadow-soft)" }}
+        >
+          {isLoading ? (
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          ) : businesses.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No accounts yet. Add your first below.</p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {businesses.map((b, idx) => (
+                <BusinessRow
+                  key={b.id}
+                  business={b}
+                  calendars={calendars.filter((c) => c.business_id === b.id)}
+                  onChange={invalidate}
+                  onMoveUp={idx > 0 ? () => move(idx, -1) : undefined}
+                  onMoveDown={idx < businesses.length - 1 ? () => move(idx, 1) : undefined}
+                />
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!newName.trim()) return;
+            createMut.mutate();
+          }}
+          className="mt-6 rounded-2xl border border-border bg-card p-6 space-y-4"
+          style={{ boxShadow: "var(--shadow-soft)" }}
+        >
+          <h3 className="text-lg">Add an account</h3>
+          <ColorDots value={newColor} onChange={setNewColor} />
+          <div className="flex gap-3">
+            <Input
+              placeholder="e.g. EvacoMed, FlightMed, Personal"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+            />
+            <Button type="submit" disabled={createMut.isPending || !newName.trim()}>
+              <Plus className="h-4 w-4 mr-1" /> Add
+            </Button>
+          </div>
+        </form>
+
+        {archived.length > 0 && (
+          <div
+            className="mt-6 rounded-2xl border border-border bg-card p-6 space-y-3"
+            style={{ boxShadow: "var(--shadow-soft)" }}
+          >
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+              Archived
+            </h3>
+            <ul className="divide-y divide-border">
+              {archived.map((b) => (
+                <ArchivedBusinessRow key={b.id} business={b} onChange={invalidate} />
+              ))}
+            </ul>
+          </div>
+        )}
+      </section>
+
+      {/* ============ CONNECTIONS ============ */}
+      <section id="connections">
+        <h2 className="text-2xl mb-1">Connections</h2>
+        <p className="text-sm text-muted-foreground mb-6">
+          Synced external calendars from Google and Microsoft / Outlook. Map each
+          connected calendar to one of your Accounts so synced events carry the
+          right business context.
+        </p>
+        <div className="rounded-2xl border border-border bg-card p-6 space-y-8" style={{ boxShadow: "var(--shadow-soft)" }}>
+          <GoogleSyncPanel businesses={businesses} />
+          <div className="border-t border-border" />
+          <MicrosoftSyncPanel businesses={businesses} />
+        </div>
+      </section>
+
+      {/* ============ APPEARANCE ============ */}
       <section>
         <h2 className="text-2xl mb-1">Appearance</h2>
         <p className="text-sm text-muted-foreground mb-6">
@@ -98,6 +207,7 @@ function SettingsPage() {
         </p>
         <div className="rounded-2xl border border-border bg-card p-6" style={{ boxShadow: "var(--shadow-soft)" }}>
           <AppearancePanel />
+
         </div>
       </section>
 
@@ -111,17 +221,6 @@ function SettingsPage() {
         </div>
       </section>
 
-      <section>
-        <h2 className="text-2xl mb-1">Calendar sync</h2>
-        <p className="text-sm text-muted-foreground mb-6">
-          Connect Google or Microsoft / Outlook. Imported calendars sync hourly and changes you make here push back to the source.
-        </p>
-        <div className="rounded-2xl border border-border bg-card p-6 space-y-8" style={{ boxShadow: "var(--shadow-soft)" }}>
-          <GoogleSyncPanel businesses={businesses} />
-          <div className="border-t border-border" />
-          <MicrosoftSyncPanel businesses={businesses} />
-        </div>
-      </section>
 
       <section>
         <h2 className="text-2xl mb-1">Weekly review</h2>
@@ -176,60 +275,6 @@ function SettingsPage() {
         </div>
       </section>
 
-
-
-
-      <section>
-        <h2 className="text-2xl mb-1">Accounts</h2>
-        <p className="text-sm text-muted-foreground mb-6">
-          Each account gets its own color and its own calendars.
-        </p>
-
-        <div
-          className="rounded-2xl border border-border bg-card p-6"
-          style={{ boxShadow: "var(--shadow-soft)" }}
-        >
-          {isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
-          ) : businesses.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No accounts yet. Add your first below.</p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {businesses.map((b) => (
-                <BusinessRow
-                  key={b.id}
-                  business={b}
-                  calendars={calendars.filter((c) => c.business_id === b.id)}
-                  onChange={invalidate}
-                />
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!newName.trim()) return;
-            createMut.mutate();
-          }}
-          className="mt-6 rounded-2xl border border-border bg-card p-6 space-y-4"
-          style={{ boxShadow: "var(--shadow-soft)" }}
-        >
-          <h3 className="text-lg">Add an account</h3>
-          <ColorDots value={newColor} onChange={setNewColor} />
-          <div className="flex gap-3">
-            <Input
-              placeholder="e.g. Studio, Consulting, Café"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-            />
-            <Button type="submit" disabled={createMut.isPending || !newName.trim()}>
-              <Plus className="h-4 w-4 mr-1" /> Add
-            </Button>
-          </div>
-        </form>
-      </section>
 
       <DangerZone />
     </div>
@@ -323,10 +368,14 @@ function BusinessRow({
   business,
   calendars,
   onChange,
+  onMoveUp,
+  onMoveDown,
 }: {
   business: Business;
   calendars: Cal[];
   onChange: () => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(business.name);
@@ -395,12 +444,37 @@ function BusinessRow({
               <span className="ml-2 text-xs text-muted-foreground">({my.role})</span>
             )}
           </button>
+          {canEdit && (
+            <div className="flex items-center gap-0.5">
+              <Button size="icon" variant="ghost" onClick={onMoveUp} disabled={!onMoveUp} title="Move up">
+                <ArrowUp className="h-4 w-4 text-muted-foreground" />
+              </Button>
+              <Button size="icon" variant="ghost" onClick={onMoveDown} disabled={!onMoveDown} title="Move down">
+                <ArrowDown className="h-4 w-4 text-muted-foreground" />
+              </Button>
+            </div>
+          )}
           {canDelete && (
             <Button
               size="icon"
               variant="ghost"
+              title="Archive"
               onClick={() => {
-                if (confirm(`Delete "${business.name}"? Calendars and events will go too.`)) del.mutate();
+                if (confirm(`Archive "${business.name}"? It will be hidden from pickers but kept for history. You can restore it from Settings.`)) {
+                  archiveBusiness(business.id).then(() => { onChange(); toast.success("Archived"); }).catch((e) => toast.error(e instanceof Error ? e.message : "Failed"));
+                }
+              }}
+            >
+              <Archive className="h-4 w-4 text-muted-foreground" />
+            </Button>
+          )}
+          {canDelete && (
+            <Button
+              size="icon"
+              variant="ghost"
+              title="Delete permanently"
+              onClick={() => {
+                if (confirm(`Delete "${business.name}" permanently? Calendars and events will go too. This cannot be undone.`)) del.mutate();
               }}
               disabled={del.isPending}
             >
@@ -436,6 +510,34 @@ function BusinessRow({
           <h4 className="text-sm font-medium mb-3">People</h4>
           <PeoplePanel businessId={business.id} />
         </div>
+      )}
+    </li>
+  );
+}
+
+function ArchivedBusinessRow({
+  business,
+  onChange,
+}: {
+  business: Business;
+  onChange: () => void;
+}) {
+  const my = useMyRole(business.id);
+  const canEdit = my.can("member");
+  return (
+    <li className="py-3 flex items-center gap-3">
+      <span className="h-3 w-3 rounded-full shrink-0 opacity-60" style={{ backgroundColor: business.color }} />
+      <span className="flex-1 text-sm text-muted-foreground line-through">{business.name}</span>
+      {canEdit && (
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => {
+            unarchiveBusiness(business.id).then(() => { onChange(); toast.success("Restored"); }).catch((e) => toast.error(e instanceof Error ? e.message : "Failed"));
+          }}
+        >
+          <ArchiveRestore className="h-3.5 w-3.5 mr-1" /> Restore
+        </Button>
       )}
     </li>
   );

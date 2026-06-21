@@ -554,6 +554,7 @@ export type Database = {
       }
       businesses: {
         Row: {
+          archived_at: string | null
           color: string
           created_at: string
           created_by: string | null
@@ -563,9 +564,11 @@ export type Database = {
           owner_id: string
           priority_labels: Json
           read_only: boolean
+          sort_order: number
           task_statuses: Json
         }
         Insert: {
+          archived_at?: string | null
           color?: string
           created_at?: string
           created_by?: string | null
@@ -575,9 +578,11 @@ export type Database = {
           owner_id: string
           priority_labels?: Json
           read_only?: boolean
+          sort_order?: number
           task_statuses?: Json
         }
         Update: {
+          archived_at?: string | null
           color?: string
           created_at?: string
           created_by?: string | null
@@ -587,6 +592,7 @@ export type Database = {
           owner_id?: string
           priority_labels?: Json
           read_only?: boolean
+          sort_order?: number
           task_statuses?: Json
         }
         Relationships: []
