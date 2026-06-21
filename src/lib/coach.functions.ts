@@ -180,6 +180,7 @@ export const coachWeekCheck = createServerFn({ method: "POST" })
           MODEL,
           json.usage?.input_tokens ?? 0,
           json.usage?.output_tokens ?? 0,
+          { actionType: "coach" },
         );
       } catch {
         /* metering best-effort */
