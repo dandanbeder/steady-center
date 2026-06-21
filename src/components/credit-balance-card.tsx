@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AlertTriangle, BellRing, Coins, Loader2, Plus } from "lucide-react";
@@ -10,7 +10,11 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { getCreditBalance, setLowBalanceThreshold } from "@/lib/credits.functions";
-import { TopUpDialog } from "@/components/topup-dialog";
+
+// Lazy: dialog only ships when the user clicks Top up.
+const TopUpDialog = lazy(() =>
+  import("@/components/topup-dialog").then((m) => ({ default: m.TopUpDialog })),
+);
 
 function fmtDate(d: string | null | undefined): string {
   if (!d) return ",";
