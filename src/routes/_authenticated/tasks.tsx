@@ -1185,6 +1185,7 @@ function ListView({
   members = [],
   myId = null,
   outcomes = [],
+  businesses = [],
   collapsedGroups,
   onToggleCollapsed,
 }: {
@@ -1201,6 +1202,7 @@ function ListView({
   members?: AssignableMember[];
   myId?: string | null;
   outcomes?: { id: string; name: string }[];
+  businesses?: { id: string; name: string; color: string | null }[];
   collapsedGroups: Set<string>;
   onToggleCollapsed: (key: string) => void;
 }) {
@@ -1210,6 +1212,7 @@ function ListView({
     members,
     myId,
     outcomes,
+    businesses,
   });
 
   return (
