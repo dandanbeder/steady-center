@@ -11,6 +11,7 @@ import {
   Link as LinkIcon,
   Eye,
   Pencil,
+  ListTodo,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,9 +22,10 @@ type Props = {
   onChange: (value: string) => void;
   placeholder?: string;
   minRows?: number;
+  onCreateTask?: (titleHint: string) => void;
 };
 
-export function MarkdownEditor({ value, onChange, placeholder, minRows = 18 }: Props) {
+export function MarkdownEditor({ value, onChange, placeholder, minRows = 18, onCreateTask }: Props) {
   const taRef = useRef<HTMLTextAreaElement>(null);
   const [preview, setPreview] = useState(false);
 
