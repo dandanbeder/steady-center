@@ -47,7 +47,10 @@ export const describeView = createServerFn({ method: "POST" })
     if (!key) throw new Error("AI is not configured");
 
     const { assertAiBudget, recordAiUsage } = await import("./ai-budget.server");
+
+    const { assertAiCredits } = await import("./credits.server");
     await assertAiBudget(userId);
+    await assertAiCredits(userId, 1);
 
     const system =
       "You translate a user's plain-language description into a Tasks view config. " +

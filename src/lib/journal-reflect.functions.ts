@@ -17,7 +17,10 @@ export const reflectOnJournal = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
 
     const { assertAiBudget, recordAiUsage } = await import("./ai-budget.server");
+
+    const { assertAiCredits } = await import("./credits.server");
     await assertAiBudget(userId);
+    await assertAiCredits(userId, 1);
 
     const now = new Date();
     const start = new Date(now);

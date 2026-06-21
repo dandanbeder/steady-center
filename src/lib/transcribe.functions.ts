@@ -28,6 +28,10 @@ export const transcribeAudio = createServerFn({ method: "POST" })
     const apiKey = process.env.LOVABLE_API_KEY;
     if (!apiKey) throw new Error("AI is not configured.");
 
+    // Hard-stop if the account is out of credits before we hit the gateway.
+    const { assertAiCredits } = await import("./credits.server");
+    await assertAiCredits(context.userId, 1);
+
     const mime = data.mime.split(";")[0].trim().toLowerCase();
     const ext = EXT[mime] ?? "webm";
 
@@ -52,20 +56,15 @@ export const transcribeAudio = createServerFn({ method: "POST" })
       throw new Error(`Transcription failed (${res.status}). ${body.slice(0, 120)}`);
     }
     const json = (await res.json()) as { text?: string; duration?: number };
-    // Estimate audio duration: prefer API-reported, fall back to byte-rate guess
-    // (~16kbps for opus/aac) so the ledger has something usable.
     const audioSeconds = Math.max(
       1,
       Math.round(json.duration ?? binary.byteLength / 2000),
     );
     try {
-      const { logAiUsageEvent } = await import("./ai-budget.server");
-      await logAiUsageEvent({
-        userId: context.userId,
+      const { recordAiUsage } = await import("./ai-budget.server");
+      await recordAiUsage(context.userId, "openai/gpt-4o-mini-transcribe", 0, 0, {
         actionType: "transcribe",
-        model: "openai/gpt-4o-mini-transcribe",
         audioSeconds,
-        creditsCharged: Math.max(1, Math.ceil(audioSeconds / 60)),
       });
     } catch {
       /* never break the user-facing call */

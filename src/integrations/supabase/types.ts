@@ -70,7 +70,10 @@ export type Database = {
           current_cycle_end: string | null
           current_cycle_start: string | null
           id: string
+          low_balance_alerted_at: string | null
+          low_balance_threshold: number
           purchased_credits: number
+          topup_paused: boolean
           updated_at: string
         }
         Insert: {
@@ -81,7 +84,10 @@ export type Database = {
           current_cycle_end?: string | null
           current_cycle_start?: string | null
           id?: string
+          low_balance_alerted_at?: string | null
+          low_balance_threshold?: number
           purchased_credits?: number
+          topup_paused?: boolean
           updated_at?: string
         }
         Update: {
@@ -92,7 +98,10 @@ export type Database = {
           current_cycle_end?: string | null
           current_cycle_start?: string | null
           id?: string
+          low_balance_alerted_at?: string | null
+          low_balance_threshold?: number
           purchased_credits?: number
+          topup_paused?: boolean
           updated_at?: string
         }
         Relationships: []
@@ -827,6 +836,89 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      credit_ledger: {
+        Row: {
+          account_user_id: string
+          acting_user_id: string
+          ai_usage_event_id: string | null
+          balance_after_allowance: number
+          balance_after_purchased: number
+          created_at: string
+          delta: number
+          id: string
+          note: string | null
+          source: string
+        }
+        Insert: {
+          account_user_id: string
+          acting_user_id: string
+          ai_usage_event_id?: string | null
+          balance_after_allowance: number
+          balance_after_purchased: number
+          created_at?: string
+          delta: number
+          id?: string
+          note?: string | null
+          source: string
+        }
+        Update: {
+          account_user_id?: string
+          acting_user_id?: string
+          ai_usage_event_id?: string | null
+          balance_after_allowance?: number
+          balance_after_purchased?: number
+          created_at?: string
+          delta?: number
+          id?: string
+          note?: string | null
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_ledger_ai_usage_event_id_fkey"
+            columns: ["ai_usage_event_id"]
+            isOneToOne: false
+            referencedRelation: "ai_usage_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_lots: {
+        Row: {
+          account_user_id: string
+          created_at: string
+          credits_initial: number
+          credits_remaining: number
+          expires_at: string
+          id: string
+          paddle_transaction_id: string | null
+          purchased_at: string
+          updated_at: string
+        }
+        Insert: {
+          account_user_id: string
+          created_at?: string
+          credits_initial: number
+          credits_remaining: number
+          expires_at: string
+          id?: string
+          paddle_transaction_id?: string | null
+          purchased_at?: string
+          updated_at?: string
+        }
+        Update: {
+          account_user_id?: string
+          created_at?: string
+          credits_initial?: number
+          credits_remaining?: number
+          expires_at?: string
+          id?: string
+          paddle_transaction_id?: string | null
+          purchased_at?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       daily_pulses: {
         Row: {
@@ -2821,6 +2913,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_purchased_credits: {
+        Args: {
+          _credits: number
+          _months: number
+          _paddle_tx: string
+          _user: string
+        }
+        Returns: undefined
+      }
       apply_plan_downgrade: { Args: { _user_id: string }; Returns: undefined }
       bump_account_usage: {
         Args: { p_biz: number; p_cal: number; p_user: string }
@@ -2831,6 +2932,15 @@ export type Database = {
         Args: { _id: string; _min_role: string; _type: string; _user: string }
         Returns: boolean
       }
+      charge_ai_credits: {
+        Args: { _acting_user: string; _credits: number; _event_id: string }
+        Returns: {
+          allowance_after: number
+          billing_account: string
+          hard_stopped: boolean
+          purchased_after: number
+        }[]
+      }
       clear_plan_locks: { Args: { _user_id: string }; Returns: undefined }
       current_membership_role: { Args: { p_business: string }; Returns: string }
       empty_my_trash: {
@@ -2839,6 +2949,7 @@ export type Database = {
           storage_paths: string[]
         }[]
       }
+      expire_credit_lots: { Args: never; Returns: number }
       expire_journal_access_grants: { Args: never; Returns: number }
       get_or_create_unsubscribe_token: {
         Args: { p_user_id: string }
@@ -2952,6 +3063,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      resolve_billing_account: { Args: { _user: string }; Returns: string }
       resolve_comment_parent: {
         Args: { p_id: string; p_type: string }
         Returns: Record<string, unknown>
@@ -3011,6 +3123,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      set_low_balance_threshold: {
+        Args: { _threshold: number }
+        Returns: undefined
       }
       start_free_trial: {
         Args: { _env: string; _plan: string }

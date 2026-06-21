@@ -70,7 +70,9 @@ export const suggestOutcomePlan = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { assertAiBudget, recordAiUsage } = await import("./ai-budget.server");
+    const { assertAiCredits } = await import("./credits.server");
     await assertAiBudget(context.userId);
+    await assertAiCredits(context.userId, 1);
 
     const today = new Date().toISOString().slice(0, 10);
     const sys = `You're a calm planning coach. Given an outcome (goal), propose a SMALL starter plan: the first sensible next steps that would move it forward. This is NOT an exhaustive project plan, just enough to unblock the user.

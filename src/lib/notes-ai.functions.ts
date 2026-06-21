@@ -246,7 +246,9 @@ export const extractActions = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { assertAiBudget, recordAiUsage } = await import("./ai-budget.server");
+    const { assertAiCredits } = await import("./credits.server");
     await assertAiBudget(context.userId);
+    await assertAiCredits(context.userId, 1);
 
     const { note, attachmentsText } = await loadNoteContext(
       context.supabase,

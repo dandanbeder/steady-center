@@ -218,18 +218,53 @@ async function handleTransactionPaymentFailed(data: any, env: PaddleEnv) {
   // only after grace expires. Never suspend or delete here.
 }
 
+// Top-up credit packs. Keys are price external_ids; values are credits granted.
+// Lots are valid for TOPUP_MONTHS from purchase (rolling 12 months).
+const TOPUP_PACKS: Record<string, number> = {
+  topup_100: 100,
+  topup_500: 500,
+  topup_2000: 2000,
+  topup_5000: 5000,
+};
+const TOPUP_MONTHS = 12;
+
 async function handleTransactionCompleted(data: any, env: PaddleEnv) {
+  const supabase = getSupabase();
   const subId = data.subscriptionId as string | undefined;
-  if (!subId) return;
-  await getSupabase()
-    .from("subscriptions")
-    .update({
-      past_due_since: null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("paddle_subscription_id", subId)
-    .eq("environment", env)
-    .eq("status", "past_due");
+  if (subId) {
+    await supabase
+      .from("subscriptions")
+      .update({
+        past_due_since: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("paddle_subscription_id", subId)
+      .eq("environment", env)
+      .eq("status", "past_due");
+  }
+
+  // Credit top-up: any line item whose price external_id is in TOPUP_PACKS
+  // grants purchased credits to the buyer. Idempotent on transaction id.
+  const txId = (data.id as string | undefined) ?? null;
+  const userId = (data.customData?.userId as string | undefined) ?? null;
+  if (!txId || !userId) return;
+  const items = (data.items ?? []) as Array<any>;
+  for (const it of items) {
+    const ext = it?.price?.importMeta?.externalId as string | undefined;
+    if (!ext) continue;
+    const perUnit = TOPUP_PACKS[ext];
+    if (!perUnit) continue;
+    const qty = Number(it?.quantity ?? 1);
+    const credits = perUnit * Math.max(1, qty);
+    // Lot is unique per (txId, line) to keep idempotency stable on retries.
+    const dedupe = `${txId}:${ext}`;
+    await supabase.rpc("add_purchased_credits", {
+      _user: userId,
+      _credits: credits,
+      _months: TOPUP_MONTHS,
+      _paddle_tx: dedupe,
+    });
+  }
 }
 
 async function handleWebhook(req: Request, env: PaddleEnv) {

@@ -268,7 +268,9 @@ export const askTeam = createServerFn({ method: "POST" })
     const { requireFeature } = await import("./entitlements.server");
     await requireFeature(supabase, userId, "ai_assistant");
     const { assertAiBudget, recordAiUsage } = await import("./ai-budget.server");
+    const { assertAiCredits } = await import("./credits.server");
     await assertAiBudget(userId);
+    await assertAiCredits(userId, 1);
 
     const scope = await loadSharedScope(supabase, userId, data.businessId ?? null);
     if (scope.bizIds.length === 0 || scope.memberRows.length === 0) {
