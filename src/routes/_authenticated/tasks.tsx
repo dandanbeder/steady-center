@@ -715,6 +715,15 @@ function ListWorkspace({
 
   const [openTask, setOpenTask] = useState<Task | null>(null);
 
+  useEffect(() => {
+    if (!autoOpenTaskId) return;
+    const t = tasks.find((x) => x.id === autoOpenTaskId);
+    if (t) {
+      setOpenTask(t);
+      onAutoOpenConsumed?.();
+    }
+  }, [autoOpenTaskId, tasks, onAutoOpenConsumed]);
+
   const toggleSelect = (id: string) => {
     setSelectedIds((s) => {
       const n = new Set(s);
