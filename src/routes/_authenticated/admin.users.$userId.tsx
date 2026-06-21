@@ -709,6 +709,43 @@ function ViewAsButton({ targetUserId }: { targetUserId: string }) {
   );
 }
 
+function RequestJournalAccessButton({ targetUserId }: { targetUserId: string }) {
+  const requestFn = useServerFn(
+    (await import("@/lib/journal-access.functions")).requestJournalAccess as never,
+  ) as never;
+  return <_RequestJournalAccessButtonInner targetUserId={targetUserId} />;
+}
+
+function _RequestJournalAccessButtonInner({ targetUserId }: { targetUserId: string }) {
+  const [open, setOpen] = useState(false);
+  const requestFn = useServerFn(_requestJournalAccessImported);
+  const mut = useMutation({
+    mutationFn: (reason: string) =>
+      requestFn({ data: { targetUserId, reason, mode: "read" as const } }),
+    onSuccess: () => {
+      toast.success("Request sent. The user will be notified.");
+      setOpen(false);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  return (
+    <>
+      <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
+        <ShieldAlert className="h-4 w-4 mr-1" /> Request Journal access
+      </Button>
+      <ReasonConfirmDialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Request Journal access?"
+        description="The Journal is private. The user will see your request and must explicitly accept before you see anything. Read-only, expires in 24 hours."
+        confirmLabel="Send request"
+        pending={mut.isPending}
+        onConfirm={(r) => mut.mutate(r)}
+      />
+    </>
+  );
+}
+
 function Customer360Sections({ userId, onDone }: { userId: string; onDone: () => void }) {
   const fn = useServerFn(adminGetCustomer360);
   const q = useQuery({
