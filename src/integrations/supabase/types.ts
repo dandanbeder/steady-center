@@ -61,6 +61,39 @@ export type Database = {
           },
         ]
       }
+      account_credits: {
+        Row: {
+          account_user_id: string
+          allowance_credits: number
+          created_at: string
+          credit_balance: number
+          current_cycle_end: string | null
+          current_cycle_start: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          account_user_id: string
+          allowance_credits?: number
+          created_at?: string
+          credit_balance?: number
+          current_cycle_end?: string | null
+          current_cycle_start?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          account_user_id?: string
+          allowance_credits?: number
+          created_at?: string
+          credit_balance?: number
+          current_cycle_end?: string | null
+          current_cycle_start?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       action_items: {
         Row: {
           business_id: string | null
