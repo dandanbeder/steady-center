@@ -7,9 +7,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
+import { routeModel } from "./ai-routing";
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-const MODEL = "claude-haiku-4-5";
+// Light-tier route: NL → structured view config is extraction.
+const ROUTE = routeModel("task_views_ai");
+const MODEL = ROUTE.model;
 
 const VIEWS = ["list", "board", "calendar", "timeline"] as const;
 const GROUPS = ["stage", "priority", "assignee", "due", "outcome", "business", "none"] as const;

@@ -7,10 +7,13 @@
  * Server-only (uses service-role client + ANTHROPIC_API_KEY).
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { routeModel } from "./ai-routing";
 
 // Resend is invoked via the shared email.server helper (sendMarketingEmail).
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-const ANTHROPIC_MODEL = "claude-sonnet-4-20250514";
+// Reasoning-tier route: weekly narrative is real synthesis.
+const REPORT_ROUTE = routeModel("weekly_report");
+const ANTHROPIC_MODEL = REPORT_ROUTE.model;
 
 type Business = { id: string; name: string };
 

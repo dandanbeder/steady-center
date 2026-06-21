@@ -1,9 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
+import { routeModel } from "./ai-routing";
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-const MODEL = "claude-sonnet-4-20250514";
+// Reasoning-tier route: cross-content journal synthesis.
+const ROUTE = routeModel("notes_journal");
+const MODEL = ROUTE.model;
 
 async function callClaude(opts: { system: string; user: string; maxTokens?: number }) {
   const key = process.env.ANTHROPIC_API_KEY;

@@ -1,8 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
+import { routeModel } from "./ai-routing";
 
-const MODEL = "google/gemini-3-flash-preview";
+// Light-tier route: short reflection over a fixed range.
+const ROUTE = routeModel("journal_reflect");
+const MODEL = ROUTE.model;
 
 const Input = z.object({
   range: z.enum(["week", "month"]),
