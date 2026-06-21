@@ -319,6 +319,33 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_kitty_ledger: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          delta_micros: number
+          id: string
+          kind: string
+          note: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          delta_micros: number
+          id?: string
+          kind: string
+          note?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          delta_micros?: number
+          id?: string
+          kind?: string
+          note?: string | null
+        }
+        Relationships: []
+      }
       ai_prefs: {
         Row: {
           coach_style: string
@@ -382,6 +409,57 @@ export type Database = {
           tokens?: number
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      ai_usage_account_totals: {
+        Row: {
+          account_user_id: string
+          credits_charged: number
+          events_count: number
+          last_event_at: string | null
+          true_cost_micros: number
+          updated_at: string
+        }
+        Insert: {
+          account_user_id: string
+          credits_charged?: number
+          events_count?: number
+          last_event_at?: string | null
+          true_cost_micros?: number
+          updated_at?: string
+        }
+        Update: {
+          account_user_id?: string
+          credits_charged?: number
+          events_count?: number
+          last_event_at?: string | null
+          true_cost_micros?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_usage_daily: {
+        Row: {
+          credits_charged: number
+          day: string
+          events_count: number
+          true_cost_micros: number
+          updated_at: string
+        }
+        Insert: {
+          credits_charged?: number
+          day: string
+          events_count?: number
+          true_cost_micros?: number
+          updated_at?: string
+        }
+        Update: {
+          credits_charged?: number
+          day?: string
+          events_count?: number
+          true_cost_micros?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -2957,6 +3035,31 @@ export type Database = {
           _user: string
         }
         Returns: undefined
+      }
+      admin_ai_economics_summary: { Args: never; Returns: Json }
+      admin_ai_per_account_economics: {
+        Args: never
+        Returns: {
+          account_user_id: string
+          allowance_credits: number
+          allowance_pct: number
+          allowance_used: number
+          email: string
+          events_count: number
+          full_name: string
+          hard_stopped: boolean
+          last_event_at: string
+          over_80: boolean
+          purchased_credits: number
+          topup_paused: boolean
+          topup_revenue_cents: number
+          total_cost_micros: number
+          total_credits_charged: number
+        }[]
+      }
+      admin_record_kitty_entry: {
+        Args: { _delta_micros: number; _kind: string; _note: string }
+        Returns: string
       }
       apply_plan_downgrade: { Args: { _user_id: string }; Returns: undefined }
       bump_account_usage: {
