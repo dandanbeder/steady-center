@@ -48,6 +48,7 @@ import { Route as AuthMicrosoftCallbackRouteImport } from './routes/auth/microso
 import { Route as AuthenticatedReportsReportIdRouteImport } from './routes/_authenticated/reports.$reportId'
 import { Route as AuthenticatedMeetingsMeetingIdRouteImport } from './routes/_authenticated/meetings.$meetingId'
 import { Route as AuthenticatedAdminPaymentsRouteImport } from './routes/_authenticated/admin.payments'
+import { Route as AuthenticatedAdminFinancialsRouteImport } from './routes/_authenticated/admin.financials'
 import { Route as AuthenticatedAdminBillingRouteImport } from './routes/_authenticated/admin.billing'
 import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin.analytics'
 import { Route as AuthenticatedAdminAiEconomicsRouteImport } from './routes/_authenticated/admin.ai-economics'
@@ -262,6 +263,12 @@ const AuthenticatedAdminPaymentsRoute =
     path: '/payments',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminFinancialsRoute =
+  AuthenticatedAdminFinancialsRouteImport.update({
+    id: '/financials',
+    path: '/financials',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminBillingRoute =
   AuthenticatedAdminBillingRouteImport.update({
     id: '/billing',
@@ -390,6 +397,7 @@ export interface FileRoutesByFullPath {
   '/admin/ai-economics': typeof AuthenticatedAdminAiEconomicsRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/billing': typeof AuthenticatedAdminBillingRoute
+  '/admin/financials': typeof AuthenticatedAdminFinancialsRoute
   '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
   '/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
   '/reports/$reportId': typeof AuthenticatedReportsReportIdRoute
@@ -444,6 +452,7 @@ export interface FileRoutesByTo {
   '/admin/ai-economics': typeof AuthenticatedAdminAiEconomicsRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/billing': typeof AuthenticatedAdminBillingRoute
+  '/admin/financials': typeof AuthenticatedAdminFinancialsRoute
   '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
   '/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
   '/reports/$reportId': typeof AuthenticatedReportsReportIdRoute
@@ -501,6 +510,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/ai-economics': typeof AuthenticatedAdminAiEconomicsRoute
   '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/_authenticated/admin/billing': typeof AuthenticatedAdminBillingRoute
+  '/_authenticated/admin/financials': typeof AuthenticatedAdminFinancialsRoute
   '/_authenticated/admin/payments': typeof AuthenticatedAdminPaymentsRoute
   '/_authenticated/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
   '/_authenticated/reports/$reportId': typeof AuthenticatedReportsReportIdRoute
@@ -558,6 +568,7 @@ export interface FileRouteTypes {
     | '/admin/ai-economics'
     | '/admin/analytics'
     | '/admin/billing'
+    | '/admin/financials'
     | '/admin/payments'
     | '/meetings/$meetingId'
     | '/reports/$reportId'
@@ -612,6 +623,7 @@ export interface FileRouteTypes {
     | '/admin/ai-economics'
     | '/admin/analytics'
     | '/admin/billing'
+    | '/admin/financials'
     | '/admin/payments'
     | '/meetings/$meetingId'
     | '/reports/$reportId'
@@ -668,6 +680,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/ai-economics'
     | '/_authenticated/admin/analytics'
     | '/_authenticated/admin/billing'
+    | '/_authenticated/admin/financials'
     | '/_authenticated/admin/payments'
     | '/_authenticated/meetings/$meetingId'
     | '/_authenticated/reports/$reportId'
@@ -989,6 +1002,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminPaymentsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/financials': {
+      id: '/_authenticated/admin/financials'
+      path: '/financials'
+      fullPath: '/admin/financials'
+      preLoaderRoute: typeof AuthenticatedAdminFinancialsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/billing': {
       id: '/_authenticated/admin/billing'
       path: '/billing'
@@ -1101,6 +1121,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminAiEconomicsRoute: typeof AuthenticatedAdminAiEconomicsRoute
   AuthenticatedAdminAnalyticsRoute: typeof AuthenticatedAdminAnalyticsRoute
   AuthenticatedAdminBillingRoute: typeof AuthenticatedAdminBillingRoute
+  AuthenticatedAdminFinancialsRoute: typeof AuthenticatedAdminFinancialsRoute
   AuthenticatedAdminPaymentsRoute: typeof AuthenticatedAdminPaymentsRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedAdminUsersUserIdRoute: typeof AuthenticatedAdminUsersUserIdRoute
@@ -1110,6 +1131,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminAiEconomicsRoute: AuthenticatedAdminAiEconomicsRoute,
   AuthenticatedAdminAnalyticsRoute: AuthenticatedAdminAnalyticsRoute,
   AuthenticatedAdminBillingRoute: AuthenticatedAdminBillingRoute,
+  AuthenticatedAdminFinancialsRoute: AuthenticatedAdminFinancialsRoute,
   AuthenticatedAdminPaymentsRoute: AuthenticatedAdminPaymentsRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   AuthenticatedAdminUsersUserIdRoute: AuthenticatedAdminUsersUserIdRoute,
