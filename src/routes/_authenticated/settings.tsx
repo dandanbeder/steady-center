@@ -157,7 +157,7 @@ function SettingsPage() {
           <ColorDots value={newColor} onChange={setNewColor} />
           <div className="flex gap-3">
             <Input
-              placeholder="e.g. EvacoMed, FlightMed, Personal"
+              placeholder="e.g. Acme Co, Side Project, Personal"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
             />
