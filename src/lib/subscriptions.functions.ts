@@ -5,7 +5,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { gatewayFetch, getPaddleClient, type PaddleEnv } from "@/lib/paddle.server";
 
 /**
- * Subscription management — all writes route through Paddle, the webhook then
+ * Subscription management, all writes route through Paddle, the webhook then
  * reconciles the local row. NEVER mutate the subscriptions table from here:
  * Paddle is the source of truth so we can't drift if a webhook is missed.
  */

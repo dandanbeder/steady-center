@@ -317,7 +317,7 @@ export function CommandPalette({ open, onOpenChange, onAskAssistant }: Props) {
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
       <CommandInput
-        placeholder='Search, jump, create — try "call David tomorrow 3pm"'
+        placeholder='Search, jump, create, try "call David tomorrow 3pm"'
         value={query}
         onValueChange={setQuery}
       />

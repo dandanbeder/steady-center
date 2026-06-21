@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { AppShell } from "@/components/app-shell";
 import { getOnboardingProfile } from "@/lib/onboarding";
 
-// Heavy component (voice capture, dialogs, server fns) — load after first paint.
+// Heavy component (voice capture, dialogs, server fns), load after first paint.
 const TalkButton = lazy(() =>
   import("@/components/talk-button").then((m) => ({ default: m.TalkButton })),
 );
@@ -45,7 +45,7 @@ function AuthenticatedLayout() {
   if (needsConsent) return <Navigate to="/accept-terms" />;
 
   // Only redirect once profile has loaded and confirms onboarding isn't done.
-  // Don't block the shell on the profile fetch — render immediately, redirect later if needed.
+  // Don't block the shell on the profile fetch, render immediately, redirect later if needed.
   const needsOnboarding =
     profileQ.data &&
     profileQ.data.terms_accepted_at &&

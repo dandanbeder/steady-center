@@ -33,28 +33,28 @@ function PrivacyPage() {
       <h2 className="text-xl text-primary mt-8 mb-2">1. What we collect and why</h2>
       <ul>
         <li>
-          <strong>Account details</strong> — full name, email, password (hashed). Required to
+          <strong>Account details</strong>, full name, email, password (hashed). Required to
           create and secure your account.
         </li>
         <li>
-          <strong>Optional profile fields</strong> — organisation, role/title, phone, timezone.
+          <strong>Optional profile fields</strong>, organisation, role/title, phone, timezone.
           Used to personalise your workspace and reminders.
         </li>
         <li>
-          <strong>"How did you hear about us?"</strong> — optional. Used only in aggregate to
+          <strong>"How did you hear about us?"</strong>, optional. Used only in aggregate to
           understand which channels bring people to Heartbeat; never shared with third parties
           and never used to target you individually. You can leave it blank.
         </li>
         <li>
-          <strong>Marketing opt-in</strong> — off by default; only used to send product news
+          <strong>Marketing opt-in</strong>, off by default; only used to send product news
           if you tick it. You can unsubscribe at any time.
         </li>
         <li>
-          <strong>Your content</strong> — tasks, notes, events, meetings, transcripts,
+          <strong>Your content</strong>, tasks, notes, events, meetings, transcripts,
           attachments, reminders, AI preferences, and similar work data you create.
         </li>
         <li>
-          <strong>Operational data</strong> — login history, notification preferences, and
+          <strong>Operational data</strong>, login history, notification preferences, and
           basic usage/audit logs needed to keep the service secure and reliable.
         </li>
       </ul>
@@ -63,7 +63,7 @@ function PrivacyPage() {
       <p>
         We process your personal information to perform our contract with you (running your
         account), to comply with legal obligations, for our legitimate interest in keeping the
-        service secure, and — where relevant — based on your consent (e.g. marketing emails,
+        service secure, and, where relevant, based on your consent (e.g. marketing emails,
         meeting recordings).
       </p>
 
@@ -71,7 +71,7 @@ function PrivacyPage() {
       <p>
         When you upload meeting audio, the file is transcribed and summarised on your behalf.
         The audio is only retained if you explicitly tick "Keep the audio recording for this
-        meeting" — otherwise only the transcript and summary are stored. You are responsible
+        meeting", otherwise only the transcript and summary are stored. You are responsible
         for ensuring every attendee has consented to being recorded before uploading audio.
       </p>
 
@@ -82,28 +82,28 @@ function PrivacyPage() {
       </p>
       <ul>
         <li>
-          <strong>Supabase</strong> — database, authentication, and file storage hosting
+          <strong>Supabase</strong>, database, authentication, and file storage hosting
           (EU/US regions).
         </li>
         <li>
-          <strong>Cloudflare</strong> — application hosting, CDN, and DDoS protection
+          <strong>Cloudflare</strong>, application hosting, CDN, and DDoS protection
           (global edge).
         </li>
         <li>
-          <strong>Anthropic</strong> and <strong>OpenAI</strong> — AI processing for
+          <strong>Anthropic</strong> and <strong>OpenAI</strong>, AI processing for
           summaries, transcripts, and assistant features. Content is only sent when you
           invoke an AI feature, and providers are contractually prohibited from training on
           your data.
         </li>
         <li>
-          <strong>Google</strong> — only when you connect Google Calendar, to read/write your
+          <strong>Google</strong>, only when you connect Google Calendar, to read/write your
           calendar events.
         </li>
         <li>
-          <strong>Resend</strong> — sending transactional and (opt-in) marketing emails.
+          <strong>Resend</strong>, sending transactional and (opt-in) marketing emails.
         </li>
         <li>
-          <strong>Twilio</strong> — sending SMS reminders, only when you enable SMS in
+          <strong>Twilio</strong>, sending SMS reminders, only when you enable SMS in
           notification preferences.
         </li>
       </ul>

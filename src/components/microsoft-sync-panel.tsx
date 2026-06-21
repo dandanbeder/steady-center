@@ -102,7 +102,7 @@ export function MicrosoftSyncPanel({ businesses }: Props) {
       // Open in a popup; the callback page closes itself and posts a message.
       const w = window.open(authorize_url, "ms-oauth", "width=520,height=720");
       if (!w) {
-        // Pop-up blocked — fall back to full redirect
+        // Pop-up blocked, fall back to full redirect
         window.location.href = authorize_url;
       }
     } catch (e) {

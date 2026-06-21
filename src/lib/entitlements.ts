@@ -1,4 +1,4 @@
-// Shared (client + server) entitlement logic. No imports — keep this pure.
+// Shared (client + server) entitlement logic. No imports, keep this pure.
 export type Tier = "free" | "pro" | "team";
 export type BillingCycle = "month" | "year";
 

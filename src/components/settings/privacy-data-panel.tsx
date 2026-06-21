@@ -47,7 +47,7 @@ export function PrivacyDataPanel() {
           <Download className="h-4 w-4" /> Export my data
         </h3>
         <p className="text-xs text-muted-foreground mb-3">
-          Downloads a JSON file with every row you own — accounts, calendars, events, tasks,
+          Downloads a JSON file with every row you own, accounts, calendars, events, tasks,
           notes, meetings, and reports.
         </p>
         <Button variant="outline" onClick={() => exportMut.mutate()} disabled={exportMut.isPending}>

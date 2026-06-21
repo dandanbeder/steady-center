@@ -54,7 +54,7 @@ export function CustomizationPanel({ businessId }: { businessId: string }) {
     mutationFn: (file: File) => uploadAccountLogo(businessId, file),
     onSuccess: (url) => {
       setLogoUrl(url);
-      toast.success("Logo uploaded — click Save to apply");
+      toast.success("Logo uploaded, click Save to apply");
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
@@ -95,7 +95,7 @@ export function CustomizationPanel({ businessId }: { businessId: string }) {
 
       <OptionsEditor
         title="Task statuses"
-        helper="ClickUp-style — pick the keys, labels, and dot colors used in this account."
+        helper="ClickUp-style, pick the keys, labels, and dot colors used in this account."
         options={statuses}
         setOptions={setStatuses}
       />

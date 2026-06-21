@@ -38,7 +38,7 @@ export const reflectOnJournal = createServerFn({ method: "POST" })
     if (entries.length === 0) {
       return {
         markdown:
-          "## A quiet stretch\n\nThere are no entries in this window — and that's completely fine. Come back when you feel like writing.",
+          "## A quiet stretch\n\nThere are no entries in this window, and that's completely fine. Come back when you feel like writing.",
         entryCount: 0,
       };
     }
@@ -46,7 +46,7 @@ export const reflectOnJournal = createServerFn({ method: "POST" })
     const corpus = entries
       .map(
         (e) =>
-          `### ${new Date(e.created_at).toDateString()} — ${e.title}\n${e.body.slice(0, 1800)}`,
+          `### ${new Date(e.created_at).toDateString()}, ${e.title}\n${e.body.slice(0, 1800)}`,
       )
       .join("\n\n---\n\n")
       .slice(0, 40_000);
@@ -58,10 +58,10 @@ Tone: gentle, human, unhurried. Never clinical. Never gamified. No streaks, no s
 Goal: help the user notice patterns and feel seen.
 
 Structure the reflection as concise markdown:
-- "## Themes you returned to" — 2-4 short bullets
-- "## Small wins" — 1-3 bullets (only what the entries actually evidence)
-- "## What you seemed to be carrying" — 1-3 bullets, compassionately worded
-- "## A gentle question to sit with" — one open question
+- "## Themes you returned to", 2-4 short bullets
+- "## Small wins", 1-3 bullets (only what the entries actually evidence)
+- "## What you seemed to be carrying", 1-3 bullets, compassionately worded
+- "## A gentle question to sit with", one open question
 
 Rules:
 - Quote sparingly (≤8 words) and only if it helps.
@@ -86,7 +86,7 @@ Rules:
     if (!res.ok) {
       const t = await res.text().catch(() => "");
       if (res.status === 402) throw new Error("AI credits exhausted.");
-      if (res.status === 429) throw new Error("Rate limited — try again shortly.");
+      if (res.status === 429) throw new Error("Rate limited, try again shortly.");
       throw new Error(`AI call failed (${res.status}). ${t.slice(0, 120)}`);
     }
     const json = (await res.json()) as {
@@ -95,7 +95,7 @@ Rules:
     };
     const markdown =
       json.choices?.[0]?.message?.content?.trim() ??
-      "_(no reflection generated — try again later)_";
+      "_(no reflection generated, try again later)_";
 
     await recordAiUsage(
       userId,

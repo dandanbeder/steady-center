@@ -1,5 +1,5 @@
 /**
- * Weekly review cron entry — called hourly by pg_cron.
+ * Weekly review cron entry, called hourly by pg_cron.
  * Schedules in each user's IANA timezone; the cron runs in UTC and we
  * filter by computing wall-clock weekday/hour in the user's timezone.
  * Auth: Supabase publishable key via `apikey` header.

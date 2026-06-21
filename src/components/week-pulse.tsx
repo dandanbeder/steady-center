@@ -205,7 +205,7 @@ function PulseStrip({
         preserveAspectRatio="none"
         className="w-full h-16 sm:h-20 overflow-visible"
         role="img"
-        aria-label="Week pulse — load per day"
+        aria-label="Week pulse, load per day"
       >
         {/* baseline */}
         <line

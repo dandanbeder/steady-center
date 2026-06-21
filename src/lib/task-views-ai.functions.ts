@@ -1,5 +1,5 @@
 /**
- * "Describe a view" — translates natural language into a Saved View config
+ * "Describe a view", translates natural language into a Saved View config
  * (view + group_by + filters + sort). Metered against the AI allowance.
  *
  * Returns a draft the user confirms client-side before saving.
@@ -100,11 +100,11 @@ export const describeView = createServerFn({ method: "POST" })
     try {
       parsed = JSON.parse(jsonStr);
     } catch {
-      throw new Error("Could not parse the AI's response — try rephrasing.");
+      throw new Error("Could not parse the AI's response, try rephrasing.");
     }
     const result = Draft.safeParse(parsed);
     if (!result.success) {
-      throw new Error("AI returned an unexpected shape — try rephrasing.");
+      throw new Error("AI returned an unexpected shape, try rephrasing.");
     }
     return result.data;
   });

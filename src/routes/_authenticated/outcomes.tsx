@@ -649,7 +649,7 @@ function OutcomeDialog({
 
           <div className="rounded-md border border-border/60 p-3 space-y-3">
             <p className="text-xs text-muted-foreground">
-              Measurable target (optional) — leave blank if not numeric.
+              Measurable target (optional), leave blank if not numeric.
             </p>
             <div>
               <Label>Metric name</Label>

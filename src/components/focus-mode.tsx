@@ -15,7 +15,7 @@ import {
 import { rolloverRecurring, updateTask, type Task } from "@/lib/tasks";
 import { cn } from "@/lib/utils";
 
-/** A small, pleasant chime via WebAudio — no asset needed. */
+/** A small, pleasant chime via WebAudio, no asset needed. */
 function playChime() {
   try {
     const AC =
@@ -115,7 +115,7 @@ export function FocusMode({
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
-  // Auto-start on enter — only once the running-timer query has resolved,
+  // Auto-start on enter, only once the running-timer query has resolved,
   // and only if no other task's timer is already running (otherwise leave it
   // alone so we don't silently corrupt time tracking).
   const autoStartedRef = useRef(false);
@@ -140,7 +140,7 @@ export function FocusMode({
     if (reachedTarget && !chimedRef.current) {
       chimedRef.current = true;
       playChime();
-      toast.success(`${duration} minutes focused — well done.`);
+      toast.success(`${duration} minutes focused, well done.`);
     }
     if (!reachedTarget) chimedRef.current = false;
   }, [reachedTarget, duration]);

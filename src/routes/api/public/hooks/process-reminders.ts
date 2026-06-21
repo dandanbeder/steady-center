@@ -2,7 +2,7 @@
  * Every-5-min reminder dispatcher.
  *
  * Looks up due reminders, resolves the underlying event/task, the owner's
- * email (and phone for SMS), then sends via Resend (email) — and Twilio when
+ * email (and phone for SMS), then sends via Resend (email), and Twilio when
  * a TWILIO_API_KEY is present and the user has a phone.
  *
  * Marks each reminder sent or records last_error.

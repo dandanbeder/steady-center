@@ -65,7 +65,7 @@ export const Route = createFileRoute("/api/public/hooks/microsoft-graph-webhook"
             .maybeSingle();
           if (!sub) continue;
           if (n.clientState && n.clientState !== sub.client_state) {
-            // Spoofed notification — ignore
+            // Spoofed notification, ignore
             continue;
           }
           const { data: cal } = await supabaseAdmin

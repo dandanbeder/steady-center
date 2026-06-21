@@ -16,7 +16,7 @@ function hashEmail(email: string) {
 
 /**
  * Request a password reset. Always returns ok=true regardless of whether the
- * email is registered — we do not reveal account existence. Rate-limited per
+ * email is registered, we do not reveal account existence. Rate-limited per
  * email (hashed) to 3 attempts per rolling hour.
  */
 export const requestPasswordReset = createServerFn({ method: "POST" })
@@ -36,7 +36,7 @@ export const requestPasswordReset = createServerFn({ method: "POST" })
       .gte("attempted_at", since);
 
     if ((count ?? 0) >= RESET_RATE_PER_HOUR) {
-      // Silently succeed — don't leak that we throttled this specific email.
+      // Silently succeed, don't leak that we throttled this specific email.
       return { ok: true };
     }
 
@@ -48,7 +48,7 @@ export const requestPasswordReset = createServerFn({ method: "POST" })
     const redirectTo = `${origin}/reset-password`;
 
     // Generate a recovery link via the admin API. If the user doesn't exist
-    // this returns an error — we swallow it so we don't reveal existence.
+    // this returns an error, we swallow it so we don't reveal existence.
     const { data: linkData, error } = await supabaseAdmin.auth.admin.generateLink({
       type: "recovery",
       email,

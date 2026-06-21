@@ -33,7 +33,7 @@ export function AiUsageMeter({ compact = false }: { compact?: boolean }) {
       )}
       {!compact && !over && plan.tier === "free" && pct >= 75 && (
         <p className="mt-2 text-xs text-muted-foreground">
-          Approaching your Free limit — <Link to="/billing" className="underline">manage your plan</Link> for more actions.
+          Approaching your Free limit, <Link to="/billing" className="underline">manage your plan</Link> for more actions.
         </p>
       )}
     </div>

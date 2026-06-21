@@ -90,7 +90,7 @@ export function TagPeople({ itemType, itemId, businessId }: Props) {
           <span
             key={t.id}
             className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs"
-            title={t.tagged_user_id ? "Linked to user" : "Pending — will link on sign-up"}
+            title={t.tagged_user_id ? "Linked to user" : "Pending, will link on sign-up"}
           >
             <span
               className={

@@ -107,7 +107,7 @@ function AskNotesPage() {
       const blob = new Blob(chunksRef.current, { type: recorder.mimeType });
       chunksRef.current = [];
       if (blob.size < 1024) {
-        toast.error("That recording was empty — please try again.");
+        toast.error("That recording was empty, please try again.");
         return;
       }
       setTranscribing(true);
@@ -129,7 +129,7 @@ function AskNotesPage() {
           return;
         }
         setQ((prev) => (prev.trim() ? `${prev.trim()} ${text}` : text));
-        toast.success("Transcribed — review and tap Ask.");
+        toast.success("Transcribed, review and tap Ask.");
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Transcription failed");
       } finally {

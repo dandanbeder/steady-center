@@ -301,7 +301,7 @@ function PlanWeekPage() {
               <div>Working capacity: {workDays.length} days × {dailyCap}h</div>
             </div>
 
-            {/* Per-day load strip — work days only, drives placement */}
+            {/* Per-day load strip, work days only, drives placement */}
             <div className="pt-2 border-t border-border/60">
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
                 Per-day load
@@ -379,7 +379,7 @@ function PlanWeekPage() {
             <h3 className="text-sm font-medium">Your pace</h3>
             {velocity && velocity.tasks_per_week === 0 && velocity.hours_per_week === 0 ? (
               <p className="text-xs text-muted-foreground">
-                Not enough history yet — finish a few tasks and your trailing 4-week pace will show here.
+                Not enough history yet, finish a few tasks and your trailing 4-week pace will show here.
               </p>
             ) : (
               <p className="text-xs text-muted-foreground">
@@ -390,7 +390,7 @@ function PlanWeekPage() {
             {overPace && (
               <div className="rounded-md bg-amber-50/60 dark:bg-amber-950/30 p-3 text-xs space-y-2">
                 <p>
-                  You've committed <strong>{committedCount}</strong> tasks — that's above your typical pace. Want to trim?
+                  You've committed <strong>{committedCount}</strong> tasks, that's above your typical pace. Want to trim?
                 </p>
                 <Button
                   size="sm"

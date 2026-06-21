@@ -73,7 +73,7 @@ function InboxPage() {
 
       <div className="rounded-lg border bg-card p-3 flex gap-2">
         <Input
-          placeholder="Capture anything — Enter to send to Inbox"
+          placeholder="Capture anything, Enter to send to Inbox"
           value={capture}
           onChange={(e) => setCapture(e.target.value)}
           onKeyDown={(e) => {

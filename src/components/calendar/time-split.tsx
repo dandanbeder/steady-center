@@ -5,7 +5,7 @@ import type { Calendar as Cal } from "@/lib/calendars";
 
 /**
  * Time-split summary: hours/% per account from events in the visible range.
- * Calm pastel meter — no alarms, just a sense of where the week is going.
+ * Calm pastel meter, no alarms, just a sense of where the week is going.
  */
 export function TimeSplitSummary({
   events,

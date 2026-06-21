@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 /**
  * A small, calm marker for tasks that ladder up to an Outcome.
- * Subtle by default — a single icon with tooltip; click-through to the outcome.
+ * Subtle by default, a single icon with tooltip; click-through to the outcome.
  */
 export function OutcomeMark({
   outcomeId,

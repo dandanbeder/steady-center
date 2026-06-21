@@ -69,7 +69,7 @@ export async function linkActionItemTask(id: string, taskId: string) {
   if (error) throw error;
 }
 
-// 25 MB hard cap (Whisper API limit) — also matches user expectations
+// 25 MB hard cap (Whisper API limit), also matches user expectations
 export const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
 export const ALLOWED_AUDIO_MIME = new Set<string>([
   "audio/mpeg",

@@ -220,8 +220,8 @@ export const suggestNoteMeta = createServerFn({ method: "POST" })
 Body:
 ${note.body || "(empty)"}
 
-Candidate folders (id — name):
-${folders.map((f) => `${f.id} — ${f.name}`).join("\n") || "(none)"}
+Candidate folders (id, name):
+${folders.map((f) => `${f.id}, ${f.name}`).join("\n") || "(none)"}
 
 Candidate members:
 ${members.map((m) => `${m.email}${m.full_name ? ` (${m.full_name})` : ""}`).join("\n") || "(none)"}`;
@@ -294,7 +294,7 @@ Rules:
   });
 
 // =================================================================
-// 5. Guide me — concrete next steps + optional subtasks
+// 5. Guide me, concrete next steps + optional subtasks
 // =================================================================
 export const guideMe = createServerFn({ method: "POST" })
   .middleware([requireActiveUser])

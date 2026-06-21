@@ -52,7 +52,7 @@ function parseJsonBlock<T>(text: string): T | null {
 
 /**
  * Propose a small set of starter tasks/milestones for a brand-new Outcome.
- * Never persists — caller previews and confirms.
+ * Never persists, caller previews and confirms.
  */
 export const suggestOutcomePlan = createServerFn({ method: "POST" })
   .middleware([requireActiveUser])
@@ -73,7 +73,7 @@ export const suggestOutcomePlan = createServerFn({ method: "POST" })
     await assertAiBudget(context.userId);
 
     const today = new Date().toISOString().slice(0, 10);
-    const sys = `You're a calm planning coach. Given an outcome (goal), propose a SMALL starter plan: the first sensible next steps that would move it forward. This is NOT an exhaustive project plan — just enough to unblock the user.
+    const sys = `You're a calm planning coach. Given an outcome (goal), propose a SMALL starter plan: the first sensible next steps that would move it forward. This is NOT an exhaustive project plan, just enough to unblock the user.
 
 Return ONLY JSON:
 { "tasks": [{ "title": string, "priority": "urgent"|"high"|"normal"|"low", "days_offset": number | null }] }

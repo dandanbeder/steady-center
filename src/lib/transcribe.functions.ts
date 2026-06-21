@@ -4,7 +4,7 @@ import { requireActiveUser } from "@/integrations/supabase/active-user-middlewar
 
 // Server-side Whisper-equivalent transcription via the Lovable AI Gateway.
 // Auth is enforced by requireActiveUser; the gateway key never reaches the
-// client. No DB writes, so RLS is not engaged for this fn — the auth gate
+// client. No DB writes, so RLS is not engaged for this fn, the auth gate
 // is the access control.
 const Input = z.object({
   audio_base64: z.string().min(32).max(10_000_000), // ~7.5MB binary cap
@@ -48,7 +48,7 @@ export const transcribeAudio = createServerFn({ method: "POST" })
       const body = await res.text().catch(() => "");
       if (res.status === 402) throw new Error("AI credits exhausted. Add credits to keep transcribing.");
       if (res.status === 429) throw new Error("Rate limited. Try again in a moment.");
-      if (res.status === 400) throw new Error("Couldn't transcribe that recording — try again.");
+      if (res.status === 400) throw new Error("Couldn't transcribe that recording, try again.");
       throw new Error(`Transcription failed (${res.status}). ${body.slice(0, 120)}`);
     }
     const json = (await res.json()) as { text?: string };

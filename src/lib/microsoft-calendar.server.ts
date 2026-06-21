@@ -30,7 +30,7 @@ function clientCreds() {
   const secret = process.env.MS_CLIENT_SECRET;
   if (!id || !secret) {
     throw new Error(
-      "Microsoft is not configured — MS_CLIENT_ID / MS_CLIENT_SECRET secrets missing.",
+      "Microsoft is not configured, MS_CLIENT_ID / MS_CLIENT_SECRET secrets missing.",
     );
   }
   return { id, secret };
@@ -219,7 +219,7 @@ export async function persistTokens(
 ) {
   const expiresAt = new Date(Date.now() + (tok.expires_in - 60) * 1000).toISOString();
   if (!tok.refresh_token) {
-    throw new Error("Microsoft did not return a refresh token — make sure offline_access scope is requested.");
+    throw new Error("Microsoft did not return a refresh token, make sure offline_access scope is requested.");
   }
   const { error } = await supabaseAdmin.from("ms_oauth_tokens").upsert(
     {
@@ -237,7 +237,7 @@ export async function persistTokens(
   if (error) throw error;
 }
 
-/** Decode the `email` claim from the id_token (no signature verification needed — server-side). */
+/** Decode the `email` claim from the id_token (no signature verification needed, server-side). */
 export function emailFromIdToken(idToken?: string): { email: string | null; tid: string | null } {
   if (!idToken) return { email: null, tid: null };
   const parts = idToken.split(".");

@@ -1,5 +1,5 @@
 /**
- * Gentle weekly "coach" — forward-looking sanity check for the week the user
+ * Gentle weekly "coach", forward-looking sanity check for the week the user
  * is committing to. Reads:
  *   - weekly goals they've set
  *   - tasks committed to this week
@@ -119,7 +119,7 @@ export const coachWeekCheck = createServerFn({ method: "POST" })
       return { enabled: false, style, note: null, facts };
     }
 
-    // Deterministic fallback note — never blocks, never spends if no key.
+    // Deterministic fallback note, never blocks, never spends if no key.
     const fallback = buildFallback(facts, style);
 
     const key = process.env.ANTHROPIC_API_KEY;
@@ -131,7 +131,7 @@ export const coachWeekCheck = createServerFn({ method: "POST" })
 
       const styleHint =
         style === "direct"
-          ? "Warm but a little more direct — still never harsh."
+          ? "Warm but a little more direct, still never harsh."
           : "Warm, supportive, gentle. Lead with empathy.";
 
       const res = await fetch(ANTHROPIC_URL, {
@@ -147,7 +147,7 @@ export const coachWeekCheck = createServerFn({ method: "POST" })
           system:
             "You are a kind weekly coach reflecting back what someone is committing to this week. " +
             "Write 1-3 short, warm sentences (under 320 chars total). " +
-            "Acknowledge what they've set, then — only if the load looks high — gently suggest trimming or " +
+            "Acknowledge what they've set, then, only if the load looks high, gently suggest trimming or " +
             "protecting a focus block. Never push them to do MORE. Never use 'hustle', 'crush', or motivational clichés. " +
             "No guilt, no comparisons, no shaming. If the week looks balanced, just give a brief warm acknowledgement. " +
             "Ground every comment in the numbers given. " +
@@ -203,27 +203,27 @@ function buildFallback(
 ): string {
   const parts: string[] = [];
   if (f.goals === 0 && f.committed_tasks === 0) {
-    parts.push("Your week is still a blank page — set 1-2 small intentions when you're ready.");
+    parts.push("Your week is still a blank page, set 1-2 small intentions when you're ready.");
   } else {
     const head =
       f.goals > 0
         ? `${f.goals} goal${f.goals === 1 ? "" : "s"} and ${f.committed_tasks} task${f.committed_tasks === 1 ? "" : "s"} on the plan`
         : `${f.committed_tasks} task${f.committed_tasks === 1 ? "" : "s"} committed`;
-    parts.push(`${head} — thanks for shaping the week.`);
+    parts.push(`${head}, thanks for shaping the week.`);
   }
   if (f.load_pct > 110) {
     parts.push(
       style === "direct"
-        ? `That's around ${f.load_pct}% of your working hours, which is over the line — consider trimming a task or protecting a focus block.`
+        ? `That's around ${f.load_pct}% of your working hours, which is over the line, consider trimming a task or protecting a focus block.`
         : `That's around ${f.load_pct}% of your working hours. No pressure, but maybe trim one task or guard a focus block so the week breathes.`,
     );
   } else if (f.load_pct >= 85) {
     parts.push(
-      `You're at about ${f.load_pct}% of capacity — a gentle reminder to keep one window for deep work.`,
+      `You're at about ${f.load_pct}% of capacity, a gentle reminder to keep one window for deep work.`,
     );
   } else if (f.meeting_hours >= 0.6 * f.weekly_capacity_hours && f.weekly_capacity_hours > 0) {
     parts.push(
-      `Meetings already take ${f.meeting_hours}h — be kind to yourself and protect a quiet block between them.`,
+      `Meetings already take ${f.meeting_hours}h, be kind to yourself and protect a quiet block between them.`,
     );
   }
   return parts.join(" ");

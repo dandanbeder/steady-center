@@ -1,5 +1,5 @@
 /**
- * Daily Pulse cron entry — called every 5 minutes by pg_cron.
+ * Daily Pulse cron entry, called every 5 minutes by pg_cron.
  * For each user with morning/evening pulse enabled, checks if their local
  * wall-clock hour:minute matches their chosen time (rounded to 5-min slot)
  * and generates the pulse. Auth: shared CRON_SECRET via apikey/x-cron-secret.

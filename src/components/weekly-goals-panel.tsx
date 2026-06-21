@@ -62,7 +62,7 @@ export function WeeklyGoalsPanel({ compact = false }: { compact?: boolean }) {
 
   const [adding, setAdding] = useState(false);
 
-  // Forward-looking gentle coach check — reflects back the week and flags overload.
+  // Forward-looking gentle coach check, reflects back the week and flags overload.
   const coachFn = useServerFn(coachWeekCheck);
   const weekStartDay = weekStart.toISOString().slice(0, 10);
   const { data: coach } = useQuery({
@@ -331,7 +331,7 @@ function GoalDialog({
                 value={target}
                 onChange={(e) => setTarget(e.target.value)}
                 disabled={metric === "custom"}
-                placeholder={metric === "custom" ? "—" : "e.g. 10"}
+                placeholder={metric === "custom" ? "," : "e.g. 10"}
               />
             </div>
           </div>

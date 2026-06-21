@@ -182,7 +182,7 @@ function TasksPage() {
   const [view, setView] = useState<ViewMode>("list");
   const [autoOpenTaskId, setAutoOpenTaskId] = useState<string | null>(null);
 
-  // Deep-link: ?task=ID — fetch task, jump to its list, then open it.
+  // Deep-link: ?task=ID, fetch task, jump to its list, then open it.
   useEffect(() => {
     if (!taskParam) return;
     let cancelled = false;
@@ -223,7 +223,7 @@ function TasksPage() {
       >
         <div className="p-4">
           <h2 className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Spaces</h2>
-          {/* Uncategorised — always available; hidden when filtering to a specific account */}
+          {/* Uncategorised, always available; hidden when filtering to a specific account */}
           {activeId === ALL && (
             <button
               onClick={() => setSelectedListId(UNCATEGORISED_LIST_ID)}
@@ -902,7 +902,7 @@ function ListWorkspace({
         className="mb-3 mt-4"
       >
         <Input
-          placeholder="Quick add — type a task, press Enter"
+          placeholder="Quick add, type a task, press Enter"
           value={quickAdd}
           onChange={(e) => setQuickAdd(e.target.value)}
         />
@@ -1359,7 +1359,7 @@ function GroupAddTask({
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         onBlur={() => !title.trim() && setOpen(false)}
-        placeholder="Task title — Enter to add"
+        placeholder="Task title, Enter to add"
         className="h-7 text-sm"
       />
     </form>

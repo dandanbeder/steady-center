@@ -32,7 +32,7 @@ async function callClaude(opts: { system: string; user: string; maxTokens?: numb
 }
 
 // =============================================================
-// Today's journal pre-fill — summarises tasks completed, meetings
+// Today's journal pre-fill, summarises tasks completed, meetings
 // attended, and notes made today. Returns markdown; user accepts/edits.
 // =============================================================
 export const journalPrefillToday = createServerFn({ method: "POST" })
@@ -114,7 +114,7 @@ export const journalPrefillToday = createServerFn({ method: "POST" })
         : "",
       m.length
         ? `Meetings:\n${m
-            .map((x) => `- ${x.title}${x.summary ? ` — ${x.summary.slice(0, 200)}` : ""}`)
+            .map((x) => `- ${x.title}${x.summary ? `, ${x.summary.slice(0, 200)}` : ""}`)
             .join("\n")}`
         : "",
       n.length
@@ -146,7 +146,7 @@ Keep it short, warm, and factual. Use the activity to populate "What happened to
   });
 
 // =============================================================
-// Ask Heartbeat — cross-content assistant over notes, meetings,
+// Ask Heartbeat, cross-content assistant over notes, meetings,
 // tasks, and outcomes. RLS scopes results to what the user can
 // access; the active account filter narrows further.
 // =============================================================
@@ -333,7 +333,7 @@ export const askNotes = createServerFn({ method: "POST" })
         id: t.id,
         title: t.title || "Untitled task",
         body: `Task: ${t.title}\n(${meta})\n${(t.description ?? "").slice(0, 800)}`,
-        snippet: clip(`${meta}${t.description ? ` — ${t.description}` : ""}`, 220),
+        snippet: clip(`${meta}${t.description ? `, ${t.description}` : ""}`, 220),
       });
     }
     for (const o of (outcomesRes.data ?? []).slice(0, perType)) {
@@ -347,7 +347,7 @@ export const askNotes = createServerFn({ method: "POST" })
         title: o.name || "Outcome",
         body: `Outcome: ${o.name}\nStatus: ${o.status}${o.target_date ? `, target ${fmtDate(o.target_date)}` : ""}${metric ? `\nProgress: ${metric}` : ""}\nSuccess looks like: ${o.success_statement ?? ""}\n${o.description ?? ""}`,
         snippet: clip(
-          `${o.status}${metric ? ` · ${metric}` : ""} — ${o.success_statement ?? o.description ?? ""}`,
+          `${o.status}${metric ? ` · ${metric}` : ""}, ${o.success_statement ?? o.description ?? ""}`,
           220,
         ),
       });
@@ -369,7 +369,7 @@ export const askNotes = createServerFn({ method: "POST" })
 
     const sys = `You are Heartbeat's assistant. Answer the user's question STRICTLY from the provided items (notes, meetings, tasks, outcomes).
 - Cite every claim with [n] matching the item numbers.
-- If the items don't answer the question, say so plainly — never guess or fill in from general knowledge.
+- If the items don't answer the question, say so plainly, never guess or fill in from general knowledge.
 - Be concise (under ~200 words). Use markdown. Prefer specific names, dates, and statuses from the items.`;
     const user = `Question: ${q}\n\nItems:\n${corpus}`;
     const { text: answer, input_tokens, output_tokens } = await callClaudeFullLocal({

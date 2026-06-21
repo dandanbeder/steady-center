@@ -18,7 +18,7 @@ function DailyQuote() {
         “{q.quote}”
       </blockquote>
       <figcaption className="mt-1 text-xs not-italic text-muted-foreground/70">
-        — {q.author}
+       , {q.author}
       </figcaption>
     </figure>
   );
@@ -154,7 +154,7 @@ function EveningWindDownCard({ pulse, onRefresh, busy }: { pulse: DailyPulse; on
   );
   const [focusDraft, setFocusDraft] = useState<FocusItem[]>(pulse.focus_3);
 
-  const reviewItems = pulse.meetings_json; // reuse — also could fetch today's open tasks
+  const reviewItems = pulse.meetings_json; // reuse, also could fetch today's open tasks
   // Use focus_3 as the "today's open tasks" review surface
   const taskItems = pulse.focus_3;
 
@@ -299,7 +299,7 @@ function BreatheWidget() {
         <Wind className="h-8 w-8 text-primary" />
       </div>
       <p className="text-sm text-muted-foreground">
-        {running ? "Breathe in… hold… breathe out…" : "1 minute of box breathing — 4 in, 4 hold, 4 out, 4 hold."}
+        {running ? "Breathe in… hold… breathe out…" : "1 minute of box breathing, 4 in, 4 hold, 4 out, 4 hold."}
       </p>
       <Button size="sm" variant={running ? "outline" : "default"} onClick={() => setRunning(!running)}>
         {running ? "Done" : "Start breathing"}

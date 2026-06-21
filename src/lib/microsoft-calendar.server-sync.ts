@@ -32,7 +32,7 @@ function normalize(ev: MsEvent) {
   const end = ev.end?.dateTime;
   if (!start || !end) return null;
   // Graph returns dateTime as ISO without offset; timeZone is separate.
-  // For non-all-day, append 'Z' if it ends without timezone — Graph already
+  // For non-all-day, append 'Z' if it ends without timezone, Graph already
   // returns the value in the calendar's tz; treat as that tz by passing
   // through. The simplest safe approach: trust the dateTime as UTC when
   // timeZone is UTC (Graph default), else convert via Intl.
@@ -45,7 +45,7 @@ function normalize(ev: MsEvent) {
     // Best-effort tz conversion: ask Date to parse as UTC then offset via Intl.
     // Most calendars use UTC after Graph normalization; for non-UTC tz we
     // fall back to treating as UTC to avoid drift errors. Caller can
-    // re-request with Prefer: outlook.timezone="UTC" — see fetchDelta.
+    // re-request with Prefer: outlook.timezone="UTC", see fetchDelta.
     return new Date(clean + "Z").toISOString();
   };
   return {
@@ -229,7 +229,7 @@ export async function runMicrosoftSyncForCalendar(
 // ============================================================
 
 function webhookBaseUrl(): string {
-  // Stable published URL — used in subscription registration.
+  // Stable published URL, used in subscription registration.
   return (
     process.env.PUBLIC_APP_URL ||
     "https://project--sfxrqznrfaeajhzmofan.lovable.app"

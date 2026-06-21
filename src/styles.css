@@ -105,7 +105,7 @@
 
   --shadow-soft: 0 1px 2px oklch(0.28 0.05 165 / 0.04), 0 8px 24px -8px oklch(0.28 0.05 165 / 0.08);
 
-  /* Week pulse status palette — calm sage, warm gold, clay over */
+  /* Week pulse status palette, calm sage, warm gold, clay over */
   --pulse-sage: oklch(0.55 0.07 160);
   --pulse-gold: oklch(0.74 0.13 80);
   --pulse-clay: oklch(0.62 0.15 40);
@@ -205,7 +205,7 @@
     line-height: 1.35;
   }
 
-  /* Reduced motion — global enforcement */
+  /* Reduced motion, global enforcement */
   html[data-reduced-motion="true"] *,
   html[data-reduced-motion="true"] *::before,
   html[data-reduced-motion="true"] *::after {

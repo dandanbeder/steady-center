@@ -61,7 +61,7 @@ export function SupportSessionBanner() {
         Viewing {session.target_name || session.target_email}'s account (admin support session,
         {isWrite ? " WRITE" : " read-only"})
       </span>
-      <span className="opacity-70 text-xs truncate">— {session.reason}</span>
+      <span className="opacity-70 text-xs truncate">, {session.reason}</span>
       <div className="ml-auto flex items-center gap-2">
         <Button
           size="sm"

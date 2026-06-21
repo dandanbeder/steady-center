@@ -317,7 +317,7 @@ function SummaryDialog({
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Summary</DialogTitle>
-          <DialogDescription>Preview only — nothing saved yet.</DialogDescription>
+          <DialogDescription>Preview only, nothing saved yet.</DialogDescription>
         </DialogHeader>
         <div className="prose prose-sm max-w-none max-h-[60vh] overflow-y-auto">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
@@ -372,7 +372,7 @@ function OrganizeDialog({
         <DialogHeader>
           <DialogTitle>Cleaned-up note</DialogTitle>
           <DialogDescription>
-            Preview — replaces the current title and body when you accept.
+            Preview, replaces the current title and body when you accept.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
@@ -504,7 +504,7 @@ function SuggestDialog({
               />
               <div>
                 <div className="font-medium">Title</div>
-                <div className="text-muted-foreground">{data.title || "—"}</div>
+                <div className="text-muted-foreground">{data.title || ","}</div>
               </div>
             </label>
             <label className="flex items-start gap-2">
@@ -825,7 +825,7 @@ function GuideDialog({
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>What to do next</DialogTitle>
-          <DialogDescription>Preview — nothing saved until you confirm.</DialogDescription>
+          <DialogDescription>Preview, nothing saved until you confirm.</DialogDescription>
         </DialogHeader>
         {data && (
           <div className="space-y-4 max-h-[60vh] overflow-y-auto">

@@ -48,7 +48,7 @@ export function VoiceJournalButton({ onTranscribed }: Props) {
       const blob = new Blob(chunksRef.current, { type: rec.mimeType });
       chunksRef.current = [];
       if (blob.size < 1024) {
-        toast.error("That recording was empty — try again.");
+        toast.error("That recording was empty, try again.");
         return;
       }
       setBusy(true);

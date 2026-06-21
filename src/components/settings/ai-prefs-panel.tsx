@@ -104,7 +104,7 @@ export function AiPrefsPanel() {
           <SelectContent>
             <SelectItem value="warm">Warm &amp; supportive (default)</SelectItem>
             <SelectItem value="direct">More direct, still kind</SelectItem>
-            <SelectItem value="off">Off — just the numbers</SelectItem>
+            <SelectItem value="off">Off, just the numbers</SelectItem>
           </SelectContent>
         </Select>
         <p className="text-xs text-muted-foreground mt-1">

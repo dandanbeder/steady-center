@@ -107,7 +107,7 @@ function TodayPage() {
   const end = new Date(start);
   end.setDate(end.getDate() + 1);
 
-  // All queries fire in parallel — react-query handles dedupe and SWR caching.
+  // All queries fire in parallel, react-query handles dedupe and SWR caching.
   const businessesQ = useQuery({ queryKey: ["businesses"], queryFn: listBusinesses });
   const calendarsQ = useQuery({ queryKey: ["calendars"], queryFn: listCalendars });
   const eventsQ = useQuery({

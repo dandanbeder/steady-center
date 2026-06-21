@@ -255,7 +255,7 @@ async function maybePushToGoogle(eventId: string, calendarId: string): Promise<s
     const providerLabel = provider === "google" ? "Google" : "Microsoft";
     const reconnect = /401|403|invalid_grant|unauthorized|not configured|MS_NEEDS_RECONNECT|MS_NOT_CONNECTED|MS_REFRESH_FAILED/i.test(msg);
     const friendly = reconnect
-      ? `Event saved locally, but ${providerLabel} sync failed — reconnect ${providerLabel} in Settings › Connections.`
+      ? `Event saved locally, but ${providerLabel} sync failed, reconnect ${providerLabel} in Settings › Connections.`
       : `Event saved locally, but ${providerLabel} sync failed: ${msg.slice(0, 200)}`;
     await supabase
       .from("events")

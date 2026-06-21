@@ -154,7 +154,7 @@ function partsInTimezone(d: Date, tz: string) {
 /**
  * Next time (UTC Date) that matches the given local day/hour in `timezone`,
  * strictly after `from`. Probes the next 14 days hour-by-hour using
- * Intl.DateTimeFormat — handles DST without needing a tz library.
+ * Intl.DateTimeFormat, handles DST without needing a tz library.
  */
 export function nextScheduledRun(
   prefs: WeeklyReviewPrefs,

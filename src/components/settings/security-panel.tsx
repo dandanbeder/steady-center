@@ -130,7 +130,7 @@ export function SecurityPanel() {
             ))}
             <p className="text-xs text-muted-foreground">
               Current assurance level:{" "}
-              <span className="font-mono">{aalQ.data?.currentLevel ?? "—"}</span>
+              <span className="font-mono">{aalQ.data?.currentLevel ?? ","}</span>
             </p>
           </div>
         ) : (

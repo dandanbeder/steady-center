@@ -127,7 +127,7 @@ function UsersPanel() {
           {users.map((u) => (
             <TableRow key={u.id} className="cursor-pointer hover:bg-muted/40">
               <TableCell onClick={() => window.location.assign(`/admin/users/${u.id}`)}>
-                <div className="font-medium">{u.full_name || "—"}</div>
+                <div className="font-medium">{u.full_name || ","}</div>
                 <div className="text-xs text-muted-foreground">{u.email}</div>
               </TableCell>
               <TableCell className="text-xs text-muted-foreground" onClick={() => window.location.assign(`/admin/users/${u.id}`)}>

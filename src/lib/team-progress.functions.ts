@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
 
 // ----------------------------------------------------------------------
-// Team progress — only ever shows work on shared accounts. Personal tasks,
+// Team progress, only ever shows work on shared accounts. Personal tasks,
 // notes, and journal entries from a teammate are NEVER returned: we only
 // query tasks whose business_id is an account both the caller and the
 // teammate are active members of. RLS scopes everything as the caller.
@@ -375,7 +375,7 @@ export const askTeam = createServerFn({ method: "POST" })
 
     const sys = `You answer questions about a team's SHARED work only.
 - Use ONLY the items below. Cite every claim with [n].
-- Frame answers as supportive coaching — progress, blockers, where to help — not surveillance.
+- Frame answers as supportive coaching, progress, blockers, where to help, not surveillance.
 - If the items don't answer the question, say so plainly.
 - Be concise (under 180 words), markdown.`;
     const corpus = corpusItems.join("\n\n---\n\n");

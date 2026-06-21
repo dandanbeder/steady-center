@@ -16,7 +16,7 @@ export const EMAIL_REPLY_TO_DEFAULT = SUPPORT_EMAIL;
 export const COMPANY_LEGAL_NAME = "FlightMed (PTY) Ltd";
 export const COMPANY_ADDRESS = "Cape Town, South Africa";
 
-// ----- Brand tokens (inline CSS only — email clients ignore stylesheets) ----
+// ----- Brand tokens (inline CSS only, email clients ignore stylesheets) ----
 const BRAND = {
   paper: "#F5EFE3",       // warm paper / outer + header band
   card: "#FFFFFF",        // body card

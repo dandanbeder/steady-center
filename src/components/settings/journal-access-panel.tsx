@@ -117,7 +117,7 @@ export function JournalAccessPanel() {
             <div key={g.id} className="rounded-lg border p-3 flex items-center justify-between gap-3">
               <div className="text-sm">
                 <div>
-                  <span className="font-medium">{g.admin_name}</span> ({g.mode}) — expires{" "}
+                  <span className="font-medium">{g.admin_name}</span> ({g.mode}), expires{" "}
                   {g.expires_at ? formatDistanceToNow(new Date(g.expires_at), { addSuffix: true }) : "never"}
                 </div>
                 <div className="text-xs text-muted-foreground italic">"{g.reason}"</div>
@@ -147,7 +147,7 @@ export function JournalAccessPanel() {
             {(logQ.data ?? []).slice(0, 20).map((r) => (
               <li key={r.id} className="text-xs text-muted-foreground flex items-center gap-2">
                 <Clock className="h-3 w-3" />
-                {r.admin_name} {r.action === "edit" ? "edited" : r.action === "list" ? "opened the list" : "opened an entry"} —{" "}
+                {r.admin_name} {r.action === "edit" ? "edited" : r.action === "list" ? "opened the list" : "opened an entry"} ,{" "}
                 {formatDistanceToNow(new Date(r.accessed_at), { addSuffix: true })}
               </li>
             ))}
@@ -161,7 +161,7 @@ export function JournalAccessPanel() {
           <ul className="space-y-1 text-xs text-muted-foreground">
             {history.slice(0, 10).map((g) => (
               <li key={g.id}>
-                {g.admin_name} — {g.status} — {formatDistanceToNow(new Date(g.requested_at), { addSuffix: true })}
+                {g.admin_name}, {g.status}, {formatDistanceToNow(new Date(g.requested_at), { addSuffix: true })}
               </li>
             ))}
           </ul>

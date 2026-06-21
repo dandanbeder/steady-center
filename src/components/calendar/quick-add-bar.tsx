@@ -41,7 +41,7 @@ export function QuickAddBar({
     }
     const result = parse(text);
     if (!result) {
-      toast.error("Couldn't read a date or time — try 'Coffee tomorrow 9am'");
+      toast.error("Couldn't read a date or time, try 'Coffee tomorrow 9am'");
       return;
     }
     const cal = calendars.find((c) => c.id === calId) ?? null;
@@ -118,7 +118,7 @@ function parse(input: string): Parsed | null {
   if (results.length === 0) return null;
   const r = results[0];
   const start = r.start.date();
-  // Determine "all day" — no hour component implied
+  // Determine "all day", no hour component implied
   const hasHour = r.start.isCertain("hour") || r.start.isCertain("minute");
   let end: Date;
   if (r.end) {

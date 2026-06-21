@@ -107,7 +107,7 @@ function TeamAccessPage() {
         <h1 className="text-2xl sm:text-3xl text-primary">Team &amp; Access</h1>
         <p className="text-sm text-muted-foreground max-w-2xl">
           See exactly what each teammate can access today, and grant or revoke per member.
-          Membership alone grants nothing — access is only what you explicitly share.
+          Membership alone grants nothing, access is only what you explicitly share.
           The Journal is never shareable.
         </p>
       </header>
@@ -277,7 +277,7 @@ function MemberCard({
         {member.resource_shares.length === 0 && !member.account_share && (
           <p className="text-xs text-muted-foreground flex items-center gap-1">
             <ShieldOff className="h-3 w-3" />
-            Membership alone grants nothing — this person currently sees nothing in {businessName}.
+            Membership alone grants nothing, this person currently sees nothing in {businessName}.
           </p>
         )}
       </section>

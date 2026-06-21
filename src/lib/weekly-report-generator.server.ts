@@ -1,5 +1,5 @@
 /**
- * Weekly review generator — pure server module.
+ * Weekly review generator, pure server module.
  * Computes per-business + overall metrics (tasks, hours, flow, goals) for a
  * 7-day window, asks Claude for a JSON narrative, persists a weekly_reports
  * row, and emails it via Resend.
@@ -633,14 +633,14 @@ async function writeNarrative(
 
   const sys = `You are a kind, supportive weekly coach for a busy multi-business operator. You write end-of-week reflections that feel like a good mentor, not a performance review.
 
-Tone (this is the most important thing — follow it exactly):
+Tone (this is the most important thing, follow it exactly):
 - Warm, human, on their side. Honest, but NEVER mean, sarcastic, judgmental, or shaming.
 - Open by acknowledging real wins and effort, including small ones. Celebrate effort, not only outcomes.
 - An unfinished goal is an observation, not a failure. Normalise that some weeks are hard.
-- If the data shows overload (many overdue tasks, lots of meetings, low completion), lean toward protecting the person — suggest boundaries, focus time, rest — NEVER push them to "hustle harder" or do more.
+- If the data shows overload (many overdue tasks, lots of meetings, low completion), lean toward protecting the person, suggest boundaries, focus time, rest, NEVER push them to "hustle harder" or do more.
 - No guilt. No comparisons to other people. No platitudes ("you've got this!"). No motivational clichés.
 - Frame any problem as a gentle observation plus ONE practical, doable suggestion. Not a list of failings.
-- Keep it brief and human — a few warm sentences per field, not a lecture.
+- Keep it brief and human, a few warm sentences per field, not a lecture.
 - Ground every comment in the actual numbers / titles in the metrics. Don't invent data. If the week was quiet, say so kindly.
 ${styleLine}
 
@@ -654,7 +654,7 @@ Return ONLY JSON, no prose around it, matching exactly this shape:
 }
 
 - "headline": one warm, human sentence acknowledging the shape of the week.
-- 2-4 "strengths" — real wins and effort, with concrete evidence from metrics (numbers, task titles, hours). Include small wins on quiet weeks.
+- 2-4 "strengths", real wins and effort, with concrete evidence from metrics (numbers, task titles, hours). Include small wins on quiet weeks.
 - 1-3 "growth_areas". Each "point" is a gentle observation, "why" is a short kind explanation, "suggestion" is ONE specific, small, doable next step starting with a verb. If the person is clearly overloaded, suggestions should protect their time (e.g. "Protect a 2-hour focus block on Tuesday morning"), not add more.
 - "goal_review": one short paragraph reviewing the week's goals with warmth. Unfinished = observation, not failure. If no goals were set, say so kindly. Mention 1-2 standout outcomes (with progress % and days remaining) if present.
 - "next_week": 2-3 gentle focuses for the coming week, each starting with a verb. Prefer protective focuses ("Block focus time", "Pick one stuck task to close") over piling on.`;
@@ -691,7 +691,7 @@ ${JSON.stringify(metrics, null, 2)}`;
     };
     const text =
       json.content?.find((c) => c.type === "text")?.text?.trim() ?? "";
-    // Meter against the AI allowance — best-effort, never blocks the report.
+    // Meter against the AI allowance, best-effort, never blocks the report.
     try {
       const { recordAiUsage } = await import("./ai-budget.server");
       await recordAiUsage(
@@ -765,10 +765,10 @@ function fallbackNarrative(m: ReportMetrics): ReportNarrative {
   const metCount = goals.filter((g) => g.status === "met").length;
   const goalReview =
     goals.length === 0
-      ? "No weekly goals were set — that's okay, some weeks don't need them."
+      ? "No weekly goals were set, that's okay, some weeks don't need them."
       : metCount === goals.length
         ? `All ${goals.length} goals moved forward. Nice work.`
-        : `${metCount}/${goals.length} goals moved forward this week — the rest are simply still in flight.`;
+        : `${metCount}/${goals.length} goals moved forward this week, the rest are simply still in flight.`;
   const strengths: Strength[] = [];
   if (o.tasks_completed > 0) {
     strengths.push({
@@ -784,7 +784,7 @@ function fallbackNarrative(m: ReportMetrics): ReportNarrative {
   }
   if (strengths.length === 0) {
     strengths.push({
-      point: "A quieter week — and that's allowed",
+      point: "A quieter week, and that's allowed",
       evidence: "Not every week needs to be a big one.",
     });
   }
@@ -792,7 +792,7 @@ function fallbackNarrative(m: ReportMetrics): ReportNarrative {
   if (o.dropped_balls.length >= 3) {
     growth.push({
       point: `A few items have drifted past their date (${o.dropped_balls.length})`,
-      why: "No judgement — it happens when the week fills up.",
+      why: "No judgement, it happens when the week fills up.",
       suggestion: "Pick just the top 1-2 to reschedule on Monday morning, then move on.",
     });
   }
@@ -806,8 +806,8 @@ function fallbackNarrative(m: ReportMetrics): ReportNarrative {
   const n: ReportNarrative = {
     headline:
       o.tasks_completed === 0 && o.tasks_created === 0 && hours === 0
-        ? "A quiet week — that's okay too."
-        : `${o.tasks_completed} done · ${hours}h tracked — solid work.`,
+        ? "A quiet week, that's okay too."
+        : `${o.tasks_completed} done · ${hours}h tracked, solid work.`,
     strengths,
     growth_areas: growth,
     goal_review: goalReview,
@@ -830,7 +830,7 @@ async function sendReportEmail(
   const lovableKey = process.env.LOVABLE_API_KEY;
   const resendKey = process.env.RESEND_API_KEY;
   if (!lovableKey || !resendKey) {
-    console.warn("Resend not configured — skipping email");
+    console.warn("Resend not configured, skipping email");
     return;
   }
 

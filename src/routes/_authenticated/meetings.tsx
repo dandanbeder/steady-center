@@ -309,7 +309,7 @@ function NewMeetingDialog({
                 <span>
                   <span className="block">Keep the audio recording for this meeting</span>
                   <span className="block text-xs text-muted-foreground">
-                    Off by default — only the transcript and summary are stored.
+                    Off by default, only the transcript and summary are stored.
                   </span>
                 </span>
               </label>
