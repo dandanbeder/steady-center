@@ -38,6 +38,15 @@ function InboxPage() {
     queryKey: ["inbox", "pending"],
     queryFn: () => listInbox("pending"),
   });
+  const { data: hasEverCaptured = false } = useQuery({
+    queryKey: ["inbox", "ever-captured"],
+    queryFn: async () => {
+      const { count, error } = await (supabase.from("inbox_items") as any)
+        .select("id", { count: "exact", head: true });
+      if (error) throw error;
+      return (count ?? 0) > 0;
+    },
+  });
   const { data: businesses = [] } = useQuery({ queryKey: ["businesses"], queryFn: listBusinesses });
   const { data: folders = [] } = useQuery({ queryKey: ["folders"], queryFn: listFolders });
   const { data: lists = [] } = useQuery({ queryKey: ["lists"], queryFn: listLists });
@@ -66,7 +75,7 @@ function InboxPage() {
         <div>
           <h1 className="text-2xl font-semibold">Inbox</h1>
           <p className="text-sm text-muted-foreground">
-            Capture now, triage later. Accept a suggestion to file it into the right module.
+            Capture anything the moment it hits you. Sort it into the right place later — we'll suggest where.
           </p>
         </div>
       </header>
@@ -93,10 +102,23 @@ function InboxPage() {
           <Loader2 className="h-5 w-5 animate-spin inline" />
         </div>
       ) : items.length === 0 ? (
-        <div className="rounded-lg border border-dashed py-16 text-center text-muted-foreground">
-          <InboxIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
-          <p>Inbox zero. Anything you capture by mic or quick-add lands here.</p>
-        </div>
+        hasEverCaptured ? (
+          <div className="rounded-lg border border-dashed py-16 text-center text-muted-foreground">
+            <InboxIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <p>Inbox zero — all caught up.</p>
+          </div>
+        ) : (
+          <div className="rounded-lg border border-dashed py-12 px-6 text-center space-y-3">
+            <InboxIcon className="h-8 w-8 mx-auto opacity-60" />
+            <h2 className="text-lg font-semibold text-foreground">One place to capture anything</h2>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+              When a thought hits — a task, an idea, a reminder — drop it here in a second, instead of stopping to decide where it belongs. Later, file each item where it goes: a task, a note, or an outcome. We'll suggest where.
+            </p>
+            <p className="text-xs text-muted-foreground/80 italic pt-1">
+              Try it: type "call the accountant" above and press enter.
+            </p>
+          </div>
+        )
       ) : (
         <div className="space-y-3">
           {items.map((it) => (
