@@ -463,9 +463,11 @@ function FreePlanView({
           </div>
         )}
 
-        <div className="mt-10">
+        <div className="mt-10 space-y-6">
+          <CreditBalanceCard />
           <AiUsageMeter />
         </div>
+
       </div>
     </div>
   );
