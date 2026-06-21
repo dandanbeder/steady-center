@@ -1441,24 +1441,31 @@ function TimeGrid({
           >
             {/* Hour labels */}
             <div className="flex flex-col">
-              {Array.from({ length: 24 }, (_, h) => (
-                <div
-                  key={h}
-                  className="text-[10px] text-muted-foreground text-right pr-1"
-                  style={{ height: HOUR_PX }}
-                >
-                  {h === 0
-                    ? ""
-                    : new Date(2000, 0, 1, h).toLocaleTimeString(undefined, {
-                        hour: "numeric",
-                      })}
-                </div>
-              ))}
+              {Array.from({ length: 24 }, (_, h) => {
+                const inWindow = h >= workStart && h < workEnd;
+                return (
+                  <div
+                    key={h}
+                    className={cn(
+                      "text-[10px] text-right pr-1",
+                      inWindow ? "text-muted-foreground" : "text-muted-foreground/40",
+                    )}
+                    style={{ height: HOUR_PX }}
+                  >
+                    {h === 0
+                      ? ""
+                      : new Date(2000, 0, 1, h).toLocaleTimeString(undefined, {
+                          hour: "numeric",
+                        })}
+                  </div>
+                );
+              })}
             </div>
 
             {days.map((d) => {
               const dayKey = d.toISOString();
               const isToday = sameDay(d, today);
+              const isWorkDay = workDays.includes(d.getDay());
               const timed = timedByDay[dayKey];
               const laid = layoutOverlaps(timed);
               const minutesNow =
@@ -1466,7 +1473,10 @@ function TimeGrid({
               return (
                 <div
                   key={dayKey}
-                  className="relative border-l border-border"
+                  className={cn(
+                    "relative border-l border-border",
+                    !isWorkDay && "bg-muted/15",
+                  )}
                   style={{ height: HOUR_PX * 24 }}
                   onClick={(ev) => {
                     if ((ev.target as HTMLElement).dataset.slot) {
@@ -1479,14 +1489,20 @@ function TimeGrid({
                     }
                   }}
                 >
-                  {Array.from({ length: 24 }, (_, h) => (
-                    <div
-                      key={h}
-                      data-slot={h}
-                      className="border-b border-border/60 hover:bg-muted/30 cursor-pointer"
-                      style={{ height: HOUR_PX }}
-                    />
-                  ))}
+                  {Array.from({ length: 24 }, (_, h) => {
+                    const inWindow = h >= workStart && h < workEnd;
+                    return (
+                      <div
+                        key={h}
+                        data-slot={h}
+                        className={cn(
+                          "border-b border-border/60 hover:bg-muted/30 cursor-pointer",
+                          !inWindow && "bg-muted/30",
+                        )}
+                        style={{ height: HOUR_PX }}
+                      />
+                    );
+                  })}
                   {isToday && (
                     <div
                       className="absolute left-0 right-0 pointer-events-none"
