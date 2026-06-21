@@ -127,10 +127,15 @@ export function tierLabel(tier: Tier): string {
 
 // Pricing constants (USD cents). Source of truth for UI; Paddle owns the actual charge.
 export const PRICING = {
-  pro_monthly: { amount: 1000, cycle: "month" as BillingCycle, priceId: "pro_monthly" },
-  pro_yearly: { amount: 9600, cycle: "year" as BillingCycle, priceId: "pro_yearly" },
-  team_monthly: { amount: 1200, cycle: "month" as BillingCycle, priceId: "team_monthly" },
-  team_yearly: { amount: 12000, cycle: "year" as BillingCycle, priceId: "team_yearly" },
+  pro_monthly: { amount: 1200, cycle: "month" as BillingCycle, priceId: "pro_monthly" },
+  pro_yearly: { amount: 12000, cycle: "year" as BillingCycle, priceId: "pro_yearly" },
+  team_monthly: { amount: 1500, cycle: "month" as BillingCycle, priceId: "team_monthly" },
+  team_yearly: { amount: 14400, cycle: "year" as BillingCycle, priceId: "team_yearly" },
 };
+
+/** Minimum seats for Team plan (matches Paddle quantity.minimum). */
+export const TEAM_MIN_SEATS = 2;
+/** Trial length in days for new Pro/Team trials started from pricing page. */
+export const TRIAL_DAYS = 7;
 
 export const FREE_BUSINESS_LIMIT = LIMITS.free.maxBusinesses;
