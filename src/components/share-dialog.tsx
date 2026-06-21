@@ -64,7 +64,7 @@ export function ShareDialog({ open, onOpenChange, resourceType, resourceId, reso
 
   const grant = useMutation({
     mutationFn: (granteeUserId: string) =>
-      _share({ data: { resourceType, resourceId, granteeUserId, role, busyOnly } }),
+      _share({ data: { resourceType, resourceId, granteeUserId, role, busyOnly, canReshare, canExport } }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["shares", resourceType, resourceId] });
       qc.invalidateQueries({ queryKey: ["shared-with-me"] });
@@ -75,7 +75,7 @@ export function ShareDialog({ open, onOpenChange, resourceType, resourceId, reso
 
   const grantByEmail = useMutation({
     mutationFn: (email: string) =>
-      _share({ data: { resourceType, resourceId, granteeEmail: email, role, busyOnly } }),
+      _share({ data: { resourceType, resourceId, granteeEmail: email, role, busyOnly, canReshare, canExport } }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["shares", resourceType, resourceId] });
       setQuery("");
@@ -83,6 +83,7 @@ export function ShareDialog({ open, onOpenChange, resourceType, resourceId, reso
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
   const revoke = useMutation({
     mutationFn: (shareId: string) => _revoke({ data: { shareId } }),
