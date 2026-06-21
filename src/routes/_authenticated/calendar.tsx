@@ -184,6 +184,7 @@ function CalendarPage() {
   const { colorBy, setColorBy } = useColorBy();
   const [dayOpen, setDayOpen] = useState<Date | null>(null);
   const [editing, setEditing] = useState<EventRow | null>(null);
+  const [previewing, setPreviewing] = useState<EventRow | null>(null);
   const [newOpen, setNewOpen] = useState(false);
   const [newDefaultDate, setNewDefaultDate] = useState<Date>(
     startOfDay(new Date()),
