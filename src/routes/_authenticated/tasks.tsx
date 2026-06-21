@@ -604,10 +604,14 @@ function ListWorkspace({
   list,
   view,
   onViewChange,
+  autoOpenTaskId = null,
+  onAutoOpenConsumed,
 }: {
   list: ListRow;
   view: ViewMode;
   onViewChange: (v: ViewMode) => void;
+  autoOpenTaskId?: string | null;
+  onAutoOpenConsumed?: () => void;
 }) {
   const qc = useQueryClient();
   const { data: folders = [] } = useQuery({ queryKey: ["folders"], queryFn: listFolders });
