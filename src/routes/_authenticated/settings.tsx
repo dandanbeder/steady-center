@@ -2,11 +2,14 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { Plus, Trash2, Check, X, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, Check, X, AlertTriangle, ArrowUp, ArrowDown, Archive, ArchiveRestore } from "lucide-react";
 import {
   createBusiness,
-  listBusinesses,
+  listAllBusinesses,
   updateBusiness,
+  archiveBusiness,
+  unarchiveBusiness,
+  reorderBusinesses,
   type Business,
 } from "@/lib/businesses";
 import {
@@ -56,10 +59,12 @@ const PALETTE = [
 
 function SettingsPage() {
   const qc = useQueryClient();
-  const { data: businesses = [], isLoading } = useQuery({
-    queryKey: ["businesses"],
-    queryFn: listBusinesses,
+  const { data: allBusinesses = [], isLoading } = useQuery({
+    queryKey: ["businesses-all"],
+    queryFn: listAllBusinesses,
   });
+  const businesses = allBusinesses.filter((b) => !b.archived_at);
+  const archived = allBusinesses.filter((b) => b.archived_at);
   const { data: calendars = [] } = useQuery({
     queryKey: ["calendars"],
     queryFn: listCalendars,
@@ -67,6 +72,7 @@ function SettingsPage() {
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["businesses"] });
+    qc.invalidateQueries({ queryKey: ["businesses-all"] });
     qc.invalidateQueries({ queryKey: ["calendars"] });
   };
 
@@ -84,6 +90,20 @@ function SettingsPage() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
+  const moveMut = useMutation({
+    mutationFn: (orderedIds: string[]) => reorderBusinesses(orderedIds),
+    onSuccess: invalidate,
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
+  const move = (idx: number, dir: -1 | 1) => {
+    const next = [...businesses];
+    const target = idx + dir;
+    if (target < 0 || target >= next.length) return;
+    [next[idx], next[target]] = [next[target], next[idx]];
+    moveMut.mutate(next.map((b) => b.id));
+  };
+
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 space-y-12">
       <header>
@@ -91,6 +111,95 @@ function SettingsPage() {
         <p className="mt-2 text-muted-foreground">Shape your command center.</p>
       </header>
 
+      {/* ============ ACCOUNTS ============ */}
+      <section id="accounts">
+        <h2 className="text-2xl mb-1">Accounts</h2>
+        <p className="text-sm text-muted-foreground mb-6">
+          The business contexts your work belongs to — EvacoMed, FlightMed, Personal.
+          Each Account's colour is reused everywhere it appears across Calendar, Tasks,
+          Outcomes, Notes and Meetings.
+        </p>
+
+        <div
+          className="rounded-2xl border border-border bg-card p-6"
+          style={{ boxShadow: "var(--shadow-soft)" }}
+        >
+          {isLoading ? (
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          ) : businesses.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No accounts yet. Add your first below.</p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {businesses.map((b, idx) => (
+                <BusinessRow
+                  key={b.id}
+                  business={b}
+                  calendars={calendars.filter((c) => c.business_id === b.id)}
+                  onChange={invalidate}
+                  onMoveUp={idx > 0 ? () => move(idx, -1) : undefined}
+                  onMoveDown={idx < businesses.length - 1 ? () => move(idx, 1) : undefined}
+                />
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!newName.trim()) return;
+            createMut.mutate();
+          }}
+          className="mt-6 rounded-2xl border border-border bg-card p-6 space-y-4"
+          style={{ boxShadow: "var(--shadow-soft)" }}
+        >
+          <h3 className="text-lg">Add an account</h3>
+          <ColorDots value={newColor} onChange={setNewColor} />
+          <div className="flex gap-3">
+            <Input
+              placeholder="e.g. EvacoMed, FlightMed, Personal"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+            />
+            <Button type="submit" disabled={createMut.isPending || !newName.trim()}>
+              <Plus className="h-4 w-4 mr-1" /> Add
+            </Button>
+          </div>
+        </form>
+
+        {archived.length > 0 && (
+          <div
+            className="mt-6 rounded-2xl border border-border bg-card p-6 space-y-3"
+            style={{ boxShadow: "var(--shadow-soft)" }}
+          >
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+              Archived
+            </h3>
+            <ul className="divide-y divide-border">
+              {archived.map((b) => (
+                <ArchivedBusinessRow key={b.id} business={b} onChange={invalidate} />
+              ))}
+            </ul>
+          </div>
+        )}
+      </section>
+
+      {/* ============ CONNECTIONS ============ */}
+      <section id="connections">
+        <h2 className="text-2xl mb-1">Connections</h2>
+        <p className="text-sm text-muted-foreground mb-6">
+          Synced external calendars from Google and Microsoft / Outlook. Map each
+          connected calendar to one of your Accounts so synced events carry the
+          right business context.
+        </p>
+        <div className="rounded-2xl border border-border bg-card p-6 space-y-8" style={{ boxShadow: "var(--shadow-soft)" }}>
+          <GoogleSyncPanel businesses={businesses} />
+          <div className="border-t border-border" />
+          <MicrosoftSyncPanel businesses={businesses} />
+        </div>
+      </section>
+
+      {/* ============ APPEARANCE ============ */}
       <section>
         <h2 className="text-2xl mb-1">Appearance</h2>
         <p className="text-sm text-muted-foreground mb-6">
@@ -98,6 +207,7 @@ function SettingsPage() {
         </p>
         <div className="rounded-2xl border border-border bg-card p-6" style={{ boxShadow: "var(--shadow-soft)" }}>
           <AppearancePanel />
+
         </div>
       </section>
 
