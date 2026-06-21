@@ -17,14 +17,14 @@ export const OUTCOME_STATUS_OPTIONS: Array<{
 }> = [
   { value: "in_progress", label: "In progress" },
   { value: "at_risk", label: "At risk" },
-  { value: "achieved", label: "Achieved" },
+  { value: "achieved", label: "Done" },
   { value: "archived", label: "Archived" },
 ];
 
 export const OUTCOME_STATUS_LABEL: Record<OutcomeStatus, string> = {
   not_started: "Not started",
   in_progress: "In progress",
-  achieved: "Achieved",
+  achieved: "Done",
   at_risk: "At risk",
   archived: "Archived",
   active: "In progress",
