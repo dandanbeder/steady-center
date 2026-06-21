@@ -1,122 +1,56 @@
-## Goal
 
-Replace today's "1 action = 1 credit" heuristic with **cost-anchored credits**: 1 credit = a fixed slice of measured true cost (anchor `2500` micro-USD ≈ $0.0025). Each action's charge is derived from the per-event ledger we already write, never guessed. Allowance and purchased balances are kept separately, with strict spend order and a hard stop when both run out.
+# Speed & navigation pass
 
-## Config (single source of truth)
+Goal: moving between pages feels instant. No loading spinner flicker on data you already have. Heavy pages don't block the rest of the app. Same calm UI, just quicker.
 
-`src/lib/credits.ts` — shared (client+server), pure:
-- `CREDIT_ANCHOR_MICROS = 2500` — the cost of one credit.
-- `ACTION_WEIGHTS: Record<AiActionType, number>` — fallback when true cost is 0 (free helpers, unknown models). Seeded from typical observed costs (assistant ≈ 6, coach ≈ 4, journal_reflect ≈ 2, notes_ai / notes_journal / outcomes_ai / task_views_ai / inbox_ai / daily_pulse ≈ 1, transcribe ≈ 2 per minute, weekly_plan / weekly_report / team_progress ≈ 5). Adjusted later from real ledger data — comment in the file explains the recipe.
-- `creditsFor({ trueCostMicros, actionType }) → number` — `max(1, ceil(true_cost / anchor))`, falls back to `ACTION_WEIGHTS[actionType]` when `trueCostMicros === 0`.
+## Current state (what's already good)
+- Router: `defaultPreload: "intent"`, `defaultPreloadStaleTime: 0`, `scrollRestoration: true`.
+- TanStack Query defaults: `staleTime: 60s`, `gcTime: 10m`, no refetch on focus.
+- Sidebar uses `<Link>` (preloads on hover).
 
-Server pricing map already lives in `src/lib/ai-budget.server.ts` (`trueCostMicros` from C1). Charges always go through that, never re-implement.
+## What's slowing things down
+1. **Every page re-fetches on mount.** Almost all routes use `useQuery` in the component (no loader prefetch). Hover-preload helps only if you hover; tapping a nav item still shows a spinner while the first fetch runs.
+2. **Shared lists are re-fetched per page.** `businesses`, `folders`, `lists`, `calendars`, `outcomes` are queried in nearly every route. With `staleTime: 60s` they're cached, but they're not seeded on app boot, so the first navigation to each page pays the round-trip.
+3. **Huge route chunks.** `calendar.tsx` ~3k lines, `tasks.tsx` ~2.4k lines, `admin.users.$userId.tsx` ~1k, `admin.index.tsx` ~730. These ship as single JS chunks on first visit.
+4. **Spinner flicker on cached data.** Many pages render `isLoading ? <Spinner/> : <Content/>` even when cached data exists, causing a flash between navigations.
+5. **Mic / floating buttons + heavy panels** (assistant, command palette, notification center) are imported eagerly even when never opened.
+6. **Images** (welcome poster, branding) aren't preloaded for their owning routes and aren't size-hinted for AVIF/WebP.
 
-## Database
+## Plan (small, ordered, low-risk)
 
-New columns on `account_credits`:
-- `low_balance_threshold int NOT NULL DEFAULT 20`
-- `low_balance_alerted_at timestamptz`
-- `topup_paused boolean NOT NULL DEFAULT false` — set true after a hard stop, cleared by next top-up / cycle reset.
+### Phase 1 — Instant navigation (biggest win, smallest change)
+- **Seed shared lists on app boot.** In `_authenticated/route.tsx`, on the first authenticated render, `queryClient.prefetchQuery` for `businesses`, `folders`, `lists`, `calendars`, `outcomes`. After boot, every nav into Tasks / Calendar / Plan / Today / Notes finds these warm. Total cost: one parallel burst at sign-in, then silence.
+- **Use cached data while refetching** instead of spinner-flash. Replace `isLoading ? Spinner : Content` with "render last data + subtle top progress" on the 8 most-visited pages (Today, Tasks, Calendar, Plan-week, Notes, Outcomes, Inbox, Learn). Concretely: render content whenever `data` exists, show the spinner only on true cold loads (`isPending && !data`).
+- **Bump preload aggressiveness for the sidebar.** Set `preload="intent"` and `preloadDelay: 30` on primary nav links so hover/tap-start fires the loader earlier.
 
-New table `public.credit_lots` (12-month rolling top-ups):
+### Phase 2 — Lighter chunks
+- **Lazy-load secondary panels** (`assistant-panel`, `command-palette`, `notification-center`, `talk-button` recorder, `focus-mode`, `topup-dialog`) via `React.lazy` + `<Suspense fallback={null}>`. They open on demand, so the initial bundle drops.
+- **Code-split the biggest routes** by extracting non-default views into their own lazy modules:
+  - `calendar.tsx`: split month / week / day / agenda render trees + the `event-popover` editor.
+  - `tasks.tsx`: split timeline view, stage manager, and the task-detail drawer.
+  - `admin.*`: keep each admin tab as its own already-split route; verify nothing imports across.
+  No behavior change, just `lazy()` boundaries.
+- **Remove eager admin imports from the main bundle** for non-admin users (already on separate routes — audit `app-shell` to confirm nothing forces them in).
 
-| column | type |
-|---|---|
-| id uuid pk | |
-| account_user_id uuid not null fk auth.users | |
-| credits_remaining int not null check ≥ 0 | |
-| credits_initial int not null | |
-| paddle_transaction_id text | for idempotency on top-up webhooks |
-| purchased_at timestamptz default now() | |
-| expires_at timestamptz not null | |
-| created_at / updated_at | |
+### Phase 3 — Loader-prefetch the high-traffic routes
+- For Today, Tasks, Calendar, Plan-week, Notes, Outcomes: add a minimal `loader: ({ context }) => { context.queryClient.ensureQueryData(...) }` that primes the page's primary query. Combined with `defaultPreload: "intent"`, this means: hover (or sidebar tap) starts the fetch *before* the component mounts, so by the time the route renders, data is usually ready. Component still uses `useQuery` so revalidation continues normally.
 
-Index: `(account_user_id, expires_at)` to spend oldest-expiring first.
-RLS: owner SELECT own + superadmin; INSERT/UPDATE/DELETE service role only.
-Grants: `SELECT` to authenticated, `ALL` to service_role.
+### Phase 4 — Asset & paint polish
+- **Preload the welcome poster** on `/learn` via per-route `head().links` (`rel=preload, as=image, fetchpriority=high`) — only on that route, not globally.
+- **Convert bundled hero/poster JPGs to WebP** at build time with `vite-imagetools` (`?format=webp`), keep the JPG as fallback.
+- **Add `loading="lazy"` and explicit `width`/`height`** to non-LCP images across cards (notes thumbs, calendar avatars) to stop layout shift.
+- **Defer `error-capture` + analytics flush** to `requestIdleCallback` so they don't compete with first paint.
 
-New ledger table `public.credit_ledger` (audit trail for every spend / grant):
+### Phase 5 — Measurement (so we can prove it)
+- Use Playwright to record nav timing before/after for: sign-in → Today, Today → Tasks, Tasks → Calendar, Calendar → Notes. Capture First Contentful Paint and "time until primary list visible".
+- Spot-check Lighthouse Performance on `/today` and `/calendar` after Phase 2.
 
-| column | type |
-|---|---|
-| id uuid pk | |
-| account_user_id uuid not null | the billing account that paid |
-| acting_user_id uuid not null | the team member who triggered the spend |
-| delta int not null | negative = spend, positive = grant/reset/topup |
-| source text not null check in ('allowance','purchased','topup','cycle_reset','admin_grant','refund') | |
-| ai_usage_event_id uuid | nullable fk → ai_usage_events.id |
-| balance_after_allowance int not null | |
-| balance_after_purchased int not null | |
-| created_at timestamptz default now() | |
+## Out of scope (won't touch this pass)
+- Server-side / Supabase query tuning (separate review — say the word and I'll run `slow_queries` + add indexes).
+- Visual redesign or copy changes.
+- Tour engine, onboarding flow, AI logic.
 
-Index: `(account_user_id, created_at desc)`. Same RLS as credit_lots.
+## Order I'd ship
+Phase 1 first (90% of the perceived-speed win in one change). Then 2, then 3. 4 and 5 are polish + proof.
 
-### Functions (all SECURITY DEFINER, search_path=public, GRANT EXECUTE to service_role)
-
-- `resolve_billing_account(_user uuid) returns uuid` — returns the account_user_id that pays for `_user`. If the user has an active Team-tier owner membership on themselves → returns themselves. If the user is a non-owner active member of a Team-tier account → returns the team owner. Else → returns `_user`. Used for pooled team balances.
-
-- `charge_ai_credits(_acting_user uuid, _credits int, _event_id uuid) returns table(allowance_after int, purchased_after int, hard_stopped bool)` —
-  1. Resolves billing account via `resolve_billing_account`.
-  2. `SELECT ... FOR UPDATE` on the billing account's `account_credits`.
-  3. Computes `total_available = credit_balance + purchased_credits`. If `< _credits` → raise `INSUFFICIENT_CREDITS` exception, set `topup_paused=true`, write a ledger row with `delta = -_credits` and `source='allowance'` AND mark `hard_stopped=true` via return; do NOT debit (no half-spends).
-  4. Spend allowance first (`credit_balance`), then purchased. For purchased part: walk `credit_lots WHERE credits_remaining>0 AND expires_at>now() ORDER BY expires_at ASC`, decrement lots, decrement `purchased_credits`. Write ledger rows per source bucket touched.
-  5. If new `credit_balance + purchased_credits ≤ low_balance_threshold` and `low_balance_alerted_at` is null (or older than current cycle) → set it to `now()`.
-
-- `add_purchased_credits(_user uuid, _credits int, _months int, _paddle_tx text) returns void` — idempotent on `_paddle_tx`. Inserts a lot with `expires_at = now() + interval '_months months'`, increments `account_credits.purchased_credits`, clears `topup_paused`, writes a ledger row (`source='topup'`).
-
-- `expire_credit_lots() returns int` — moves expired lots' remaining to 0, decrements `purchased_credits` accordingly, writes ledger rows. Called from the existing `/api/public/hooks/plan-lifecycle` cron and from `charge_ai_credits` as a cheap precheck.
-
-`reset_cycle_allowance` (existing) keeps doing what it does (resets `credit_balance` to the new allowance, leaves purchased lots alone) — extended only to also clear `low_balance_alerted_at` and `topup_paused`, and to write a `cycle_reset` ledger row.
-
-## Server enforcement
-
-`src/lib/credits.server.ts` (new):
-- `assertAiCredits(userId, estimatedCredits = 1)` — peek-only. Resolves billing account, reads `credit_balance + purchased_credits`, throws `Error("CREDITS_EXHAUSTED: ...")` if insufficient. Called by all AI server functions BEFORE the model call, in addition to today's `assertAiBudget` (the $ cap stays as a defence-in-depth).
-- `chargeAiCredits({ userId, actionType, model, tokensIn, tokensOut, audioSeconds, eventId })` — computes `trueCostMicros` via `ai-budget.server`, derives credits via `creditsFor`, calls RPC. On `INSUFFICIENT_CREDITS` it rethrows as `CREDITS_EXHAUSTED:` (model call already happened, so the user got their answer; we just won't let them do another). Returns the credit count actually charged.
-
-`src/lib/ai-budget.server.ts` rewires:
-- `logAiUsageEvent` returns the inserted row's `id`.
-- `recordAiUsage` becomes the single one-call wrapper used at every AI call site:
-  1. write ledger event (returns id),
-  2. `chargeAiCredits(... eventId)`,
-  3. existing monthly aggregate (kept as legacy $ counter for the in-app banner).
-  Errors from charging are surfaced (not silently swallowed) so the next call hits the hard stop.
-
-`assertAiBudget` already exists at every call site; we add `await assertAiCredits(userId, 1)` in the same place. (1 = optimistic pre-charge sentinel; real charge after the call when we know cost.)
-
-## Paddle wiring
-
-`src/routes/api/public/payments/webhook.ts`:
-- On `transaction.completed` for a top-up product (price external_id matching `topup_*`), call `add_purchased_credits` with the credit count from a server-side map (`TOPUP_PACKS`: e.g. `topup_500 → 500 credits / 12 months`). Top-up products themselves aren't created in this task — the hook is wired and ready.
-- Existing cycle-reset path is unchanged; we extend it to clear pause/alert flags via the SQL function.
-
-Clients never write balances — same RLS as today.
-
-## UI
-
-Minimal, scoped to today's task:
-- `src/lib/credits.functions.ts` — `getCreditBalance()` server fn returns `{ allowance, purchased, total, lowThreshold, paused, cycleEnd, lots }` for the current user's billing account.
-- In `src/routes/_authenticated/billing.tsx`, replace the existing AI usage line with a balance card: allowance vs purchased bars, "next reset" date, "Top up" button (CTA only — wired in the top-up task), and a red banner when `paused=true` saying "AI paused — top up to resume". Surface threshold editor (number input → server fn `setLowBalanceThreshold`).
-- Map `CREDITS_EXHAUSTED:` errors at the React Query boundary to a toast plus a deep link to the billing page.
-
-## What this does NOT touch
-
-- The Paddle catalog (top-up SKUs) — wiring exists, products are added later.
-- Email/in-app notification of low-balance / hard stop — the flag is set; delivery is the notifications task.
-- `ai_usage` monthly aggregate stays as the legacy $-cap counter so the existing user-set $ cap keeps working unchanged.
-
-## Files
-
-Created
-- `supabase/migrations/<ts>_cost_anchored_credits.sql`
-- `src/lib/credits.ts`
-- `src/lib/credits.server.ts`
-- `src/lib/credits.functions.ts`
-
-Edited
-- `src/lib/ai-budget.server.ts` — `logAiUsageEvent` returns id; `recordAiUsage` charges via credits.
-- All AI call sites (`assistant`, `coach`, `journal-reflect`, `notes-ai`, `notes-journal`, `outcomes-ai`, `task-views-ai`, `inbox-ai`, `transcribe`, `daily-pulse-generator`, `weekly-plan`, `weekly-report-generator`, `team-progress`) — add `await assertAiCredits(userId)` next to existing `assertAiBudget`. No other changes.
-- `src/routes/api/public/payments/webhook.ts` — top-up handler.
-- `src/routes/api/public/hooks/plan-lifecycle.ts` — also calls `expire_credit_lots`.
-- `src/routes/_authenticated/billing.tsx` — balance card + threshold editor.
-- A query-error mapper (existing `src/lib/error-page.ts` or similar) to translate `CREDITS_EXHAUSTED:` → top-up CTA.
+Reply "go" to implement Phase 1, or tell me which phases to bundle.
