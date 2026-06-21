@@ -82,6 +82,10 @@ export type Task = {
   /** Who made the most recent assignment change. */
   assigned_by: string | null;
   assigned_at: string | null;
+  /** Workflow stage this task is in (null only during migration / brand-new lists). */
+  stage_id: string | null;
+  /** Position within its stage column. */
+  stage_position: number;
 };
 
 export type TaskAssignment = {
