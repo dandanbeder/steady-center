@@ -718,8 +718,8 @@ function ListWorkspace({
   const create = useMutation({
     mutationFn: () =>
       createTask({
-        list_id: list.id,
-        business_id: businessId,
+        list_id: uncategorised ? null : list.id,
+        business_id: uncategorised ? null : businessId,
         title: quickAdd.trim(),
         position: tasks.length,
       }),
