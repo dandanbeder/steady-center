@@ -2113,6 +2113,70 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
             )}
 
             <div>
+              <Label className="flex items-center gap-1.5">
+                <Layers className="h-3.5 w-3.5" /> Account &amp; list
+              </Label>
+              <Select
+                value={task.list_id ?? "__uncat"}
+                onValueChange={async (v) => {
+                  try {
+                    if (v === "__uncat") {
+                      await updateTask(task.id, { list_id: null, business_id: null });
+                    } else {
+                      const targetList = allLists.find((l) => l.id === v);
+                      const targetFolder = targetList ? allFolders.find((f) => f.id === targetList.folder_id) : null;
+                      const nextBiz = targetFolder?.business_id ?? null;
+                      await updateTask(task.id, { list_id: v, business_id: nextBiz });
+                    }
+                    onChange();
+                    toast.success("Task moved");
+                  } catch (e) {
+                    toast.error(e instanceof Error ? e.message : "Failed");
+                  }
+                }}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__uncat">
+                    <span className="inline-flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/60" />
+                      Uncategorised (no account)
+                    </span>
+                  </SelectItem>
+                  {allBusinesses.map((b) => {
+                    const bizFolders = allFolders.filter((f) => f.business_id === b.id);
+                    const bizLists = allLists.filter((l) =>
+                      bizFolders.some((f) => f.id === l.folder_id),
+                    );
+                    if (bizLists.length === 0) return null;
+                    return (
+                      <SelectGroup key={b.id}>
+                        <SelectLabel>
+                          <span className="inline-flex items-center gap-2">
+                            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: b.color }} />
+                            {b.name}
+                          </span>
+                        </SelectLabel>
+                        {bizLists.map((l) => {
+                          const f = bizFolders.find((x) => x.id === l.folder_id);
+                          return (
+                            <SelectItem key={l.id} value={l.id}>
+                              <span className="text-muted-foreground">{f?.name} / </span>
+                              {l.name}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectGroup>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Move this task to another Account's list, or send it to Uncategorised.
+              </p>
+            </div>
+
+            <div>
               <Label className="flex items-center gap-1.5"><UserCircle2 className="h-3.5 w-3.5" /> Assignee</Label>
               <AssigneePicker
                 businessId={task.business_id}
