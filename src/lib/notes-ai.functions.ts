@@ -271,10 +271,13 @@ export const extractActions = createServerFn({ method: "POST" })
     await assertAiBudget(context.userId);
     await assertAiCredits(context.userId, 1);
 
+    // Light-tier override: extracting todos is extraction, not synthesis.
+    const subRoute = routeModel("notes_ai", "extract_actions");
     const { note, attachmentsText } = await loadNoteContext(
       context.supabase,
       data.noteId,
       true,
+      { userId: context.userId, subAction: "extract_actions", model: subRoute.model },
     );
     const today = new Date().toISOString().slice(0, 10);
     const sys = `You extract concrete action items from a note.
@@ -287,12 +290,13 @@ Rules:
     const user = `Title: ${note.title || "Untitled"}\n\nBody:\n${note.body}${
       attachmentsText ? `\n\nAttachments:\n${attachmentsText}` : ""
     }`;
-    const { text, input_tokens, output_tokens } = await callClaudeFull({
+    const { text, input_tokens, output_tokens, model } = await callClaudeFull({
       system: sys,
       user,
-      maxTokens: 1200,
+      maxTokens: subRoute.maxOutputTokens,
+      model: subRoute.model,
     });
-    await recordAiUsage(context.userId, MODEL, input_tokens, output_tokens, { actionType: "notes_ai" }).catch(
+    await recordAiUsage(context.userId, model, input_tokens, output_tokens, { actionType: "notes_ai" }).catch(
       () => undefined,
     );
     const parsed = parseJsonBlock<{
