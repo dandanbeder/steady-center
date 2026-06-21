@@ -94,6 +94,26 @@ export function AiPrefsPanel() {
 
       <div>
         <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
+          Weekly coach style
+        </p>
+        <Select
+          value={draft.coach_style}
+          onValueChange={(v) => setDraft({ ...draft, coach_style: v as AiPrefs["coach_style"] })}
+        >
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="warm">Warm &amp; supportive (default)</SelectItem>
+            <SelectItem value="direct">More direct, still kind</SelectItem>
+            <SelectItem value="off">Off — just the numbers</SelectItem>
+          </SelectContent>
+        </Select>
+        <p className="text-xs text-muted-foreground mt-1">
+          Sets the tone of weekly reviews and gentle sanity-checks when you plan the week.
+        </p>
+      </div>
+
+      <div>
+        <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
           Monthly spend cap (USD)
         </p>
         <div className="flex items-center gap-2">
