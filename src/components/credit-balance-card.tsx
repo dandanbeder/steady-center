@@ -34,6 +34,32 @@ export function CreditBalanceCard() {
 
   const [thresholdDraft, setThresholdDraft] = useState<string>("");
   const [savingThreshold, setSavingThreshold] = useState(false);
+  const [topupOpen, setTopupOpen] = useState(false);
+
+  // Auto-open the picker when AI is hard-stopped, so the user lands on the
+  // exact next step instead of a dead-end banner.
+  useEffect(() => {
+    if (q.data?.paused) setTopupOpen(true);
+  }, [q.data?.paused]);
+
+  // Refetch when the user returns from a successful checkout (?topup=success).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("topup") === "success") {
+      // Webhook may land seconds after redirect — poll briefly.
+      const poll = (attempt = 0) => {
+        qc.invalidateQueries({ queryKey: ["credit-balance"] });
+        if (attempt < 4) setTimeout(() => poll(attempt + 1), 2000);
+      };
+      poll();
+      toast.success("Thanks! Your credits will appear in a moment.");
+      params.delete("topup");
+      const next = `${window.location.pathname}${params.toString() ? `?${params}` : ""}`;
+      window.history.replaceState(null, "", next);
+    }
+  }, [qc]);
+
 
   if (q.isLoading) {
     return (
