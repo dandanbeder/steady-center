@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -140,6 +140,9 @@ import { ShareDialog } from "@/components/share-dialog";
 
 export const Route = createFileRoute("/_authenticated/tasks")({
   head: () => ({ meta: [{ title: "Tasks · Heartbeat" }] }),
+  validateSearch: (s: Record<string, unknown>) => ({
+    task: typeof s.task === "string" ? s.task : undefined,
+  }),
   component: TasksPage,
 });
 
@@ -151,8 +154,33 @@ function TasksPage() {
   const { data: folders = [] } = useQuery({ queryKey: ["folders"], queryFn: listFolders });
   const { data: lists = [] } = useQuery({ queryKey: ["lists"], queryFn: listLists });
 
+  const search = Route.useSearch();
+  const navigate = Route.useNavigate();
+  const taskParam = search.task;
+
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
   const [view, setView] = useState<ViewMode>("list");
+  const [autoOpenTaskId, setAutoOpenTaskId] = useState<string | null>(null);
+
+  // Deep-link: ?task=ID — fetch task, jump to its list, then open it.
+  useEffect(() => {
+    if (!taskParam) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("tasks")
+        .select("id, list_id")
+        .eq("id", taskParam)
+        .maybeSingle();
+      if (cancelled || error || !data) return;
+      setSelectedListId(data.list_id);
+      setAutoOpenTaskId(data.id);
+      navigate({ search: {} as { task?: string }, replace: true });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [taskParam, navigate]);
 
   const visibleBusinesses = useMemo(
     () => (activeId === ALL ? businesses : businesses.filter((b) => b.id === activeId)),
@@ -211,6 +239,8 @@ function TasksPage() {
               list={selectedList}
               view={view}
               onViewChange={setView}
+              autoOpenTaskId={autoOpenTaskId && selectedList.id === selectedListId ? autoOpenTaskId : null}
+              onAutoOpenConsumed={() => setAutoOpenTaskId(null)}
             />
           </>
         )}
@@ -518,8 +548,9 @@ type Filters = {
   status: TaskStatus | "all";
   due: DueFilter;
   assigned: AssignedFilter;
+  outcome: string; // "all" | "none" | outcome id
 };
-const DEFAULT_FILTERS: Filters = { priority: "all", status: "all", due: "all", assigned: "all" };
+const DEFAULT_FILTERS: Filters = { priority: "all", status: "all", due: "all", assigned: "all", outcome: "all" };
 
 function matchesFilters(t: Task, f: Filters, myId: string | null): boolean {
   if (f.priority !== "all" && t.priority !== f.priority) return false;
@@ -528,6 +559,10 @@ function matchesFilters(t: Task, f: Filters, myId: string | null): boolean {
     if (f.assigned === "me" && t.assignee_id !== myId) return false;
     if (f.assigned === "by_me" && (t.assigned_by !== myId || !t.assignee_id || t.assignee_id === myId)) return false;
     if (f.assigned === "unassigned" && t.assignee_id) return false;
+  }
+  if (f.outcome !== "all") {
+    if (f.outcome === "none" && t.outcome_id) return false;
+    if (f.outcome !== "none" && t.outcome_id !== f.outcome) return false;
   }
   if (f.due !== "all") {
     if (f.due === "none") return !t.due_at;
@@ -569,10 +604,14 @@ function ListWorkspace({
   list,
   view,
   onViewChange,
+  autoOpenTaskId = null,
+  onAutoOpenConsumed,
 }: {
   list: ListRow;
   view: ViewMode;
   onViewChange: (v: ViewMode) => void;
+  autoOpenTaskId?: string | null;
+  onAutoOpenConsumed?: () => void;
 }) {
   const qc = useQueryClient();
   const { data: folders = [] } = useQuery({ queryKey: ["folders"], queryFn: listFolders });
@@ -614,6 +653,7 @@ function ListWorkspace({
       status: cfg.filters.status as Filters["status"],
       due: cfg.filters.due as Filters["due"],
       assigned: cfg.filters.assigned as Filters["assigned"],
+      outcome: (cfg.filters.outcome ?? "all") as Filters["outcome"],
     });
     setSortKey(cfg.sort.key);
     setGroupBy(cfg.group_by);
@@ -675,6 +715,15 @@ function ListWorkspace({
 
   const [openTask, setOpenTask] = useState<Task | null>(null);
 
+  useEffect(() => {
+    if (!autoOpenTaskId) return;
+    const t = tasks.find((x) => x.id === autoOpenTaskId);
+    if (t) {
+      setOpenTask(t);
+      onAutoOpenConsumed?.();
+    }
+  }, [autoOpenTaskId, tasks, onAutoOpenConsumed]);
+
   const toggleSelect = (id: string) => {
     setSelectedIds((s) => {
       const n = new Set(s);
@@ -714,13 +763,18 @@ function ListWorkspace({
     (filters.priority !== "all" ? 1 : 0) +
     (filters.status !== "all" ? 1 : 0) +
     (filters.due !== "all" ? 1 : 0) +
-    (filters.assigned !== "all" ? 1 : 0);
+    (filters.assigned !== "all" ? 1 : 0) +
+    (filters.outcome !== "all" ? 1 : 0);
 
   const { data: members = [] } = useAssignableMembers(businessId);
   const memberList = members as AssignableMember[];
   const { data: stages = [] } = useQuery({
     queryKey: ["task_stages", list.id],
     queryFn: () => fetchStages(list.id),
+  });
+  const { data: scopeOutcomes = [] } = useQuery({
+    queryKey: ["outcomes-for-scope", businessId],
+    queryFn: () => listOutcomes(businessId),
   });
 
   const toggleGroupCollapsed = (key: string) => {
@@ -824,6 +878,25 @@ function ListWorkspace({
                 {filters.assigned === k && <span className="ml-auto">✓</span>}
               </DropdownMenuItem>
             ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-xs">Outcome</DropdownMenuLabel>
+            <DropdownMenuItem onClick={() => setFilters((f) => ({ ...f, outcome: "all" }))}>
+              Any outcome
+              {filters.outcome === "all" && <span className="ml-auto">✓</span>}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setFilters((f) => ({ ...f, outcome: "none" }))}>
+              No outcome
+              {filters.outcome === "none" && <span className="ml-auto">✓</span>}
+            </DropdownMenuItem>
+            {scopeOutcomes.map((o) => (
+              <DropdownMenuItem
+                key={o.id}
+                onClick={() => setFilters((f) => ({ ...f, outcome: o.id }))}
+              >
+                <span className="truncate">{o.name}</span>
+                {filters.outcome === o.id && <span className="ml-auto">✓</span>}
+              </DropdownMenuItem>
+            ))}
             {activeFilterCount > 0 && (
               <>
                 <DropdownMenuSeparator />
@@ -842,7 +915,8 @@ function ListWorkspace({
               {groupBy === "stage" ? "Stage" :
                groupBy === "priority" ? "Priority" :
                groupBy === "assignee" ? "Assignee" :
-               groupBy === "due" ? "Due date" : "None"}
+               groupBy === "due" ? "Due date" :
+               groupBy === "outcome" ? "Outcome" : "None"}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
@@ -851,6 +925,7 @@ function ListWorkspace({
               ["priority", "Priority"],
               ["assignee", "Assignee"],
               ["due", "Due date"],
+              ["outcome", "Outcome"],
               ["none", "None"],
             ] as const).map(([k, label]) => (
               <DropdownMenuItem
@@ -962,6 +1037,7 @@ function ListWorkspace({
           stages={stages}
           members={memberList}
           myId={myId}
+          outcomes={scopeOutcomes}
           collapsedGroups={collapsedGroups}
           onToggleCollapsed={toggleGroupCollapsed}
         />
@@ -1012,6 +1088,7 @@ function ListView({
   stages = [],
   members = [],
   myId = null,
+  outcomes = [],
   collapsedGroups,
   onToggleCollapsed,
 }: {
@@ -1027,6 +1104,7 @@ function ListView({
   stages?: TaskStage[];
   members?: AssignableMember[];
   myId?: string | null;
+  outcomes?: { id: string; name: string }[];
   collapsedGroups: Set<string>;
   onToggleCollapsed: (key: string) => void;
 }) {
@@ -1035,6 +1113,7 @@ function ListView({
     stages,
     members,
     myId,
+    outcomes,
   });
 
   return (
@@ -1142,6 +1221,8 @@ function GroupAddTask({
         patch.priority = groupKey as TaskPriority;
       } else if (groupBy === "assignee" && groupKey !== "__unassigned__") {
         patch.assignee_id = groupKey;
+      } else if (groupBy === "outcome" && groupKey !== "__none__") {
+        patch.outcome_id = groupKey;
       }
       return createTask(patch);
     },
@@ -1812,7 +1893,12 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
   const { data: members = [] } = useAssignableMembers(task.business_id);
   const memberList = members as AssignableMember[];
   const activeOutcomes = outcomes.filter(
-    (o) => o.status === "active" || o.id === task.outcome_id,
+    (o) =>
+      o.status === "active" ||
+      o.status === "in_progress" ||
+      o.status === "not_started" ||
+      o.status === "at_risk" ||
+      o.id === task.outcome_id,
   );
 
   const save = useMutation({
@@ -1847,7 +1933,7 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
           .limit(1);
         if ((remaining ?? []).length === 0) {
           const o = outcomes.find((x) => x.id === nextOutcomeId);
-          if (o && o.status === "active") {
+          if (o && o.status !== "achieved" && o.status !== "archived") {
             return { celebrate: { outcomeId: o.id, name: o.name } as const };
           }
         }
@@ -2003,7 +2089,18 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
             </div>
 
             <div>
-              <Label>Outcome</Label>
+              <div className="flex items-center justify-between">
+                <Label>Outcome</Label>
+                {outcomeId && (
+                  <Link
+                    to="/outcomes"
+                    search={{ focus: outcomeId }}
+                    className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+                  >
+                    View outcome <ChevronRight className="h-3 w-3" />
+                  </Link>
+                )}
+              </div>
               <Select
                 value={outcomeId || "__none"}
                 onValueChange={(v) => setOutcomeId(v === "__none" ? "" : v)}

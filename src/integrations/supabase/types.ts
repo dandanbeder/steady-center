@@ -1608,9 +1608,14 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          metric_current: number | null
+          metric_name: string | null
+          metric_target: number | null
+          metric_unit: string | null
           name: string
           owner_id: string
           status: Database["public"]["Enums"]["outcome_status"]
+          success_statement: string | null
           target_date: string | null
           updated_at: string
         }
@@ -1619,9 +1624,14 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          metric_current?: number | null
+          metric_name?: string | null
+          metric_target?: number | null
+          metric_unit?: string | null
           name: string
           owner_id: string
           status?: Database["public"]["Enums"]["outcome_status"]
+          success_statement?: string | null
           target_date?: string | null
           updated_at?: string
         }
@@ -1630,9 +1640,14 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          metric_current?: number | null
+          metric_name?: string | null
+          metric_target?: number | null
+          metric_unit?: string | null
           name?: string
           owner_id?: string
           status?: Database["public"]["Enums"]["outcome_status"]
+          success_statement?: string | null
           target_date?: string | null
           updated_at?: string
         }
@@ -2583,7 +2598,13 @@ export type Database = {
       goal_status: "open" | "met" | "missed"
       membership_role: "owner" | "admin" | "member" | "commenter" | "viewer"
       membership_status: "active" | "invited"
-      outcome_status: "active" | "achieved" | "archived"
+      outcome_status:
+        | "active"
+        | "achieved"
+        | "archived"
+        | "not_started"
+        | "in_progress"
+        | "at_risk"
       platform_role: "user" | "superadmin"
       subscription_status: "trial" | "active" | "canceled" | "past_due" | "none"
       task_priority: "urgent" | "high" | "normal" | "low"
@@ -2720,7 +2741,14 @@ export const Constants = {
       goal_status: ["open", "met", "missed"],
       membership_role: ["owner", "admin", "member", "commenter", "viewer"],
       membership_status: ["active", "invited"],
-      outcome_status: ["active", "achieved", "archived"],
+      outcome_status: [
+        "active",
+        "achieved",
+        "archived",
+        "not_started",
+        "in_progress",
+        "at_risk",
+      ],
       platform_role: ["user", "superadmin"],
       subscription_status: ["trial", "active", "canceled", "past_due", "none"],
       task_priority: ["urgent", "high", "normal", "low"],

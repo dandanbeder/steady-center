@@ -19,6 +19,7 @@ export function groupTasks(
     stages: TaskStage[];
     members: AssignableMember[];
     myId: string | null;
+    outcomes?: { id: string; name: string }[];
   },
 ): TaskGroup[] {
   if (by === "none") {
@@ -86,6 +87,29 @@ export function groupTasks(
       if (b.key === "__unassigned__") return -1;
       if (a.key === ctx.myId) return -1;
       if (b.key === ctx.myId) return 1;
+      return a.label.localeCompare(b.label);
+    });
+    return groups;
+  }
+
+  if (by === "outcome") {
+    const map = new Map<string, Task[]>();
+    for (const t of tasks) {
+      const k = t.outcome_id ?? "__none__";
+      const arr = map.get(k) ?? [];
+      arr.push(t);
+      map.set(k, arr);
+    }
+    const nameOf = (id: string) =>
+      ctx.outcomes?.find((o) => o.id === id)?.name ?? "Outcome";
+    const groups: TaskGroup[] = Array.from(map.entries()).map(([k, items]) => ({
+      key: k,
+      label: k === "__none__" ? "No outcome" : nameOf(k),
+      items,
+    }));
+    groups.sort((a, b) => {
+      if (a.key === "__none__") return 1;
+      if (b.key === "__none__") return -1;
       return a.label.localeCompare(b.label);
     });
     return groups;

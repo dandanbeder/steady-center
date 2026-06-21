@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export type ListViewMode = "list" | "board" | "calendar";
-export type GroupByKey = "stage" | "priority" | "assignee" | "due" | "none";
+export type GroupByKey = "stage" | "priority" | "assignee" | "due" | "outcome" | "none";
 export type SortKey = "priority" | "due" | "created" | "title";
 
 export type ListViewFilters = {
@@ -9,6 +9,7 @@ export type ListViewFilters = {
   status: string;
   due: string;
   assigned: string;
+  outcome: string;
 };
 
 export type ListViewConfig = {
@@ -23,7 +24,7 @@ export type ListViewConfig = {
 export const DEFAULT_VIEW_CONFIG: ListViewConfig = {
   view: "list",
   group_by: "stage",
-  filters: { priority: "all", status: "all", due: "all", assigned: "all" },
+  filters: { priority: "all", status: "all", due: "all", assigned: "all", outcome: "all" },
   sort: { key: "priority" },
   column_order: [],
   collapsed_groups: [],
