@@ -16,8 +16,10 @@ const ListInput = z.object({
   cursor: z.string().datetime().optional(),
 });
 
-async function assertSuperadmin(supabase: { rpc: (n: string) => Promise<{ data: unknown }> }) {
-  const { data } = await supabase.rpc("is_platform_admin");
+async function assertSuperadmin(supabase: unknown) {
+  const { data } = await (supabase as { rpc: (n: string) => Promise<{ data: unknown }> }).rpc(
+    "is_platform_admin",
+  );
   if (!data) throw new Error("Forbidden");
 }
 
