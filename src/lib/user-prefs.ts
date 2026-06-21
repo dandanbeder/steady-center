@@ -1,7 +1,16 @@
 import { supabase } from "@/integrations/supabase/client";
 
 // ---------------- Notification prefs ----------------
-export type NotificationChannels = { email: boolean; sms: boolean; browser: boolean };
+// Only two delivery channels are supported: email and browser (in-app + optional web push).
+export type NotificationChannels = { email: boolean; browser: boolean };
+export type ChannelPair = { email: boolean; browser: boolean };
+export type PerTypeChannels = {
+  event_reminders: ChannelPair;
+  task_due: ChannelPair;
+  weekly_review: ChannelPair;
+  meeting_summary_ready: ChannelPair;
+  tagged: ChannelPair;
+};
 export type NotificationEvents = {
   event_reminders: boolean;
   event_reminder_lead_minutes: number;
@@ -19,6 +28,8 @@ export type NotificationEvents = {
   evening_winddown_enabled: boolean;
   evening_winddown_hour: number;
   evening_winddown_minute: number;
+  // Per-type channel routing (which channels deliver each type)
+  type_channels: PerTypeChannels;
 };
 export type NotificationPrefs = {
   channels: NotificationChannels;
@@ -28,8 +39,16 @@ export type NotificationPrefs = {
   quiet_end: number;
 };
 
+const DEFAULT_TYPE_CHANNELS: PerTypeChannels = {
+  event_reminders: { email: true, browser: true },
+  task_due: { email: true, browser: true },
+  weekly_review: { email: true, browser: false },
+  meeting_summary_ready: { email: false, browser: true },
+  tagged: { email: true, browser: true },
+};
+
 const DEFAULT_NOTIF: NotificationPrefs = {
-  channels: { email: true, sms: false, browser: false },
+  channels: { email: true, browser: false },
   events: {
     event_reminders: true,
     event_reminder_lead_minutes: 15,
@@ -46,6 +65,7 @@ const DEFAULT_NOTIF: NotificationPrefs = {
     evening_winddown_enabled: true,
     evening_winddown_hour: 17,
     evening_winddown_minute: 30,
+    type_channels: DEFAULT_TYPE_CHANNELS,
   },
   quiet_enabled: false,
   quiet_start: 22,
@@ -62,9 +82,19 @@ export async function getNotificationPrefs(): Promise<NotificationPrefs> {
     .maybeSingle();
   if (error) throw error;
   if (!data) return DEFAULT_NOTIF;
+  const rawChannels = (data.channels as Record<string, unknown>) ?? {};
+  const rawEvents = (data.events as Record<string, unknown>) ?? {};
+  const rawTypeChannels = (rawEvents.type_channels as Partial<PerTypeChannels>) ?? {};
   return {
-    channels: { ...DEFAULT_NOTIF.channels, ...((data.channels as object) ?? {}) } as NotificationChannels,
-    events: { ...DEFAULT_NOTIF.events, ...((data.events as object) ?? {}) } as NotificationEvents,
+    channels: {
+      email: typeof rawChannels.email === "boolean" ? rawChannels.email : DEFAULT_NOTIF.channels.email,
+      browser: typeof rawChannels.browser === "boolean" ? rawChannels.browser : DEFAULT_NOTIF.channels.browser,
+    },
+    events: {
+      ...DEFAULT_NOTIF.events,
+      ...rawEvents,
+      type_channels: { ...DEFAULT_TYPE_CHANNELS, ...rawTypeChannels },
+    } as NotificationEvents,
     quiet_enabled: data.quiet_enabled,
     quiet_start: data.quiet_start,
     quiet_end: data.quiet_end,
