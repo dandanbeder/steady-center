@@ -2206,10 +2206,13 @@ export type Database = {
       }
       profiles: {
         Row: {
+          ai_optional_disabled: boolean
           created_at: string
           daily_capacity_hours: number
           default_calendar_view: string
           default_landing: string
+          deletion_completes_at: string | null
+          deletion_requested_at: string | null
           deletion_requested_by: string | null
           deletion_scheduled_at: string | null
           density: string
@@ -2227,6 +2230,7 @@ export type Database = {
           journal_lock_updated_at: string | null
           last_warned_at: string | null
           last_warning_message: string | null
+          marketing_emails_opt_out: boolean
           marketing_opt_in: boolean
           marketing_opt_in_at: string | null
           must_change_password: boolean
@@ -2267,10 +2271,13 @@ export type Database = {
           work_start_hour: number
         }
         Insert: {
+          ai_optional_disabled?: boolean
           created_at?: string
           daily_capacity_hours?: number
           default_calendar_view?: string
           default_landing?: string
+          deletion_completes_at?: string | null
+          deletion_requested_at?: string | null
           deletion_requested_by?: string | null
           deletion_scheduled_at?: string | null
           density?: string
@@ -2288,6 +2295,7 @@ export type Database = {
           journal_lock_updated_at?: string | null
           last_warned_at?: string | null
           last_warning_message?: string | null
+          marketing_emails_opt_out?: boolean
           marketing_opt_in?: boolean
           marketing_opt_in_at?: string | null
           must_change_password?: boolean
@@ -2328,10 +2336,13 @@ export type Database = {
           work_start_hour?: number
         }
         Update: {
+          ai_optional_disabled?: boolean
           created_at?: string
           daily_capacity_hours?: number
           default_calendar_view?: string
           default_landing?: string
+          deletion_completes_at?: string | null
+          deletion_requested_at?: string | null
           deletion_requested_by?: string | null
           deletion_scheduled_at?: string | null
           density?: string
@@ -2349,6 +2360,7 @@ export type Database = {
           journal_lock_updated_at?: string | null
           last_warned_at?: string | null
           last_warning_message?: string | null
+          marketing_emails_opt_out?: boolean
           marketing_opt_in?: boolean
           marketing_opt_in_at?: string | null
           must_change_password?: boolean
