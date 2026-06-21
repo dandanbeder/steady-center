@@ -214,13 +214,21 @@ function SettingsPage() {
               <SectionHeader title="General" subtitle="Profile, sign-in, and the formats that drive your calendar and reminders." />
               <Card><GeneralPanel /></Card>
 
-              <SubHeading icon={Palette} title="Appearance" subtitle="Theme, density, default calendar view, and accessibility." />
-              <Card><AppearancePanel /></Card>
-
               <SubHeading icon={Clock} title="Working hours & capacity" subtitle="The single source of truth for your work window. Calendar, Plan my week, Today, and AI scheduling all read from here." />
               <Card><WorkingHoursPanel /></Card>
+            </>
+          )}
 
-              <SubHeading icon={ShieldCheck} title="Security" subtitle="Two-factor authentication, login history, and active sessions." />
+          {active === "appearance" && (
+            <>
+              <SectionHeader title="Appearance" subtitle="Theme, density, default calendar view, and accessibility." />
+              <Card><AppearancePanel /></Card>
+            </>
+          )}
+
+          {active === "security" && (
+            <>
+              <SectionHeader title="Security" subtitle="Two-factor authentication, login history, and active sessions." />
               <Card><SecurityPanel /></Card>
             </>
           )}
