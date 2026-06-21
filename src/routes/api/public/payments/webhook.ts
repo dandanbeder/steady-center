@@ -219,12 +219,14 @@ async function handleTransactionPaymentFailed(data: any, env: PaddleEnv) {
 }
 
 // Top-up credit packs. Keys are price external_ids; values are credits granted.
-// Lots are valid for TOPUP_MONTHS from purchase (rolling 12 months).
+// Lots are valid for TOPUP_MONTHS from purchase (rolling 12 months). Kept in
+// sync with src/lib/topup-packs.ts (shared catalog) — duplicated here so the
+// webhook stays free of client-bundle imports.
 const TOPUP_PACKS: Record<string, number> = {
-  topup_100: 100,
   topup_500: 500,
   topup_2000: 2000,
   topup_5000: 5000,
+  topup_12000: 12000,
 };
 const TOPUP_MONTHS = 12;
 
@@ -264,6 +266,40 @@ async function handleTransactionCompleted(data: any, env: PaddleEnv) {
       _months: TOPUP_MONTHS,
       _paddle_tx: dedupe,
     });
+  }
+}
+
+// Refund / chargeback / credit note: claw back any purchased credits that
+// were granted by the referenced transaction. Idempotent — revoking twice
+// just yields 0 the second time since credits_remaining was already zeroed.
+async function handleAdjustmentCreated(data: any, _env: PaddleEnv) {
+  const action = data?.action as string | undefined;
+  if (action !== "refund" && action !== "chargeback") return;
+  const txId = data?.transactionId as string | undefined;
+  if (!txId) return;
+  const supabase = getSupabase();
+  // `${txId}:` prefix matches every line of that transaction (we keyed lots
+  // as `${txId}:${ext}`). Whole-transaction revoke regardless of partial
+  // refund amount — partials are rare and we'd rather over-revoke than
+  // leave free credits behind after a chargeback.
+  const { data: revoked, error } = await supabase.rpc(
+    "revoke_purchased_credits_by_tx",
+    { _paddle_tx_prefix: `${txId}:` },
+  );
+  if (error) {
+    console.error("[payments-webhook] revoke_purchased_credits_by_tx failed", error);
+    return;
+  }
+  if ((revoked as number) > 0) {
+    console.log(
+      "[payments-webhook] revoked",
+      revoked,
+      "purchased credits for tx",
+      txId,
+      "(",
+      action,
+      ")",
+    );
   }
 }
 
