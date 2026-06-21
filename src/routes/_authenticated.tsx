@@ -21,6 +21,7 @@ export const Route = createFileRoute("/_authenticated")({
 function AuthenticatedLayout() {
   const { user, loading } = useAuth();
   const pathname = useRouterState({ select: (r) => r.location.pathname });
+  const queryClient = useQueryClient();
 
   const profileQ = useQuery({
     queryKey: ["onboarding-profile"],
@@ -28,6 +29,19 @@ function AuthenticatedLayout() {
     enabled: !!user,
     staleTime: 5 * 60_000,
   });
+
+  // Phase 1: seed shared lists once on sign-in so the first nav into any
+  // page (Today, Tasks, Calendar, Notes, Plan, Outcomes) finds them warm.
+  // prefetchQuery is a no-op when data is already cached, so this is safe to
+  // call on every mount, idempotent, and never blocks render.
+  useEffect(() => {
+    if (!user) return;
+    queryClient.prefetchQuery({ queryKey: ["businesses"], queryFn: listBusinesses });
+    queryClient.prefetchQuery({ queryKey: ["calendars"], queryFn: listCalendars });
+    queryClient.prefetchQuery({ queryKey: ["folders"], queryFn: listFolders });
+    queryClient.prefetchQuery({ queryKey: ["lists"], queryFn: listLists });
+    queryClient.prefetchQuery({ queryKey: ["outcomes", "all-names"], queryFn: () => listOutcomes() });
+  }, [user, queryClient]);
 
   if (loading) {
     return (
