@@ -862,6 +862,7 @@ function ListWorkspace({
       )}
       {view === "board" && (
         <BoardView
+          listId={list.id}
           tasks={filteredTopLevel}
           onChange={invalidate}
           onOpen={setOpenTask}
