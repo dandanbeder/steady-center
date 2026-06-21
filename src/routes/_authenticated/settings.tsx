@@ -541,6 +541,7 @@ function ArchivedBusinessRow({
       )}
     </li>
   );
+}
 
 function CalendarsForBusiness({
   businessId,
