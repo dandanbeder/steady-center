@@ -202,7 +202,10 @@ function TasksPage() {
     [businesses, activeId],
   );
 
-  const selectedList = lists.find((l) => l.id === selectedListId) ?? null;
+  const selectedList: ListRow | null =
+    selectedListId === UNCATEGORISED_LIST_ID
+      ? UNCATEGORISED_LIST
+      : lists.find((l) => l.id === selectedListId) ?? null;
 
   return (
     <div className="flex flex-col md:flex-row md:h-[calc(100vh-4rem)]">
@@ -215,6 +218,21 @@ function TasksPage() {
       >
         <div className="p-4">
           <h2 className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Spaces</h2>
+          {/* Uncategorised — always available; hidden when filtering to a specific account */}
+          {activeId === ALL && (
+            <button
+              onClick={() => setSelectedListId(UNCATEGORISED_LIST_ID)}
+              className={cn(
+                "w-full flex items-center gap-2 px-2 py-2 rounded-md text-left mb-3 transition-colors",
+                selectedListId === UNCATEGORISED_LIST_ID
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
+              )}
+            >
+              <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/60" />
+              <span className="text-sm">Uncategorised</span>
+            </button>
+          )}
           {visibleBusinesses.length === 0 ? (
             <p className="text-sm text-muted-foreground">No accounts yet.</p>
           ) : (
