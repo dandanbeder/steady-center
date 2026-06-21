@@ -117,9 +117,8 @@ export function CreditBalanceCard() {
                 <Coins className="h-5 w-5" /> AI credits
               </CardTitle>
               <CardDescription>
-                {b.pooled ? "Pooled at the team account · " : ""}1 credit ≈ $0.0025 of model
-                cost. Allowance refills on your billing anniversary; purchased credits roll
-                for 12 months.
+                {b.pooled ? "Pooled at the team account. " : ""}
+                Your allowance refills on your billing date; purchased credits roll for 12 months.
               </CardDescription>
             </div>
             <div className="text-right">
