@@ -13,6 +13,8 @@ import { UpcomingMeetings } from "@/components/upcoming-meetings";
 import { DailyPulseCard } from "@/components/daily-pulse-card";
 import { WeekPulse } from "@/components/week-pulse";
 import { Skeleton } from "@/components/ui/skeleton";
+import { OutcomeMark } from "@/components/outcomes/outcome-mark";
+import { listOutcomes } from "@/lib/outcomes";
 import type { Task } from "@/lib/tasks";
 import type { Note } from "@/lib/notes";
 
@@ -121,12 +123,14 @@ function TodayPage() {
     queryKey: ["notes", "recent", 5],
     queryFn: () => listRecentNotes(5),
   });
+  const outcomesQ = useQuery({ queryKey: ["outcomes", "all-names"], queryFn: () => listOutcomes() });
 
   const businesses = businessesQ.data ?? [];
   const calendars = calendarsQ.data ?? [];
   const events = eventsQ.data ?? [];
   const topTasks = topTasksQ.data ?? [];
   const recentNotes = recentNotesQ.data ?? [];
+  const outcomeNameById = new Map((outcomesQ.data ?? []).map((o) => [o.id, o.name]));
 
   const active = activeId === ALL ? null : businesses.find((b) => b.id === activeId);
   const profileQ = useQuery({ queryKey: ["onboarding-profile"], queryFn: getOnboardingProfile });
@@ -203,22 +207,41 @@ function TodayPage() {
             <SkeletonList />
           ) : topTasks.length === 0 ? (
             <p className="text-sm text-muted-foreground">Nothing due. Nice.</p>
-          ) : (
-            <ul className="space-y-2">
-              {topTasks
-                .filter((t) => activeId === ALL || t.business_id === activeId)
-                .map((t) => (
-                  <li key={t.id} className="text-sm">
-                    <div className="font-medium truncate">{t.title}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {t.due_at
-                        ? new Date(t.due_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })
-                        : "No due date"}
-                    </div>
-                  </li>
-                ))}
-            </ul>
-          )}
+          ) : (() => {
+            const visible = topTasks.filter((t) => activeId === ALL || t.business_id === activeId);
+            const linkedOutcomes = new Set(
+              visible.filter((t) => t.outcome_id).map((t) => t.outcome_id as string),
+            );
+            return (
+              <>
+                <ul className="space-y-2">
+                  {visible.map((t) => (
+                    <li key={t.id} className="text-sm">
+                      <div className="font-medium truncate flex items-center gap-1.5">
+                        <span className="truncate">{t.title}</span>
+                        {t.outcome_id && (
+                          <OutcomeMark
+                            outcomeId={t.outcome_id}
+                            outcomeName={outcomeNameById.get(t.outcome_id)}
+                          />
+                        )}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {t.due_at
+                          ? new Date(t.due_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })
+                          : "No due date"}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+                {linkedOutcomes.size > 0 && (
+                  <p className="mt-3 text-[11px] text-muted-foreground/80 italic">
+                    Moving {linkedOutcomes.size} outcome{linkedOutcomes.size === 1 ? "" : "s"} forward today.
+                  </p>
+                )}
+              </>
+            );
+          })()}
         </Card>
         <Card title="Recent notes">
           {recentNotesQ.isLoading ? (

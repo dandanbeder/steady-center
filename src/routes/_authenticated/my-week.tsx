@@ -28,8 +28,10 @@ import {
 } from "@/lib/tasks";
 import { listEvents, type EventRow } from "@/lib/calendars";
 import { getWorkingHours } from "@/lib/user-prefs";
+import { listOutcomes } from "@/lib/outcomes";
 import { WeeklyGoalsPanel } from "@/components/weekly-goals-panel";
 import { WeekPulse } from "@/components/week-pulse";
+import { OutcomeMark } from "@/components/outcomes/outcome-mark";
 import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
 import { cn } from "@/lib/utils";
 
@@ -113,6 +115,11 @@ function MyWeekPage() {
     queryFn: getWorkingHours,
     enabled: ready,
   });
+  const { data: outcomes = [] } = useQuery({
+    queryKey: ["outcomes", "all-names"],
+    queryFn: () => listOutcomes(),
+    enabled: ready,
+  });
 
   const dailyCap = hours?.daily_capacity_hours ?? 6;
   const workDays = hours?.work_days ?? [1, 2, 3, 4, 5];
@@ -121,6 +128,10 @@ function MyWeekPage() {
   const businessById = useMemo(
     () => new Map(businesses.map((b) => [b.id, b])),
     [businesses],
+  );
+  const outcomeNameById = useMemo(
+    () => new Map(outcomes.map((o) => [o.id, o.name])),
+    [outcomes],
   );
 
   // Apply active business filter
@@ -340,6 +351,21 @@ function MyWeekPage() {
         />
       </section>
 
+      {/* Subtle outcome ladder hint */}
+      {(() => {
+        const linked = new Set(
+          visibleTasks.filter((t) => t.outcome_id).map((t) => t.outcome_id as string),
+        );
+        if (linked.size === 0) return null;
+        const taskCount = visibleTasks.filter((t) => t.outcome_id).length;
+        return (
+          <p className="mt-4 text-xs text-muted-foreground/80 italic">
+            {taskCount} task{taskCount === 1 ? "" : "s"} this week moving {linked.size} outcome
+            {linked.size === 1 ? "" : "s"} forward.
+          </p>
+        );
+      })()}
+
       {/* Week grid — 7 cols on lg, stacks on mobile */}
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3">
         {byDay.map((day, i) => {
@@ -362,6 +388,7 @@ function MyWeekPage() {
                 loadPct={pct}
                 overloaded={over}
                 businessById={businessById}
+                outcomeNameById={outcomeNameById}
                 onDropTask={(taskId) => moveTask.mutate({ taskId, target: day.date })}
                 onToggleTask={(t) => toggleTask.mutate(t)}
               />
@@ -385,6 +412,7 @@ function DayColumn({
   loadPct,
   overloaded,
   businessById,
+  outcomeNameById,
   onDropTask,
   onToggleTask,
 }: {
@@ -399,6 +427,7 @@ function DayColumn({
   loadPct: number;
   overloaded: boolean;
   businessById: Map<string, { name: string; color: string }>;
+  outcomeNameById: Map<string, string>;
   onDropTask: (taskId: string) => void;
   onToggleTask: (t: Task) => void;
 }) {
@@ -512,11 +541,18 @@ function DayColumn({
                 <div className="flex-1 min-w-0">
                   <div
                     className={cn(
-                      "truncate",
+                      "truncate flex items-center gap-1",
                       t.status === "done" && "line-through text-muted-foreground",
                     )}
                   >
-                    {t.title}
+                    <span className="truncate">{t.title}</span>
+                    {t.outcome_id && (
+                      <OutcomeMark
+                        outcomeId={t.outcome_id}
+                        outcomeName={outcomeNameById.get(t.outcome_id)}
+                        size="xs"
+                      />
+                    )}
                   </div>
                   <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-muted-foreground">
                     <Flag className="h-2.5 w-2.5" style={{ color: PRIORITY_COLOR[t.priority] }} />
