@@ -156,7 +156,7 @@ function OutcomesPage() {
                 : tab === "at_risk"
                   ? "Nothing flagged at risk. Calm seas."
                   : tab === "achieved"
-                    ? "Nothing achieved here yet. Soon."
+                    ? "Nothing marked done here yet. Soon."
                     : "Nothing archived."}
             </Card>
           ) : (
