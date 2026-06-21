@@ -1,17 +1,26 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { RefreshCw, Calendar as CalendarIcon, Link as LinkIcon } from "lucide-react";
+import { RefreshCw, Calendar as CalendarIcon, Link as LinkIcon, MoreVertical, Unplug } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
   listRemoteGoogleCalendars,
   importGoogleCalendar,
   syncGoogleCalendarNow,
+  disconnectGoogleCalendar,
 } from "@/lib/google-calendar.functions";
 import { listCalendars } from "@/lib/calendars";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { setCalendarBusiness, type Business } from "@/lib/businesses";
-import { AccountSelector } from "@/components/account-selector";
+import { CalendarAccountPicker } from "@/components/calendar-account-picker";
+import { DisconnectCalendarDialog } from "@/components/disconnect-calendar-dialog";
 
 type Props = { businesses: Business[] };
 
@@ -20,9 +29,11 @@ export function GoogleSyncPanel({ businesses }: Props) {
   const listRemote = useServerFn(listRemoteGoogleCalendars);
   const importFn = useServerFn(importGoogleCalendar);
   const syncFn = useServerFn(syncGoogleCalendarNow);
+  const disconnectFn = useServerFn(disconnectGoogleCalendar);
 
   const [open, setOpen] = useState(false);
-  const [selectedBusiness, setSelectedBusiness] = useState<string>("");
+  const [selectedBusiness, setSelectedBusiness] = useState<string | null>(null);
+  const [disconnectTarget, setDisconnectTarget] = useState<{ id: string; name: string } | null>(null);
 
   const localCals = useQuery({
     queryKey: ["calendars"],
@@ -44,7 +55,7 @@ export function GoogleSyncPanel({ businesses }: Props) {
           external_id: args.external_id,
           name: args.name,
           color: args.color,
-          business_id: selectedBusiness || null,
+          business_id: selectedBusiness,
         },
       }),
     onSuccess: (r) => {
@@ -62,6 +73,19 @@ export function GoogleSyncPanel({ businesses }: Props) {
       toast.success(`Synced: +${r.inserted} new, ${r.updated} updated, ${r.deleted} removed`);
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Sync failed"),
+  });
+
+  const disconnectMut = useMutation({
+    mutationFn: (args: { calendar_id: string; remove_events: boolean }) =>
+      disconnectFn({ data: args }),
+    onSuccess: (r) => {
+      qc.invalidateQueries({ queryKey: ["calendars"] });
+      qc.invalidateQueries({ queryKey: ["events"] });
+      qc.invalidateQueries({ queryKey: ["google-calendars-remote"] });
+      setDisconnectTarget(null);
+      toast.success(r.removed_events ? "Disconnected and events removed" : "Disconnected");
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to disconnect"),
   });
 
   const remapMut = useMutation({
@@ -110,12 +134,10 @@ export function GoogleSyncPanel({ businesses }: Props) {
                   </span>
                 )}
               </div>
-              <AccountSelector
+              <CalendarAccountPicker
                 businesses={businesses}
                 value={c.business_id}
                 onChange={(business_id) => remapMut.mutate({ calendar_id: c.id, business_id })}
-                size="sm"
-                noneLabel="No account"
               />
               <Button
                 size="sm"
@@ -126,6 +148,25 @@ export function GoogleSyncPanel({ businesses }: Props) {
                 <RefreshCw className={`h-3.5 w-3.5 mr-1 ${syncMut.isPending ? "animate-spin" : ""}`} />
                 Sync now
               </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="icon" variant="ghost" className="h-8 w-8" aria-label="More actions">
+                    <MoreVertical className="h-3.5 w-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => syncMut.mutate(c.id)}>
+                    <RefreshCw className="h-3.5 w-3.5 mr-2" /> Sync now
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() => setDisconnectTarget({ id: c.id, name: c.name })}
+                  >
+                    <Unplug className="h-3.5 w-3.5 mr-2" /> Disconnect…
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           ))}
         </div>
@@ -135,12 +176,10 @@ export function GoogleSyncPanel({ businesses }: Props) {
         <div className="rounded-md border border-border bg-card p-4 space-y-3">
           <div className="block text-sm space-y-1">
             <span>Tag newly imported calendars to account:</span>
-            <AccountSelector
+            <CalendarAccountPicker
               businesses={businesses}
-              value={selectedBusiness || null}
-              onChange={(id) => setSelectedBusiness(id ?? "")}
-              noneLabel="No account"
-              className="w-full"
+              value={selectedBusiness}
+              onChange={(id) => setSelectedBusiness(id)}
             />
           </div>
 
@@ -182,6 +221,19 @@ export function GoogleSyncPanel({ businesses }: Props) {
             })}
           </ul>
         </div>
+      )}
+
+      {disconnectTarget && (
+        <DisconnectCalendarDialog
+          open={!!disconnectTarget}
+          onOpenChange={(o) => !o && setDisconnectTarget(null)}
+          provider="Google"
+          calendarName={disconnectTarget.name}
+          busy={disconnectMut.isPending}
+          onConfirm={(remove_events) =>
+            disconnectMut.mutate({ calendar_id: disconnectTarget.id, remove_events })
+          }
+        />
       )}
     </div>
   );
