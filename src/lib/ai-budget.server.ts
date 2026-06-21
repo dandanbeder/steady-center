@@ -136,21 +136,8 @@ export async function assertAiBudget(userId: string): Promise<void> {
 // Per-event ledger
 // ---------------------------------------------------------------------------
 
-export type AiActionType =
-  | "assistant"
-  | "coach"
-  | "transcribe"
-  | "journal_reflect"
-  | "notes_ai"
-  | "notes_journal"
-  | "outcomes_ai"
-  | "task_views_ai"
-  | "inbox_ai"
-  | "daily_pulse"
-  | "weekly_plan"
-  | "weekly_report"
-  | "team_progress"
-  | "other";
+export type { AiActionType } from "./credits-types";
+import type { AiActionType } from "./credits-types";
 
 // Cache the user's team_id resolution so a chatty caller doesn't N+1 memberships.
 const teamIdCache = new Map<string, { team_id: string | null; at: number }>();
