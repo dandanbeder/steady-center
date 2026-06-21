@@ -52,6 +52,8 @@ export const shareResource = createServerFn({ method: "POST" })
     granteeUserId?: string;
     role: ShareRole;
     busyOnly?: boolean;
+    canReshare?: boolean;
+    canExport?: boolean;
   }) => d)
   .handler(async ({ data, context }) => {
     const { userId } = context;
@@ -68,7 +70,6 @@ export const shareResource = createServerFn({ method: "POST" })
     let granteeId = data.granteeUserId ?? null;
     if (!granteeId && data.granteeEmail) {
       const email = data.granteeEmail.trim().toLowerCase();
-      // search auth users via listUsers (small workspace, single page is fine for now)
       const { data: list } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
       const u = list?.users.find((x) => x.email?.toLowerCase() === email);
       if (!u) throw new Error("No user found with that email");
@@ -81,6 +82,8 @@ export const shareResource = createServerFn({ method: "POST" })
 
     const details: JsonObj = {};
     if (data.resourceType === "calendar" && data.busyOnly) details.busy_only = true;
+    if (data.canReshare) details.can_reshare = true;
+    if (data.canExport) details.can_export = true;
 
     const { data: row, error } = await supabaseAdmin
       .from("shares")
@@ -100,6 +103,7 @@ export const shareResource = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return row;
   });
+
 
 export const revokeShare = createServerFn({ method: "POST" })
   .middleware([requireActiveUser])
