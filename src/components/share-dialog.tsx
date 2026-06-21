@@ -52,6 +52,9 @@ export function ShareDialog({ open, onOpenChange, resourceType, resourceId, reso
   const [query, setQuery] = useState("");
   const [role, setRole] = useState<ShareRole>("member");
   const [busyOnly, setBusyOnly] = useState(false);
+  const [canReshare, setCanReshare] = useState(false);
+  const [canExport, setCanExport] = useState(false);
+
 
   const { data: suggestions = [] } = useQuery({
     queryKey: ["share-suggest", query],
@@ -61,7 +64,7 @@ export function ShareDialog({ open, onOpenChange, resourceType, resourceId, reso
 
   const grant = useMutation({
     mutationFn: (granteeUserId: string) =>
-      _share({ data: { resourceType, resourceId, granteeUserId, role, busyOnly } }),
+      _share({ data: { resourceType, resourceId, granteeUserId, role, busyOnly, canReshare, canExport } }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["shares", resourceType, resourceId] });
       qc.invalidateQueries({ queryKey: ["shared-with-me"] });
@@ -72,7 +75,7 @@ export function ShareDialog({ open, onOpenChange, resourceType, resourceId, reso
 
   const grantByEmail = useMutation({
     mutationFn: (email: string) =>
-      _share({ data: { resourceType, resourceId, granteeEmail: email, role, busyOnly } }),
+      _share({ data: { resourceType, resourceId, granteeEmail: email, role, busyOnly, canReshare, canExport } }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["shares", resourceType, resourceId] });
       setQuery("");
@@ -80,6 +83,7 @@ export function ShareDialog({ open, onOpenChange, resourceType, resourceId, reso
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
   const revoke = useMutation({
     mutationFn: (shareId: string) => _revoke({ data: { shareId } }),
@@ -144,6 +148,16 @@ export function ShareDialog({ open, onOpenChange, resourceType, resourceId, reso
               <Switch id="busy-only" checked={busyOnly} onCheckedChange={setBusyOnly} />
             </div>
           )}
+
+          <div className="flex items-center justify-between rounded border p-2">
+            <Label htmlFor="can-reshare" className="text-sm">Can re-share / invite others</Label>
+            <Switch id="can-reshare" checked={canReshare} onCheckedChange={setCanReshare} />
+          </div>
+          <div className="flex items-center justify-between rounded border p-2">
+            <Label htmlFor="can-export" className="text-sm">Can export</Label>
+            <Switch id="can-export" checked={canExport} onCheckedChange={setCanExport} />
+          </div>
+
 
           {suggestions.length > 0 && query && (
             <div className="rounded border max-h-40 overflow-auto">

@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import {
-  CheckSquare, FileText, Calendar as CalendarIcon, Folder, ListTodo, Inbox,
+  CheckSquare, FileText, Calendar as CalendarIcon, Folder, ListTodo, Inbox, Building2,
 } from "lucide-react";
 import { listSharedWithMeResources, type SharedItemRow, type ResourceType } from "@/lib/shares.functions";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,7 @@ const ICONS: Record<ResourceType, typeof Folder> = {
   task: CheckSquare,
   note: FileText,
   calendar: CalendarIcon,
+  business: Building2,
 };
 
 const LINKS: Record<ResourceType, string> = {
@@ -33,16 +34,19 @@ const LINKS: Record<ResourceType, string> = {
   task: "/tasks",
   note: "/notes",
   calendar: "/calendar",
+  business: "/today",
 };
 
-const ORDER: ResourceType[] = ["folder", "list", "task", "note", "calendar"];
+const ORDER: ResourceType[] = ["business", "folder", "list", "task", "note", "calendar"];
 const LABELS: Record<ResourceType, string> = {
   folder: "Folders",
   list: "Lists",
   task: "Tasks",
   note: "Notes",
   calendar: "Calendars",
+  business: "Accounts",
 };
+
 
 function SharedPage() {
   const fetchShared = useServerFn(listSharedWithMeResources);

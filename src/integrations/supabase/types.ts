@@ -2813,6 +2813,10 @@ export type Database = {
         Args: { p_id: string; p_type: string }
         Returns: Record<string, unknown>
       }
+      resource_business: {
+        Args: { _id: string; _type: string }
+        Returns: string
+      }
       resource_owner: { Args: { _id: string; _type: string }; Returns: string }
       role_rank: { Args: { _role: string }; Returns: number }
       seed_default_task_stages: {
