@@ -69,7 +69,7 @@ const PAGES: { to: string; label: string; icon: typeof Home }[] = [
   { to: "/notes", label: "Notes", icon: FileText },
   { to: "/meetings", label: "Meetings", icon: Users },
   { to: "/reports", label: "Reports", icon: BarChart3 },
-  { to: "/inbox", label: "Inbox", icon: ClipboardList },
+  { to: "/capture", label: "Capture", icon: ClipboardList },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ];
 
