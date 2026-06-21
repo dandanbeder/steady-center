@@ -699,6 +699,7 @@ ${JSON.stringify(metrics, null, 2)}`;
         ANTHROPIC_MODEL,
         json.usage?.input_tokens ?? 0,
         json.usage?.output_tokens ?? 0,
+        { actionType: "weekly_report" },
       );
     } catch (e) {
       console.warn("[weekly-report] usage record failed", e);
