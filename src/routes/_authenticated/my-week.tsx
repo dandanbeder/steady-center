@@ -28,8 +28,10 @@ import {
 } from "@/lib/tasks";
 import { listEvents, type EventRow } from "@/lib/calendars";
 import { getWorkingHours } from "@/lib/user-prefs";
+import { listOutcomes } from "@/lib/outcomes";
 import { WeeklyGoalsPanel } from "@/components/weekly-goals-panel";
 import { WeekPulse } from "@/components/week-pulse";
+import { OutcomeMark } from "@/components/outcomes/outcome-mark";
 import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
 import { cn } from "@/lib/utils";
 
