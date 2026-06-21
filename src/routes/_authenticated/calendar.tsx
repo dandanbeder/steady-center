@@ -222,6 +222,15 @@ function CalendarPage() {
     queryFn: listCalendars,
     enabled: ready,
   });
+  const { data: workingHours } = useQuery({
+    queryKey: ["working-hours"],
+    queryFn: getWorkingHours,
+    enabled: ready,
+  });
+  const workStart = workingHours?.work_start_hour ?? 9;
+  const workEnd = workingHours?.work_end_hour ?? 17;
+  const workDaysSet = workingHours?.work_days ?? [1, 2, 3, 4, 5];
+  const dailyCap = workingHours?.daily_capacity_hours ?? 6;
 
   const range = useMemo(() => {
     if (view === "month") {
