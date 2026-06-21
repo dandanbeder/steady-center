@@ -302,9 +302,9 @@ function JournalPage() {
               </button>
               <button
                 type="button"
-                onClick={handleExport}
+                onClick={handleExportAll}
                 className="text-muted-foreground hover:text-foreground"
-                title="Export my journal"
+                title="Download journal as PDF"
               >
                 <Download className="h-4 w-4" />
               </button>
