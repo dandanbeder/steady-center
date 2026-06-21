@@ -102,6 +102,7 @@ Rules:
       MODEL,
       json.usage?.prompt_tokens ?? 0,
       json.usage?.completion_tokens ?? 0,
+      { actionType: "journal_reflect" },
     ).catch(() => undefined);
 
     return { markdown, entryCount: entries.length };
