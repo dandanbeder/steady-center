@@ -1227,6 +1227,7 @@ function TimeGrid({
   colorFor,
   onSlotClick,
   onEventClick,
+  onEventChange,
 }: {
   days: Date[];
   events: EventRow[];
@@ -1234,7 +1235,9 @@ function TimeGrid({
   colorFor?: (e: EventRow) => string;
   onSlotClick: (d: Date) => void;
   onEventClick: (e: EventRow) => void;
+  onEventChange?: (ev: EventRow, start: Date, end: Date) => void;
 }) {
+
   const today = startOfDay(new Date());
   const [now, setNow] = useState(new Date());
   useEffect(() => {
