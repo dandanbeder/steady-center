@@ -62,6 +62,17 @@ export function WeeklyGoalsPanel({ compact = false }: { compact?: boolean }) {
 
   const [adding, setAdding] = useState(false);
 
+  // Forward-looking gentle coach check — reflects back the week and flags overload.
+  const coachFn = useServerFn(coachWeekCheck);
+  const weekStartDay = weekStart.toISOString().slice(0, 10);
+  const { data: coach } = useQuery({
+    queryKey: ["coach-week", weekStartDay, goals.length],
+    queryFn: () => coachFn({ data: { week_start: weekStartDay } }),
+    refetchOnWindowFocus: false,
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+
   const mark = useMutation({
     mutationFn: ({ id, status }: { id: string; status: "met" | "missed" | "open" }) =>
       updateGoal(id, { status }),
