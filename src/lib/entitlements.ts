@@ -133,4 +133,4 @@ export const PRICING = {
   team_yearly: { amount: 12000, cycle: "year" as BillingCycle, priceId: "team_yearly" },
 };
 
-export const FREE_BUSINESS_LIMIT = LIMITS.free.accounts;
+export const FREE_BUSINESS_LIMIT = LIMITS.free.maxBusinesses;

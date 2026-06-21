@@ -162,7 +162,7 @@ export const adminGetCustomer360 = createServerFn({ method: "GET" })
       productId === "team_plan" ? "team" : productId === "pro_plan" ? "pro" : "free";
     const quantity = sub.data?.quantity ?? 1;
     const paidSeats = tier === "team" ? Math.max(quantity, 2) : 1;
-    const aiCap = LIMITS[tier].aiActionsPerSeat * paidSeats;
+    const aiCap = LIMITS[tier].aiAllowanceCreditsPerSeat * paidSeats;
     const aiUsed = aiThisMonth.data?.actions ?? 0;
 
     const paddleCheckoutUrl =

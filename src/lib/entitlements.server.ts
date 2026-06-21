@@ -109,7 +109,7 @@ export async function requireFeature(
 /** Throws UPGRADE_REQUIRED if the user has hit their account (business) limit. */
 export async function requireAccountSlot(userId: string): Promise<void> {
   const { tier } = await getUserPlanContext(userId);
-  const cap = LIMITS[tier].accounts;
+  const cap = LIMITS[tier].maxBusinesses;
   if (cap < 0) return;
   const { count } = await supabaseAdmin
     .from("businesses")
@@ -125,7 +125,7 @@ export async function requireAccountSlot(userId: string): Promise<void> {
 /** Throws UPGRADE_REQUIRED if the user has hit their connected-calendar limit. */
 export async function requireCalendarSlot(userId: string): Promise<void> {
   const { tier } = await getUserPlanContext(userId);
-  const cap = LIMITS[tier].calendarConnections;
+  const cap = LIMITS[tier].maxCalendarConnections;
   if (cap < 0) return;
   const { count } = await supabaseAdmin
     .from("calendars")
