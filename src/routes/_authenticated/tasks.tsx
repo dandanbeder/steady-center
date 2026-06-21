@@ -949,9 +949,12 @@ function ListWorkspace({
           onToggleSelect={toggleSelect}
           onChange={invalidate}
           onOpen={setOpenTask}
-          groupByAssignee={groupByAssignee}
+          groupBy={groupBy}
+          stages={stages}
           members={memberList}
           myId={myId}
+          collapsedGroups={collapsedGroups}
+          onToggleCollapsed={toggleGroupCollapsed}
         />
       )}
       {view === "board" && (
@@ -960,11 +963,19 @@ function ListWorkspace({
           tasks={filteredTopLevel}
           onChange={invalidate}
           onOpen={setOpenTask}
+          onManageStages={() => setStageMgrOpen(true)}
         />
       )}
       {view === "calendar" && (
         <TaskCalendarView tasks={filteredTopLevel} onOpen={setOpenTask} />
       )}
+
+      <StageManagerDialog
+        listId={list.id}
+        open={stageMgrOpen}
+        onOpenChange={setStageMgrOpen}
+      />
+
 
       {openTask && (
         <TaskDialog
