@@ -485,8 +485,9 @@ function CalendarPage() {
             cursor={cursor}
             events={visibleEvents}
             calById={calById}
+            colorFor={colorFor}
             onDayClick={(d) => setDayOpen(d)}
-            onEventClick={(e) => setEditing(e)}
+            onEventClick={(e) => setPreviewing(e)}
           />
         )}
         {view === "week" && (
@@ -496,8 +497,9 @@ function CalendarPage() {
             )}
             events={visibleEvents}
             calById={calById}
+            colorFor={colorFor}
             onSlotClick={(d) => openNewOn(d)}
-            onEventClick={(e) => setEditing(e)}
+            onEventClick={(e) => setPreviewing(e)}
           />
         )}
         {view === "day" && (
@@ -505,15 +507,17 @@ function CalendarPage() {
             days={[startOfDay(cursor)]}
             events={visibleEvents}
             calById={calById}
+            colorFor={colorFor}
             onSlotClick={(d) => openNewOn(d)}
-            onEventClick={(e) => setEditing(e)}
+            onEventClick={(e) => setPreviewing(e)}
           />
         )}
         {view === "agenda" && (
           <AgendaList
             events={visibleEvents}
             calById={calById}
-            onEventClick={(e) => setEditing(e)}
+            colorFor={colorFor}
+            onEventClick={(e) => setPreviewing(e)}
           />
         )}
       </div>
