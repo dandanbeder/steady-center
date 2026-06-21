@@ -367,10 +367,13 @@ Return ONLY JSON: { "title": string, "body_markdown": string }
 - Fix punctuation, capitalization, paragraph breaks, obvious speech errors.
 - Preserve every fact and the speaker's voice.
 - Add a brief 3-6 word title.`;
+    // Light-tier override: mechanical clean-up.
+    const subRoute = routeModel("notes_ai", "cleanup_transcript");
     const text = await callClaude({
       system: sys,
       user: data.transcript,
-      maxTokens: 1800,
+      maxTokens: subRoute.maxOutputTokens,
+      model: subRoute.model,
     });
     const parsed = parseJsonBlock<{ title: string; body_markdown: string }>(text);
     if (!parsed) throw new Error("AI returned an unparseable response.");
