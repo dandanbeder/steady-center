@@ -73,8 +73,7 @@ type SectionId =
   | "ai"
   | "privacy"
   | "billing"
-  | "team"
-  | "danger";
+  | "team";
 
 const NAV: Array<{ id: SectionId; label: string; icon: React.ComponentType<{ className?: string }>; tone?: "danger" }> = [
   { id: "general", label: "General", icon: User },
@@ -88,7 +87,6 @@ const NAV: Array<{ id: SectionId; label: string; icon: React.ComponentType<{ cla
   { id: "privacy", label: "Privacy & data", icon: ShieldCheck },
   { id: "billing", label: "Billing", icon: CreditCard },
   { id: "team", label: "Team", icon: Users },
-  { id: "danger", label: "Danger zone", icon: Skull, tone: "danger" },
 ];
 
 function SettingsPage() {
