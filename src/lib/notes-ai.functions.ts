@@ -245,6 +245,9 @@ export const extractActions = createServerFn({ method: "POST" })
     z.object({ noteId: z.string().uuid() }).parse(i),
   )
   .handler(async ({ data, context }) => {
+    const { assertAiBudget, recordAiUsage } = await import("./ai-budget.server");
+    await assertAiBudget(context.userId);
+
     const { note, attachmentsText } = await loadNoteContext(
       context.supabase,
       data.noteId,
@@ -261,7 +264,14 @@ Rules:
     const user = `Title: ${note.title || "Untitled"}\n\nBody:\n${note.body}${
       attachmentsText ? `\n\nAttachments:\n${attachmentsText}` : ""
     }`;
-    const text = await callClaude({ system: sys, user, maxTokens: 1200 });
+    const { text, input_tokens, output_tokens } = await callClaudeFull({
+      system: sys,
+      user,
+      maxTokens: 1200,
+    });
+    await recordAiUsage(context.userId, MODEL, input_tokens, output_tokens).catch(
+      () => undefined,
+    );
     const parsed = parseJsonBlock<{
       actions: Array<{
         title: string;
