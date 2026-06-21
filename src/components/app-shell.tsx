@@ -354,17 +354,15 @@ export function AppShell({ children }: { children: ReactNode }) {
               </span>
             )}
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => {
-              setAssistantPrompt(undefined);
-              setAssistantOpen(true);
-            }}
-            aria-label="Open assistant"
-            title="Heartbeat Assistant"
-            className="h-9 w-9 text-muted-foreground hover:text-foreground shrink-0"
           <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Help"
+                title="Help"
+                className="h-9 w-9 text-muted-foreground hover:text-foreground shrink-0"
+              >
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
