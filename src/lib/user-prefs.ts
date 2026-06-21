@@ -1,12 +1,13 @@
 import { supabase } from "@/integrations/supabase/client";
 
 // ---------------- Notification prefs ----------------
-// Delivery channels: email (Resend), SMS (Twilio, requires a phone on the profile),
-// and browser (in-app + optional web push). SMS preferences are stored regardless
-// of whether a number is on file, but dispatch is gated server-side on the
-// presence of a verified phone number.
-export type NotificationChannels = { email: boolean; sms: boolean; browser: boolean };
-export type ChannelPair = { email: boolean; sms: boolean; browser: boolean };
+// Delivery channels at launch: email (Resend) and browser (in-app + optional
+// web push). The channel architecture is intentionally extensible — SMS or
+// other channels can be added later by extending ChannelKey/ChannelPair and
+// the per-type defaults without a schema rework.
+export type ChannelKey = "email" | "browser";
+export type NotificationChannels = { email: boolean; browser: boolean };
+export type ChannelPair = { email: boolean; browser: boolean };
 export type PerTypeChannels = {
   event_reminders: ChannelPair;
   task_due: ChannelPair;
@@ -40,9 +41,9 @@ export type NotificationEvents = {
   evening_winddown_hour: number;
   evening_winddown_minute: number;
   // Selective-by-default master switches
-  selective_mode: boolean;          // when on, only push-worthy types ever push
-  batch_low_priority: boolean;      // roll non-urgent items into the Daily Pulse instead of pinging
-  // Per-type channel routing (which channels deliver each type)
+  selective_mode: boolean;
+  batch_low_priority: boolean;
+  // Per-type channel routing
   type_channels: PerTypeChannels;
 };
 export type NotificationPrefs = {
@@ -54,21 +55,19 @@ export type NotificationPrefs = {
 };
 
 const DEFAULT_TYPE_CHANNELS: PerTypeChannels = {
-  // Push-worthy: time-sensitive, from/about another person, or needs my action
-  event_reminders:       { email: true,  sms: false, browser: true },
-  meeting_summary_ready: { email: false, sms: false, browser: true },
-  tagged:                { email: true,  sms: false, browser: true },
-  assigned_to_me:        { email: true,  sms: false, browser: true },
-  access_share_requests: { email: true,  sms: false, browser: true },
-  security_events:       { email: true,  sms: false, browser: true },
-  payment_failed:        { email: true,  sms: false, browser: true },
-  // Batched / in-app only by default
-  task_due:              { email: false, sms: false, browser: false },
-  weekly_review:         { email: true,  sms: false, browser: false },
+  event_reminders:       { email: true,  browser: true },
+  meeting_summary_ready: { email: false, browser: true },
+  tagged:                { email: true,  browser: true },
+  assigned_to_me:        { email: true,  browser: true },
+  access_share_requests: { email: true,  browser: true },
+  security_events:       { email: true,  browser: true },
+  payment_failed:        { email: true,  browser: true },
+  task_due:              { email: false, browser: false },
+  weekly_review:         { email: true,  browser: false },
 };
 
 const DEFAULT_NOTIF: NotificationPrefs = {
-  channels: { email: true, sms: false, browser: false },
+  channels: { email: true, browser: false },
   events: {
     event_reminders: true,
     event_reminder_lead_minutes: 15,
@@ -98,6 +97,14 @@ const DEFAULT_NOTIF: NotificationPrefs = {
   quiet_end: 7,
 };
 
+function normalizePair(raw: unknown, fallback: ChannelPair): ChannelPair {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  return {
+    email: typeof r.email === "boolean" ? r.email : fallback.email,
+    browser: typeof r.browser === "boolean" ? r.browser : fallback.browser,
+  };
+}
+
 export async function getNotificationPrefs(): Promise<NotificationPrefs> {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) throw new Error("Not signed in");
@@ -110,23 +117,28 @@ export async function getNotificationPrefs(): Promise<NotificationPrefs> {
   if (!data) return DEFAULT_NOTIF;
   const rawChannels = (data.channels as Record<string, unknown>) ?? {};
   const rawEvents = (data.events as Record<string, unknown>) ?? {};
-  const rawTypeChannels = (rawEvents.type_channels as Partial<PerTypeChannels>) ?? {};
+  const rawTypeChannels = (rawEvents.type_channels as Record<string, unknown>) ?? {};
+  const typeChannels: PerTypeChannels = (Object.keys(DEFAULT_TYPE_CHANNELS) as Array<keyof PerTypeChannels>)
+    .reduce((acc, k) => {
+      acc[k] = normalizePair(rawTypeChannels[k as string], DEFAULT_TYPE_CHANNELS[k]);
+      return acc;
+    }, {} as PerTypeChannels);
   return {
     channels: {
       email: typeof rawChannels.email === "boolean" ? rawChannels.email : DEFAULT_NOTIF.channels.email,
-      sms: typeof rawChannels.sms === "boolean" ? rawChannels.sms : DEFAULT_NOTIF.channels.sms,
       browser: typeof rawChannels.browser === "boolean" ? rawChannels.browser : DEFAULT_NOTIF.channels.browser,
     },
     events: {
       ...DEFAULT_NOTIF.events,
       ...rawEvents,
-      type_channels: { ...DEFAULT_TYPE_CHANNELS, ...rawTypeChannels },
+      type_channels: typeChannels,
     } as NotificationEvents,
     quiet_enabled: data.quiet_enabled,
     quiet_start: data.quiet_start,
     quiet_end: data.quiet_end,
   };
 }
+
 
 export async function saveNotificationPrefs(p: NotificationPrefs) {
   const { data: u } = await supabase.auth.getUser();

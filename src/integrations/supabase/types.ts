@@ -2236,7 +2236,6 @@ export type Database = {
           must_change_password: boolean
           onboarding_completed_at: string | null
           organisation: string | null
-          phone: string | null
           platform_pulse_cadence: string
           platform_pulse_last_sent_at: string | null
           platform_role: Database["public"]["Enums"]["platform_role"]
@@ -2303,7 +2302,6 @@ export type Database = {
           must_change_password?: boolean
           onboarding_completed_at?: string | null
           organisation?: string | null
-          phone?: string | null
           platform_pulse_cadence?: string
           platform_pulse_last_sent_at?: string | null
           platform_role?: Database["public"]["Enums"]["platform_role"]
@@ -2370,7 +2368,6 @@ export type Database = {
           must_change_password?: boolean
           onboarding_completed_at?: string | null
           organisation?: string | null
-          phone?: string | null
           platform_pulse_cadence?: string
           platform_pulse_last_sent_at?: string | null
           platform_role?: Database["public"]["Enums"]["platform_role"]

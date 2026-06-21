@@ -5,7 +5,6 @@ import {
   Bell,
   Mail,
   Monitor,
-  MessageSquare,
   Sun,
   Moon,
   Sparkles,
@@ -15,7 +14,6 @@ import {
 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
@@ -30,9 +28,9 @@ import {
   saveNotificationPrefs,
   type NotificationPrefs,
   type PerTypeChannels,
+  type ChannelKey,
 } from "@/lib/user-prefs";
 import { getMarketingOptIn, setMarketingOptIn } from "@/lib/email-prefs.functions";
-import { supabase } from "@/integrations/supabase/client";
 
 type TypeKey = keyof PerTypeChannels;
 
@@ -57,44 +55,6 @@ export function NotificationsPanel() {
     queryFn: getNotificationPrefs,
   });
 
-  // Phone number gates the SMS channel, read & write directly via RLS-scoped
-  // profiles. SMS prefs are stored either way, but dispatch is gated server-side.
-  const phoneQ = useQuery({
-    queryKey: ["my-phone"],
-    queryFn: async () => {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) return null;
-      const { data: p } = await supabase
-        .from("profiles")
-        .select("phone")
-        .eq("id", u.user.id)
-        .maybeSingle();
-      return p?.phone ?? null;
-    },
-  });
-  const [phoneDraft, setPhoneDraft] = useState<string>("");
-  useEffect(() => {
-    if (phoneQ.data !== undefined && phoneDraft === "") setPhoneDraft(phoneQ.data ?? "");
-  }, [phoneQ.data, phoneDraft]);
-  const savePhone = useMutation({
-    mutationFn: async (phone: string | null) => {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) throw new Error("Not signed in");
-      const { error } = await supabase
-        .from("profiles")
-        .update({ phone })
-        .eq("id", u.user.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["my-phone"] });
-      toast.success("Mobile number saved");
-    },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
-  });
-  const phone = phoneQ.data ?? null;
-  const hasPhone = !!phone;
-
   const [draft, setDraft] = useState<NotificationPrefs | null>(null);
   useEffect(() => {
     if (data && !draft) setDraft(data);
@@ -111,13 +71,13 @@ export function NotificationsPanel() {
 
   if (isLoading || !draft) return <p className="text-sm text-muted-foreground">Loading…</p>;
 
-  const setChannel = (k: keyof NotificationPrefs["channels"], v: boolean) =>
+  const setChannel = (k: ChannelKey, v: boolean) =>
     setDraft({ ...draft, channels: { ...draft.channels, [k]: v } });
   const setEvent = <K extends keyof NotificationPrefs["events"]>(
     k: K,
     v: NotificationPrefs["events"][K],
   ) => setDraft({ ...draft, events: { ...draft.events, [k]: v } });
-  const setTypeChannel = (type: TypeKey, ch: "email" | "sms" | "browser", v: boolean) =>
+  const setTypeChannel = (type: TypeKey, ch: ChannelKey, v: boolean) =>
     setDraft({
       ...draft,
       events: {
@@ -178,70 +138,6 @@ export function NotificationsPanel() {
               else setChannel("browser", false);
             }}
           />
-          {/* SMS, gated on having a mobile number on the profile. */}
-          <div className="flex items-start justify-between gap-4 py-1">
-            <div className="min-w-0 flex items-start gap-3">
-              <span className="mt-0.5 text-muted-foreground">
-                <MessageSquare className="h-4 w-4" />
-              </span>
-              <div className="min-w-0">
-                <p className="text-sm font-medium leading-tight">SMS</p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Time-critical pings to your mobile. Reserved for high-priority alerts;
-                  carrier rates may apply.
-                </p>
-              </div>
-            </div>
-            <Switch
-              checked={hasPhone && draft.channels.sms}
-              onCheckedChange={(v) => setChannel("sms", v)}
-              disabled={!hasPhone}
-              aria-label={`SMS, ${draft.channels.sms ? "on" : "off"}`}
-            />
-          </div>
-          {!hasPhone ? (
-            <div className="rounded-md border border-dashed border-border bg-muted/30 p-3 space-y-2">
-              <p className="text-xs text-muted-foreground">
-                Add a mobile number to enable SMS alerts. We&apos;ll only use it for
-                notifications you opt into below.
-              </p>
-              <div className="flex gap-2">
-                <Input
-                  type="tel"
-                  inputMode="tel"
-                  placeholder="+1 555 123 4567"
-                  value={phoneDraft}
-                  onChange={(e) => setPhoneDraft(e.target.value)}
-                  className="max-w-xs"
-                />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={savePhone.isPending || !phoneDraft.trim()}
-                  onClick={() => savePhone.mutate(phoneDraft.trim() || null)}
-                >
-                  {savePhone.isPending ? "Saving…" : "Save number"}
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground pl-7">
-              <span>Mobile on file: <span className="font-mono text-foreground">{phone}</span></span>
-              <button
-                type="button"
-                className="text-xs underline hover:text-foreground"
-                onClick={() => {
-                  if (confirm("Remove this number? SMS notifications will be turned off.")) {
-                    setChannel("sms", false);
-                    savePhone.mutate(null);
-                    setPhoneDraft("");
-                  }
-                }}
-              >
-                Remove
-              </button>
-            </div>
-          )}
         </CardContent>
       </Card>
 
@@ -288,7 +184,7 @@ export function NotificationsPanel() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
-          <TypeRow smsAvailable={hasPhone}
+          <TypeRow
             label="Meeting reminders"
             helper="A nudge before scheduled events on your calendar."
             enabled={draft.events.event_reminders}
@@ -316,7 +212,7 @@ export function NotificationsPanel() {
               )
             }
           />
-          <TypeRow smsAvailable={hasPhone}
+          <TypeRow
             label="@mentions and comments to me"
             helper="When someone tags you in a comment, note, or shared item."
             enabled={draft.events.tagged}
@@ -324,7 +220,7 @@ export function NotificationsPanel() {
             channels={draft.events.type_channels.tagged}
             onChannelChange={(c, v) => setTypeChannel("tagged", c, v)}
           />
-          <TypeRow smsAvailable={hasPhone}
+          <TypeRow
             label="A task assigned to me"
             helper="Someone hands a task to you, you'll want to know."
             enabled={draft.events.assigned_to_me}
@@ -332,7 +228,7 @@ export function NotificationsPanel() {
             channels={draft.events.type_channels.assigned_to_me}
             onChannelChange={(c, v) => setTypeChannel("assigned_to_me", c, v)}
           />
-          <TypeRow smsAvailable={hasPhone}
+          <TypeRow
             label="Access and share requests"
             helper="Someone asks to join a list, or shares one with you."
             enabled={draft.events.access_share_requests}
@@ -340,7 +236,7 @@ export function NotificationsPanel() {
             channels={draft.events.type_channels.access_share_requests}
             onChannelChange={(c, v) => setTypeChannel("access_share_requests", c, v)}
           />
-          <TypeRow smsAvailable={hasPhone}
+          <TypeRow
             label="Meeting summary ready"
             helper="When a meeting's notes, decisions, and actions are ready to review."
             enabled={draft.events.meeting_summary_ready}
@@ -348,7 +244,7 @@ export function NotificationsPanel() {
             channels={draft.events.type_channels.meeting_summary_ready}
             onChannelChange={(c, v) => setTypeChannel("meeting_summary_ready", c, v)}
           />
-          <TypeRow smsAvailable={hasPhone}
+          <TypeRow
             label="Weekly review ready"
             helper="Your gentle Friday recap, what landed, what's next."
             enabled={draft.events.weekly_review}
@@ -356,7 +252,7 @@ export function NotificationsPanel() {
             channels={draft.events.type_channels.weekly_review}
             onChannelChange={(c, v) => setTypeChannel("weekly_review", c, v)}
           />
-          <TypeRow smsAvailable={hasPhone}
+          <TypeRow
             label="Security events"
             helper="Password or email changed, new sign-in. Always recommended."
             enabled={draft.events.security_events}
@@ -364,7 +260,7 @@ export function NotificationsPanel() {
             channels={draft.events.type_channels.security_events}
             onChannelChange={(c, v) => setTypeChannel("security_events", c, v)}
           />
-          <TypeRow smsAvailable={hasPhone}
+          <TypeRow
             label="Payment failed"
             helper="Heads-up if a charge doesn't go through, so you can fix it quickly."
             enabled={draft.events.payment_failed}
@@ -387,7 +283,7 @@ export function NotificationsPanel() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
-          <TypeRow smsAvailable={hasPhone}
+          <TypeRow
             label="Tasks due today"
             helper={"Summarised as one line in the Morning Pulse, e.g. \"4 tasks due today\"."}
             enabled={draft.events.task_due}
@@ -596,20 +492,17 @@ function TypeRow({
   onEnabledChange,
   channels,
   onChannelChange,
-  smsAvailable,
   extra,
 }: {
   label: string;
   helper: string;
   enabled: boolean;
   onEnabledChange: (v: boolean) => void;
-  channels: { email: boolean; sms: boolean; browser: boolean };
-  onChannelChange: (c: "email" | "sms" | "browser", v: boolean) => void;
-  smsAvailable?: boolean;
+  channels: { email: boolean; browser: boolean };
+  onChannelChange: (c: ChannelKey, v: boolean) => void;
   extra?: React.ReactNode;
 }) {
-  const noneOn =
-    !channels.email && !channels.browser && !(smsAvailable && channels.sms);
+  const noneOn = !channels.email && !channels.browser;
   return (
     <div className="space-y-2 rounded-md border border-border/60 p-3">
       <div className="flex items-start justify-between gap-4">
@@ -624,14 +517,6 @@ function TypeRow({
           <span className="text-xs text-muted-foreground mr-1">Deliver via:</span>
           <ChannelChip label="Email" icon={<Mail className="h-3 w-3" />} active={channels.email} onChange={(v) => onChannelChange("email", v)} />
           <ChannelChip label="Browser" icon={<Monitor className="h-3 w-3" />} active={channels.browser} onChange={(v) => onChannelChange("browser", v)} />
-          {smsAvailable && (
-            <ChannelChip
-              label="SMS"
-              icon={<MessageSquare className="h-3 w-3" />}
-              active={channels.sms}
-              onChange={(v) => onChannelChange("sms", v)}
-            />
-          )}
           {noneOn && (
             <span className="text-xs text-amber-600 dark:text-amber-400">Pick at least one channel.</span>
           )}
