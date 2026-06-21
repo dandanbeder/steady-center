@@ -1376,11 +1376,13 @@ function BoardView({
   tasks,
   onChange,
   onOpen,
+  onManageStages,
 }: {
   listId: string;
   tasks: Task[];
   onChange: () => void;
   onOpen: (t: Task) => void;
+  onManageStages: () => void;
 }) {
   const qc = useQueryClient();
   const sensors = useSensors(
