@@ -64,7 +64,7 @@ function AskNotesPage() {
           Ask my notes
         </h1>
         <p className="text-sm text-muted-foreground">
-          Ask a question — I'll search your notes and summarise what I find, with sources.
+          Ask a question, I'll search your notes and summarise what I find, with sources.
         </p>
       </header>
 
