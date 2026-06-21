@@ -138,8 +138,6 @@ export async function assertAiBudget(userId: string): Promise<void> {
 // Per-event ledger
 // ---------------------------------------------------------------------------
 
-export type { AiActionType } from "./credits-types";
-import type { AiActionType } from "./credits-types";
 
 // Cache the user's team_id resolution so a chatty caller doesn't N+1 memberships.
 const teamIdCache = new Map<string, { team_id: string | null; at: number }>();
