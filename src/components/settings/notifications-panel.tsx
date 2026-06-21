@@ -5,6 +5,7 @@ import {
   Bell,
   Mail,
   Monitor,
+  MessageSquare,
   Sun,
   Moon,
   Sparkles,
@@ -14,6 +15,7 @@ import {
 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
@@ -30,6 +32,7 @@ import {
   type PerTypeChannels,
 } from "@/lib/user-prefs";
 import { getMarketingOptIn, setMarketingOptIn } from "@/lib/email-prefs.functions";
+import { supabase } from "@/integrations/supabase/client";
 
 type TypeKey = keyof PerTypeChannels;
 
