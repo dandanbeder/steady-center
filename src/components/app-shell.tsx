@@ -49,6 +49,7 @@ const NAV: { to: string; label: string; icon: typeof Home }[] = [
   { to: "/reports", label: "Reports", icon: BarChart3 },
 
   
+  { to: "/learn", label: "Tutorial", icon: GraduationCap },
   { to: "/trash", label: "Trash", icon: Trash2 },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
