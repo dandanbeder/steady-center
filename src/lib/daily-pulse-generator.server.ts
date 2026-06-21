@@ -221,7 +221,7 @@ Open total: ${allOpen.length}. Overdue: ${overdue.length}.`;
     ? "You write a 2-4 sentence calm morning brief for a busy operator. Tone: grounded, kind, never alarmist. Mention the shape of the day (meetings, focus, load vs capacity). No exclamation marks. No headers. Plain prose."
     : "You write a 2-3 sentence calm evening wind-down message. Tone: warm, reflective, never preachy. Acknowledge effort, invite a small ritual (review today, set tomorrow's focus, breathe). No exclamation marks. Plain prose.";
 
-  const summary = await callAi(systemPrompt, summaryInput) || (kind === "morning"
+  const summary = await callAi(systemPrompt, summaryInput, userId) || (kind === "morning"
     ? `Quiet start. ${meetings.length} meeting${meetings.length === 1 ? "" : "s"} today. Roughly ${scheduled}h of work against ${capacity}h capacity. Your three priorities are queued.`
     : "You showed up today. Take two minutes to close the loop and breathe.");
 
