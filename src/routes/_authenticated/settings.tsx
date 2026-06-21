@@ -221,17 +221,6 @@ function SettingsPage() {
         </div>
       </section>
 
-      <section>
-        <h2 className="text-2xl mb-1">Calendar sync</h2>
-        <p className="text-sm text-muted-foreground mb-6">
-          Connect Google or Microsoft / Outlook. Imported calendars sync hourly and changes you make here push back to the source.
-        </p>
-        <div className="rounded-2xl border border-border bg-card p-6 space-y-8" style={{ boxShadow: "var(--shadow-soft)" }}>
-          <GoogleSyncPanel businesses={businesses} />
-          <div className="border-t border-border" />
-          <MicrosoftSyncPanel businesses={businesses} />
-        </div>
-      </section>
 
       <section>
         <h2 className="text-2xl mb-1">Weekly review</h2>
@@ -286,60 +275,6 @@ function SettingsPage() {
         </div>
       </section>
 
-
-
-
-      <section>
-        <h2 className="text-2xl mb-1">Accounts</h2>
-        <p className="text-sm text-muted-foreground mb-6">
-          Each account gets its own color and its own calendars.
-        </p>
-
-        <div
-          className="rounded-2xl border border-border bg-card p-6"
-          style={{ boxShadow: "var(--shadow-soft)" }}
-        >
-          {isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
-          ) : businesses.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No accounts yet. Add your first below.</p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {businesses.map((b) => (
-                <BusinessRow
-                  key={b.id}
-                  business={b}
-                  calendars={calendars.filter((c) => c.business_id === b.id)}
-                  onChange={invalidate}
-                />
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!newName.trim()) return;
-            createMut.mutate();
-          }}
-          className="mt-6 rounded-2xl border border-border bg-card p-6 space-y-4"
-          style={{ boxShadow: "var(--shadow-soft)" }}
-        >
-          <h3 className="text-lg">Add an account</h3>
-          <ColorDots value={newColor} onChange={setNewColor} />
-          <div className="flex gap-3">
-            <Input
-              placeholder="e.g. Studio, Consulting, Café"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-            />
-            <Button type="submit" disabled={createMut.isPending || !newName.trim()}>
-              <Plus className="h-4 w-4 mr-1" /> Add
-            </Button>
-          </div>
-        </form>
-      </section>
 
       <DangerZone />
     </div>
