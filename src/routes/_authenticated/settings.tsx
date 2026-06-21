@@ -134,179 +134,280 @@ function SettingsPage() {
     moveMut.mutate(next.map((b) => b.id));
   };
 
+  const initialSection: SectionId = (() => {
+    if (typeof window === "undefined") return "general";
+    const h = window.location.hash.replace(/^#/, "") as SectionId;
+    return NAV.some((n) => n.id === h) ? h : "general";
+  })();
+  const [active, setActive] = useState<SectionId>(initialSection);
+
+  const go = (id: SectionId) => {
+    setActive(id);
+    if (typeof window !== "undefined") {
+      history.replaceState(null, "", `#${id}`);
+    }
+  };
+
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 space-y-12">
-      <header>
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+      <header className="mb-8">
         <h1 className="text-2xl sm:text-3xl lg:text-4xl text-primary">Settings</h1>
         <p className="mt-2 text-muted-foreground">Shape your command center.</p>
       </header>
 
-      {/* ============ ACCOUNTS ============ */}
-      <section id="accounts">
-        <h2 className="text-2xl mb-1">Accounts</h2>
-        <p className="text-sm text-muted-foreground mb-6">
-          The business contexts your work belongs to, e.g. Acme Co, Side Project, Personal.
-          Each Account's colour is reused everywhere it appears across Calendar, Tasks,
-          Outcomes, Notes and Meetings.
-        </p>
-
-        <div
-          className="rounded-2xl border border-border bg-card p-6"
-          style={{ boxShadow: "var(--shadow-soft)" }}
-        >
-          {isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
-          ) : businesses.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No accounts yet. Add your first below.</p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {businesses.map((b, idx) => (
-                <BusinessRow
-                  key={b.id}
-                  business={b}
-                  calendars={calendars.filter((c) => c.business_id === b.id)}
-                  onChange={invalidate}
-                  onMoveUp={idx > 0 ? () => move(idx, -1) : undefined}
-                  onMoveDown={idx < businesses.length - 1 ? () => move(idx, 1) : undefined}
-                />
+      <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-6 lg:gap-10">
+        {/* ============ LEFT NAV ============ */}
+        <aside className="md:sticky md:top-6 md:self-start">
+          {/* Mobile: simple horizontal scroller */}
+          <nav className="md:hidden -mx-4 px-4 overflow-x-auto">
+            <ul className="flex gap-1.5 pb-2">
+              {NAV.map((n) => (
+                <li key={n.id}>
+                  <button
+                    onClick={() => go(n.id)}
+                    className={`whitespace-nowrap px-3 py-1.5 rounded-full text-sm border transition-colors ${
+                      active === n.id
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-card border-border hover:bg-muted"
+                    } ${n.tone === "danger" && active !== n.id ? "text-destructive" : ""}`}
+                  >
+                    {n.label}
+                  </button>
+                </li>
               ))}
             </ul>
+          </nav>
+          {/* Desktop: vertical list */}
+          <nav className="hidden md:block">
+            <ul className="space-y-0.5">
+              {NAV.map((n) => {
+                const isActive = active === n.id;
+                const Icon = n.icon;
+                return (
+                  <li key={n.id}>
+                    <button
+                      onClick={() => go(n.id)}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors ${
+                        isActive
+                          ? "bg-muted text-foreground font-medium"
+                          : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                      } ${n.tone === "danger" ? (isActive ? "text-destructive" : "hover:text-destructive") : ""}`}
+                    >
+                      <Icon className="h-4 w-4 shrink-0" />
+                      <span>{n.label}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+        </aside>
+
+        {/* ============ ACTIVE SECTION ============ */}
+        <div className="min-w-0 space-y-8">
+          {active === "general" && (
+            <>
+              <SectionHeader title="General" subtitle="Profile, sign-in, and the formats that drive your calendar and reminders." />
+              <Card><GeneralPanel /></Card>
+
+              <SubHeading icon={Palette} title="Appearance" subtitle="Theme, density, default calendar view, and accessibility." />
+              <Card><AppearancePanel /></Card>
+
+              <SubHeading icon={Clock} title="Working hours & capacity" subtitle="The single source of truth for your work window. Calendar, Plan my week, Today, and AI scheduling all read from here." />
+              <Card><WorkingHoursPanel /></Card>
+
+              <SubHeading icon={ShieldCheck} title="Security" subtitle="Two-factor authentication, login history, and active sessions." />
+              <Card><SecurityPanel /></Card>
+            </>
           )}
+
+          {active === "accounts" && (
+            <>
+              <SectionHeader
+                title="Accounts"
+                subtitle="The contexts your work belongs to, e.g. Acme Co, Side Project, Personal. Each account's colour is reused everywhere it appears across Calendar, Tasks, Outcomes, Notes and Meetings."
+              />
+              <Card>
+                {isLoading ? (
+                  <p className="text-sm text-muted-foreground">Loading…</p>
+                ) : businesses.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No accounts yet — add your first below.</p>
+                ) : (
+                  <ul className="divide-y divide-border">
+                    {businesses.map((b, idx) => (
+                      <BusinessRow
+                        key={b.id}
+                        business={b}
+                        calendars={calendars.filter((c) => c.business_id === b.id)}
+                        onChange={invalidate}
+                        onMoveUp={idx > 0 ? () => move(idx, -1) : undefined}
+                        onMoveDown={idx < businesses.length - 1 ? () => move(idx, 1) : undefined}
+                      />
+                    ))}
+                  </ul>
+                )}
+              </Card>
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!newName.trim()) return;
+                  createMut.mutate();
+                }}
+                className="rounded-2xl border border-border bg-card p-6 space-y-4"
+                style={{ boxShadow: "var(--shadow-soft)" }}
+              >
+                <h3 className="text-lg">Add an account</h3>
+                <p className="text-xs text-muted-foreground -mt-2">Each account gets its own colour and calendars.</p>
+                <ColorDots value={newColor} onChange={setNewColor} />
+                <div className="flex gap-3">
+                  <Input
+                    placeholder="e.g. Acme Co, Side Project, Personal"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                  />
+                  <Button type="submit" disabled={createMut.isPending || !newName.trim()}>
+                    <Plus className="h-4 w-4 mr-1" /> Add
+                  </Button>
+                </div>
+              </form>
+
+              {archived.length > 0 && (
+                <div
+                  className="rounded-2xl border border-border bg-card p-6 space-y-3"
+                  style={{ boxShadow: "var(--shadow-soft)" }}
+                >
+                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                    Archived
+                  </h3>
+                  <ul className="divide-y divide-border">
+                    {archived.map((b) => (
+                      <ArchivedBusinessRow key={b.id} business={b} onChange={invalidate} />
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
+          )}
+
+          {active === "connections" && (
+            <>
+              <SectionHeader
+                title="Connections"
+                subtitle="Synced external calendars from Google and Microsoft / Outlook. Tokens stay server-side; you only see status here."
+              />
+              <Card className="space-y-8">
+                <GoogleSyncPanel businesses={businesses} />
+                <div className="border-t border-border" />
+                <MicrosoftSyncPanel businesses={businesses} />
+              </Card>
+            </>
+          )}
+
+          {active === "notifications" && (
+            <>
+              <SectionHeader title="Notifications" subtitle="Per-channel and per-event toggles, plus quiet hours." />
+              <Card><NotificationsPanel /></Card>
+            </>
+          )}
+
+          {active === "weekly" && (
+            <>
+              <SectionHeader title="Weekly review" subtitle="Pick when your weekly summary is generated and emailed to you." />
+              <Card><WeeklyReviewSettings /></Card>
+            </>
+          )}
+
+          {active === "ai" && (
+            <>
+              <SectionHeader title="AI preferences" subtitle="Choose your default model, summary style, and monthly spend cap." />
+              <AiUsageMeter />
+              <Card><AiPrefsPanel /></Card>
+            </>
+          )}
+
+          {active === "privacy" && (
+            <>
+              <SectionHeader title="Privacy & data" subtitle="Export your data and manage active sessions." />
+              <Card><PrivacyDataPanel /></Card>
+            </>
+          )}
+
+          {active === "billing" && (
+            <>
+              <SectionHeader title="Billing" subtitle="Manage your plan, invoices, top-ups, and payment method." />
+              <Card>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Billing lives on its own page so you can see invoices and top-up history side-by-side.
+                </p>
+                <Button asChild>
+                  <Link to="/billing">
+                    <CreditCard className="h-4 w-4 mr-2" /> Open billing
+                  </Link>
+                </Button>
+              </Card>
+            </>
+          )}
+
+          {active === "team" && (
+            <>
+              <SectionHeader title="Team" subtitle="Invite teammates, manage roles, and review access requests." />
+              <Card>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Team management lives on its own page so you can review members, invitations, and access requests in one place.
+                </p>
+                <Button asChild>
+                  <Link to="/team-access">
+                    <Users className="h-4 w-4 mr-2" /> Open team access
+                  </Link>
+                </Button>
+              </Card>
+            </>
+          )}
+
+          {active === "danger" && <DangerZone />}
         </div>
+      </div>
+    </div>
+  );
+}
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!newName.trim()) return;
-            createMut.mutate();
-          }}
-          className="mt-6 rounded-2xl border border-border bg-card p-6 space-y-4"
-          style={{ boxShadow: "var(--shadow-soft)" }}
-        >
-          <h3 className="text-lg">Add an account</h3>
-          <ColorDots value={newColor} onChange={setNewColor} />
-          <div className="flex gap-3">
-            <Input
-              placeholder="e.g. Acme Co, Side Project, Personal"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-            />
-            <Button type="submit" disabled={createMut.isPending || !newName.trim()}>
-              <Plus className="h-4 w-4 mr-1" /> Add
-            </Button>
-          </div>
-        </form>
+function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+  return (
+    <div>
+      <h2 className="text-2xl mb-1">{title}</h2>
+      {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
+    </div>
+  );
+}
 
-        {archived.length > 0 && (
-          <div
-            className="mt-6 rounded-2xl border border-border bg-card p-6 space-y-3"
-            style={{ boxShadow: "var(--shadow-soft)" }}
-          >
-            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-              Archived
-            </h3>
-            <ul className="divide-y divide-border">
-              {archived.map((b) => (
-                <ArchivedBusinessRow key={b.id} business={b} onChange={invalidate} />
-              ))}
-            </ul>
-          </div>
-        )}
-      </section>
+function SubHeading({
+  icon: Icon,
+  title,
+  subtitle,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  subtitle?: string;
+}) {
+  return (
+    <div className="pt-4">
+      <h3 className="text-lg flex items-center gap-2">
+        <Icon className="h-4 w-4 text-muted-foreground" />
+        {title}
+      </h3>
+      {subtitle && <p className="text-sm text-muted-foreground mt-0.5">{subtitle}</p>}
+    </div>
+  );
+}
 
-      {/* ============ CONNECTIONS ============ */}
-      <section id="connections">
-        <h2 className="text-2xl mb-1">Connections</h2>
-        <p className="text-sm text-muted-foreground mb-6">
-          Synced external calendars from Google and Microsoft / Outlook. Map each
-          connected calendar to one of your Accounts so synced events carry the
-          right business context.
-        </p>
-        <div className="rounded-2xl border border-border bg-card p-6 space-y-8" style={{ boxShadow: "var(--shadow-soft)" }}>
-          <GoogleSyncPanel businesses={businesses} />
-          <div className="border-t border-border" />
-          <MicrosoftSyncPanel businesses={businesses} />
-        </div>
-      </section>
-
-      {/* ============ APPEARANCE ============ */}
-      <section>
-        <h2 className="text-2xl mb-1">Appearance</h2>
-        <p className="text-sm text-muted-foreground mb-6">
-          Theme, density, default calendar view, and accessibility.
-        </p>
-        <div className="rounded-2xl border border-border bg-card p-6" style={{ boxShadow: "var(--shadow-soft)" }}>
-          <AppearancePanel />
-
-        </div>
-      </section>
-
-      <section>
-        <h2 className="text-2xl mb-1">Security</h2>
-        <p className="text-sm text-muted-foreground mb-6">
-          Two-factor authentication, login history, and active sessions.
-        </p>
-        <div className="rounded-2xl border border-border bg-card p-6" style={{ boxShadow: "var(--shadow-soft)" }}>
-          <SecurityPanel />
-        </div>
-      </section>
-
-
-      <section>
-        <h2 className="text-2xl mb-1">Weekly review</h2>
-        <p className="text-sm text-muted-foreground mb-6">
-          Pick when your weekly summary is generated and emailed to you.
-        </p>
-        <div className="rounded-2xl border border-border bg-card p-6" style={{ boxShadow: "var(--shadow-soft)" }}>
-          <WeeklyReviewSettings />
-        </div>
-      </section>
-
-      <section>
-        <h2 className="text-2xl mb-1">Notifications</h2>
-        <p className="text-sm text-muted-foreground mb-6">
-          Per-channel and per-event toggles, plus quiet hours.
-        </p>
-        <div className="rounded-2xl border border-border bg-card p-6" style={{ boxShadow: "var(--shadow-soft)" }}>
-          <NotificationsPanel />
-        </div>
-      </section>
-
-      <section id="working-hours" className="scroll-mt-20">
-        <h2 className="text-2xl mb-1">Working hours & capacity</h2>
-        <p className="text-sm text-muted-foreground mb-6">
-          The single source of truth for your work window and daily capacity. Calendar, Plan my week, Today, and AI scheduling all read from here.
-        </p>
-        <div className="rounded-2xl border border-border bg-card p-6" style={{ boxShadow: "var(--shadow-soft)" }}>
-          <WorkingHoursPanel />
-        </div>
-      </section>
-
-      <section>
-        <h2 className="text-2xl mb-1">AI preferences</h2>
-        <p className="text-sm text-muted-foreground mb-6">
-          Choose your default model, summary style, and monthly spend cap.
-        </p>
-        <div className="space-y-4">
-          <AiUsageMeter />
-          <div className="rounded-2xl border border-border bg-card p-6" style={{ boxShadow: "var(--shadow-soft)" }}>
-            <AiPrefsPanel />
-          </div>
-        </div>
-      </section>
-
-      <section>
-        <h2 className="text-2xl mb-1">Privacy & data</h2>
-        <p className="text-sm text-muted-foreground mb-6">
-          Export your data and manage active sessions.
-        </p>
-        <div className="rounded-2xl border border-border bg-card p-6" style={{ boxShadow: "var(--shadow-soft)" }}>
-          <PrivacyDataPanel />
-        </div>
-      </section>
-
-
-      <DangerZone />
+function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div
+      className={`rounded-2xl border border-border bg-card p-6 ${className}`}
+      style={{ boxShadow: "var(--shadow-soft)" }}
+    >
+      {children}
     </div>
   );
 }
