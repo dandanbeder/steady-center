@@ -32,6 +32,9 @@ import {
   type GroupByKey,
   type ListViewConfig,
 } from "@/lib/user-list-views";
+import { ViewBar, type ActiveViewState } from "@/components/tasks/view-bar";
+import { TimelineView } from "@/components/tasks/timeline-view";
+import { listTaskViews } from "@/lib/task-views";
 import {
   DndContext,
   PointerSensor,
@@ -163,7 +166,7 @@ export const Route = createFileRoute("/_authenticated/tasks")({
   component: TasksPage,
 });
 
-type ViewMode = "list" | "board" | "calendar";
+type ViewMode = "list" | "board" | "calendar" | "timeline";
 
 function TasksPage() {
   const { activeId } = useActiveBusiness();
@@ -680,23 +683,54 @@ function ListWorkspace({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [stageMgrOpen, setStageMgrOpen] = useState(false);
 
-  // Hydrate local state when saved config loads (or list changes)
+  const [activeViewId, setActiveViewId] = useState<string | null>(null);
+
+  // Hydrate local state when saved config loads (or list changes).
+  // If the user has a Saved View marked default for this list, prefer that.
+  const savedViewsQuery = useQuery({
+    queryKey: ["task_views", list.id],
+    queryFn: () => listTaskViews(list.id),
+    enabled: !!myId && !uncategorised,
+  });
+
   const [hydratedListId, setHydratedListId] = useState<string | null>(null);
-  if (viewCfgQuery.data && hydratedListId !== list.id) {
-    const cfg = viewCfgQuery.data;
-    setFilters({
-      priority: cfg.filters.priority as Filters["priority"],
-      status: cfg.filters.status as Filters["status"],
-      due: cfg.filters.due as Filters["due"],
-      assigned: cfg.filters.assigned as Filters["assigned"],
-      outcome: (cfg.filters.outcome ?? "all") as Filters["outcome"],
-    });
-    setSortKey(cfg.sort.key);
-    setGroupBy(cfg.group_by);
-    setCollapsedGroups(new Set(cfg.collapsed_groups));
-    if (cfg.view !== view) onViewChange(cfg.view);
+  if (
+    !uncategorised &&
+    hydratedListId !== list.id &&
+    !viewCfgQuery.isLoading &&
+    !savedViewsQuery.isLoading
+  ) {
+    const defaultView = (savedViewsQuery.data ?? []).find(
+      (v) => v.is_default && v.owner_id === myId,
+    );
+    if (defaultView) {
+      setFilters({
+        priority: defaultView.filters.priority as Filters["priority"],
+        status: defaultView.filters.status as Filters["status"],
+        due: defaultView.filters.due as Filters["due"],
+        assigned: defaultView.filters.assigned as Filters["assigned"],
+        outcome: (defaultView.filters.outcome ?? "all") as Filters["outcome"],
+      });
+      setSortKey(defaultView.sort.key);
+      setGroupBy(defaultView.group_by);
+      if (defaultView.view !== view) onViewChange(defaultView.view);
+      setActiveViewId(defaultView.id);
+    } else if (viewCfgQuery.data) {
+      const cfg = viewCfgQuery.data;
+      setFilters({
+        priority: cfg.filters.priority as Filters["priority"],
+        status: cfg.filters.status as Filters["status"],
+        due: cfg.filters.due as Filters["due"],
+        assigned: cfg.filters.assigned as Filters["assigned"],
+        outcome: (cfg.filters.outcome ?? "all") as Filters["outcome"],
+      });
+      setSortKey(cfg.sort.key);
+      setGroupBy(cfg.group_by);
+      setCollapsedGroups(new Set(cfg.collapsed_groups));
+      if (cfg.view !== view) onViewChange(cfg.view);
+    }
     setHydratedListId(list.id);
-  } else if (!viewCfgQuery.data && !viewCfgQuery.isLoading && hydratedListId !== list.id) {
+  } else if (uncategorised && hydratedListId !== list.id) {
     setHydratedListId(list.id);
   }
 
@@ -812,6 +846,11 @@ function ListWorkspace({
     queryKey: ["outcomes-for-scope", businessId],
     queryFn: () => listOutcomes(businessId),
   });
+  const { data: businesses = [] } = useQuery({
+    queryKey: ["businesses"],
+    queryFn: listBusinesses,
+  });
+
 
   const toggleGroupCollapsed = (key: string) => {
     setCollapsedGroups((prev) => {
@@ -822,29 +861,38 @@ function ListWorkspace({
     });
   };
 
+  const applyViewState = (s: ActiveViewState, sourceId: string | null) => {
+    setFilters({
+      priority: s.filters.priority as Filters["priority"],
+      status: s.filters.status as Filters["status"],
+      due: s.filters.due as Filters["due"],
+      assigned: s.filters.assigned as Filters["assigned"],
+      outcome: (s.filters.outcome ?? "all") as Filters["outcome"],
+    });
+    setSortKey(s.sort.key);
+    setGroupBy(s.group_by);
+    if (s.view !== view) onViewChange(s.view);
+    setActiveViewId(sourceId);
+  };
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-2 gap-4 flex-wrap">
+      <div className="flex items-center justify-between mb-3 gap-4 flex-wrap">
         <h1 className="text-2xl sm:text-3xl text-primary">{list.name}</h1>
-        <div className="flex rounded-lg border border-border overflow-hidden">
-          {([
-            ["list", LayoutList, "List"],
-            ["board", Columns, "Board"],
-            ["calendar", CalendarDays, "Calendar"],
-          ] as const).map(([k, Icon, label]) => (
-            <button
-              key={k}
-              onClick={() => onViewChange(k)}
-              className={cn(
-                "px-3 py-1.5 text-sm flex items-center gap-1.5",
-                view === k ? "bg-primary text-primary-foreground" : "hover:bg-muted",
-              )}
-            >
-              <Icon className="h-3.5 w-3.5" /> {label}
-            </button>
-          ))}
-        </div>
       </div>
+
+      {!uncategorised && myId && (
+        <ViewBar
+          listId={list.id}
+          myId={myId}
+          active={{ view, group_by: groupBy, filters, sort: { key: sortKey } }}
+          activeViewId={activeViewId}
+          onApply={applyViewState}
+          onActiveViewIdChange={setActiveViewId}
+        />
+      )}
+
+
 
       <form
         onSubmit={(e) => {
@@ -952,7 +1000,8 @@ function ListWorkspace({
                groupBy === "priority" ? "Priority" :
                groupBy === "assignee" ? "Assignee" :
                groupBy === "due" ? "Due date" :
-               groupBy === "outcome" ? "Outcome" : "None"}
+               groupBy === "outcome" ? "Outcome" :
+               groupBy === "business" ? "Business" : "None"}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
@@ -962,6 +1011,7 @@ function ListWorkspace({
               ["assignee", "Assignee"],
               ["due", "Due date"],
               ["outcome", "Outcome"],
+              ["business", "Business"],
               ["none", "None"],
             ] as const).map(([k, label]) => (
               <DropdownMenuItem
@@ -1074,6 +1124,7 @@ function ListWorkspace({
           members={memberList}
           myId={myId}
           outcomes={scopeOutcomes}
+          businesses={businesses}
           collapsedGroups={collapsedGroups}
           onToggleCollapsed={toggleGroupCollapsed}
         />
@@ -1089,6 +1140,17 @@ function ListWorkspace({
       )}
       {view === "calendar" && (
         <TaskCalendarView tasks={filteredTopLevel} onOpen={setOpenTask} />
+      )}
+      {view === "timeline" && (
+        <TimelineView
+          tasks={filteredTopLevel}
+          onOpen={setOpenTask}
+          outcomes={scopeOutcomes.map((o) => ({
+            id: o.id,
+            name: o.name,
+            target_date: o.target_date,
+          }))}
+        />
       )}
 
       <StageManagerDialog
@@ -1125,6 +1187,7 @@ function ListView({
   members = [],
   myId = null,
   outcomes = [],
+  businesses = [],
   collapsedGroups,
   onToggleCollapsed,
 }: {
@@ -1141,6 +1204,7 @@ function ListView({
   members?: AssignableMember[];
   myId?: string | null;
   outcomes?: { id: string; name: string }[];
+  businesses?: { id: string; name: string; color: string | null }[];
   collapsedGroups: Set<string>;
   onToggleCollapsed: (key: string) => void;
 }) {
@@ -1150,6 +1214,7 @@ function ListView({
     members,
     myId,
     outcomes,
+    businesses,
   });
 
   return (
