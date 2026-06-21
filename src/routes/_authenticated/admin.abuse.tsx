@@ -295,14 +295,13 @@ function ActionDialog({
         return;
       }
       // After any enforcement step, mark the flag as actioned for auditability.
-      if (action !== "resolve") {
-        await resolveFn({
-          data: {
-            flag_id: flag.id,
-            action: "actioned",
-            note: `${action}: ${reason}`.slice(0, 500),
-          },
-        });
+      await resolveFn({
+        data: {
+          flag_id: flag.id,
+          action: "actioned",
+          note: `${action}: ${reason}`.slice(0, 500),
+        },
+      });
       }
       invalidate();
     },
