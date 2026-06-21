@@ -108,6 +108,27 @@ export function WeeklyGoalsPanel({ compact = false }: { compact?: boolean }) {
         </Button>
       </header>
 
+      {coach?.enabled && coach.note && (
+        <div
+          className={cn(
+            "mb-4 rounded-lg border p-3 flex gap-3 items-start text-sm",
+            coach.facts.load_pct > 110
+              ? "border-amber-500/40 bg-amber-50/40 dark:bg-amber-950/20"
+              : "border-border bg-muted/40",
+          )}
+        >
+          <Heart className="h-4 w-4 mt-0.5 shrink-0 text-accent" aria-hidden />
+          <div className="min-w-0">
+            <p className="text-foreground/90 leading-relaxed">{coach.note}</p>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              {coach.facts.goals} goals · {coach.facts.committed_tasks} tasks ·{" "}
+              {coach.facts.meeting_hours}h meetings · ~{coach.facts.load_pct}% of capacity
+            </p>
+          </div>
+        </div>
+      )}
+
+
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : goals.length === 0 ? (
