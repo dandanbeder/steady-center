@@ -845,7 +845,11 @@ function ListWorkspace({
   const { data: scopeOutcomes = [] } = useQuery({
     queryKey: ["outcomes-for-scope", businessId],
     queryFn: () => listOutcomes(businessId),
+  const { data: businesses = [] } = useQuery({
+    queryKey: ["businesses"],
+    queryFn: listBusinesses,
   });
+
 
   const toggleGroupCollapsed = (key: string) => {
     setCollapsedGroups((prev) => {
