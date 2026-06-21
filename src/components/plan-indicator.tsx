@@ -36,21 +36,23 @@ export function PlanIndicator() {
           : `${tierLabel(tier)} plan · ${total ?? 0} AI credits remaining`
       }
       className={cn(
-        "group hidden sm:inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs transition-colors shrink-0",
+        "group inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-xs transition-colors shrink-0",
         "border-border/70 bg-muted/40 text-foreground hover:bg-muted",
         paused && "border-amber-400/60 bg-amber-50 text-amber-900 dark:bg-amber-900/20 dark:text-amber-200",
       )}
     >
       <span className="font-medium">{tierLabel(tier)}</span>
-      <span className="text-muted-foreground">·</span>
+      <span className="text-muted-foreground hidden xs:inline">·</span>
       {isFree ? (
         <span className="inline-flex items-center gap-1 text-primary font-medium">
-          Upgrade <ArrowUpRight className="h-3 w-3" />
+          <span className="hidden xs:inline">Upgrade</span>
+          <ArrowUpRight className="h-3 w-3" />
         </span>
       ) : (
         <span className="inline-flex items-center gap-1 tabular-nums">
           <Sparkles className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
-          {total === null ? "…" : `${total.toLocaleString()} credits`}
+          {total === null ? "…" : total.toLocaleString()}
+          <span className="hidden sm:inline text-muted-foreground">credits</span>
         </span>
       )}
     </Link>
