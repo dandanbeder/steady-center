@@ -157,23 +157,7 @@ function BillingPage() {
   if (!user) return null;
 
   if (!isActive || !subscription) {
-    return (
-      <div>
-        <PaymentTestModeBanner />
-        <div className="mx-auto max-w-3xl px-4 py-16 text-center">
-          <h1 className="text-3xl">No active subscription</h1>
-          <p className="mt-2 text-muted-foreground">
-            You're on the Free plan. Upgrade to unlock Pro or Team features.
-          </p>
-          <div className="mt-6 text-sm text-muted-foreground">
-            Contact support to change your plan.
-          </div>
-          <div className="mt-10">
-            <AiUsageMeter />
-          </div>
-        </div>
-      </div>
-    );
+    return <FreePlanView env={env} qc={qc} />;
   }
 
   const s = summary.data;
