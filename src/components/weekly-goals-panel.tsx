@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, Target, Check, X } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { Plus, Trash2, Target, Check, X, Heart } from "lucide-react";
+import { coachWeekCheck } from "@/lib/coach.functions";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,6 +62,17 @@ export function WeeklyGoalsPanel({ compact = false }: { compact?: boolean }) {
 
   const [adding, setAdding] = useState(false);
 
+  // Forward-looking gentle coach check — reflects back the week and flags overload.
+  const coachFn = useServerFn(coachWeekCheck);
+  const weekStartDay = weekStart.toISOString().slice(0, 10);
+  const { data: coach } = useQuery({
+    queryKey: ["coach-week", weekStartDay, goals.length],
+    queryFn: () => coachFn({ data: { week_start: weekStartDay } }),
+    refetchOnWindowFocus: false,
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+
   const mark = useMutation({
     mutationFn: ({ id, status }: { id: string; status: "met" | "missed" | "open" }) =>
       updateGoal(id, { status }),
@@ -94,6 +107,27 @@ export function WeeklyGoalsPanel({ compact = false }: { compact?: boolean }) {
           <Plus className="h-3.5 w-3.5" /> Add goal
         </Button>
       </header>
+
+      {coach?.enabled && coach.note && (
+        <div
+          className={cn(
+            "mb-4 rounded-lg border p-3 flex gap-3 items-start text-sm",
+            coach.facts.load_pct > 110
+              ? "border-amber-500/40 bg-amber-50/40 dark:bg-amber-950/20"
+              : "border-border bg-muted/40",
+          )}
+        >
+          <Heart className="h-4 w-4 mt-0.5 shrink-0 text-accent" aria-hidden />
+          <div className="min-w-0">
+            <p className="text-foreground/90 leading-relaxed">{coach.note}</p>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              {coach.facts.goals} goals · {coach.facts.committed_tasks} tasks ·{" "}
+              {coach.facts.meeting_hours}h meetings · ~{coach.facts.load_pct}% of capacity
+            </p>
+          </div>
+        </div>
+      )}
+
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>

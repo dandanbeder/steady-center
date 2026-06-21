@@ -89,11 +89,13 @@ export async function saveNotificationPrefs(p: NotificationPrefs) {
 }
 
 // ---------------- AI prefs ----------------
+export type CoachStyle = "warm" | "direct" | "off";
 export type AiPrefs = {
   model: string;
   summary_length: "short" | "medium" | "long";
   tone: "neutral" | "friendly" | "formal" | "concise";
   monthly_cap_cents: number;
+  coach_style: CoachStyle;
 };
 
 const DEFAULT_AI: AiPrefs = {
@@ -101,6 +103,7 @@ const DEFAULT_AI: AiPrefs = {
   summary_length: "medium",
   tone: "neutral",
   monthly_cap_cents: 1000,
+  coach_style: "warm",
 };
 
 export async function getAiPrefs(): Promise<AiPrefs> {
@@ -118,6 +121,7 @@ export async function getAiPrefs(): Promise<AiPrefs> {
     summary_length: data.summary_length as AiPrefs["summary_length"],
     tone: data.tone as AiPrefs["tone"],
     monthly_cap_cents: data.monthly_cap_cents,
+    coach_style: ((data.coach_style as CoachStyle | null) ?? "warm"),
   };
 }
 

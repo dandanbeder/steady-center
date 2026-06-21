@@ -561,7 +561,7 @@ export async function generateForUser(
     goals,
     outcomes,
   };
-  const narrative = await writeNarrative(metrics, weekStart, weekEnd);
+  const narrative = await writeNarrative(metrics, weekStart, weekEnd, userId);
 
   const { data: inserted, error: insErr } = await supabaseAdmin
     .from("weekly_reports")
@@ -614,16 +614,35 @@ async function writeNarrative(
   metrics: ReportMetrics,
   weekStart: Date,
   weekEnd: Date,
+  userId: string,
 ): Promise<ReportNarrative> {
   const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) return fallbackNarrative(metrics);
+  // Honour the user's coach preference. "off" → skip AI entirely.
+  const { data: prefRow } = await supabaseAdmin
+    .from("ai_prefs")
+    .select("coach_style")
+    .eq("user_id", userId)
+    .maybeSingle();
+  const coachStyle = ((prefRow?.coach_style as "warm" | "direct" | "off" | null) ?? "warm");
+  if (coachStyle === "off" || !key) return fallbackNarrative(metrics);
 
-  const sys = `You write candid, constructive weekly reviews for a busy multi-business operator.
+  const styleLine =
+    coachStyle === "direct"
+      ? "Style: warm and supportive, but a little more direct and candid. Still never harsh."
+      : "Style: warm, supportive, gentle. Lead with empathy.";
 
-Tone:
-- Direct, specific, never harsh. Give real credit for real wins. Reframe weaknesses as growth areas with a concrete next action.
-- Cite evidence from the metrics (numbers, task titles, hours). Do not invent numbers.
-- If the data is thin (few tasks, no hours, no goals), say so honestly. Don't pad.
+  const sys = `You are a kind, supportive weekly coach for a busy multi-business operator. You write end-of-week reflections that feel like a good mentor, not a performance review.
+
+Tone (this is the most important thing — follow it exactly):
+- Warm, human, on their side. Honest, but NEVER mean, sarcastic, judgmental, or shaming.
+- Open by acknowledging real wins and effort, including small ones. Celebrate effort, not only outcomes.
+- An unfinished goal is an observation, not a failure. Normalise that some weeks are hard.
+- If the data shows overload (many overdue tasks, lots of meetings, low completion), lean toward protecting the person — suggest boundaries, focus time, rest — NEVER push them to "hustle harder" or do more.
+- No guilt. No comparisons to other people. No platitudes ("you've got this!"). No motivational clichés.
+- Frame any problem as a gentle observation plus ONE practical, doable suggestion. Not a list of failings.
+- Keep it brief and human — a few warm sentences per field, not a lecture.
+- Ground every comment in the actual numbers / titles in the metrics. Don't invent data. If the week was quiet, say so kindly.
+${styleLine}
 
 Return ONLY JSON, no prose around it, matching exactly this shape:
 {
@@ -634,10 +653,11 @@ Return ONLY JSON, no prose around it, matching exactly this shape:
   "next_week": [string, string, string]
 }
 
-- 2-4 strengths, each with evidence drawn from the metrics.
-- 2-4 growth areas; "suggestion" must be a specific, actionable next step starting with a verb.
-- "goal_review" is one short paragraph reviewing how the week's goals went (met / missed / partial). If there were no goals, say so. If the metrics include "outcomes" (bigger goals tasks roll up to), mention 1-2 standout outcomes here with their progress percentage and days remaining (e.g. "Loyalty launch is 70% done, target in 3 weeks"). Skip outcomes with 0 tasks.
-- "next_week" is 2-3 focuses for the coming week, each starting with a verb.`;
+- "headline": one warm, human sentence acknowledging the shape of the week.
+- 2-4 "strengths" — real wins and effort, with concrete evidence from metrics (numbers, task titles, hours). Include small wins on quiet weeks.
+- 1-3 "growth_areas". Each "point" is a gentle observation, "why" is a short kind explanation, "suggestion" is ONE specific, small, doable next step starting with a verb. If the person is clearly overloaded, suggestions should protect their time (e.g. "Protect a 2-hour focus block on Tuesday morning"), not add more.
+- "goal_review": one short paragraph reviewing the week's goals with warmth. Unfinished = observation, not failure. If no goals were set, say so kindly. Mention 1-2 standout outcomes (with progress % and days remaining) if present.
+- "next_week": 2-3 gentle focuses for the coming week, each starting with a verb. Prefer protective focuses ("Block focus time", "Pick one stuck task to close") over piling on.`;
 
   const user = `Week: ${weekStart.toISOString().slice(0, 10)} → ${weekEnd
     .toISOString()
@@ -667,9 +687,22 @@ ${JSON.stringify(metrics, null, 2)}`;
     }
     const json = (await res.json()) as {
       content?: Array<{ type: string; text?: string }>;
+      usage?: { input_tokens?: number; output_tokens?: number };
     };
     const text =
       json.content?.find((c) => c.type === "text")?.text?.trim() ?? "";
+    // Meter against the AI allowance — best-effort, never blocks the report.
+    try {
+      const { recordAiUsage } = await import("./ai-budget.server");
+      await recordAiUsage(
+        userId,
+        ANTHROPIC_MODEL,
+        json.usage?.input_tokens ?? 0,
+        json.usage?.output_tokens ?? 0,
+      );
+    } catch (e) {
+      console.warn("[weekly-report] usage record failed", e);
+    }
     const parsed = parseNarrative(text);
     return parsed ? withLegacyFields(parsed, metrics) : fallbackNarrative(metrics);
   } catch (e) {
@@ -729,49 +762,58 @@ function fallbackNarrative(m: ReportMetrics): ReportNarrative {
   const o = m.overall;
   const hours = o.tracked_hours ?? 0;
   const goals = m.goals ?? [];
+  const metCount = goals.filter((g) => g.status === "met").length;
   const goalReview =
     goals.length === 0
-      ? "No weekly goals were set for this week."
-      : `${goals.filter((g) => g.status === "met").length}/${goals.length} goals met.`;
+      ? "No weekly goals were set — that's okay, some weeks don't need them."
+      : metCount === goals.length
+        ? `All ${goals.length} goals moved forward. Nice work.`
+        : `${metCount}/${goals.length} goals moved forward this week — the rest are simply still in flight.`;
   const strengths: Strength[] = [];
   if (o.tasks_completed > 0) {
     strengths.push({
-      point: `Closed ${o.tasks_completed} tasks this week`,
-      evidence: `${o.completed_on_time} on time, ${o.completed_late} late.`,
+      point: `You closed ${o.tasks_completed} task${o.tasks_completed === 1 ? "" : "s"} this week`,
+      evidence: `${o.completed_on_time} on time${o.completed_late ? `, ${o.completed_late} a little late` : ""}.`,
     });
   }
   if (hours > 0) {
     strengths.push({
-      point: `Tracked ${hours}h of focused work`,
-      evidence: `Across ${(m.top_tasks_hours ?? []).length} tasks.`,
+      point: `You tracked ${hours}h of focused work`,
+      evidence: `Across ${(m.top_tasks_hours ?? []).length} task${(m.top_tasks_hours ?? []).length === 1 ? "" : "s"}.`,
+    });
+  }
+  if (strengths.length === 0) {
+    strengths.push({
+      point: "A quieter week — and that's allowed",
+      evidence: "Not every week needs to be a big one.",
     });
   }
   const growth: GrowthArea[] = [];
-  if (o.dropped_balls.length > 0) {
+  if (o.dropped_balls.length >= 3) {
     growth.push({
-      point: `${o.dropped_balls.length} high-impact items overdue`,
-      why: "These were past their due date with no movement.",
-      suggestion: "Clear or reschedule the top 3 overdue items first thing Monday.",
+      point: `A few items have drifted past their date (${o.dropped_balls.length})`,
+      why: "No judgement — it happens when the week fills up.",
+      suggestion: "Pick just the top 1-2 to reschedule on Monday morning, then move on.",
     });
   }
-  if ((m.flow?.stuck?.length ?? 0) > 0) {
+  if ((m.flow?.stuck?.length ?? 0) > 3) {
     growth.push({
       point: `${m.flow!.stuck.length} tasks have been open more than a week`,
-      why: "They're sitting without progress.",
-      suggestion: "Pick one stuck task and either close it, delegate it, or break it down.",
+      why: "They may need breaking down, delegating, or letting go.",
+      suggestion: "Pick one and decide kindly: do, delegate, or drop.",
     });
   }
   const n: ReportNarrative = {
     headline:
       o.tasks_completed === 0 && o.tasks_created === 0 && hours === 0
-        ? "Quiet week, almost no activity logged."
-        : `${o.tasks_completed} done · ${hours}h tracked · ${o.dropped_balls.length} overdue`,
+        ? "A quiet week — that's okay too."
+        : `${o.tasks_completed} done · ${hours}h tracked — solid work.`,
     strengths,
     growth_areas: growth,
     goal_review: goalReview,
     next_week: [
-      "Block calendar time for at-risk high-priority work.",
-      "Review the oldest open tasks and decide: do, delegate, or drop.",
+      "Protect one focus block in your calendar early in the week.",
+      "Look at the oldest open task and decide gently: do, delegate, or drop.",
     ],
   };
   return withLegacyFields(n, m);
