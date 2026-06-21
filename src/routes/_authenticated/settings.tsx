@@ -368,10 +368,14 @@ function BusinessRow({
   business,
   calendars,
   onChange,
+  onMoveUp,
+  onMoveDown,
 }: {
   business: Business;
   calendars: Cal[];
   onChange: () => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(business.name);
@@ -440,12 +444,37 @@ function BusinessRow({
               <span className="ml-2 text-xs text-muted-foreground">({my.role})</span>
             )}
           </button>
+          {canEdit && (
+            <div className="flex items-center gap-0.5">
+              <Button size="icon" variant="ghost" onClick={onMoveUp} disabled={!onMoveUp} title="Move up">
+                <ArrowUp className="h-4 w-4 text-muted-foreground" />
+              </Button>
+              <Button size="icon" variant="ghost" onClick={onMoveDown} disabled={!onMoveDown} title="Move down">
+                <ArrowDown className="h-4 w-4 text-muted-foreground" />
+              </Button>
+            </div>
+          )}
           {canDelete && (
             <Button
               size="icon"
               variant="ghost"
+              title="Archive"
               onClick={() => {
-                if (confirm(`Delete "${business.name}"? Calendars and events will go too.`)) del.mutate();
+                if (confirm(`Archive "${business.name}"? It will be hidden from pickers but kept for history. You can restore it from Settings.`)) {
+                  archiveBusiness(business.id).then(() => { onChange(); toast.success("Archived"); }).catch((e) => toast.error(e instanceof Error ? e.message : "Failed"));
+                }
+              }}
+            >
+              <Archive className="h-4 w-4 text-muted-foreground" />
+            </Button>
+          )}
+          {canDelete && (
+            <Button
+              size="icon"
+              variant="ghost"
+              title="Delete permanently"
+              onClick={() => {
+                if (confirm(`Delete "${business.name}" permanently? Calendars and events will go too. This cannot be undone.`)) del.mutate();
               }}
               disabled={del.isPending}
             >
@@ -485,6 +514,33 @@ function BusinessRow({
     </li>
   );
 }
+
+function ArchivedBusinessRow({
+  business,
+  onChange,
+}: {
+  business: Business;
+  onChange: () => void;
+}) {
+  const my = useMyRole(business.id);
+  const canEdit = my.can("member");
+  return (
+    <li className="py-3 flex items-center gap-3">
+      <span className="h-3 w-3 rounded-full shrink-0 opacity-60" style={{ backgroundColor: business.color }} />
+      <span className="flex-1 text-sm text-muted-foreground line-through">{business.name}</span>
+      {canEdit && (
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => {
+            unarchiveBusiness(business.id).then(() => { onChange(); toast.success("Restored"); }).catch((e) => toast.error(e instanceof Error ? e.message : "Failed"));
+          }}
+        >
+          <ArchiveRestore className="h-3.5 w-3.5 mr-1" /> Restore
+        </Button>
+      )}
+    </li>
+  );
 
 function CalendarsForBusiness({
   businessId,
