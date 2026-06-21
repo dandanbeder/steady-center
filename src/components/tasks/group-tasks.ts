@@ -116,6 +116,34 @@ export function groupTasks(
     return groups;
   }
 
+  if (by === "business") {
+    const map = new Map<string, Task[]>();
+    for (const t of tasks) {
+      const k = t.business_id ?? "__none__";
+      const arr = map.get(k) ?? [];
+      arr.push(t);
+      map.set(k, arr);
+    }
+    const bizOf = (id: string) => ctx.businesses?.find((b) => b.id === id);
+    const groups: TaskGroup[] = Array.from(map.entries()).map(([k, items]) => {
+      const b = k === "__none__" ? null : bizOf(k);
+      return {
+        key: k,
+        label: k === "__none__" ? "Uncategorised" : (b?.name ?? "Account"),
+        color: b?.color ?? undefined,
+        items,
+      };
+    });
+    groups.sort((a, b) => {
+      if (a.key === "__none__") return 1;
+      if (b.key === "__none__") return -1;
+      return a.label.localeCompare(b.label);
+    });
+    return groups;
+  }
+
+
+
   // due
   const buckets: { key: string; label: string; test: (t: Task) => boolean }[] = [
     {
