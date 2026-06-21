@@ -710,15 +710,8 @@ function ViewAsButton({ targetUserId }: { targetUserId: string }) {
 }
 
 function RequestJournalAccessButton({ targetUserId }: { targetUserId: string }) {
-  const requestFn = useServerFn(
-    (await import("@/lib/journal-access.functions")).requestJournalAccess as never,
-  ) as never;
-  return <_RequestJournalAccessButtonInner targetUserId={targetUserId} />;
-}
-
-function _RequestJournalAccessButtonInner({ targetUserId }: { targetUserId: string }) {
   const [open, setOpen] = useState(false);
-  const requestFn = useServerFn(_requestJournalAccessImported);
+  const requestFn = useServerFn(requestJournalAccess);
   const mut = useMutation({
     mutationFn: (reason: string) =>
       requestFn({ data: { targetUserId, reason, mode: "read" as const } }),
