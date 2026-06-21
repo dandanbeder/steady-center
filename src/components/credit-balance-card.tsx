@@ -13,7 +13,7 @@ import { getCreditBalance, setLowBalanceThreshold } from "@/lib/credits.function
 import { TopUpDialog } from "@/components/topup-dialog";
 
 function fmtDate(d: string | null | undefined): string {
-  if (!d) return "—";
+  if (!d) return ",";
   return new Date(d).toLocaleDateString(undefined, {
     year: "numeric",
     month: "short",
@@ -47,7 +47,7 @@ export function CreditBalanceCard() {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     if (params.get("topup") === "success") {
-      // Webhook may land seconds after redirect — poll briefly.
+      // Webhook may land seconds after redirect, poll briefly.
       const poll = (attempt = 0) => {
         qc.invalidateQueries({ queryKey: ["credit-balance"] });
         if (attempt < 4) setTimeout(() => poll(attempt + 1), 2000);
@@ -223,7 +223,7 @@ export function CreditBalanceCard() {
                 onChange={(e) => setThresholdDraft(e.target.value)}
               />
               <span className="text-xs text-muted-foreground">
-                credits — alert me when I drop below this
+                credits, alert me when I drop below this
               </span>
               <Button
                 size="sm"

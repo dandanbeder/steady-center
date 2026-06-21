@@ -407,7 +407,7 @@ function FreePlanView({
     setBusy(plan);
     try {
       await startFn({ data: { plan, environment: env } });
-      toast.success(`${plan === "pro" ? "Pro" : "Team"} trial started — 14 days, no card required`);
+      toast.success(`${plan === "pro" ? "Pro" : "Team"} trial started, 14 days, no card required`);
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["subscription"] }),
         qc.invalidateQueries({ queryKey: ["plan-context"] }),

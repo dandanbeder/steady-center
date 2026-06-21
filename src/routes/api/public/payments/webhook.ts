@@ -28,7 +28,7 @@ function extractItem(data: any) {
 }
 
 function planAllowanceFromProduct(productId: string | undefined, qty: number): number {
-  // Mirrors LIMITS in src/lib/entitlements.ts. Kept here intentionally small —
+  // Mirrors LIMITS in src/lib/entitlements.ts. Kept here intentionally small,
   // webhook handler has no client/shared deps.
   if (productId === "team_plan") return 400 * Math.max(qty, 2);
   if (productId === "pro_plan") return 400;
@@ -180,7 +180,7 @@ async function handleSubscriptionUpdated(data: any, env: PaddleEnv) {
 
 async function handleSubscriptionCanceled(data: any, env: PaddleEnv) {
   const supabase = getSupabase();
-  // Stays active until current_period_end. Do NOT apply read-only lock now —
+  // Stays active until current_period_end. Do NOT apply read-only lock now,
   // the lifecycle sweeper applies it once the period actually ends.
   await supabase
     .from("subscriptions")
@@ -220,7 +220,7 @@ async function handleTransactionPaymentFailed(data: any, env: PaddleEnv) {
 
 // Top-up credit packs. Keys are price external_ids; values are credits granted.
 // Lots are valid for TOPUP_MONTHS from purchase (rolling 12 months). Kept in
-// sync with src/lib/topup-packs.ts (shared catalog) — duplicated here so the
+// sync with src/lib/topup-packs.ts (shared catalog), duplicated here so the
 // webhook stays free of client-bundle imports.
 const TOPUP_PACKS: Record<string, number> = {
   topup_500: 500,
@@ -270,7 +270,7 @@ async function handleTransactionCompleted(data: any, env: PaddleEnv) {
 }
 
 // Refund / chargeback / credit note: claw back any purchased credits that
-// were granted by the referenced transaction. Idempotent — revoking twice
+// were granted by the referenced transaction. Idempotent, revoking twice
 // just yields 0 the second time since credits_remaining was already zeroed.
 async function handleAdjustmentCreated(data: any, _env: PaddleEnv) {
   const action = data?.action as string | undefined;
@@ -280,7 +280,7 @@ async function handleAdjustmentCreated(data: any, _env: PaddleEnv) {
   const supabase = getSupabase();
   // `${txId}:` prefix matches every line of that transaction (we keyed lots
   // as `${txId}:${ext}`). Whole-transaction revoke regardless of partial
-  // refund amount — partials are rare and we'd rather over-revoke than
+  // refund amount, partials are rare and we'd rather over-revoke than
   // leave free credits behind after a chargeback.
   const { data: revoked, error } = await supabase.rpc(
     "revoke_purchased_credits_by_tx",

@@ -41,7 +41,7 @@ export function CalendarAccountPicker({
   const hasNone = businesses.length === 0;
 
   // When unset (null), use an action-style placeholder rather than a passive
-  // label. Picking "Personal (no account)" persists null too — we can't
+  // label. Picking "Personal (no account)" persists null too, we can't
   // distinguish "unassigned" from "personal" once saved, so the trigger
   // keeps prompting until a business is chosen.
   const triggerLabel = active ? active.name : "Assign to an account…";

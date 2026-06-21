@@ -86,7 +86,7 @@ export const requestAccountDeletion = createServerFn({ method: "POST" })
           }
         }
       } catch (e) {
-        // Paddle SDK or env keys not available — skip silently; admin sweep
+        // Paddle SDK or env keys not available, skip silently; admin sweep
         // will catch any orphaned billing on final erasure.
         console.warn("[privacy] paddle SDK unavailable", e);
       }

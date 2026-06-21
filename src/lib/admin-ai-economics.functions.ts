@@ -1,6 +1,6 @@
 /**
  * Super-admin "AI Economics" reads. All gated by is_platform_admin().
- * Compute exclusively from rollups + small per-row reads — no full scans
+ * Compute exclusively from rollups + small per-row reads, no full scans
  * of ai_usage_events from the client.
  */
 import { createServerFn } from "@tanstack/react-start";

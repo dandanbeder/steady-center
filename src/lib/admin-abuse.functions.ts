@@ -4,7 +4,7 @@
  * Hard rules baked in here:
  *   - Hitting the credit hard-stop is NOT abuse. The hard-stop already pauses
  *     AI and prompts a top-up. We never act here on credit-balance threshold
- *     alone — only on misuse signals (cap-hits, IP fan-out, abnormal burn,
+ *     alone, only on misuse signals (cap-hits, IP fan-out, abnormal burn,
  *     manual report).
  *   - Every action requires a reason, is audited, and is reversible (except
  *     terminate, which schedules deletion).

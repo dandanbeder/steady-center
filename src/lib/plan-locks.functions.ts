@@ -6,7 +6,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
  * Toggle a business between active and locked (read-only).
  *
  * After a downgrade, all over-limit items are locked. The user picks which
- * stay active by activating them — the DB function rejects activation past
+ * stay active by activating them, the DB function rejects activation past
  * the plan cap so the user must lock another first. Locked items become
  * editable again automatically on re-upgrade (webhook clears all locks).
  */

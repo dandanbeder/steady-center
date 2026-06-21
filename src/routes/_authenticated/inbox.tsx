@@ -75,7 +75,7 @@ function InboxPage() {
         <div>
           <h1 className="text-2xl font-semibold">Inbox</h1>
           <p className="text-sm text-muted-foreground">
-            Capture anything the moment it hits you. Sort it into the right place later — we'll suggest where.
+            Capture anything the moment it hits you. Sort it into the right place later, we'll suggest where.
           </p>
         </div>
       </header>
@@ -105,14 +105,14 @@ function InboxPage() {
         hasEverCaptured ? (
           <div className="rounded-lg border border-dashed py-16 text-center text-muted-foreground">
             <InboxIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p>Inbox zero — all caught up.</p>
+            <p>Inbox zero, all caught up.</p>
           </div>
         ) : (
           <div className="rounded-lg border border-dashed py-12 px-6 text-center space-y-3">
             <InboxIcon className="h-8 w-8 mx-auto opacity-60" />
             <h2 className="text-lg font-semibold text-foreground">One place to capture anything</h2>
             <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
-              When a thought hits — a task, an idea, a reminder — drop it here in a second, instead of stopping to decide where it belongs. Later, file each item where it goes: a task, a note, or an outcome. We'll suggest where.
+              When a thought hits, a task, an idea, a reminder, drop it here in a second, instead of stopping to decide where it belongs. Later, file each item where it goes: a task, a note, or an outcome. We'll suggest where.
             </p>
             <p className="text-xs text-muted-foreground/80 italic pt-1">
               Try it: type "call the accountant" above and press enter.

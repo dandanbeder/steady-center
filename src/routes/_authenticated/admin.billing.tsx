@@ -35,7 +35,7 @@ const STATUS_COLOR: Record<string, "default" | "secondary" | "destructive" | "ou
 };
 
 function fmtDate(s: string | null) {
-  return s ? new Date(s).toLocaleDateString() : "—";
+  return s ? new Date(s).toLocaleDateString() : ",";
 }
 
 function AdminBillingConsole() {
@@ -88,7 +88,7 @@ function AdminBillingConsole() {
         <div>
           <h1 className="text-2xl font-semibold">Billing & Plans</h1>
           <p className="text-sm text-muted-foreground">
-            Operational billing data only — no private content. Every manual change is audited.
+            Operational billing data only, no private content. Every manual change is audited.
           </p>
         </div>
       </div>
@@ -135,7 +135,7 @@ function AdminBillingConsole() {
             ) : rows.map((r) => (
               <TableRow key={r.user_id}>
                 <TableCell>
-                  <div className="font-medium">{r.full_name || "—"}</div>
+                  <div className="font-medium">{r.full_name || ","}</div>
                   <div className="text-xs text-muted-foreground">{r.email}</div>
                 </TableCell>
                 <TableCell>
@@ -145,7 +145,7 @@ function AdminBillingConsole() {
                     {r.cancel_at_period_end && <span className="text-[10px] text-muted-foreground">cancels at period end</span>}
                   </div>
                 </TableCell>
-                <TableCell>{r.seats || "—"}</TableCell>
+                <TableCell>{r.seats || ","}</TableCell>
                 <TableCell className="text-xs">
                   {r.status === "trialing" && r.trial_end && (
                     <div className={r.trial_expires_soon ? "text-amber-600 font-medium flex items-center gap-1" : ""}>
@@ -273,7 +273,7 @@ function ActionDialog({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            {target?.email} — this manual change is recorded in the audit log with your user id and reason.
+            {target?.email}, this manual change is recorded in the audit log with your user id and reason.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">

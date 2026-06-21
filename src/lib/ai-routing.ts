@@ -3,14 +3,14 @@
  *
  * Two cost controls live here:
  *
- * 1. MODEL ROUTING — every action_type maps to either a "light" (Haiku-class)
+ * 1. MODEL ROUTING, every action_type maps to either a "light" (Haiku-class)
  *    or "reasoning" (Sonnet-class) model. Light is the default for
  *    extraction, title/tag suggestions, classification. Reasoning is
  *    reserved for summaries, planning, and cross-content asks.
  *    Sub-actions (e.g. "notes_ai:suggest_meta") can override the
  *    file-level route to escape the all-or-nothing trap.
  *
- * 2. CONTEXT CAPS — every route advertises a maxInputChars,
+ * 2. CONTEXT CAPS, every route advertises a maxInputChars,
  *    maxOutputTokens, and (for long lists) maxContextItems and
  *    maxTranscriptChars. Callers MUST apply these before building the
  *    prompt; cap hits are logged via logCapHit (server module) so we

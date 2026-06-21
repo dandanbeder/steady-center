@@ -36,7 +36,7 @@ export function WeeklyReviewSettings() {
   // "next scheduled run" preview is honest.
   const zone = data?.timezone ?? "Africa/Johannesburg";
 
-  // listTimezones is intentionally not used here anymore — see General settings.
+  // listTimezones is intentionally not used here anymore, see General settings.
   void listTimezones;
 
   const next = useMemo(
@@ -56,7 +56,7 @@ export function WeeklyReviewSettings() {
         weekly_review_day: d,
         weekly_review_hour: h,
         weekly_review_enabled: en,
-        // Keep persisted tz unchanged — General owns it.
+        // Keep persisted tz unchanged, General owns it.
         timezone: zone,
       }),
     onSuccess: () => {

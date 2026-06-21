@@ -71,7 +71,7 @@ function AbusePage() {
             <h1 className="text-2xl font-semibold">Abuse controls</h1>
             <p className="text-sm text-muted-foreground">
               Review flagged accounts and apply graduated, audited enforcement.
-              Hitting the credit hard-stop is <strong>not</strong> abuse — those users are
+              Hitting the credit hard-stop is <strong>not</strong> abuse, those users are
               upsell candidates, not targets.
             </p>
           </div>
@@ -115,7 +115,7 @@ function QueueTab() {
   const scanMut = useMutation({
     mutationFn: () => scan(),
     onSuccess: (r) => {
-      toast.success(`Scan complete — ${r.flagged} flag(s) updated`);
+      toast.success(`Scan complete, ${r.flagged} flag(s) updated`);
       qc.invalidateQueries({ queryKey: ["abuse-flags"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -189,7 +189,7 @@ function FlagRow({ flag }: { flag: AbuseFlagRow }) {
     <>
       <TableRow>
         <TableCell>
-          <div className="font-medium">{flag.full_name || "—"}</div>
+          <div className="font-medium">{flag.full_name || ","}</div>
           <div className="text-xs text-muted-foreground">{flag.email || flag.user_id}</div>
         </TableCell>
         <TableCell><Badge variant={sevColor as any}>{flag.severity}</Badge></TableCell>
@@ -326,7 +326,7 @@ function ActionDialog({
           <DialogTitle>{titles[action]}</DialogTitle>
           <DialogDescription>
             {action === "terminate" &&
-              "Last resort. Schedules deletion in 30 days. The user is banned from auth immediately. Per Terms, paying customers require notice & may be due a refund — confirm offline before proceeding."}
+              "Last resort. Schedules deletion in 30 days. The user is banned from auth immediately. Per Terms, paying customers require notice & may be due a refund, confirm offline before proceeding."}
             {action === "suspend" &&
               flag.user_status !== "suspended" &&
               "Pauses access. Data is kept. Reversible. For paying customers, follow the abuse clause in our Terms (notice / refund implications)."}
@@ -450,12 +450,12 @@ function ThresholdsTab() {
           <Label>Scanner enabled</Label>
         </div>
         <div className="grid grid-cols-2 gap-4">
-          <N label="Cap hits / 24h — medium" k="cap_hits_24h_medium" />
-          <N label="Cap hits / 24h — high" k="cap_hits_24h_high" />
-          <N label="Distinct IPs / 7d — medium" k="distinct_ips_7d_medium" />
-          <N label="Distinct IPs / 7d — high" k="distinct_ips_7d_high" />
-          <N label="Credit burn / 24h — medium" k="credit_burn_24h_medium" />
-          <N label="Credit burn / 24h — high" k="credit_burn_24h_high" />
+          <N label="Cap hits / 24h, medium" k="cap_hits_24h_medium" />
+          <N label="Cap hits / 24h, high" k="cap_hits_24h_high" />
+          <N label="Distinct IPs / 7d, medium" k="distinct_ips_7d_medium" />
+          <N label="Distinct IPs / 7d, high" k="distinct_ips_7d_high" />
+          <N label="Credit burn / 24h, medium" k="credit_burn_24h_medium" />
+          <N label="Credit burn / 24h, high" k="credit_burn_24h_high" />
         </div>
         <div>
           <Label>Reason for change (audited)</Label>

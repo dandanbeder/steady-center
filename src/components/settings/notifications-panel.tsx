@@ -57,7 +57,7 @@ export function NotificationsPanel() {
     queryFn: getNotificationPrefs,
   });
 
-  // Phone number gates the SMS channel — read & write directly via RLS-scoped
+  // Phone number gates the SMS channel, read & write directly via RLS-scoped
   // profiles. SMS prefs are stored either way, but dispatch is gated server-side.
   const phoneQ = useQuery({
     queryKey: ["my-phone"],
@@ -178,7 +178,7 @@ export function NotificationsPanel() {
               else setChannel("browser", false);
             }}
           />
-          {/* SMS — gated on having a mobile number on the profile. */}
+          {/* SMS, gated on having a mobile number on the profile. */}
           <div className="flex items-start justify-between gap-4 py-1">
             <div className="min-w-0 flex items-start gap-3">
               <span className="mt-0.5 text-muted-foreground">

@@ -5,7 +5,7 @@
 export type TourStep = {
   title: string;
   body: string;
-  target?: string; // CSS selector — optional; falls back to centred card.
+  target?: string; // CSS selector, optional; falls back to centred card.
 };
 
 export type TourDef = {
@@ -22,7 +22,7 @@ export const TOURS: Record<string, TourDef> = {
     label: "Accounts",
     route: "/settings",
     intro:
-      "Accounts keep each business separate but together. Create one per business, then tag calendars, tasks, notes and meetings to it — and switch the view to focus on one or see them all.",
+      "Accounts keep each business separate but together. Create one per business, then tag calendars, tasks, notes and meetings to it, and switch the view to focus on one or see them all.",
     steps: [
       {
         title: "Create a business account",
@@ -31,7 +31,7 @@ export const TOURS: Record<string, TourDef> = {
       },
       {
         title: "Switch the view",
-        body: "This switcher in the top bar focuses Heartbeat on one account — or shows all of them together.",
+        body: "This switcher in the top bar focuses Heartbeat on one account, or shows all of them together.",
         target: '[data-tour="account-switcher"]',
       },
     ],
@@ -65,7 +65,7 @@ export const TOURS: Record<string, TourDef> = {
     label: "Outcomes",
     route: "/outcomes",
     intro:
-      "Outcomes are your bigger goals. Create one, link tasks to it, and watch progress fill as you finish them — this is how daily work ladders up to what matters.",
+      "Outcomes are your bigger goals. Create one, link tasks to it, and watch progress fill as you finish them, this is how daily work ladders up to what matters.",
     steps: [
       {
         title: "Create an outcome",
@@ -78,7 +78,7 @@ export const TOURS: Record<string, TourDef> = {
       },
       {
         title: "Watch progress",
-        body: "As linked tasks complete, the outcome's progress bar fills — gently visible, never noisy.",
+        body: "As linked tasks complete, the outcome's progress bar fills, gently visible, never noisy.",
         target: '[data-tour="outcome-progress"]',
       },
     ],
@@ -88,7 +88,7 @@ export const TOURS: Record<string, TourDef> = {
     label: "AI",
     route: "/ai",
     intro:
-      "The assistant lives in the top bar. Ask it to find something across your notes, summarise a meeting, or plan your day — it only acts after you confirm.",
+      "The assistant lives in the top bar. Ask it to find something across your notes, summarise a meeting, or plan your day, it only acts after you confirm.",
     steps: [
       {
         title: "Open the assistant",
@@ -106,7 +106,7 @@ export const TOURS: Record<string, TourDef> = {
     label: "Daily Pulse",
     route: "/today",
     intro:
-      "Your calm morning brief — what's on today, what's overdue, what matters. Start your day here.",
+      "Your calm morning brief, what's on today, what's overdue, what matters. Start your day here.",
     steps: [
       {
         title: "Today's brief",
@@ -115,7 +115,7 @@ export const TOURS: Record<string, TourDef> = {
       },
       {
         title: "Week pulse",
-        body: "A capacity cue across the week — tap a day to dive in. No traffic lights, no shouting.",
+        body: "A capacity cue across the week, tap a day to dive in. No traffic lights, no shouting.",
         target: '[data-tour="week-pulse"]',
       },
     ],

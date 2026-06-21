@@ -22,7 +22,7 @@ type Props = {
  *
  * Two-way sync stops, OAuth access for the provider is revoked server-side,
  * and the row returns to its "Connect" state. Already-synced events are kept
- * as local items by default — we don't ask the user to decide unless a future
+ * as local items by default, we don't ask the user to decide unless a future
  * requirement explicitly asks for it.
  */
 export function DisconnectCalendarDialog({
