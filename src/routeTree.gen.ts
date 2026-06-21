@@ -49,6 +49,7 @@ import { Route as AuthenticatedMeetingsMeetingIdRouteImport } from './routes/_au
 import { Route as AuthenticatedAdminPaymentsRouteImport } from './routes/_authenticated/admin.payments'
 import { Route as AuthenticatedAdminBillingRouteImport } from './routes/_authenticated/admin.billing'
 import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin.analytics'
+import { Route as AuthenticatedAdminAiEconomicsRouteImport } from './routes/_authenticated/admin.ai-economics'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 import { Route as ApiPublicHooksSyncMicrosoftCalendarsRouteImport } from './routes/api/public/hooks/sync-microsoft-calendars'
 import { Route as ApiPublicHooksSyncCalendarsRouteImport } from './routes/api/public/hooks/sync-calendars'
@@ -267,6 +268,12 @@ const AuthenticatedAdminAnalyticsRoute =
     path: '/analytics',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminAiEconomicsRoute =
+  AuthenticatedAdminAiEconomicsRouteImport.update({
+    id: '/ai-economics',
+    path: '/ai-economics',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const ApiPublicPaymentsWebhookRoute =
   ApiPublicPaymentsWebhookRouteImport.update({
     id: '/api/public/payments/webhook',
@@ -373,6 +380,7 @@ export interface FileRoutesByFullPath {
   '/today': typeof AuthenticatedTodayRoute
   '/trash': typeof AuthenticatedTrashRoute
   '/support-session/callback': typeof SupportSessionCallbackRoute
+  '/admin/ai-economics': typeof AuthenticatedAdminAiEconomicsRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/billing': typeof AuthenticatedAdminBillingRoute
   '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
@@ -425,6 +433,7 @@ export interface FileRoutesByTo {
   '/today': typeof AuthenticatedTodayRoute
   '/trash': typeof AuthenticatedTrashRoute
   '/support-session/callback': typeof SupportSessionCallbackRoute
+  '/admin/ai-economics': typeof AuthenticatedAdminAiEconomicsRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/billing': typeof AuthenticatedAdminBillingRoute
   '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
@@ -480,6 +489,7 @@ export interface FileRoutesById {
   '/_authenticated/today': typeof AuthenticatedTodayRoute
   '/_authenticated/trash': typeof AuthenticatedTrashRoute
   '/support-session/callback': typeof SupportSessionCallbackRoute
+  '/_authenticated/admin/ai-economics': typeof AuthenticatedAdminAiEconomicsRoute
   '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/_authenticated/admin/billing': typeof AuthenticatedAdminBillingRoute
   '/_authenticated/admin/payments': typeof AuthenticatedAdminPaymentsRoute
@@ -535,6 +545,7 @@ export interface FileRouteTypes {
     | '/today'
     | '/trash'
     | '/support-session/callback'
+    | '/admin/ai-economics'
     | '/admin/analytics'
     | '/admin/billing'
     | '/admin/payments'
@@ -587,6 +598,7 @@ export interface FileRouteTypes {
     | '/today'
     | '/trash'
     | '/support-session/callback'
+    | '/admin/ai-economics'
     | '/admin/analytics'
     | '/admin/billing'
     | '/admin/payments'
@@ -641,6 +653,7 @@ export interface FileRouteTypes {
     | '/_authenticated/today'
     | '/_authenticated/trash'
     | '/support-session/callback'
+    | '/_authenticated/admin/ai-economics'
     | '/_authenticated/admin/analytics'
     | '/_authenticated/admin/billing'
     | '/_authenticated/admin/payments'
@@ -970,6 +983,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAnalyticsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/ai-economics': {
+      id: '/_authenticated/admin/ai-economics'
+      path: '/ai-economics'
+      fullPath: '/admin/ai-economics'
+      preLoaderRoute: typeof AuthenticatedAdminAiEconomicsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/api/public/payments/webhook': {
       id: '/api/public/payments/webhook'
       path: '/api/public/payments/webhook'
@@ -1058,6 +1078,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminAiEconomicsRoute: typeof AuthenticatedAdminAiEconomicsRoute
   AuthenticatedAdminAnalyticsRoute: typeof AuthenticatedAdminAnalyticsRoute
   AuthenticatedAdminBillingRoute: typeof AuthenticatedAdminBillingRoute
   AuthenticatedAdminPaymentsRoute: typeof AuthenticatedAdminPaymentsRoute
@@ -1066,6 +1087,7 @@ interface AuthenticatedAdminRouteChildren {
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminAiEconomicsRoute: AuthenticatedAdminAiEconomicsRoute,
   AuthenticatedAdminAnalyticsRoute: AuthenticatedAdminAnalyticsRoute,
   AuthenticatedAdminBillingRoute: AuthenticatedAdminBillingRoute,
   AuthenticatedAdminPaymentsRoute: AuthenticatedAdminPaymentsRoute,
