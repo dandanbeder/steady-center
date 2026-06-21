@@ -1178,6 +1178,8 @@ function GroupAddTask({
         patch.priority = groupKey as TaskPriority;
       } else if (groupBy === "assignee" && groupKey !== "__unassigned__") {
         patch.assignee_id = groupKey;
+      } else if (groupBy === "outcome" && groupKey !== "__none__") {
+        patch.outcome_id = groupKey;
       }
       return createTask(patch);
     },
