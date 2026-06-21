@@ -1,13 +1,14 @@
 /**
  * AI credit top-up pack catalog. Shared by client + server.
  *
- * Pricing rules (anchored to CREDIT_ANCHOR_MICROS = 0.25¢ true cost / credit):
- *   • Per-credit sell price floor: 0.35¢ (1.4× anchor), never go below.
- *   • Per-credit sell price target: ~0.75¢ (3× anchor) on the smallest pack.
- *   • Larger packs reward volume but always stay ≥ floor.
+ * Sell price: $0.0035 / credit (0.35¢). Flat across all packs.
+ * Pack sizes are deliberately LARGE so the Paddle transaction fee
+ * (10% under $10, then 5% + flat fee) does not erode margin. We do not
+ * offer small packs at this price point — the flat fee would invert margin.
  *
- * Pack sizes are deliberately large so the Paddle fee (10% under $10, then
- * 5% + $0.50) doesn't eat the margin. No $1 / 100-credit packs.
+ * Internal cost economics (anchor, true cost per credit, margin %) are
+ * confidential and live ONLY in the Super Admin AI Economics dashboard.
+ * Do NOT surface them to customers anywhere in the app.
  *
  * Packs roll 12 months from purchase, survive plan changes, and are
  * available on EVERY tier (Free included).
@@ -28,37 +29,37 @@ export type TopUpPack = {
 
 export const TOPUP_PACKS: ReadonlyArray<TopUpPack> = [
   {
-    priceId: "topup_500",
-    credits: 500,
-    amountCents: 399,
+    priceId: "topup_5000",
+    credits: 5_000,
+    amountCents: 1750,
     currency: "usd",
     label: "Starter",
-    blurb: "Top up to keep going this cycle.",
+    blurb: "A solid runway of AI for everyday use.",
   },
   {
-    priceId: "topup_2000",
-    credits: 2000,
-    amountCents: 1399,
+    priceId: "topup_10000",
+    credits: 10_000,
+    amountCents: 3500,
     currency: "usd",
     label: "Standard",
-    blurb: "Roughly a month of heavy use.",
+    highlight: true,
+    blurb: "Most popular — plenty of headroom for a busy month.",
   },
   {
-    priceId: "topup_5000",
-    credits: 5000,
-    amountCents: 2999,
+    priceId: "topup_25000",
+    credits: 25_000,
+    amountCents: 8750,
     currency: "usd",
     label: "Power",
-    highlight: true,
-    blurb: "Best balance of price and headroom.",
+    blurb: "For heavy AI users and meeting-rich weeks.",
   },
   {
-    priceId: "topup_12000",
-    credits: 12000,
-    amountCents: 5999,
+    priceId: "topup_50000",
+    credits: 50_000,
+    amountCents: 17500,
     currency: "usd",
     label: "Pro stash",
-    blurb: "Lowest per-credit price.",
+    blurb: "Stock up and forget about it for months.",
   },
 ] as const;
 
