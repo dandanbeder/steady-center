@@ -230,8 +230,8 @@ export function GoogleSyncPanel({ businesses }: Props) {
           provider="Google"
           calendarName={disconnectTarget.name}
           busy={disconnectMut.isPending}
-          onConfirm={(remove_events) =>
-            disconnectMut.mutate({ calendar_id: disconnectTarget.id, remove_events })
+          onConfirm={() =>
+            disconnectMut.mutate({ calendar_id: disconnectTarget.id, remove_events: false })
           }
         />
       )}

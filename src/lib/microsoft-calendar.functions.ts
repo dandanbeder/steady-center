@@ -350,9 +350,22 @@ export const disconnectMicrosoftCalendar = createServerFn({ method: "POST" })
       .select("id", { count: "exact", head: true })
       .eq("owner_id", userId)
       .eq("provider", "microsoft");
-    if (!count || count === 0) {
+    const lastOne = !count || count === 0;
+    if (lastOne) {
       await supabaseAdmin.from("ms_oauth_tokens").delete().eq("user_id", userId);
     }
+
+    // Audit log: disconnect is a security-relevant action.
+    await supabase.from("analytics_events").insert({
+      user_id: userId,
+      type: "calendar_disconnect",
+      metadata: {
+        provider: "microsoft",
+        calendar_id: cal.id,
+        removed_events: data.remove_events,
+        revoked_oauth_tokens: lastOne,
+      },
+    });
 
     return { ok: true, removed_events: data.remove_events };
   });

@@ -160,6 +160,18 @@ export const disconnectGoogleCalendar = createServerFn({ method: "POST" })
         .eq("id", cal.id);
       if (updErr) throw updErr;
     }
+
+    // Audit log: disconnect is a security-relevant action.
+    await supabase.from("analytics_events").insert({
+      user_id: userId,
+      type: "calendar_disconnect",
+      metadata: {
+        provider: "google",
+        calendar_id: cal.id,
+        removed_events: data.remove_events,
+      },
+    });
+
     return { ok: true, removed_events: data.remove_events };
   });
 
