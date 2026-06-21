@@ -834,6 +834,25 @@ function ListWorkspace({
                 {filters.assigned === k && <span className="ml-auto">✓</span>}
               </DropdownMenuItem>
             ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-xs">Outcome</DropdownMenuLabel>
+            <DropdownMenuItem onClick={() => setFilters((f) => ({ ...f, outcome: "all" }))}>
+              Any outcome
+              {filters.outcome === "all" && <span className="ml-auto">✓</span>}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setFilters((f) => ({ ...f, outcome: "none" }))}>
+              No outcome
+              {filters.outcome === "none" && <span className="ml-auto">✓</span>}
+            </DropdownMenuItem>
+            {scopeOutcomes.map((o) => (
+              <DropdownMenuItem
+                key={o.id}
+                onClick={() => setFilters((f) => ({ ...f, outcome: o.id }))}
+              >
+                <span className="truncate">{o.name}</span>
+                {filters.outcome === o.id && <span className="ml-auto">✓</span>}
+              </DropdownMenuItem>
+            ))}
             {activeFilterCount > 0 && (
               <>
                 <DropdownMenuSeparator />
@@ -852,7 +871,8 @@ function ListWorkspace({
               {groupBy === "stage" ? "Stage" :
                groupBy === "priority" ? "Priority" :
                groupBy === "assignee" ? "Assignee" :
-               groupBy === "due" ? "Due date" : "None"}
+               groupBy === "due" ? "Due date" :
+               groupBy === "outcome" ? "Outcome" : "None"}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
@@ -861,6 +881,7 @@ function ListWorkspace({
               ["priority", "Priority"],
               ["assignee", "Assignee"],
               ["due", "Due date"],
+              ["outcome", "Outcome"],
               ["none", "None"],
             ] as const).map(([k, label]) => (
               <DropdownMenuItem
