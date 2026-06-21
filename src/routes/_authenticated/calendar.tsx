@@ -1102,14 +1102,36 @@ function MonthGrid({
             });
           const shown = dayEvts.slice(0, 3);
           const overflow = dayEvts.length - shown.length;
+          // Per-day capacity cue from timed events
+          const dayStartMs = startOfDay(d).getTime();
+          const dayEndMs = endOfDay(d).getTime();
+          const timedMins = dayEvts.reduce((acc, e) => {
+            if (isAllDayLike(e)) return acc;
+            const s = Math.max(new Date(e.start_at).getTime(), dayStartMs);
+            const en = Math.min(new Date(e.end_at).getTime(), dayEndMs);
+            return acc + Math.max(0, (en - s) / 60_000);
+          }, 0);
+          const hours = timedMins / 60;
+          // Calm shading — never alarming
+          const capacityTint =
+            hours >= 9
+              ? "bg-accent/15"
+              : hours >= 6
+                ? "bg-accent/10"
+                : hours >= 3
+                  ? "bg-accent/5"
+                  : "";
           return (
             <div
               key={i}
+              title={hours > 0 ? `${hours.toFixed(1)}h booked` : undefined}
               className={cn(
                 "min-w-0 min-h-[88px] sm:min-h-[110px] border-r border-b border-border p-1 sm:p-1.5 flex flex-col gap-1 hover:bg-muted/30 transition-colors",
                 (i + 1) % 7 === 0 && "border-r-0",
                 i >= 35 && "border-b-0",
                 !inMonth && "bg-muted/20",
+                inMonth && capacityTint,
+
               )}
             >
               <button
