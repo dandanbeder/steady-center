@@ -74,6 +74,10 @@ import {
 
 export const Route = createFileRoute("/_authenticated/notes")({
   head: () => ({ meta: [{ title: "Notes · Heartbeat" }] }),
+  loader: ({ context }) => {
+    // Warm the cache so the list renders without a spinner on first paint.
+    context.queryClient.prefetchQuery({ queryKey: ["notes"], queryFn: listNotes });
+  },
   component: NotesPage,
 });
 

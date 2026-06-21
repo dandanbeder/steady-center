@@ -21,6 +21,20 @@ import type { Note } from "@/lib/notes";
 
 export const Route = createFileRoute("/_authenticated/today")({
   head: () => ({ meta: [{ title: "Today · Heartbeat" }] }),
+  loader: ({ context }) => {
+    // Warm today's events and recent notes so the dashboard paints without a spinner.
+    const start = startOfDay(new Date());
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+    context.queryClient.prefetchQuery({
+      queryKey: ["events", "today", start.toISOString()],
+      queryFn: () => listEvents(start, end),
+    });
+    context.queryClient.prefetchQuery({
+      queryKey: ["notes", "recent", 5],
+      queryFn: () => listRecentNotes(5),
+    });
+  },
   component: TodayPage,
 });
 
