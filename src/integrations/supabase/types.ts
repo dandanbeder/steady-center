@@ -2268,7 +2268,9 @@ export type Database = {
           welcome_email_sent_at: string | null
           work_days: number[]
           work_end_hour: number
+          work_end_minute: number
           work_start_hour: number
+          work_start_minute: number
         }
         Insert: {
           ai_optional_disabled?: boolean
@@ -2333,7 +2335,9 @@ export type Database = {
           welcome_email_sent_at?: string | null
           work_days?: number[]
           work_end_hour?: number
+          work_end_minute?: number
           work_start_hour?: number
+          work_start_minute?: number
         }
         Update: {
           ai_optional_disabled?: boolean
@@ -2398,7 +2402,9 @@ export type Database = {
           welcome_email_sent_at?: string | null
           work_days?: number[]
           work_end_hour?: number
+          work_end_minute?: number
           work_start_hour?: number
+          work_start_minute?: number
         }
         Relationships: []
       }
