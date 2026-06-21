@@ -149,6 +149,9 @@ function AskNotesPage() {
           </ol>
         </section>
       )}
+
+      <Separator className="my-2" />
+      <TeamProgressPanel businessId={activeId === ALL ? null : activeId} />
     </div>
   );
 }
