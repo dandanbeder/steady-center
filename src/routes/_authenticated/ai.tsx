@@ -27,7 +27,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { CreditBalanceCard } from "@/components/credit-balance-card";
 import { AiCreditsExplainer } from "@/components/ai-credits-explainer";
 import { getMyAiUsage } from "@/lib/ai-usage.functions";
-import { ACTION_WEIGHTS, CREDIT_ANCHOR_MICROS } from "@/lib/credits";
+import { ACTION_WEIGHTS } from "@/lib/credits";
 
 export const Route = createFileRoute("/_authenticated/ai")({
   component: AiPage,
