@@ -75,7 +75,7 @@ function InboxPage() {
         <div>
           <h1 className="text-2xl font-semibold">Inbox</h1>
           <p className="text-sm text-muted-foreground">
-            Capture now, triage later. Accept a suggestion to file it into the right module.
+            Capture anything the moment it hits you. Sort it into the right place later — we'll suggest where.
           </p>
         </div>
       </header>
