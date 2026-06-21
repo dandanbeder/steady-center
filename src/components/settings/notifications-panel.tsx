@@ -56,6 +56,45 @@ export function NotificationsPanel() {
     queryKey: ["notification-prefs"],
     queryFn: getNotificationPrefs,
   });
+
+  // Phone number gates the SMS channel — read & write directly via RLS-scoped
+  // profiles. SMS prefs are stored either way, but dispatch is gated server-side.
+  const phoneQ = useQuery({
+    queryKey: ["my-phone"],
+    queryFn: async () => {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) return null;
+      const { data: p } = await supabase
+        .from("profiles")
+        .select("phone")
+        .eq("id", u.user.id)
+        .maybeSingle();
+      return p?.phone ?? null;
+    },
+  });
+  const [phoneDraft, setPhoneDraft] = useState<string>("");
+  useEffect(() => {
+    if (phoneQ.data !== undefined && phoneDraft === "") setPhoneDraft(phoneQ.data ?? "");
+  }, [phoneQ.data, phoneDraft]);
+  const savePhone = useMutation({
+    mutationFn: async (phone: string | null) => {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) throw new Error("Not signed in");
+      const { error } = await supabase
+        .from("profiles")
+        .update({ phone })
+        .eq("id", u.user.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["my-phone"] });
+      toast.success("Mobile number saved");
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+  const phone = phoneQ.data ?? null;
+  const hasPhone = !!phone;
+
   const [draft, setDraft] = useState<NotificationPrefs | null>(null);
   useEffect(() => {
     if (data && !draft) setDraft(data);
@@ -78,7 +117,7 @@ export function NotificationsPanel() {
     k: K,
     v: NotificationPrefs["events"][K],
   ) => setDraft({ ...draft, events: { ...draft.events, [k]: v } });
-  const setTypeChannel = (type: TypeKey, ch: "email" | "browser", v: boolean) =>
+  const setTypeChannel = (type: TypeKey, ch: "email" | "sms" | "browser", v: boolean) =>
     setDraft({
       ...draft,
       events: {
