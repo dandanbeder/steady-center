@@ -26,8 +26,18 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AppFooter } from "@/components/app-footer";
-import { CommandPalette } from "@/components/command-palette";
-import { AssistantPanel } from "@/components/assistant-panel";
+
+// Lazy-load the heavy on-demand panels. They only need to ship code when the
+// user opens them, which keeps the initial bundle small for first paint.
+const NotificationCenter = lazy(() =>
+  import("@/components/notification-center").then((m) => ({ default: m.NotificationCenter })),
+);
+const CommandPalette = lazy(() =>
+  import("@/components/command-palette").then((m) => ({ default: m.CommandPalette })),
+);
+const AssistantPanel = lazy(() =>
+  import("@/components/assistant-panel").then((m) => ({ default: m.AssistantPanel })),
+);
 import { PlanIndicator } from "@/components/plan-indicator";
 import { welcomedStorageKey } from "@/routes/_authenticated/learn";
 import { TourProvider } from "@/components/tour/tour-engine";
