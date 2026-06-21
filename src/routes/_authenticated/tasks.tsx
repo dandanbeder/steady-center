@@ -1915,6 +1915,24 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
             resourceName={task.title}
           />
           <div className="space-y-4">
+            {sourceNote && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground rounded-md border border-border bg-muted/30 px-2.5 py-1.5">
+                <Link2 className="h-3.5 w-3.5" />
+                <span>From note:</span>
+                <a
+                  href={`/notes?note=${sourceNote.id}`}
+                  className="text-accent hover:underline truncate"
+                  title={sourceNote.title}
+                >
+                  {sourceNote.title || "Untitled"}
+                </a>
+              </div>
+            )}
+            {task.source_note_id && !sourceNote && (
+              <div className="text-xs text-muted-foreground italic px-1">
+                From a note that's no longer available.
+              </div>
+            )}
             <div>
               <Label>Title</Label>
               <Input value={title} onChange={(e) => setTitle(e.target.value)} />
