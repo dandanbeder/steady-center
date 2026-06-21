@@ -1436,6 +1436,7 @@ function DayAgendaDialog({
   date,
   events,
   calById,
+  colorFor,
   onClose,
   onAdd,
   onEventClick,
@@ -1443,6 +1444,7 @@ function DayAgendaDialog({
   date: Date;
   events: EventRow[];
   calById: Map<string, Cal>;
+  colorFor?: (e: EventRow) => string;
   onClose: () => void;
   onAdd: () => void;
   onEventClick: (e: EventRow) => void;
