@@ -120,9 +120,8 @@ function AiPage() {
               <Sparkles className="h-5 w-5" /> What each action costs
             </CardTitle>
             <CardDescription>
-              You're only ever charged for the model time you actually use, these are
-              the typical credit costs when we don't have an exact measurement.
-              {" "}1 credit ≈ ${(CREDIT_ANCHOR_MICROS / 1_000_000).toFixed(4)} of model cost.
+              Credits power AI features — a quick action costs about 1 credit, longer ones cost more. Your
+              monthly allowance refills on your billing date; purchased top-ups last 12 months.
             </CardDescription>
           </CardHeader>
           <CardContent>
