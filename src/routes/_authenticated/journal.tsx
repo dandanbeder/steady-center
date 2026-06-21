@@ -155,33 +155,105 @@ function JournalPage() {
     }
   };
 
-  const handleExport = () => {
-    const payload = {
-      exported_at: new Date().toISOString(),
-      kind: "heartbeat-journal-export",
-      entries: entries.map((e) => {
-        const m = metaByNote.get(e.id);
-        return {
-          id: e.id,
-          created_at: e.created_at,
-          updated_at: e.updated_at,
-          title: e.title,
-          body: e.body,
-          mood: m?.mood ?? null,
-          tags: m?.tags ?? [],
-        };
-      }),
-    };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `heartbeat-journal-${format(new Date(), "yyyy-MM-dd")}.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    toast.success("Journal exported");
+  // Build a clean PDF for one entry or every entry. The PDF is built in the
+  // user's browser session — entry content never leaves the device.
+  const buildPdfEntries = (subset: Note[]): JournalPdfEntry[] =>
+    subset.map((e) => ({
+      id: e.id,
+      created_at: e.created_at,
+      title: e.title,
+      body: e.body,
+      meta: metaByNote.get(e.id) ?? null,
+    }));
+
+  const handleExportAll = async () => {
+    if (lockStatus?.enabled && !unlocked) {
+      toast.error("Unlock your Journal to export.");
+      return;
+    }
+    if (entries.length === 0) {
+      toast("No entries to export yet.");
+      return;
+    }
+    try {
+      await generateJournalPdf(buildPdfEntries(entries), {
+        filename: `heartbeat-journal-${format(new Date(), "yyyy-MM-dd")}.pdf`,
+      });
+      toast.success("Journal exported as PDF");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't build PDF");
+    }
+  };
+
+  const handleExportEntry = async (entry: Note) => {
+    if (lockStatus?.enabled && !unlocked) {
+      toast.error("Unlock your Journal to export.");
+      return;
+    }
+    try {
+      await generateJournalPdf(buildPdfEntries([entry]), {
+        filename: `heartbeat-journal-${format(parseISO(entry.created_at), "yyyy-MM-dd")}.pdf`,
+      });
+      toast.success("Entry exported as PDF");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't build PDF");
+    }
+  };
+
+  // Permanently delete a journal entry. RLS is owner-only and journal entries
+  // bypass any shared Trash, so there's no soft-delete to restore from; we
+  // capture the entry first and recreate it if the user taps Undo.
+  const handleDeleteEntry = async (entry: Note) => {
+    if (lockStatus?.enabled && !unlocked) {
+      toast.error("Unlock your Journal to delete entries.");
+      return;
+    }
+    const ok = window.confirm("Delete this journal entry? This can't be undone.");
+    if (!ok) return;
+    const savedMeta = metaByNote.get(entry.id) ?? null;
+    const savedTitle = entry.title;
+    const savedBody = entry.body;
+    try {
+      await hardDeleteJournalEntry(entry.id);
+      if (selectedId === entry.id) {
+        const next = entries.find((e) => e.id !== entry.id);
+        setSelectedId(next?.id ?? null);
+      }
+      qc.invalidateQueries({ queryKey: ["notes"] });
+      qc.invalidateQueries({ queryKey: ["journal-meta"] });
+      toast.success("Entry deleted", {
+        action: {
+          label: "Undo",
+          onClick: async () => {
+            try {
+              const restored = await createNote({
+                business_id: null,
+                folder_id: null,
+                title: savedTitle,
+                body: savedBody,
+                note_type: "journal",
+                source: "journal-undo",
+              });
+              if (savedMeta && (savedMeta.mood !== null || savedMeta.tags.length > 0)) {
+                await upsertJournalMeta({
+                  note_id: restored.id,
+                  mood: savedMeta.mood,
+                  tags: savedMeta.tags,
+                });
+              }
+              qc.invalidateQueries({ queryKey: ["notes"] });
+              qc.invalidateQueries({ queryKey: ["journal-meta"] });
+              setSelectedId(restored.id);
+              toast.success("Entry restored");
+            } catch (e) {
+              toast.error(e instanceof Error ? e.message : "Couldn't restore");
+            }
+          },
+        },
+      });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't delete");
+    }
   };
 
   if (supportSession) {
