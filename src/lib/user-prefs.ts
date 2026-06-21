@@ -114,6 +114,7 @@ export async function getNotificationPrefs(): Promise<NotificationPrefs> {
   return {
     channels: {
       email: typeof rawChannels.email === "boolean" ? rawChannels.email : DEFAULT_NOTIF.channels.email,
+      sms: typeof rawChannels.sms === "boolean" ? rawChannels.sms : DEFAULT_NOTIF.channels.sms,
       browser: typeof rawChannels.browser === "boolean" ? rawChannels.browser : DEFAULT_NOTIF.channels.browser,
     },
     events: {
