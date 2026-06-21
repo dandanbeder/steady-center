@@ -154,8 +154,33 @@ function TasksPage() {
   const { data: folders = [] } = useQuery({ queryKey: ["folders"], queryFn: listFolders });
   const { data: lists = [] } = useQuery({ queryKey: ["lists"], queryFn: listLists });
 
+  const search = Route.useSearch();
+  const navigate = Route.useNavigate();
+  const taskParam = search.task;
+
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
   const [view, setView] = useState<ViewMode>("list");
+  const [autoOpenTaskId, setAutoOpenTaskId] = useState<string | null>(null);
+
+  // Deep-link: ?task=ID — fetch task, jump to its list, then open it.
+  useEffect(() => {
+    if (!taskParam) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("tasks")
+        .select("id, list_id")
+        .eq("id", taskParam)
+        .maybeSingle();
+      if (cancelled || error || !data) return;
+      setSelectedListId(data.list_id);
+      setAutoOpenTaskId(data.id);
+      navigate({ search: {} as { task?: string }, replace: true });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [taskParam, navigate]);
 
   const visibleBusinesses = useMemo(
     () => (activeId === ALL ? businesses : businesses.filter((b) => b.id === activeId)),
@@ -214,6 +239,8 @@ function TasksPage() {
               list={selectedList}
               view={view}
               onViewChange={setView}
+              autoOpenTaskId={autoOpenTaskId && selectedList.id === selectedListId ? autoOpenTaskId : null}
+              onAutoOpenConsumed={() => setAutoOpenTaskId(null)}
             />
           </>
         )}
