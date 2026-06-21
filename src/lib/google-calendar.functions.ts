@@ -114,6 +114,55 @@ export const syncGoogleCalendarNow = createServerFn({ method: "POST" })
     return result;
   });
 
+// ---------------- Disconnect a single Google calendar ----------------
+//
+// The Google connector uses a workspace-shared API key (gateway), so there
+// is no per-user OAuth token to revoke here. "Disconnect" means: stop two-way
+// sync for THIS calendar, and either keep already-synced events (convert the
+// calendar row to a local 'manual' calendar) or remove them (delete the row,
+// which cascades to events). All scoped by RLS to the signed-in user.
+export const disconnectGoogleCalendar = createServerFn({ method: "POST" })
+  .middleware([requireActiveUser])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        calendar_id: z.string().uuid(),
+        remove_events: z.boolean().default(false),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: cal, error } = await supabase
+      .from("calendars")
+      .select("id, owner_id, provider")
+      .eq("id", data.calendar_id)
+      .single();
+    if (error) throw error;
+    if (cal.owner_id !== userId) throw new Error("Not authorized");
+    if (cal.provider !== "google") throw new Error("Not a Google calendar");
+
+    if (data.remove_events) {
+      const { error: delErr } = await supabase
+        .from("calendars")
+        .delete()
+        .eq("id", cal.id);
+      if (delErr) throw delErr;
+    } else {
+      const { error: updErr } = await supabase
+        .from("calendars")
+        .update({
+          provider: "manual",
+          external_id: null,
+          sync_token: null,
+          last_synced_at: null,
+        })
+        .eq("id", cal.id);
+      if (updErr) throw updErr;
+    }
+    return { ok: true, removed_events: data.remove_events };
+  });
+
 // ---------------- Push event mutations to Google ----------------
 
 const eventPushInput = z.object({
