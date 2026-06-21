@@ -516,11 +516,14 @@ function CalendarPage() {
                   cal={c}
                   biz={businesses.find((b) => b.id === c.business_id) ?? null}
                   on={!hiddenCals.has(c.id)}
-                  onToggle={() => {
-                    const next = new Set(hiddenCals);
-                    if (next.has(c.id)) next.delete(c.id);
-                    else next.add(c.id);
-                    setHiddenCals(next);
+                  onToggle={() => toggleHiddenCal(c.id)}
+                  onRename={async (name) => {
+                    try {
+                      await updateCalendar(c.id, { name });
+                      qc.invalidateQueries({ queryKey: ["calendars"] });
+                    } catch (e) {
+                      toast.error(e instanceof Error ? e.message : "Failed to rename");
+                    }
                   }}
                   onColorChange={async (color) => {
                     try {
