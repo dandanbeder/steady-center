@@ -2214,9 +2214,11 @@ export type Database = {
           deletion_scheduled_at: string | null
           density: string
           downgrade_pending_at: string | null
+          event_color_by: string
           font_size: string
           full_name: string | null
           hear_about_us: string | null
+          high_contrast: boolean
           hour_format: string
           id: string
           is_protected_primary: boolean
@@ -2273,9 +2275,11 @@ export type Database = {
           deletion_scheduled_at?: string | null
           density?: string
           downgrade_pending_at?: string | null
+          event_color_by?: string
           font_size?: string
           full_name?: string | null
           hear_about_us?: string | null
+          high_contrast?: boolean
           hour_format?: string
           id: string
           is_protected_primary?: boolean
@@ -2332,9 +2336,11 @@ export type Database = {
           deletion_scheduled_at?: string | null
           density?: string
           downgrade_pending_at?: string | null
+          event_color_by?: string
           font_size?: string
           full_name?: string | null
           hear_about_us?: string | null
+          high_contrast?: boolean
           hour_format?: string
           id?: string
           is_protected_primary?: boolean
