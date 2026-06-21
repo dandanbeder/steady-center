@@ -1023,6 +1023,7 @@ function ListView({
   stages = [],
   members = [],
   myId = null,
+  outcomes = [],
   collapsedGroups,
   onToggleCollapsed,
 }: {
