@@ -67,6 +67,7 @@ function AdminPortal() {
         <TabsContent value="audit" className="mt-6"><AuditPanel /></TabsContent>
       </Tabs>
       <div className="pt-2 flex gap-4 flex-wrap">
+        <Link to="/admin/abuse" className="text-sm underline text-primary">Open Abuse controls →</Link>
         <Link to="/admin/financials" className="text-sm underline text-primary">Open Financials &amp; Analytics →</Link>
         <Link to="/admin/billing" className="text-sm underline text-primary">Open Billing &amp; Plans console →</Link>
         <Link to="/admin/ai-economics" className="text-sm underline text-primary">Open AI Economics dashboard →</Link>

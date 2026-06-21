@@ -14,6 +14,93 @@ export type Database = {
   }
   public: {
     Tables: {
+      abuse_flags: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          evidence_summary: string
+          id: string
+          resolution_action: string | null
+          resolution_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          severity: string
+          signals: Json
+          source: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          evidence_summary: string
+          id?: string
+          resolution_action?: string | null
+          resolution_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          severity?: string
+          signals?: Json
+          source?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          evidence_summary?: string
+          id?: string
+          resolution_action?: string | null
+          resolution_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          severity?: string
+          signals?: Json
+          source?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      abuse_thresholds: {
+        Row: {
+          cap_hits_24h_high: number
+          cap_hits_24h_medium: number
+          credit_burn_24h_high: number
+          credit_burn_24h_medium: number
+          distinct_ips_7d_high: number
+          distinct_ips_7d_medium: number
+          enabled: boolean
+          id: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          cap_hits_24h_high?: number
+          cap_hits_24h_medium?: number
+          credit_burn_24h_high?: number
+          credit_burn_24h_medium?: number
+          distinct_ips_7d_high?: number
+          distinct_ips_7d_medium?: number
+          enabled?: boolean
+          id?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          cap_hits_24h_high?: number
+          cap_hits_24h_medium?: number
+          credit_burn_24h_high?: number
+          credit_burn_24h_medium?: number
+          distinct_ips_7d_high?: number
+          distinct_ips_7d_medium?: number
+          enabled?: boolean
+          id?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       access_requests: {
         Row: {
           business_id: string
@@ -2134,6 +2221,8 @@ export type Database = {
           journal_lock_enabled: boolean
           journal_lock_hash: string | null
           journal_lock_updated_at: string | null
+          last_warned_at: string | null
+          last_warning_message: string | null
           marketing_opt_in: boolean
           marketing_opt_in_at: string | null
           must_change_password: boolean
@@ -2149,13 +2238,21 @@ export type Database = {
           subscription_status: Database["public"]["Enums"]["subscription_status"]
           suspended_message: string | null
           suspended_reason: string | null
+          terminated_at: string | null
+          terminated_by: string | null
+          terminated_reason: string | null
           terms_accepted_at: string | null
           theme: string
+          throttle_level: string
+          throttle_reason: string | null
+          throttle_set_at: string | null
+          throttle_set_by: string | null
           timezone: string
           trial_plan: string | null
           trial_used_at: string | null
           trial_used_env: string | null
           updated_at: string
+          warned_by: string | null
           weekly_review_day: number
           weekly_review_enabled: boolean
           weekly_review_hour: number
@@ -2180,6 +2277,8 @@ export type Database = {
           journal_lock_enabled?: boolean
           journal_lock_hash?: string | null
           journal_lock_updated_at?: string | null
+          last_warned_at?: string | null
+          last_warning_message?: string | null
           marketing_opt_in?: boolean
           marketing_opt_in_at?: string | null
           must_change_password?: boolean
@@ -2195,13 +2294,21 @@ export type Database = {
           subscription_status?: Database["public"]["Enums"]["subscription_status"]
           suspended_message?: string | null
           suspended_reason?: string | null
+          terminated_at?: string | null
+          terminated_by?: string | null
+          terminated_reason?: string | null
           terms_accepted_at?: string | null
           theme?: string
+          throttle_level?: string
+          throttle_reason?: string | null
+          throttle_set_at?: string | null
+          throttle_set_by?: string | null
           timezone?: string
           trial_plan?: string | null
           trial_used_at?: string | null
           trial_used_env?: string | null
           updated_at?: string
+          warned_by?: string | null
           weekly_review_day?: number
           weekly_review_enabled?: boolean
           weekly_review_hour?: number
@@ -2226,6 +2333,8 @@ export type Database = {
           journal_lock_enabled?: boolean
           journal_lock_hash?: string | null
           journal_lock_updated_at?: string | null
+          last_warned_at?: string | null
+          last_warning_message?: string | null
           marketing_opt_in?: boolean
           marketing_opt_in_at?: string | null
           must_change_password?: boolean
@@ -2241,13 +2350,21 @@ export type Database = {
           subscription_status?: Database["public"]["Enums"]["subscription_status"]
           suspended_message?: string | null
           suspended_reason?: string | null
+          terminated_at?: string | null
+          terminated_by?: string | null
+          terminated_reason?: string | null
           terms_accepted_at?: string | null
           theme?: string
+          throttle_level?: string
+          throttle_reason?: string | null
+          throttle_set_at?: string | null
+          throttle_set_by?: string | null
           timezone?: string
           trial_plan?: string | null
           trial_used_at?: string | null
           trial_used_env?: string | null
           updated_at?: string
+          warned_by?: string | null
           weekly_review_day?: number
           weekly_review_enabled?: boolean
           weekly_review_hour?: number
@@ -3063,6 +3180,15 @@ export type Database = {
       admin_record_kitty_entry: {
         Args: { _delta_micros: number; _kind: string; _note: string }
         Returns: string
+      }
+      admin_scan_abuse_signals: {
+        Args: never
+        Returns: {
+          evidence_summary: string
+          severity: string
+          signals: Json
+          user_id: string
+        }[]
       }
       apply_plan_downgrade: { Args: { _user_id: string }; Returns: undefined }
       bump_account_usage: {
