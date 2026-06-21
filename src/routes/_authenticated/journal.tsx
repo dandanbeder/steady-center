@@ -574,7 +574,27 @@ function JournalEditor({
         <div className="text-xs text-muted-foreground">
           {saving ? "Saving…" : savedAt ? "Saved" : "Edited"}
         </div>
-        <VoiceJournalButton onTranscribed={insertTranscript} />
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={onDownload}
+            title="Download this entry as PDF"
+            aria-label="Download entry as PDF"
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          >
+            <Download className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={onDelete}
+            title="Delete this entry"
+            aria-label="Delete entry"
+            className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-muted transition-colors"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+          <VoiceJournalButton onTranscribed={insertTranscript} />
+        </div>
       </div>
       <Input
         value={title}
