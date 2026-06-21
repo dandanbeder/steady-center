@@ -179,7 +179,9 @@ function CalendarPage() {
   const { activeId } = useActiveBusiness();
   const [view, setView] = useState<ViewMode>("month");
   const [cursor, setCursor] = useState<Date>(startOfDay(new Date()));
-  const [hiddenCals, setHiddenCals] = useState<Set<string>>(new Set());
+  const { hidden: hiddenCals, toggle: toggleHiddenCal } = useHiddenSet("cal");
+  const { hidden: hiddenBiz, toggle: toggleHiddenBiz } = useHiddenSet("biz");
+  const { colorBy, setColorBy } = useColorBy();
   const [dayOpen, setDayOpen] = useState<Date | null>(null);
   const [editing, setEditing] = useState<EventRow | null>(null);
   const [newOpen, setNewOpen] = useState(false);
