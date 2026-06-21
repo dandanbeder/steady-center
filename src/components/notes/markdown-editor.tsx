@@ -103,6 +103,17 @@ export function MarkdownEditor({ value, onChange, placeholder, minRows = 18, onC
         <Sep />
         <ToolbarBtn onClick={() => linePrefix("- ")} title="Bullet list"><List className="h-4 w-4" /></ToolbarBtn>
         <ToolbarBtn onClick={() => linePrefix("- [ ] ")} title="Checklist"><CheckSquare className="h-4 w-4" /></ToolbarBtn>
+        {onCreateTask && (
+          <>
+            <Sep />
+            <ToolbarBtn
+              onClick={createTaskFromSelection}
+              title="Create task from selection (or current line)"
+            >
+              <ListTodo className="h-4 w-4" />
+            </ToolbarBtn>
+          </>
+        )}
         <div className="flex-1" />
         <Button
           type="button"
