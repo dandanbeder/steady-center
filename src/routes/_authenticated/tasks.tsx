@@ -619,6 +619,7 @@ function ListWorkspace({
       status: cfg.filters.status as Filters["status"],
       due: cfg.filters.due as Filters["due"],
       assigned: cfg.filters.assigned as Filters["assigned"],
+      outcome: (cfg.filters.outcome ?? "all") as Filters["outcome"],
     });
     setSortKey(cfg.sort.key);
     setGroupBy(cfg.group_by);
