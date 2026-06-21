@@ -22,6 +22,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SupportSessionCallbackRouteImport } from './routes/support-session.callback'
 import { Route as AuthenticatedTrashRouteImport } from './routes/_authenticated/trash'
 import { Route as AuthenticatedTodayRouteImport } from './routes/_authenticated/today'
+import { Route as AuthenticatedTeamAccessRouteImport } from './routes/_authenticated/team-access'
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
 import { Route as AuthenticatedSharedRouteImport } from './routes/_authenticated/shared'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
@@ -119,6 +120,11 @@ const AuthenticatedTrashRoute = AuthenticatedTrashRouteImport.update({
 const AuthenticatedTodayRoute = AuthenticatedTodayRouteImport.update({
   id: '/today',
   path: '/today',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedTeamAccessRoute = AuthenticatedTeamAccessRouteImport.update({
+  id: '/team-access',
+  path: '/team-access',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedTasksRoute = AuthenticatedTasksRouteImport.update({
@@ -335,6 +341,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/shared': typeof AuthenticatedSharedRoute
   '/tasks': typeof AuthenticatedTasksRoute
+  '/team-access': typeof AuthenticatedTeamAccessRoute
   '/today': typeof AuthenticatedTodayRoute
   '/trash': typeof AuthenticatedTrashRoute
   '/support-session/callback': typeof SupportSessionCallbackRoute
@@ -382,6 +389,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/shared': typeof AuthenticatedSharedRoute
   '/tasks': typeof AuthenticatedTasksRoute
+  '/team-access': typeof AuthenticatedTeamAccessRoute
   '/today': typeof AuthenticatedTodayRoute
   '/trash': typeof AuthenticatedTrashRoute
   '/support-session/callback': typeof SupportSessionCallbackRoute
@@ -432,6 +440,7 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/shared': typeof AuthenticatedSharedRoute
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
+  '/_authenticated/team-access': typeof AuthenticatedTeamAccessRoute
   '/_authenticated/today': typeof AuthenticatedTodayRoute
   '/_authenticated/trash': typeof AuthenticatedTrashRoute
   '/support-session/callback': typeof SupportSessionCallbackRoute
@@ -482,6 +491,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/shared'
     | '/tasks'
+    | '/team-access'
     | '/today'
     | '/trash'
     | '/support-session/callback'
@@ -529,6 +539,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/shared'
     | '/tasks'
+    | '/team-access'
     | '/today'
     | '/trash'
     | '/support-session/callback'
@@ -578,6 +589,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/shared'
     | '/_authenticated/tasks'
+    | '/_authenticated/team-access'
     | '/_authenticated/today'
     | '/_authenticated/trash'
     | '/support-session/callback'
@@ -715,6 +727,13 @@ declare module '@tanstack/react-router' {
       path: '/today'
       fullPath: '/today'
       preLoaderRoute: typeof AuthenticatedTodayRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/team-access': {
+      id: '/_authenticated/team-access'
+      path: '/team-access'
+      fullPath: '/team-access'
+      preLoaderRoute: typeof AuthenticatedTeamAccessRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/tasks': {
@@ -1016,6 +1035,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedSharedRoute: typeof AuthenticatedSharedRoute
   AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
+  AuthenticatedTeamAccessRoute: typeof AuthenticatedTeamAccessRoute
   AuthenticatedTodayRoute: typeof AuthenticatedTodayRoute
   AuthenticatedTrashRoute: typeof AuthenticatedTrashRoute
 }
@@ -1039,6 +1059,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedSharedRoute: AuthenticatedSharedRoute,
   AuthenticatedTasksRoute: AuthenticatedTasksRoute,
+  AuthenticatedTeamAccessRoute: AuthenticatedTeamAccessRoute,
   AuthenticatedTodayRoute: AuthenticatedTodayRoute,
   AuthenticatedTrashRoute: AuthenticatedTrashRoute,
 }
