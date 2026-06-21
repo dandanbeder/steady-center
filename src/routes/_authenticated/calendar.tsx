@@ -1096,6 +1096,8 @@ function MonthGrid({
   colorFor,
   onDayClick,
   onEventClick,
+  workDays,
+  dailyCap,
 }: {
   cursor: Date;
   events: EventRow[];
@@ -1103,29 +1105,43 @@ function MonthGrid({
   colorFor?: (e: EventRow) => string;
   onDayClick: (d: Date) => void;
   onEventClick: (e: EventRow) => void;
+  workDays?: number[];
+  dailyCap?: number;
 }) {
   const start = startOfMonthGrid(cursor);
   const days = Array.from({ length: 42 }, (_, i) => addDays(start, i));
   const today = startOfDay(new Date());
   const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const workDaySet = workDays ?? [1, 2, 3, 4, 5];
+  const cap = dailyCap ?? 6;
 
   return (
     <div
       className="rounded-2xl border border-border bg-card overflow-hidden"
       style={{ boxShadow: "var(--shadow-soft)" }}
     >
-      <div className="grid grid-cols-7 text-[10px] sm:text-xs uppercase tracking-wider text-muted-foreground border-b border-border">
-        {weekdays.map((w) => (
-          <div key={w} className="px-1 py-2 text-center truncate">
-            <span className="hidden sm:inline">{w}</span>
-            <span className="sm:hidden">{w[0]}</span>
-          </div>
-        ))}
+      <div className="grid grid-cols-7 text-[10px] sm:text-xs uppercase tracking-wider border-b border-border">
+        {weekdays.map((w, idx) => {
+          const isWork = workDaySet.includes(idx);
+          return (
+            <div
+              key={w}
+              className={cn(
+                "px-1 py-2 text-center truncate",
+                isWork ? "text-muted-foreground" : "text-muted-foreground/40",
+              )}
+            >
+              <span className="hidden sm:inline">{w}</span>
+              <span className="sm:hidden">{w[0]}</span>
+            </div>
+          );
+        })}
       </div>
       <div className="grid grid-cols-7 grid-rows-6">
         {days.map((d, i) => {
           const inMonth = d.getMonth() === cursor.getMonth();
           const isToday = sameDay(d, today);
+          const isWorkDay = workDaySet.includes(d.getDay());
           const dayEvts = events
             .filter((e) => {
               const s = startOfDay(new Date(e.start_at));
@@ -1133,7 +1149,6 @@ function MonthGrid({
               return s <= d && en >= d;
             })
             .sort((a, b) => {
-              // multi-day / all-day first, then by time
               const am = isAllDayLike(a) ? 0 : 1;
               const bm = isAllDayLike(b) ? 0 : 1;
               if (am !== bm) return am - bm;
@@ -1141,7 +1156,7 @@ function MonthGrid({
             });
           const shown = dayEvts.slice(0, 3);
           const overflow = dayEvts.length - shown.length;
-          // Per-day capacity cue from timed events
+          // Per-day capacity cue from timed events vs daily capacity
           const dayStartMs = startOfDay(d).getTime();
           const dayEndMs = endOfDay(d).getTime();
           const timedMins = dayEvts.reduce((acc, e) => {
@@ -1151,26 +1166,26 @@ function MonthGrid({
             return acc + Math.max(0, (en - s) / 60_000);
           }, 0);
           const hours = timedMins / 60;
-          // Calm shading — never alarming
+          const ratio = cap > 0 ? hours / cap : 0;
           const capacityTint =
-            hours >= 9
+            ratio >= 1.0
               ? "bg-accent/15"
-              : hours >= 6
+              : ratio >= 0.66
                 ? "bg-accent/10"
-                : hours >= 3
+                : ratio >= 0.33
                   ? "bg-accent/5"
                   : "";
           return (
             <div
               key={i}
-              title={hours > 0 ? `${hours.toFixed(1)}h booked` : undefined}
+              title={hours > 0 ? `${hours.toFixed(1)}h of ${cap}h capacity` : isWorkDay ? undefined : "Non-work day"}
               className={cn(
                 "min-w-0 min-h-[88px] sm:min-h-[110px] border-r border-b border-border p-1 sm:p-1.5 flex flex-col gap-1 hover:bg-muted/30 transition-colors",
                 (i + 1) % 7 === 0 && "border-r-0",
                 i >= 35 && "border-b-0",
                 !inMonth && "bg-muted/20",
-                inMonth && capacityTint,
-
+                inMonth && !isWorkDay && "bg-muted/15",
+                inMonth && isWorkDay && capacityTint,
               )}
             >
               <button
