@@ -1960,6 +1960,50 @@ export type Database = {
           },
         ]
       }
+      task_stages: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          is_terminal: boolean
+          kind: string
+          list_id: string
+          name: string
+          position: number
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          is_terminal?: boolean
+          kind?: string
+          list_id: string
+          name: string
+          position?: number
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          is_terminal?: boolean
+          kind?: string
+          list_id?: string
+          name?: string
+          position?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_stages_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_status_history: {
         Row: {
           business_id: string | null
@@ -2014,6 +2058,8 @@ export type Database = {
           recurrence_rule: string | null
           source_note_id: string | null
           source_type: string | null
+          stage_id: string | null
+          stage_position: number
           status: Database["public"]["Enums"]["task_status"]
           status_changed_at: string
           title: string
@@ -2041,6 +2087,8 @@ export type Database = {
           recurrence_rule?: string | null
           source_note_id?: string | null
           source_type?: string | null
+          stage_id?: string | null
+          stage_position?: number
           status?: Database["public"]["Enums"]["task_status"]
           status_changed_at?: string
           title: string
@@ -2068,6 +2116,8 @@ export type Database = {
           recurrence_rule?: string | null
           source_note_id?: string | null
           source_type?: string | null
+          stage_id?: string | null
+          stage_position?: number
           status?: Database["public"]["Enums"]["task_status"]
           status_changed_at?: string
           title?: string
@@ -2106,6 +2156,13 @@ export type Database = {
             columns: ["source_note_id"]
             isOneToOne: false
             referencedRelation: "notes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "task_stages"
             referencedColumns: ["id"]
           },
         ]
@@ -2250,6 +2307,56 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_list_views: {
+        Row: {
+          collapsed_groups: Json
+          column_order: Json
+          created_at: string
+          filters: Json
+          group_by: string
+          id: string
+          list_id: string
+          sort: Json
+          updated_at: string
+          user_id: string
+          view: string
+        }
+        Insert: {
+          collapsed_groups?: Json
+          column_order?: Json
+          created_at?: string
+          filters?: Json
+          group_by?: string
+          id?: string
+          list_id: string
+          sort?: Json
+          updated_at?: string
+          user_id: string
+          view?: string
+        }
+        Update: {
+          collapsed_groups?: Json
+          column_order?: Json
+          created_at?: string
+          filters?: Json
+          group_by?: string
+          id?: string
+          list_id?: string
+          sort?: Json
+          updated_at?: string
+          user_id?: string
+          view?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_list_views_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "lists"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       weekly_goals: {
         Row: {
@@ -2451,6 +2558,10 @@ export type Database = {
       }
       resource_owner: { Args: { _id: string; _type: string }; Returns: string }
       role_rank: { Args: { _role: string }; Returns: number }
+      seed_default_task_stages: {
+        Args: { p_list_id: string }
+        Returns: undefined
+      }
       user_effective_plan: {
         Args: { p_user: string }
         Returns: {
