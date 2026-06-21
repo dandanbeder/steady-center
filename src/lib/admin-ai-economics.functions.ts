@@ -124,7 +124,7 @@ export const adminRecordKittyEntry = createServerFn({ method: "POST" })
     const { error } = await supabaseAdmin.rpc("admin_record_kitty_entry", {
       _delta_micros: deltaMicros,
       _kind: data.kind,
-      _note: data.note ?? null,
+      _note: data.note ?? "",
     });
     if (error) throw new Error(error.message);
     return { ok: true };
