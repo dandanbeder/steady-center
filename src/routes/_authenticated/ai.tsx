@@ -25,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CreditBalanceCard } from "@/components/credit-balance-card";
+import { AiCreditsExplainer } from "@/components/ai-credits-explainer";
 import { getMyAiUsage } from "@/lib/ai-usage.functions";
 import { ACTION_WEIGHTS, CREDIT_ANCHOR_MICROS } from "@/lib/credits";
 
@@ -107,6 +108,10 @@ function AiPage() {
 
         {/* Balance + low-balance/hard-stop UI (also opens the top-up dialog) */}
         <CreditBalanceCard />
+
+        {/* Plain-language explainer */}
+        <AiCreditsExplainer />
+
 
         {/* Predictable pricing */}
         <Card>

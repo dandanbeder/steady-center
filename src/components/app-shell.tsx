@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils";
 import { AppFooter } from "@/components/app-footer";
 import { CommandPalette } from "@/components/command-palette";
 import { AssistantPanel } from "@/components/assistant-panel";
+import { PlanIndicator } from "@/components/plan-indicator";
 
 const NAV: { to: string; label: string; icon: typeof Home }[] = [
   { to: "/today", label: "Today", icon: Home },
@@ -314,6 +315,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+          <PlanIndicator />
           <Button
             variant="ghost"
             size="sm"
