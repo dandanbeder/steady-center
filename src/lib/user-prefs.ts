@@ -100,10 +100,6 @@ export async function getNotificationPrefs(): Promise<NotificationPrefs> {
     quiet_end: data.quiet_end,
   };
 }
-    quiet_start: data.quiet_start,
-    quiet_end: data.quiet_end,
-  };
-}
 
 export async function saveNotificationPrefs(p: NotificationPrefs) {
   const { data: u } = await supabase.auth.getUser();
