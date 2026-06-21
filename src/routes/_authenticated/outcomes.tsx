@@ -210,7 +210,7 @@ function StatusBadge({ status }: { status: OutcomeStatus }) {
   if (s === "achieved")
     return (
       <Badge className="bg-primary/10 text-primary border-primary/30 text-[10px] gap-1">
-        <Trophy className="h-3 w-3" /> Achieved
+        <Trophy className="h-3 w-3" /> Done
       </Badge>
     );
   if (s === "at_risk")
