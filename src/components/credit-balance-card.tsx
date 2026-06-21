@@ -245,7 +245,11 @@ export function CreditBalanceCard() {
           </div>
         </CardContent>
       </Card>
-      <TopUpDialog open={topupOpen} onOpenChange={setTopupOpen} />
+      {topupOpen && (
+        <Suspense fallback={null}>
+          <TopUpDialog open={topupOpen} onOpenChange={setTopupOpen} />
+        </Suspense>
+      )}
     </>
   );
 }
