@@ -201,16 +201,17 @@ export const listSharedWithMeResources = createServerFn({ method: "GET" })
 
     const byType = {
       folder: [] as string[], list: [] as string[], task: [] as string[],
-      note: [] as string[], calendar: [] as string[],
+      note: [] as string[], calendar: [] as string[], business: [] as string[],
     };
     for (const r of rows) byType[r.resource_type as ResourceType].push(r.resource_id as string);
 
-    const [folders, lists, tasks, notes, cals] = await Promise.all([
+    const [folders, lists, tasks, notes, cals, bizes] = await Promise.all([
       byType.folder.length ? supabaseAdmin.from("folders").select("id, name, owner_id").in("id", byType.folder) : Promise.resolve({ data: [] }),
       byType.list.length ? supabaseAdmin.from("lists").select("id, name, owner_id").in("id", byType.list) : Promise.resolve({ data: [] }),
       byType.task.length ? supabaseAdmin.from("tasks").select("id, title, owner_id, due_at, status").in("id", byType.task) : Promise.resolve({ data: [] }),
       byType.note.length ? supabaseAdmin.from("notes").select("id, title, owner_id").in("id", byType.note) : Promise.resolve({ data: [] }),
       byType.calendar.length ? supabaseAdmin.from("calendars").select("id, name, owner_id, color").in("id", byType.calendar) : Promise.resolve({ data: [] }),
+      byType.business.length ? supabaseAdmin.from("businesses").select("id, name, owner_id").in("id", byType.business) : Promise.resolve({ data: [] }),
     ]);
 
     type Item = { id: string; title: string; subtitle: string | null; owner_id: string };
@@ -220,7 +221,9 @@ export const listSharedWithMeResources = createServerFn({ method: "GET" })
       task: new Map((tasks.data ?? []).map((x: any) => [x.id, { id: x.id, title: x.title, subtitle: x.due_at ? `Due ${new Date(x.due_at).toLocaleDateString()}` : x.status, owner_id: x.owner_id }])),
       note: new Map((notes.data ?? []).map((x: any) => [x.id, { id: x.id, title: x.title || "Untitled", subtitle: "Note", owner_id: x.owner_id }])),
       calendar: new Map((cals.data ?? []).map((x: any) => [x.id, { id: x.id, title: x.name, subtitle: "Calendar", owner_id: x.owner_id }])),
+      business: new Map((bizes.data ?? []).map((x: any) => [x.id, { id: x.id, title: x.name, subtitle: "Account", owner_id: x.owner_id }])),
     };
+
 
     const ownerIds = [
       ...new Set(
