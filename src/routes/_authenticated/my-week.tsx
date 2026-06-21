@@ -373,6 +373,7 @@ function MyWeekPage() {
                 loadPct={pct}
                 overloaded={over}
                 businessById={businessById}
+                outcomeNameById={outcomeNameById}
                 onDropTask={(taskId) => moveTask.mutate({ taskId, target: day.date })}
                 onToggleTask={(t) => toggleTask.mutate(t)}
               />
