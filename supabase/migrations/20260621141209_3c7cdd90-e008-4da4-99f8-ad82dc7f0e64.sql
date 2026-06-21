@@ -1,0 +1,1 @@
+ALTER TABLE public.account_credits ADD COLUMN IF NOT EXISTS hard_stop_alerted_at timestamptz;

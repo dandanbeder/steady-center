@@ -49,10 +49,54 @@ export async function assertAiCredits(
 ): Promise<void> {
   const bal = await readBalance(userId);
   if (bal.paused || bal.allowance + bal.purchased < estimatedCredits) {
+    // Fire-and-forget hard-stop email — claim atomically so we only send
+    // once per cycle even under concurrent AI calls. Never block or fail
+    // the hard-stop on email errors.
+    void notifyHardStop(bal.billingAccount).catch((e) =>
+      console.warn("[credits] hard-stop email failed", e),
+    );
     throw new Error(
       `${CREDITS_EXHAUSTED_PREFIX} You're out of AI credits. Top up or wait for your next cycle to continue.`,
     );
   }
+}
+
+async function notifyHardStop(billingAccount: string): Promise<void> {
+  const { data: claimed } = await supabaseAdmin.rpc(
+    "try_claim_hard_stop_alert",
+    { _account: billingAccount },
+  );
+  if (!claimed) return;
+
+  const { data: auth } = await supabaseAdmin.auth.admin.getUserById(
+    billingAccount,
+  );
+  const email = auth?.user?.email;
+  if (!email) return;
+  const { data: profile } = await supabaseAdmin
+    .from("profiles")
+    .select("full_name")
+    .eq("id", billingAccount)
+    .maybeSingle();
+  const name =
+    ((profile?.full_name as string | null) ?? "").split(" ")[0] || "there";
+
+  const { brandedEmail, sendEmail, getAppOrigin } = await import("./email.server");
+  const billingUrl = `${getAppOrigin()}/billing`;
+  const html = brandedEmail({
+    heading: "Your AI is paused",
+    preheader: "Top up credits to keep your AI features running.",
+    intro: `Hi ${name}, Heartbeat just paused AI features on your account — you've used your monthly allowance and any purchased credits.`,
+    bodyHtml: `<p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#3A3A3A">No silent overcharges, no surprise bill. You can top up to continue right away, or wait for your next billing cycle to refill your allowance automatically.</p>`,
+    ctaLabel: "Top up AI credits",
+    ctaUrl: billingUrl,
+    ctaNoteHtml: `<p style="margin:8px 0 0;font-family:Arial,Helvetica,sans-serif;color:#7A7A7A;font-size:12px;line-height:1.55">You're getting this once per cycle when AI pauses. Manage your plan in <a href="${billingUrl}" style="color:#7A8471;text-decoration:none">Billing</a>.</p>`,
+  });
+  await sendEmail({
+    to: email,
+    subject: "AI paused — top up to continue",
+    html,
+  });
 }
 
 /**
