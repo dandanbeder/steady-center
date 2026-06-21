@@ -24,7 +24,7 @@ const EXT: Record<string, string> = {
 export const transcribeAudio = createServerFn({ method: "POST" })
   .middleware([requireActiveUser])
   .inputValidator((input: unknown) => Input.parse(input))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const apiKey = process.env.LOVABLE_API_KEY;
     if (!apiKey) throw new Error("AI is not configured.");
 
