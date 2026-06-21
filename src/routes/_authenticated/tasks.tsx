@@ -1893,7 +1893,12 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
   const { data: members = [] } = useAssignableMembers(task.business_id);
   const memberList = members as AssignableMember[];
   const activeOutcomes = outcomes.filter(
-    (o) => o.status === "active" || o.id === task.outcome_id,
+    (o) =>
+      o.status === "active" ||
+      o.status === "in_progress" ||
+      o.status === "not_started" ||
+      o.status === "at_risk" ||
+      o.id === task.outcome_id,
   );
 
   const save = useMutation({
