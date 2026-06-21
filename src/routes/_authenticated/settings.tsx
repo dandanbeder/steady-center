@@ -1,8 +1,12 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { Plus, Trash2, Check, X, AlertTriangle, ArrowUp, ArrowDown, Archive, ArchiveRestore } from "lucide-react";
+import {
+  Plus, Trash2, Check, X, AlertTriangle, ArrowUp, ArrowDown, Archive, ArchiveRestore,
+  User, Users, Layers, Bell, CalendarClock, ShieldCheck, CreditCard, Plug, Sparkles, Palette,
+  Clock, Skull,
+} from "lucide-react";
 import {
   createBusiness,
   listAllBusinesses,
@@ -19,6 +23,7 @@ import {
   type Calendar as Cal,
 } from "@/lib/calendars";
 import { deleteBusinessCascade, deleteMyAccount } from "@/lib/account.functions";
+import { GeneralPanel } from "@/components/settings/general-panel";
 import { GoogleSyncPanel } from "@/components/google-sync-panel";
 import { MicrosoftSyncPanel } from "@/components/microsoft-sync-panel";
 import { WeeklyReviewSettings } from "@/components/weekly-review-settings";
@@ -55,6 +60,31 @@ export const Route = createFileRoute("/_authenticated/settings")({
 const PALETTE = [
   "#7A8471", "#C97B5B", "#5C7A89", "#A88B4A",
   "#8E6E8A", "#566B5C", "#B5685A", "#6B7DB3",
+];
+
+type SectionId =
+  | "general"
+  | "accounts"
+  | "connections"
+  | "notifications"
+  | "weekly"
+  | "ai"
+  | "privacy"
+  | "billing"
+  | "team"
+  | "danger";
+
+const NAV: Array<{ id: SectionId; label: string; icon: React.ComponentType<{ className?: string }>; tone?: "danger" }> = [
+  { id: "general", label: "General", icon: User },
+  { id: "accounts", label: "Accounts", icon: Layers },
+  { id: "connections", label: "Connections", icon: Plug },
+  { id: "notifications", label: "Notifications", icon: Bell },
+  { id: "weekly", label: "Weekly review", icon: CalendarClock },
+  { id: "ai", label: "AI preferences", icon: Sparkles },
+  { id: "privacy", label: "Privacy & data", icon: ShieldCheck },
+  { id: "billing", label: "Billing", icon: CreditCard },
+  { id: "team", label: "Team", icon: Users },
+  { id: "danger", label: "Danger zone", icon: Skull, tone: "danger" },
 ];
 
 function SettingsPage() {
