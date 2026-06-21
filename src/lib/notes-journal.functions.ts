@@ -307,7 +307,7 @@ export const askNotes = createServerFn({ method: "POST" })
     for (const m of (meetingsRes.data ?? []).slice(0, perType)) {
       const parts = [
         m.summary ? `Summary: ${m.summary}` : "",
-        m.decisions ? `Decisions: ${m.decisions}` : "",
+        m.decisions ? `Decisions: ${typeof m.decisions === "string" ? m.decisions : JSON.stringify(m.decisions)}` : "",
         m.transcript ? `Transcript: ${(m.transcript as string).slice(0, 1500)}` : "",
       ]
         .filter(Boolean)
