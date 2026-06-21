@@ -310,6 +310,37 @@ function CalendarPage() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to delete"),
   });
 
+  // Optimistic move/resize for drag-and-drop. On failure we revert the cache.
+  const eventsKey = ["events", range.start.toISOString(), range.end.toISOString()];
+  const moveMut = useMutation({
+    mutationFn: ({ id, start, end }: { id: string; start: Date; end: Date }) =>
+      updateEvent(id, { start_at: start.toISOString(), end_at: end.toISOString() }),
+    onMutate: async ({ id, start, end }) => {
+      await qc.cancelQueries({ queryKey: eventsKey });
+      const prev = qc.getQueryData<EventRow[]>(eventsKey);
+      if (prev) {
+        qc.setQueryData<EventRow[]>(
+          eventsKey,
+          prev.map((e) =>
+            e.id === id
+              ? { ...e, start_at: start.toISOString(), end_at: end.toISOString() }
+              : e,
+          ),
+        );
+      }
+      return { prev };
+    },
+    onError: (err, _vars, ctx) => {
+      if (ctx?.prev) qc.setQueryData(eventsKey, ctx.prev);
+      toast.error(err instanceof Error ? err.message : "Move failed — reverted");
+    },
+    onSuccess: (res) => {
+      if (res.syncWarning) toast.warning(res.syncWarning);
+      qc.invalidateQueries({ queryKey: ["events"] });
+    },
+  });
+
+
   function shift(dir: -1 | 1) {
     if (view === "month") {
       setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + dir, 1));
