@@ -86,8 +86,8 @@ export async function chargeAiCredits(opts: {
   const { error } = await supabaseAdmin.rpc("charge_ai_credits", {
     _acting_user: opts.userId,
     _credits: credits,
-    _event_id: opts.eventId,
-  });
+    _event_id: opts.eventId ?? undefined,
+  } as { _acting_user: string; _credits: number; _event_id: string });
   if (error) {
     console.warn("[credits] charge_ai_credits failed", error);
   }
