@@ -296,3 +296,157 @@ export const suggestShareTargets = createServerFn({ method: "POST" })
       )
       .slice(0, 20);
   });
+
+// ====================== TEAM & ACCESS ======================
+export type MemberAccessRow = {
+  user_id: string;
+  email: string | null;
+  full_name: string | null;
+  membership_role: "owner" | "admin" | "member" | "commenter" | "viewer";
+  membership_status: string;
+  account_share: { share_id: string; role: ShareRole; can_reshare: boolean; can_export: boolean } | null;
+  resource_shares: Array<{
+    share_id: string;
+    resource_type: ResourceType;
+    resource_id: string;
+    resource_title: string;
+    role: ShareRole;
+    can_reshare: boolean;
+    can_export: boolean;
+  }>;
+};
+
+async function ensureCanViewTeamAccess(userId: string, businessId: string) {
+  const { data: prof } = await supabaseAdmin.from("profiles").select("platform_role").eq("id", userId).maybeSingle();
+  if ((prof as { platform_role?: string } | null)?.platform_role === "superadmin") return;
+  const { data: biz } = await supabaseAdmin.from("businesses").select("owner_id").eq("id", businessId).maybeSingle();
+  if ((biz as { owner_id?: string } | null)?.owner_id === userId) return;
+  const { data: mem } = await supabaseAdmin
+    .from("memberships").select("role,status").eq("business_id", businessId).eq("user_id", userId).eq("status", "active").maybeSingle();
+  const r = (mem as { role?: string } | null)?.role;
+  if (r === "owner" || r === "admin") return;
+  throw new Error("Only Account owners or admins can view team access");
+}
+
+export const listMemberAccess = createServerFn({ method: "POST" })
+  .middleware([requireActiveUser])
+  .inputValidator((d: { businessId: string }) => d)
+  .handler(async ({ data, context }): Promise<MemberAccessRow[]> => {
+    const { userId } = context;
+    await ensureCanViewTeamAccess(userId, data.businessId);
+
+    // Members in this Account
+    const { data: members } = await supabaseAdmin
+      .from("memberships")
+      .select("user_id, role, status")
+      .eq("business_id", data.businessId)
+      .eq("status", "active");
+    const memberIds = (members ?? []).map((m) => m.user_id as string);
+    if (memberIds.length === 0) return [];
+
+    // Resource IDs owned by this Account
+    const [foldersR, listsR, calsR, notesR, tasksR] = await Promise.all([
+      supabaseAdmin.from("folders").select("id, name").eq("business_id", data.businessId),
+      supabaseAdmin.from("lists").select("id, name, folder_id"),
+      supabaseAdmin.from("calendars").select("id, name").eq("business_id", data.businessId),
+      supabaseAdmin.from("notes").select("id, title, note_type").eq("business_id", data.businessId),
+      supabaseAdmin.from("tasks").select("id, title").eq("business_id", data.businessId),
+    ]);
+    const folderIds = new Set((foldersR.data ?? []).map((f) => f.id as string));
+    const lists = (listsR.data ?? []).filter((l) => folderIds.has(l.folder_id as string));
+    const listIds = new Set(lists.map((l) => l.id as string));
+    const titles = new Map<string, string>();
+    (foldersR.data ?? []).forEach((f) => titles.set(`folder:${f.id}`, (f.name as string) || "Folder"));
+    lists.forEach((l) => titles.set(`list:${l.id}`, (l.name as string) || "List"));
+    (calsR.data ?? []).forEach((c) => titles.set(`calendar:${c.id}`, (c.name as string) || "Calendar"));
+    (notesR.data ?? []).filter((n) => n.note_type !== "journal").forEach((n) => titles.set(`note:${n.id}`, (n.title as string) || "Note"));
+    (tasksR.data ?? []).forEach((t) => titles.set(`task:${t.id}`, (t.title as string) || "Task"));
+
+    // All shares relevant to this Account
+    const { data: bizShares } = await supabaseAdmin
+      .from("shares").select("id, grantee_user_id, role, details")
+      .eq("resource_type", "business").eq("resource_id", data.businessId);
+    const { data: allShares } = await supabaseAdmin
+      .from("shares").select("id, grantee_user_id, role, details, resource_type, resource_id")
+      .in("grantee_user_id", memberIds)
+      .neq("resource_type", "business");
+
+    const sharesByUser = new Map<string, typeof allShares>();
+    (allShares ?? []).forEach((s) => {
+      const uid = s.grantee_user_id as string;
+      const key = `${s.resource_type}:${s.resource_id}`;
+      if (!titles.has(key)) return; // only shares scoped to this Account's resources
+      const arr = sharesByUser.get(uid) ?? [];
+      arr.push(s);
+      sharesByUser.set(uid, arr);
+    });
+
+    const bizByUser = new Map<string, { id: string; role: ShareRole; details: JsonObj }>();
+    (bizShares ?? []).forEach((s) =>
+      bizByUser.set(s.grantee_user_id as string, {
+        id: s.id as string,
+        role: s.role as ShareRole,
+        details: (s.details as JsonObj | null) ?? {},
+      }),
+    );
+
+    const [{ data: profs }, auths] = await Promise.all([
+      supabaseAdmin.from("profiles").select("id, full_name").in("id", memberIds),
+      Promise.all(memberIds.map((id) => supabaseAdmin.auth.admin.getUserById(id).then((r) => r.data.user))),
+    ]);
+    const nameMap = new Map((profs ?? []).map((p) => [p.id, p.full_name as string | null]));
+    const emailMap = new Map(auths.filter(Boolean).map((u) => [u!.id, u!.email ?? null]));
+
+    return (members ?? []).map((m) => {
+      const uid = m.user_id as string;
+      const acct = bizByUser.get(uid) ?? null;
+      const list = (sharesByUser.get(uid) ?? []).map((s) => {
+        const det = (s.details as JsonObj | null) ?? {};
+        return {
+          share_id: s.id as string,
+          resource_type: s.resource_type as ResourceType,
+          resource_id: s.resource_id as string,
+          resource_title: titles.get(`${s.resource_type}:${s.resource_id}`) ?? "Untitled",
+          role: s.role as ShareRole,
+          can_reshare: det.can_reshare === true,
+          can_export: det.can_export === true,
+        };
+      });
+      return {
+        user_id: uid,
+        email: emailMap.get(uid) ?? null,
+        full_name: nameMap.get(uid) ?? null,
+        membership_role: (m.role as MemberAccessRow["membership_role"]) ?? "viewer",
+        membership_status: (m.status as string) ?? "active",
+        account_share: acct
+          ? { share_id: acct.id, role: acct.role, can_reshare: acct.details.can_reshare === true, can_export: acct.details.can_export === true }
+          : null,
+        resource_shares: list,
+      };
+    });
+  });
+
+export type AccountShareableResource = {
+  type: ResourceType;
+  id: string;
+  title: string;
+};
+
+export const listAccountShareableResources = createServerFn({ method: "POST" })
+  .middleware([requireActiveUser])
+  .inputValidator((d: { businessId: string }) => d)
+  .handler(async ({ data, context }): Promise<AccountShareableResource[]> => {
+    await ensureCanViewTeamAccess(context.userId, data.businessId);
+    const [foldersR, calsR, notesR] = await Promise.all([
+      supabaseAdmin.from("folders").select("id, name").eq("business_id", data.businessId).is("parent_folder_id", null),
+      supabaseAdmin.from("calendars").select("id, name").eq("business_id", data.businessId),
+      supabaseAdmin.from("notes").select("id, title, note_type").eq("business_id", data.businessId),
+    ]);
+    const out: AccountShareableResource[] = [];
+    (foldersR.data ?? []).forEach((f) => out.push({ type: "folder", id: f.id as string, title: (f.name as string) || "Folder" }));
+    (calsR.data ?? []).forEach((c) => out.push({ type: "calendar", id: c.id as string, title: (c.name as string) || "Calendar" }));
+    (notesR.data ?? []).filter((n) => n.note_type !== "journal").forEach((n) =>
+      out.push({ type: "note", id: n.id as string, title: (n.title as string) || "Note" }),
+    );
+    return out;
+  });
