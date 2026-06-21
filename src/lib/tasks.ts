@@ -61,7 +61,8 @@ export type RecurrenceRule = "daily" | "weekly" | "biweekly" | "monthly" | "year
 export type Task = {
   id: string;
   owner_id: string;
-  list_id: string;
+  /** NULL = Uncategorised (also requires business_id NULL). */
+  list_id: string | null;
   business_id: string | null;
   parent_task_id: string | null;
   title: string;
@@ -271,6 +272,21 @@ export async function listTasksByList(listId: string): Promise<Task[]> {
   return (data ?? []) as Task[];
 }
 
+/** Tasks with no list (and therefore no account) owned by the caller. */
+export async function listUncategorisedTasks(): Promise<Task[]> {
+  const { data: u } = await supabase.auth.getUser();
+  if (!u.user) return [];
+  const { data, error } = await supabase
+    .from("tasks")
+    .select("*")
+    .is("list_id", null)
+    .is("deleted_at", null)
+    .eq("owner_id", u.user.id)
+    .order("position", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as Task[];
+}
+
 export async function listMyWeekTasks(): Promise<Task[]> {
   const now = new Date();
   const end = new Date(now);
@@ -303,7 +319,8 @@ export async function listTasksInRange(start: Date, end: Date): Promise<Task[]> 
 }
 
 export async function createTask(input: {
-  list_id: string;
+  /** Null = create an Uncategorised personal task; business_id must also be null. */
+  list_id: string | null;
   business_id: string | null;
   title: string;
   parent_task_id?: string | null;
