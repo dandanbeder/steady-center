@@ -11,6 +11,7 @@ import {
   Link as LinkIcon,
   Eye,
   Pencil,
+  ListTodo,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,9 +22,10 @@ type Props = {
   onChange: (value: string) => void;
   placeholder?: string;
   minRows?: number;
+  onCreateTask?: (titleHint: string) => void;
 };
 
-export function MarkdownEditor({ value, onChange, placeholder, minRows = 18 }: Props) {
+export function MarkdownEditor({ value, onChange, placeholder, minRows = 18, onCreateTask }: Props) {
   const taRef = useRef<HTMLTextAreaElement>(null);
   const [preview, setPreview] = useState(false);
 
@@ -60,6 +62,35 @@ export function MarkdownEditor({ value, onChange, placeholder, minRows = 18 }: P
     wrap("[", `](${url})`);
   };
 
+  const cleanTaskLine = (s: string) =>
+    s
+      .replace(/^\s*[-*]\s*\[[ xX]\]\s*/, "")
+      .replace(/^\s*[-*]\s+/, "")
+      .replace(/^\s*\d+\.\s+/, "")
+      .replace(/^\s*#+\s+/, "")
+      .trim();
+
+  const createTaskFromSelection = () => {
+    if (!onCreateTask) return;
+    const ta = taRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    let raw = value.slice(start, end);
+    if (!raw.trim()) {
+      // Fall back to current line
+      const lineStart = value.lastIndexOf("\n", start - 1) + 1;
+      const lineEnd = value.indexOf("\n", start);
+      raw = value.slice(lineStart, lineEnd === -1 ? value.length : lineEnd);
+    }
+    // Take first non-empty line, strip markdown task/list/heading prefixes
+    const firstLine = raw
+      .split(/\r?\n/)
+      .map(cleanTaskLine)
+      .find((l) => l.length > 0);
+    onCreateTask(firstLine ?? "");
+  };
+
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-1 flex-wrap border-b border-border pb-2">
@@ -72,6 +103,17 @@ export function MarkdownEditor({ value, onChange, placeholder, minRows = 18 }: P
         <Sep />
         <ToolbarBtn onClick={() => linePrefix("- ")} title="Bullet list"><List className="h-4 w-4" /></ToolbarBtn>
         <ToolbarBtn onClick={() => linePrefix("- [ ] ")} title="Checklist"><CheckSquare className="h-4 w-4" /></ToolbarBtn>
+        {onCreateTask && (
+          <>
+            <Sep />
+            <ToolbarBtn
+              onClick={createTaskFromSelection}
+              title="Create task from selection (or current line)"
+            >
+              <ListTodo className="h-4 w-4" />
+            </ToolbarBtn>
+          </>
+        )}
         <div className="flex-1" />
         <Button
           type="button"

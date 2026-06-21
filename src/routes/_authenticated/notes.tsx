@@ -44,6 +44,7 @@ import { NewNoteDialog } from "@/components/notes/new-note-dialog";
 import { AttachmentsPanel } from "@/components/notes/attachments-panel";
 import { AIPanel } from "@/components/notes/ai-panel";
 import { LinkedTasksPanel } from "@/components/notes/linked-tasks-panel";
+import { CreateTaskFromNoteDialog } from "@/components/notes/create-task-from-note-dialog";
 import { ConnectionsPanel } from "@/components/notes/connections-panel";
 import {
   NotesTreeSidebar,
@@ -374,12 +375,14 @@ function NoteEditor({
   const [body, setBody] = useState(note.body);
   const [type, setType] = useState<NoteType>(note.note_type);
   const [folderId, setFolderId] = useState<string | null>(note.folder_id);
+  const [createTaskFor, setCreateTaskFor] = useState<string | null>(null);
 
   useEffect(() => {
     setTitle(note.title);
     setBody(note.body);
     setType(note.note_type);
     setFolderId(note.folder_id);
+    setCreateTaskFor(null);
   }, [note.id]);
 
   const { savedAt, saving } = useAutosave(
@@ -497,7 +500,18 @@ function NoteEditor({
         placeholder="Untitled"
       />
 
-      <MarkdownEditor value={body} onChange={setBody} />
+      <MarkdownEditor
+        value={body}
+        onChange={setBody}
+        onCreateTask={(hint) => setCreateTaskFor(hint)}
+      />
+
+      <CreateTaskFromNoteDialog
+        note={note}
+        titleHint={createTaskFor ?? ""}
+        open={createTaskFor !== null}
+        onClose={() => setCreateTaskFor(null)}
+      />
 
       <div className="pt-4 border-t border-border space-y-6">
         <AIPanel note={note} onChanged={onChanged} />

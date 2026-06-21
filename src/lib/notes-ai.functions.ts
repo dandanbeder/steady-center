@@ -6,13 +6,16 @@ const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 const MODEL = "claude-sonnet-4-20250514";
 const MAX_INPUT_CHARS = 60_000;
 
-type AnthropicResponse = { content?: Array<{ type: string; text?: string }> };
+type AnthropicResponse = {
+  content?: Array<{ type: string; text?: string }>;
+  usage?: { input_tokens?: number; output_tokens?: number };
+};
 
-async function callClaude(opts: {
+async function callClaudeFull(opts: {
   system: string;
   user: string;
   maxTokens?: number;
-}): Promise<string> {
+}): Promise<{ text: string; input_tokens: number; output_tokens: number }> {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error("AI is not configured (missing key).");
   const res = await fetch(ANTHROPIC_URL, {
@@ -35,7 +38,19 @@ async function callClaude(opts: {
     throw new Error(`AI call failed (${res.status})`);
   }
   const j = (await res.json()) as AnthropicResponse;
-  return j.content?.find((c) => c.type === "text")?.text?.trim() ?? "";
+  return {
+    text: j.content?.find((c) => c.type === "text")?.text?.trim() ?? "",
+    input_tokens: j.usage?.input_tokens ?? 0,
+    output_tokens: j.usage?.output_tokens ?? 0,
+  };
+}
+
+async function callClaude(opts: {
+  system: string;
+  user: string;
+  maxTokens?: number;
+}): Promise<string> {
+  return (await callClaudeFull(opts)).text;
 }
 
 function parseJsonBlock<T>(text: string): T | null {
@@ -230,6 +245,9 @@ export const extractActions = createServerFn({ method: "POST" })
     z.object({ noteId: z.string().uuid() }).parse(i),
   )
   .handler(async ({ data, context }) => {
+    const { assertAiBudget, recordAiUsage } = await import("./ai-budget.server");
+    await assertAiBudget(context.userId);
+
     const { note, attachmentsText } = await loadNoteContext(
       context.supabase,
       data.noteId,
@@ -246,7 +264,14 @@ Rules:
     const user = `Title: ${note.title || "Untitled"}\n\nBody:\n${note.body}${
       attachmentsText ? `\n\nAttachments:\n${attachmentsText}` : ""
     }`;
-    const text = await callClaude({ system: sys, user, maxTokens: 1200 });
+    const { text, input_tokens, output_tokens } = await callClaudeFull({
+      system: sys,
+      user,
+      maxTokens: 1200,
+    });
+    await recordAiUsage(context.userId, MODEL, input_tokens, output_tokens).catch(
+      () => undefined,
+    );
     const parsed = parseJsonBlock<{
       actions: Array<{
         title: string;
