@@ -1,17 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Sparkles, Send, Loader2 } from "lucide-react";
+import { Sparkles, Send, Loader2, Mic, Square } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
 import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
 import { askNotes } from "@/lib/notes-journal.functions";
+import { transcribeAudio } from "@/lib/transcribe.functions";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { UpgradeGate } from "@/components/upgrade-gate";
 import { Separator } from "@/components/ui/separator";
 import { TeamProgressPanel } from "@/components/team-progress-panel";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/ask-notes")({
   component: () => (
