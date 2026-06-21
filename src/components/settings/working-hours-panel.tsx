@@ -23,6 +23,16 @@ const DAYS = [
   { v: 6, label: "Sat" },
 ];
 
+// 15-minute increments across the full day (00:00 → 23:45).
+const TIME_SLOTS: { value: string; label: string }[] = Array.from({ length: 24 * 4 }, (_, i) => {
+  const h = Math.floor(i / 4);
+  const m = (i % 4) * 15;
+  return {
+    value: `${h}:${m}`,
+    label: `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`,
+  };
+});
+
 export function WorkingHoursPanel() {
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({ queryKey: ["working-hours"], queryFn: getWorkingHours });
@@ -58,22 +68,34 @@ export function WorkingHoursPanel() {
       <div className="grid grid-cols-2 gap-3">
         <div>
           <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Start</p>
-          <Select value={String(draft.work_start_hour)} onValueChange={(v) => setDraft({ ...draft, work_start_hour: Number(v) })}>
+          <Select
+            value={`${draft.work_start_hour}:${draft.work_start_minute}`}
+            onValueChange={(v) => {
+              const [h, m] = v.split(":").map(Number);
+              setDraft({ ...draft, work_start_hour: h, work_start_minute: m });
+            }}
+          >
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent className="max-h-72">
-              {Array.from({ length: 24 }, (_, i) => (
-                <SelectItem key={i} value={String(i)}>{String(i).padStart(2, "0")}:00</SelectItem>
+              {TIME_SLOTS.map((s) => (
+                <SelectItem key={`s-${s.value}`} value={s.value}>{s.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
         <div>
           <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">End</p>
-          <Select value={String(draft.work_end_hour)} onValueChange={(v) => setDraft({ ...draft, work_end_hour: Number(v) })}>
+          <Select
+            value={`${draft.work_end_hour}:${draft.work_end_minute}`}
+            onValueChange={(v) => {
+              const [h, m] = v.split(":").map(Number);
+              setDraft({ ...draft, work_end_hour: h, work_end_minute: m });
+            }}
+          >
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent className="max-h-72">
-              {Array.from({ length: 24 }, (_, i) => (
-                <SelectItem key={i} value={String(i)}>{String(i).padStart(2, "0")}:00</SelectItem>
+              {TIME_SLOTS.map((s) => (
+                <SelectItem key={`e-${s.value}`} value={s.value}>{s.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
