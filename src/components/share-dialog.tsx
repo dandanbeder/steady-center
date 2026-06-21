@@ -52,6 +52,9 @@ export function ShareDialog({ open, onOpenChange, resourceType, resourceId, reso
   const [query, setQuery] = useState("");
   const [role, setRole] = useState<ShareRole>("member");
   const [busyOnly, setBusyOnly] = useState(false);
+  const [canReshare, setCanReshare] = useState(false);
+  const [canExport, setCanExport] = useState(false);
+
 
   const { data: suggestions = [] } = useQuery({
     queryKey: ["share-suggest", query],
