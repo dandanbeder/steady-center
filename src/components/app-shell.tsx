@@ -31,6 +31,7 @@ import { CommandPalette } from "@/components/command-palette";
 import { AssistantPanel } from "@/components/assistant-panel";
 import { PlanIndicator } from "@/components/plan-indicator";
 import { welcomedStorageKey } from "@/routes/_authenticated/learn";
+import { TourProvider } from "@/components/tour/tour-engine";
 
 const NAV: { to: string; label: string; icon: typeof Home }[] = [
   { to: "/learn", label: "Tutorial", icon: GraduationCap },
@@ -295,7 +296,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 rounded-lg hover:bg-muted transition-colors min-w-0 max-w-full">
+                <button data-tour="account-switcher" className="flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 rounded-lg hover:bg-muted transition-colors min-w-0 max-w-full">
                   <span
                     className="h-2.5 w-2.5 rounded-full shrink-0"
                     style={{ backgroundColor: active?.color ?? "var(--muted-foreground)" }}
@@ -387,6 +388,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </DropdownMenuContent>
           </DropdownMenu>
           <Button
+            data-tour="assistant-button"
             variant="ghost"
             size="icon"
             onClick={() => {
@@ -425,7 +427,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         <PastDueBanner />
         <SupportSessionBanner />
         <AnnouncementBanner />
-        <main className="flex-1 overflow-auto min-w-0">{children}</main>
+        <main className="flex-1 overflow-auto min-w-0">
+          <TourProvider>{children}</TourProvider>
+        </main>
         <AppFooter />
       </div>
     </div>
