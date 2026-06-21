@@ -1,9 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
 
 // ---------------- Notification prefs ----------------
-// Only two delivery channels are supported: email and browser (in-app + optional web push).
-export type NotificationChannels = { email: boolean; browser: boolean };
-export type ChannelPair = { email: boolean; browser: boolean };
+// Delivery channels: email (Resend), SMS (Twilio, requires a phone on the profile),
+// and browser (in-app + optional web push). SMS preferences are stored regardless
+// of whether a number is on file, but dispatch is gated server-side on the
+// presence of a verified phone number.
+export type NotificationChannels = { email: boolean; sms: boolean; browser: boolean };
+export type ChannelPair = { email: boolean; sms: boolean; browser: boolean };
 export type PerTypeChannels = {
   event_reminders: ChannelPair;
   task_due: ChannelPair;
@@ -52,16 +55,16 @@ export type NotificationPrefs = {
 
 const DEFAULT_TYPE_CHANNELS: PerTypeChannels = {
   // Push-worthy: time-sensitive, from/about another person, or needs my action
-  event_reminders:       { email: true,  browser: true },
-  meeting_summary_ready: { email: false, browser: true },
-  tagged:                { email: true,  browser: true },
-  assigned_to_me:        { email: true,  browser: true },
-  access_share_requests: { email: true,  browser: true },
-  security_events:       { email: true,  browser: true },
-  payment_failed:        { email: true,  browser: true },
+  event_reminders:       { email: true,  sms: false, browser: true },
+  meeting_summary_ready: { email: false, sms: false, browser: true },
+  tagged:                { email: true,  sms: false, browser: true },
+  assigned_to_me:        { email: true,  sms: false, browser: true },
+  access_share_requests: { email: true,  sms: false, browser: true },
+  security_events:       { email: true,  sms: false, browser: true },
+  payment_failed:        { email: true,  sms: false, browser: true },
   // Batched / in-app only by default
-  task_due:              { email: false, browser: false },
-  weekly_review:         { email: true,  browser: false },
+  task_due:              { email: false, sms: false, browser: false },
+  weekly_review:         { email: true,  sms: false, browser: false },
 };
 
 const DEFAULT_NOTIF: NotificationPrefs = {
