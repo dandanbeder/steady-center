@@ -983,7 +983,7 @@ function MonthGrid({
               <div className="flex flex-col gap-0.5 min-w-0">
                 {shown.map((e) => {
                   const c = calById.get(e.calendar_id);
-                  const color = c?.color ?? "#7A8471";
+                  const color = colorFor ? colorFor(e) : (c?.color ?? "#7A8471");
                   return (
                     <button
                       key={e.id}
@@ -1181,7 +1181,7 @@ function TimeGrid({
                 >
                   {list.map((e) => {
                     const c = calById.get(e.calendar_id);
-                    const color = c?.color ?? "#7A8471";
+                    const color = colorFor ? colorFor(e) : (c?.color ?? "#7A8471");
                     return (
                       <button
                         key={e.id}
@@ -1288,7 +1288,7 @@ function TimeGrid({
                     );
                     const widthPct = 100 / lanes;
                     const c = calById.get(ev.calendar_id);
-                    const color = c?.color ?? "#7A8471";
+                    const color = colorFor ? colorFor(ev) : (c?.color ?? "#7A8471");
                     return (
                       <button
                         key={ev.id}
@@ -1390,7 +1390,7 @@ function AgendaList({
           <ul className="space-y-1.5">
             {g.items.map((e) => {
               const c = calById.get(e.calendar_id);
-              const color = c?.color ?? "#7A8471";
+              const color = colorFor ? colorFor(e) : (c?.color ?? "#7A8471");
               return (
                 <li key={e.id}>
                   <button
@@ -1464,7 +1464,7 @@ function DayAgendaDialog({
           ) : (
             sorted.map((e) => {
               const c = calById.get(e.calendar_id);
-              const color = c?.color ?? "#7A8471";
+              const color = colorFor ? colorFor(e) : (c?.color ?? "#7A8471");
               return (
                 <button
                   key={e.id}
