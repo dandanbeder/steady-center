@@ -182,7 +182,6 @@ export const adminUpdateProfile = createServerFn({ method: "POST" })
         full_name: z.string().max(200).optional(),
         organisation: z.string().max(200).nullable().optional(),
         role_title: z.string().max(120).nullable().optional(),
-        phone: z.string().max(32).nullable().optional(),
         timezone: z.string().max(64).optional(),
       }),
     }).parse(i),
@@ -191,9 +190,10 @@ export const adminUpdateProfile = createServerFn({ method: "POST" })
     await requirePlatformAdmin(context.userId);
     const { data: before } = await supabaseAdmin
       .from("profiles")
-      .select("full_name, organisation, role_title, phone, timezone")
+      .select("full_name, organisation, role_title, timezone")
       .eq("id", data.user_id)
       .maybeSingle();
+
     const { error } = await supabaseAdmin.from("profiles").update(data.patch).eq("id", data.user_id);
     if (error) throw new Error(error.message);
     await logAudit(context.userId, data.user_id, "profile.update", before, data.patch, data.reason);

@@ -91,7 +91,7 @@ function LoginPage() {
   const [fullName, setFullName] = useState("");
   const [organisation, setOrganisation] = useState("");
   const [roleTitle, setRoleTitle] = useState("");
-  const [phone, setPhone] = useState("");
+  
   const [hearAbout, setHearAbout] = useState("");
   const detected = useMemo(() => detectTimezone(), []);
   const [timezone, setTimezone] = useState(detected);
@@ -123,7 +123,7 @@ function LoginPage() {
               full_name: fullName,
               organisation: organisation || null,
               role_title: roleTitle || null,
-              phone: phone || null,
+              
               hear_about_us: hearAbout || null,
               timezone,
               terms_accepted_at: nowIso,
@@ -246,20 +246,8 @@ function LoginPage() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="phone">
-                    Phone <span className="text-muted-foreground">(optional, for SMS reminders)</span>
-                  </Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    maxLength={32}
-                    placeholder="+27 82 123 4567"
-                    autoComplete="tel"
-                  />
-                </div>
+
+
 
                 <div className="space-y-2">
                   <Label htmlFor="tz">Your timezone</Label>

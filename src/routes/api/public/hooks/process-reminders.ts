@@ -1,9 +1,8 @@
 /**
  * Every-5-min reminder dispatcher.
  *
- * Looks up due reminders, resolves the underlying event/task, the owner's
- * email (and phone for SMS), then sends via Resend (email), and Twilio when
- * a TWILIO_API_KEY is present and the user has a phone.
+ * Looks up due reminders, resolves the underlying event/task and the owner's
+ * email, then sends via Resend (email).
  *
  * Marks each reminder sent or records last_error.
  */
@@ -11,14 +10,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { brandedEmail, escapeHtml, getAppOrigin, sendEmail } from "@/lib/email.server";
 
-const TWILIO_URL = "https://connector-gateway.lovable.dev/twilio/Messages.json";
-
 type ReminderRow = {
   id: string;
   owner_id: string;
   ref_type: "event" | "task";
   ref_id: string;
-  channel: "email" | "sms";
+  channel: "email";
   remind_at: string;
 };
 
@@ -65,24 +62,10 @@ export const Route = createFileRoute("/api/public/hooks/process-reminders")({
               throw new Error("Underlying event/task no longer exists");
             }
 
-            // Resolve owner's email/phone via admin
             const { data: userResp } = await supabaseAdmin.auth.admin.getUserById(r.owner_id);
             const email = userResp?.user?.email ?? null;
-            const { data: profile } = await supabaseAdmin
-              .from("profiles")
-              .select("phone")
-              .eq("id", r.owner_id)
-              .maybeSingle();
-            const phone = (profile as { phone: string | null } | null)?.phone ?? null;
-
-            if (r.channel === "email") {
-              if (!email) throw new Error("No email on account");
-              await sendReminderEmail(email, subject, body);
-            } else if (r.channel === "sms") {
-              if (!phone) throw new Error("No phone number on profile");
-              if (!process.env.TWILIO_API_KEY) throw new Error("SMS not enabled (connect Twilio)");
-              await sendSms(phone, `${subject}\n${body}`);
-            }
+            if (!email) throw new Error("No email on account");
+            await sendReminderEmail(email, subject, body);
 
             await supabaseAdmin
               .from("reminders")
@@ -105,6 +88,7 @@ export const Route = createFileRoute("/api/public/hooks/process-reminders")({
     },
   },
 });
+
 
 async function buildSubject(r: ReminderRow): Promise<string | null> {
   if (r.ref_type === "event") {

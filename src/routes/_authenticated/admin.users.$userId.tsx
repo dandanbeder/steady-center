@@ -155,7 +155,6 @@ function ProfileSection({ data, userId, onDone }: { data: any; userId: string; o
     full_name: data.profile?.full_name ?? "",
     organisation: data.profile?.organisation ?? "",
     role_title: data.profile?.role_title ?? "",
-    phone: data.profile?.phone ?? "",
     timezone: data.profile?.timezone ?? "",
   });
   const mut = useMutation({
@@ -169,9 +168,9 @@ function ProfileSection({ data, userId, onDone }: { data: any; userId: string; o
         <Field label="Name"><Input value={patch.full_name} onChange={(e) => setPatch({ ...patch, full_name: e.target.value })} /></Field>
         <Field label="Organisation"><Input value={patch.organisation} onChange={(e) => setPatch({ ...patch, organisation: e.target.value })} /></Field>
         <Field label="Role"><Input value={patch.role_title} onChange={(e) => setPatch({ ...patch, role_title: e.target.value })} /></Field>
-        <Field label="Phone"><Input value={patch.phone} onChange={(e) => setPatch({ ...patch, phone: e.target.value })} /></Field>
         <Field label="Timezone"><Input value={patch.timezone} onChange={(e) => setPatch({ ...patch, timezone: e.target.value })} /></Field>
       </div>
+
       <div className="flex justify-end">
         <Button onClick={() => setOpen(true)}>Save changes</Button>
       </div>
