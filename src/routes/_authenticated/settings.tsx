@@ -22,7 +22,7 @@ import {
   listCalendars,
   type Calendar as Cal,
 } from "@/lib/calendars";
-import { deleteBusinessCascade, deleteMyAccount } from "@/lib/account.functions";
+import { deleteBusinessCascade } from "@/lib/account.functions";
 import { GeneralPanel } from "@/components/settings/general-panel";
 import { GoogleSyncPanel } from "@/components/google-sync-panel";
 import { MicrosoftSyncPanel } from "@/components/microsoft-sync-panel";
