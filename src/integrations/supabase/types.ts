@@ -2386,6 +2386,39 @@ export type Database = {
           },
         ]
       }
+      team_audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          after: Json | null
+          before: Json | null
+          business_id: string
+          created_at: string
+          id: string
+          target_user_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          after?: Json | null
+          before?: Json | null
+          business_id: string
+          created_at?: string
+          id?: string
+          target_user_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          after?: Json | null
+          before?: Json | null
+          business_id?: string
+          created_at?: string
+          id?: string
+          target_user_id?: string | null
+        }
+        Relationships: []
+      }
       templates: {
         Row: {
           body: string
@@ -2784,6 +2817,10 @@ export type Database = {
       role_rank: { Args: { _role: string }; Returns: number }
       seed_default_task_stages: {
         Args: { p_list_id: string }
+        Returns: undefined
+      }
+      transfer_team_ownership: {
+        Args: { p_business: string; p_new_owner: string }
         Returns: undefined
       }
       user_effective_plan: {
