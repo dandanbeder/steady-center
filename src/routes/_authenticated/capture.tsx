@@ -25,7 +25,7 @@ import {
 import { createNote } from "@/lib/notes";
 import { supabase } from "@/integrations/supabase/client";
 
-export const Route = createFileRoute("/_authenticated/inbox")({
+export const Route = createFileRoute("/_authenticated/capture")({
   component: InboxPage,
 });
 
