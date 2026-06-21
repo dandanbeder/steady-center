@@ -17,9 +17,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
+import { routeModel } from "./ai-routing";
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-const MODEL = "claude-haiku-4-5";
+// Light-tier route: a 1-3 sentence reflection, not synthesis.
+const ROUTE = routeModel("coach");
+const MODEL = ROUTE.model;
 
 const Input = z.object({
   week_start: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),

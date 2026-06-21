@@ -1,9 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
+import { routeModel } from "./ai-routing";
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-const MODEL = "claude-sonnet-4-5";
+// Reasoning-tier route: assistant does cross-content asks + tool planning.
+const ROUTE = routeModel("assistant");
+const MODEL = ROUTE.model;
 const MAX_ITER = 6;
 
 // ---------- Tool catalog (read + propose only; no writes here) ----------
@@ -274,7 +277,7 @@ async function callClaude(messages: AnthropicMsg[], system: string): Promise<any
     },
     body: JSON.stringify({
       model: MODEL,
-      max_tokens: 1500,
+      max_tokens: ROUTE.maxOutputTokens,
       system,
       tools: TOOLS,
       messages,
@@ -327,7 +330,21 @@ When the user wants to create, edit, complete or move something, ALWAYS use the 
 a preview card the user must approve in the UI. NEVER claim that you have written or changed data; only the
 user can approve a proposal. Keep answers concise (markdown ok). If a tool returns no rows, say so plainly.`;
 
-    const messages: AnthropicMsg[] = data.history.map((t) => ({ role: t.role, content: t.content }));
+    // Per-turn input cap: clip overlong chat history messages and log the hit
+    // so we can see when users are pasting in entire docs / transcripts.
+    const { capAndLog } = await import("./ai-routing.server");
+    const messages: AnthropicMsg[] = data.history.map((t) => ({
+      role: t.role,
+      content: capAndLog(t.content, {
+        userId: context.userId,
+        actionType: "assistant",
+        maxChars: ROUTE.maxInputChars,
+        model: MODEL,
+      }).text,
+    }));
+    // Note: "ask" queries retrieve relevant chunks via the search_* tools
+    // (limits: tasks=25, events=50, notes=15, meetings=10). We never pack
+    // the whole knowledge base into the prompt.
     const proposals: Proposal[] = [];
     let totalIn = 0;
     let totalOut = 0;

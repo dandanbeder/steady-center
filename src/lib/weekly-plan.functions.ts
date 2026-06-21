@@ -9,9 +9,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
 import { requireFeature } from "@/lib/entitlements.server";
+import { routeModel } from "./ai-routing";
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-const MODEL = "claude-sonnet-4-5";
+// Reasoning-tier route: planning a week is real synthesis.
+const ROUTE = routeModel("weekly_plan");
+const MODEL = ROUTE.model;
 
 const PRIORITY_RANK: Record<string, number> = { urgent: 0, high: 1, normal: 2, low: 3 };
 

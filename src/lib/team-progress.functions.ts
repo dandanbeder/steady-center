@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
+import { routeModel } from "./ai-routing";
 
 // ----------------------------------------------------------------------
 // Team progress, only ever shows work on shared accounts. Personal tasks,
@@ -10,7 +11,9 @@ import { requireActiveUser } from "@/integrations/supabase/active-user-middlewar
 // ----------------------------------------------------------------------
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-const MODEL = "claude-sonnet-4-20250514";
+// Reasoning-tier route: cross-teammate roll-ups need synthesis.
+const ROUTE = routeModel("team_progress");
+const MODEL = ROUTE.model;
 
 type StatusCounts = {
   todo: number;

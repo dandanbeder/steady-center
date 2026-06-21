@@ -1,9 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
+import { routeModel } from "./ai-routing";
+import { capAndLog } from "./ai-routing.server";
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-const MODEL = "claude-sonnet-4-20250514";
+// Default route — reasoning. Sub-action overrides (suggest_meta, extract_actions,
+// cleanup_transcript) hop to the light tier inside each handler.
+const ROUTE = routeModel("notes_ai");
+const MODEL = ROUTE.model;
 const MAX_INPUT_CHARS = 60_000;
 
 type AnthropicResponse = {
@@ -15,9 +20,11 @@ async function callClaudeFull(opts: {
   system: string;
   user: string;
   maxTokens?: number;
-}): Promise<{ text: string; input_tokens: number; output_tokens: number }> {
+  model?: string;
+}): Promise<{ text: string; input_tokens: number; output_tokens: number; model: string }> {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error("AI is not configured (missing key).");
+  const model = opts.model ?? MODEL;
   const res = await fetch(ANTHROPIC_URL, {
     method: "POST",
     headers: {
@@ -26,7 +33,7 @@ async function callClaudeFull(opts: {
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      model: MODEL,
+      model,
       max_tokens: opts.maxTokens ?? 1600,
       system: opts.system,
       messages: [{ role: "user", content: opts.user }],
@@ -42,6 +49,7 @@ async function callClaudeFull(opts: {
     text: j.content?.find((c) => c.type === "text")?.text?.trim() ?? "",
     input_tokens: j.usage?.input_tokens ?? 0,
     output_tokens: j.usage?.output_tokens ?? 0,
+    model,
   };
 }
 
@@ -49,6 +57,7 @@ async function callClaude(opts: {
   system: string;
   user: string;
   maxTokens?: number;
+  model?: string;
 }): Promise<string> {
   return (await callClaudeFull(opts)).text;
 }
@@ -72,6 +81,7 @@ async function loadNoteContext(
   supabase: any,
   noteId: string,
   includeAttachments: boolean,
+  capCtx?: { userId: string; subAction?: string; model?: string },
 ): Promise<{
   note: {
     id: string;
@@ -103,7 +113,16 @@ async function loadNoteContext(
       if (!a.extracted_text) continue;
       parts.push(`--- Attachment: ${a.file_name} ---\n${a.extracted_text}`);
     }
-    attachmentsText = parts.join("\n\n").slice(0, MAX_INPUT_CHARS);
+    const joined = parts.join("\n\n");
+    // Cap concatenated attachment text + log if we had to truncate.
+    attachmentsText = capAndLog(joined, {
+      userId: capCtx?.userId,
+      actionType: "notes_ai",
+      subAction: capCtx?.subAction,
+      maxChars: MAX_INPUT_CHARS,
+      capKind: "transcript_chars",
+      model: capCtx?.model,
+    }).text;
   }
   return { note, attachmentsText };
 }
@@ -226,7 +245,9 @@ ${folders.map((f) => `${f.id}, ${f.name}`).join("\n") || "(none)"}
 Candidate members:
 ${members.map((m) => `${m.email}${m.full_name ? ` (${m.full_name})` : ""}`).join("\n") || "(none)"}`;
 
-    const text = await callClaude({ system: sys, user, maxTokens: 800 });
+    // Light-tier override: extraction, not synthesis.
+    const subRoute = routeModel("notes_ai", "suggest_meta");
+    const text = await callClaude({ system: sys, user, maxTokens: subRoute.maxOutputTokens, model: subRoute.model });
     const parsed = parseJsonBlock<{
       title: string;
       folder: { id: string | null; name: string };
@@ -250,10 +271,13 @@ export const extractActions = createServerFn({ method: "POST" })
     await assertAiBudget(context.userId);
     await assertAiCredits(context.userId, 1);
 
+    // Light-tier override: extracting todos is extraction, not synthesis.
+    const subRoute = routeModel("notes_ai", "extract_actions");
     const { note, attachmentsText } = await loadNoteContext(
       context.supabase,
       data.noteId,
       true,
+      { userId: context.userId, subAction: "extract_actions", model: subRoute.model },
     );
     const today = new Date().toISOString().slice(0, 10);
     const sys = `You extract concrete action items from a note.
@@ -266,12 +290,13 @@ Rules:
     const user = `Title: ${note.title || "Untitled"}\n\nBody:\n${note.body}${
       attachmentsText ? `\n\nAttachments:\n${attachmentsText}` : ""
     }`;
-    const { text, input_tokens, output_tokens } = await callClaudeFull({
+    const { text, input_tokens, output_tokens, model } = await callClaudeFull({
       system: sys,
       user,
-      maxTokens: 1200,
+      maxTokens: subRoute.maxOutputTokens,
+      model: subRoute.model,
     });
-    await recordAiUsage(context.userId, MODEL, input_tokens, output_tokens, { actionType: "notes_ai" }).catch(
+    await recordAiUsage(context.userId, model, input_tokens, output_tokens, { actionType: "notes_ai" }).catch(
       () => undefined,
     );
     const parsed = parseJsonBlock<{
@@ -342,10 +367,13 @@ Return ONLY JSON: { "title": string, "body_markdown": string }
 - Fix punctuation, capitalization, paragraph breaks, obvious speech errors.
 - Preserve every fact and the speaker's voice.
 - Add a brief 3-6 word title.`;
+    // Light-tier override: mechanical clean-up.
+    const subRoute = routeModel("notes_ai", "cleanup_transcript");
     const text = await callClaude({
       system: sys,
       user: data.transcript,
-      maxTokens: 1800,
+      maxTokens: subRoute.maxOutputTokens,
+      model: subRoute.model,
     });
     const parsed = parseJsonBlock<{ title: string; body_markdown: string }>(text);
     if (!parsed) throw new Error("AI returned an unparseable response.");

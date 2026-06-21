@@ -283,6 +283,42 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_cap_hits: {
+        Row: {
+          action_type: string
+          cap_kind: string
+          cap_value: number
+          created_at: string
+          id: string
+          model_used: string | null
+          observed_value: number
+          sub_action: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          cap_kind: string
+          cap_value: number
+          created_at?: string
+          id?: string
+          model_used?: string | null
+          observed_value: number
+          sub_action?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          cap_kind?: string
+          cap_value?: number
+          created_at?: string
+          id?: string
+          model_used?: string | null
+          observed_value?: number
+          sub_action?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       ai_prefs: {
         Row: {
           coach_style: string

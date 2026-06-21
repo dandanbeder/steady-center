@@ -1,9 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
+import { routeModel } from "./ai-routing";
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-const MODEL = "claude-sonnet-4-20250514";
+// Reasoning-tier route: outcome shaping is real synthesis.
+const ROUTE = routeModel("outcomes_ai");
+const MODEL = ROUTE.model;
 
 type AnthropicResponse = {
   content?: Array<{ type: string; text?: string }>;
