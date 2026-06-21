@@ -108,7 +108,7 @@ export const requestAccountDeletion = createServerFn({ method: "POST" })
     // Audit
     await supabase.from("analytics_events").insert({
       user_id: userId,
-      event_type: "account_deletion_requested",
+      type: "account_deletion_requested",
       metadata: {
         grace_days: GRACE_DAYS,
         scheduled_for: scheduled.toISOString(),
@@ -140,7 +140,7 @@ export const cancelAccountDeletion = createServerFn({ method: "POST" })
 
     await supabase.from("analytics_events").insert({
       user_id: userId,
-      event_type: "account_deletion_cancelled",
+      type: "account_deletion_cancelled",
       metadata: {},
     });
     return { ok: true };
