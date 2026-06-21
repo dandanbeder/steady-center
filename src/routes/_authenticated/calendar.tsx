@@ -705,6 +705,7 @@ function CalendarPage() {
             return s <= dayOpen && en >= dayOpen;
           })}
           calById={calById}
+          colorFor={colorFor}
           onClose={() => setDayOpen(null)}
           onAdd={() => {
             const d = dayOpen;
@@ -713,7 +714,7 @@ function CalendarPage() {
           }}
           onEventClick={(e) => {
             setDayOpen(null);
-            setEditing(e);
+            setPreviewing(e);
           }}
         />
       )}
