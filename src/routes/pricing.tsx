@@ -91,7 +91,7 @@ function PricingPage() {
 
   const startTrial = async (plan: "pro" | "team") => {
     if (!user) {
-      navigate({ to: "/login", search: { redirect: "/pricing" } as never });
+      navigate({ to: "/login" });
       return;
     }
     setBusy(plan);
@@ -114,7 +114,7 @@ function PricingPage() {
 
   const beginCheckout = async (plan: "pro" | "team") => {
     if (!user) {
-      navigate({ to: "/login", search: { redirect: "/pricing" } as never });
+      navigate({ to: "/login" });
       return;
     }
     setBusy(plan);
