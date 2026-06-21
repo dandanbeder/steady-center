@@ -73,7 +73,7 @@ function CapturePage() {
       <header className="flex items-center gap-3">
         <InboxIcon className="h-6 w-6" />
         <div>
-          <h1 className="text-2xl font-semibold">Inbox</h1>
+          <h1 className="text-2xl font-semibold">Capture</h1>
           <p className="text-sm text-muted-foreground">
             Capture anything the moment it hits you. Sort it into the right place later, we'll suggest where.
           </p>
