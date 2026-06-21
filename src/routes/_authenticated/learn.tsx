@@ -25,6 +25,7 @@ import { getMyAiUsage } from "@/lib/ai-usage.functions";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import welcomePoster from "@/assets/learn-welcome-poster.jpg";
+import { TOURS, isTourDone, resetTour } from "@/lib/tours";
 
 export const Route = createFileRoute("/_authenticated/learn")({
   head: () => ({
