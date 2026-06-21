@@ -163,10 +163,10 @@ function PricingPage() {
       <section className="px-6 pt-12 pb-8">
         <div className="mx-auto max-w-3xl text-center">
           <h1 className="font-serif text-4xl leading-tight tracking-tight md:text-5xl" style={{ color: "#26382F" }}>
-            Calm command of your businesses, with AI built in.
+            One calm place for everything you're juggling.
           </h1>
           <p className="mt-5 text-lg" style={{ color: "#26382F", opacity: 0.78 }}>
-            One steady place for calendars, tasks, notes and Ask Heartbeat AI. Free to start, pay only when you outgrow it.
+            For students, freelancers, creatives and business owners. Calendars, tasks, notes and Ask Heartbeat AI in one steady place. Free to start, pay only when you outgrow it.
           </p>
 
           <div className="mt-7 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm" style={{ color: "#26382F" }}>
