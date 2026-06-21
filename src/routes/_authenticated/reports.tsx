@@ -42,7 +42,7 @@ function ReportsPage() {
         <div>
           <h1 className="text-2xl sm:text-3xl lg:text-4xl text-primary">Weekly reports</h1>
           <p className="mt-2 text-muted-foreground">
-            Your week, summarized. Generated automatically on your chosen day.
+            A kind look back at your week, plus a gentle check-in when you plan the next one.
           </p>
         </div>
         <Button onClick={() => gen.mutate()} disabled={gen.isPending}>
