@@ -81,6 +81,7 @@ async function loadNoteContext(
   supabase: any,
   noteId: string,
   includeAttachments: boolean,
+  capCtx?: { userId: string; subAction?: string; model?: string },
 ): Promise<{
   note: {
     id: string;
@@ -112,7 +113,16 @@ async function loadNoteContext(
       if (!a.extracted_text) continue;
       parts.push(`--- Attachment: ${a.file_name} ---\n${a.extracted_text}`);
     }
-    attachmentsText = parts.join("\n\n").slice(0, MAX_INPUT_CHARS);
+    const joined = parts.join("\n\n");
+    // Cap concatenated attachment text + log if we had to truncate.
+    attachmentsText = capAndLog(joined, {
+      userId: capCtx?.userId,
+      actionType: "notes_ai",
+      subAction: capCtx?.subAction,
+      maxChars: MAX_INPUT_CHARS,
+      capKind: "transcript_chars",
+      model: capCtx?.model,
+    }).text;
   }
   return { note, attachmentsText };
 }
