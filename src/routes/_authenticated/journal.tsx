@@ -14,6 +14,7 @@ import {
   CalendarDays,
   Download,
   ListOrdered,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { listNotes, createNote, updateNote, type Note } from "@/lib/notes";
