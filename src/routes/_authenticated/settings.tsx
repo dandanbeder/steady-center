@@ -242,10 +242,10 @@ function SettingsPage() {
         </div>
       </section>
 
-      <section>
+      <section id="working-hours" className="scroll-mt-20">
         <h2 className="text-2xl mb-1">Working hours & capacity</h2>
         <p className="text-sm text-muted-foreground mb-6">
-          Your work window and a soft daily target. Used by the Today load meter and Plan my day.
+          The single source of truth for your work window and daily capacity. Calendar, Plan my week, Today, and AI scheduling all read from here.
         </p>
         <div className="rounded-2xl border border-border bg-card p-6" style={{ boxShadow: "var(--shadow-soft)" }}>
           <WorkingHoursPanel />
