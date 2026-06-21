@@ -586,10 +586,51 @@ function ListWorkspace({
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["tasks", list.id] });
 
+  const { user } = useAuth();
+  const myId = user?.id ?? null;
+
+  // Saved per-user view config for this list
+  const viewCfgQuery = useQuery({
+    queryKey: ["user_list_view", list.id, myId],
+    queryFn: () => (myId ? fetchListView(list.id, myId) : Promise.resolve(null)),
+    enabled: !!myId,
+  });
+  const savedCfg: ListViewConfig = viewCfgQuery.data ?? DEFAULT_VIEW_CONFIG;
+
   const [quickAdd, setQuickAdd] = useState("");
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [sortKey, setSortKey] = useState<SortKey>("priority");
+  const [groupBy, setGroupBy] = useState<GroupByKey>("stage");
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [stageMgrOpen, setStageMgrOpen] = useState(false);
+
+  // Hydrate local state when saved config loads (or list changes)
+  const [hydratedListId, setHydratedListId] = useState<string | null>(null);
+  if (viewCfgQuery.data && hydratedListId !== list.id) {
+    const cfg = viewCfgQuery.data;
+    setFilters({
+      priority: cfg.filters.priority as Filters["priority"],
+      status: cfg.filters.status as Filters["status"],
+      due: cfg.filters.due as Filters["due"],
+      assigned: cfg.filters.assigned as Filters["assigned"],
+    });
+    setSortKey(cfg.sort.key);
+    setGroupBy(cfg.group_by);
+    setCollapsedGroups(new Set(cfg.collapsed_groups));
+    if (cfg.view !== view) onViewChange(cfg.view);
+    setHydratedListId(list.id);
+  } else if (!viewCfgQuery.data && !viewCfgQuery.isLoading && hydratedListId !== list.id) {
+    setHydratedListId(list.id);
+  }
+
+  // Persist on changes
+  const persistView = (patch: Partial<ListViewConfig>) => {
+    if (!myId || hydratedListId !== list.id) return;
+    saveListView(list.id, myId, patch).catch((e) =>
+      console.error("saveListView failed", e),
+    );
+  };
 
   const create = useMutation({
     mutationFn: () =>
