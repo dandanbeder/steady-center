@@ -86,7 +86,9 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -125,7 +127,22 @@ import {
   restoreList,
   restoreTask,
   bulkRestoreTasks,
+  listUncategorisedTasks,
 } from "@/lib/tasks";
+
+
+const UNCATEGORISED_LIST_ID = "__uncategorised__";
+const UNCATEGORISED_LIST: ListRow = {
+  id: UNCATEGORISED_LIST_ID,
+  owner_id: "",
+  folder_id: "",
+  name: "Uncategorised",
+  created_at: "",
+};
+
+function isUncategorised(list: { id: string }) {
+  return list.id === UNCATEGORISED_LIST_ID;
+}
 import { listAssignedToMe, listAssignedByMe, listAssignmentHistory, assignTask } from "@/lib/tasks";
 import { AssigneePicker, useAssignableMembers, memberLabel, type AssignableMember } from "@/components/assignee-picker";
 import { useAuth } from "@/hooks/use-auth";
@@ -187,7 +204,10 @@ function TasksPage() {
     [businesses, activeId],
   );
 
-  const selectedList = lists.find((l) => l.id === selectedListId) ?? null;
+  const selectedList: ListRow | null =
+    selectedListId === UNCATEGORISED_LIST_ID
+      ? UNCATEGORISED_LIST
+      : lists.find((l) => l.id === selectedListId) ?? null;
 
   return (
     <div className="flex flex-col md:flex-row md:h-[calc(100vh-4rem)]">
@@ -200,6 +220,21 @@ function TasksPage() {
       >
         <div className="p-4">
           <h2 className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Spaces</h2>
+          {/* Uncategorised — always available; hidden when filtering to a specific account */}
+          {activeId === ALL && (
+            <button
+              onClick={() => setSelectedListId(UNCATEGORISED_LIST_ID)}
+              className={cn(
+                "w-full flex items-center gap-2 px-2 py-2 rounded-md text-left mb-3 transition-colors",
+                selectedListId === UNCATEGORISED_LIST_ID
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
+              )}
+            >
+              <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/60" />
+              <span className="text-sm">Uncategorised</span>
+            </button>
+          )}
           {visibleBusinesses.length === 0 ? (
             <p className="text-sm text-muted-foreground">No accounts yet.</p>
           ) : (
@@ -614,13 +649,14 @@ function ListWorkspace({
   onAutoOpenConsumed?: () => void;
 }) {
   const qc = useQueryClient();
+  const uncategorised = isUncategorised(list);
   const { data: folders = [] } = useQuery({ queryKey: ["folders"], queryFn: listFolders });
   const folder = folders.find((f) => f.id === list.folder_id);
-  const businessId = folder?.business_id ?? null;
+  const businessId = uncategorised ? null : (folder?.business_id ?? null);
 
   const { data: tasks = [] } = useQuery({
     queryKey: ["tasks", list.id],
-    queryFn: () => listTasksByList(list.id),
+    queryFn: () => (uncategorised ? listUncategorisedTasks() : listTasksByList(list.id)),
   });
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["tasks", list.id] });
@@ -628,11 +664,11 @@ function ListWorkspace({
   const { user } = useAuth();
   const myId = user?.id ?? null;
 
-  // Saved per-user view config for this list
+  // Saved per-user view config for this list (skipped for the synthetic Uncategorised bucket)
   const viewCfgQuery = useQuery({
     queryKey: ["user_list_view", list.id, myId],
     queryFn: () => (myId ? fetchListView(list.id, myId) : Promise.resolve(null)),
-    enabled: !!myId,
+    enabled: !!myId && !uncategorised,
   });
   const savedCfg: ListViewConfig = viewCfgQuery.data ?? DEFAULT_VIEW_CONFIG;
 
@@ -666,7 +702,7 @@ function ListWorkspace({
 
   // Persist on changes
   const persistView = (patch: Partial<ListViewConfig>) => {
-    if (!myId || hydratedListId !== list.id) return;
+    if (!myId || hydratedListId !== list.id || uncategorised) return;
     saveListView(list.id, myId, patch).catch((e) =>
       console.error("saveListView failed", e),
     );
@@ -674,18 +710,18 @@ function ListWorkspace({
 
   // Persist view mode + filters + sort whenever they change post-hydration
   useEffect(() => {
-    if (!myId || hydratedListId !== list.id) return;
+    if (!myId || hydratedListId !== list.id || uncategorised) return;
     saveListView(list.id, myId, { view, filters, sort: { key: sortKey } }).catch(
       (e) => console.error("saveListView failed", e),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view, filters, sortKey, list.id, myId, hydratedListId]);
+  }, [view, filters, sortKey, list.id, myId, hydratedListId, uncategorised]);
 
   const create = useMutation({
     mutationFn: () =>
       createTask({
-        list_id: list.id,
-        business_id: businessId,
+        list_id: uncategorised ? null : list.id,
+        business_id: uncategorised ? null : businessId,
         title: quickAdd.trim(),
         position: tasks.length,
       }),
@@ -1879,6 +1915,10 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
   const [focusOn, setFocusOn] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
 
+  const { data: allBusinesses = [] } = useQuery({ queryKey: ["businesses"], queryFn: listBusinesses });
+  const { data: allFolders = [] } = useQuery({ queryKey: ["folders"], queryFn: listFolders });
+  const { data: allLists = [] } = useQuery({ queryKey: ["lists"], queryFn: listLists });
+
   const dueIso = dueAt ? new Date(`${dueAt}T12:00:00`).toISOString() : null;
 
   // Outcomes for this task's account (or personal if no business)
@@ -2073,6 +2113,70 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
             {recurrence !== "none" && !dueAt && (
               <p className="text-xs text-muted-foreground -mt-2">Add a due date so the next occurrence has a target.</p>
             )}
+
+            <div>
+              <Label className="flex items-center gap-1.5">
+                <Layers className="h-3.5 w-3.5" /> Account &amp; list
+              </Label>
+              <Select
+                value={task.list_id ?? "__uncat"}
+                onValueChange={async (v) => {
+                  try {
+                    if (v === "__uncat") {
+                      await updateTask(task.id, { list_id: null, business_id: null });
+                    } else {
+                      const targetList = allLists.find((l) => l.id === v);
+                      const targetFolder = targetList ? allFolders.find((f) => f.id === targetList.folder_id) : null;
+                      const nextBiz = targetFolder?.business_id ?? null;
+                      await updateTask(task.id, { list_id: v, business_id: nextBiz });
+                    }
+                    onChange();
+                    toast.success("Task moved");
+                  } catch (e) {
+                    toast.error(e instanceof Error ? e.message : "Failed");
+                  }
+                }}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__uncat">
+                    <span className="inline-flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/60" />
+                      Uncategorised (no account)
+                    </span>
+                  </SelectItem>
+                  {allBusinesses.map((b) => {
+                    const bizFolders = allFolders.filter((f) => f.business_id === b.id);
+                    const bizLists = allLists.filter((l) =>
+                      bizFolders.some((f) => f.id === l.folder_id),
+                    );
+                    if (bizLists.length === 0) return null;
+                    return (
+                      <SelectGroup key={b.id}>
+                        <SelectLabel>
+                          <span className="inline-flex items-center gap-2">
+                            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: b.color }} />
+                            {b.name}
+                          </span>
+                        </SelectLabel>
+                        {bizLists.map((l) => {
+                          const f = bizFolders.find((x) => x.id === l.folder_id);
+                          return (
+                            <SelectItem key={l.id} value={l.id}>
+                              <span className="text-muted-foreground">{f?.name} / </span>
+                              {l.name}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectGroup>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Move this task to another Account's list, or send it to Uncategorised.
+              </p>
+            </div>
 
             <div>
               <Label className="flex items-center gap-1.5"><UserCircle2 className="h-3.5 w-3.5" /> Assignee</Label>
