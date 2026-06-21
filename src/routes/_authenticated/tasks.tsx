@@ -826,14 +826,46 @@ function ListWorkspace({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {view === "list" && businessId && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm">
+              <Layers className="h-3.5 w-3.5" /> Group:{" "}
+              {groupBy === "stage" ? "Stage" :
+               groupBy === "priority" ? "Priority" :
+               groupBy === "assignee" ? "Assignee" :
+               groupBy === "due" ? "Due date" : "None"}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            {([
+              ["stage", "Stage"],
+              ["priority", "Priority"],
+              ["assignee", "Assignee"],
+              ["due", "Due date"],
+              ["none", "None"],
+            ] as const).map(([k, label]) => (
+              <DropdownMenuItem
+                key={k}
+                onClick={() => {
+                  setGroupBy(k);
+                  persistView({ group_by: k });
+                }}
+              >
+                {label}
+                {groupBy === k && <span className="ml-auto">✓</span>}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {view === "board" && (
           <Button
-            variant={groupByAssignee ? "default" : "outline"}
+            variant="outline"
             size="sm"
-            onClick={() => setGroupByAssignee((v) => !v)}
-            title="Group by assignee — see who's working on what"
+            onClick={() => setStageMgrOpen(true)}
+            title="Add, rename, recolour, or reorder stages"
           >
-            <UserCircle2 className="h-3.5 w-3.5" /> Who's on what
+            <Settings2 className="h-3.5 w-3.5" /> Stages
           </Button>
         )}
 
