@@ -271,7 +271,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </Sheet>
 
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
-        <header className="h-16 border-b border-border bg-background/80 backdrop-blur flex items-center justify-between px-4 sm:px-6 lg:px-8 gap-2 safe-top safe-x">
+        <header className="h-16 border-b border-border bg-background/80 backdrop-blur flex items-center justify-between px-3 sm:px-6 lg:px-8 gap-1 sm:gap-2 safe-top safe-x">
           <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-1">
             {/* Mobile hamburger */}
             <Button
@@ -329,17 +329,31 @@ export function AppShell({ children }: { children: ReactNode }) {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-          <PlanIndicator />
+          {/* Plan/Upgrade chip — hide on phone to free up header */}
+          <div className="hidden sm:inline-flex shrink-0">
+            <PlanIndicator />
+          </div>
+          {/* Search — icon only on mobile, label + kbd on md+ */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setCmdOpen(true)}
+            aria-label="Search (⌘K)"
+            title="Search (⌘K)"
+            className="h-9 w-9 md:hidden text-muted-foreground hover:text-foreground shrink-0"
+          >
+            <Search className="h-4 w-4" />
+          </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setCmdOpen(true)}
             aria-label="Search (⌘K)"
-            className="gap-2 text-muted-foreground hover:text-foreground shrink-0"
+            className="hidden md:inline-flex gap-2 text-muted-foreground hover:text-foreground shrink-0"
           >
             <Search className="h-4 w-4" />
-            <span className="hidden md:inline text-xs">Search</span>
-            <kbd className="hidden md:inline-flex items-center rounded border border-border bg-muted/50 px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">⌘K</kbd>
+            <span className="text-xs">Search</span>
+            <kbd className="inline-flex items-center rounded border border-border bg-muted/50 px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">⌘K</kbd>
           </Button>
           <Button
             variant="ghost"
@@ -356,37 +370,40 @@ export function AppShell({ children }: { children: ReactNode }) {
               </span>
             )}
           </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Help"
-                title="Help"
-                className="h-9 w-9 text-muted-foreground hover:text-foreground shrink-0"
-              >
-                <HelpCircle className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem asChild>
-                <Link to="/learn" className="gap-2">
-                  <GraduationCap className="h-4 w-4" /> Learn / Tutorial
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to="/ai" className="gap-2">
-                  <Sparkles className="h-4 w-4" /> AI &amp; credits
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link to="/settings" className="gap-2">
-                  <Settings className="h-4 w-4" /> Settings
-                </Link>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Help menu — hidden on phone (Learn lives in nav drawer) */}
+          <div className="hidden sm:inline-flex shrink-0">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Help"
+                  title="Help"
+                  className="h-9 w-9 text-muted-foreground hover:text-foreground shrink-0"
+                >
+                  <HelpCircle className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem asChild>
+                  <Link to="/learn" className="gap-2">
+                    <GraduationCap className="h-4 w-4" /> Learn / Tutorial
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/ai" className="gap-2">
+                    <Sparkles className="h-4 w-4" /> AI &amp; credits
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/settings" className="gap-2">
+                    <Settings className="h-4 w-4" /> Settings
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
           <Button
             data-tour="assistant-button"
             variant="ghost"
