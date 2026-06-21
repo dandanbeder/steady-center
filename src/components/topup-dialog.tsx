@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Coins, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/use-auth";
 import { usePaddleCheckout } from "@/hooks/use-paddle-checkout";
 import { Button } from "@/components/ui/button";
 import {
