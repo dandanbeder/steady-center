@@ -1227,6 +1227,41 @@ export type Database = {
           },
         ]
       }
+      journal_meta: {
+        Row: {
+          created_at: string
+          mood: number | null
+          note_id: string
+          owner_id: string
+          tags: string[]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          mood?: number | null
+          note_id: string
+          owner_id: string
+          tags?: string[]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          mood?: number | null
+          note_id?: string
+          owner_id?: string
+          tags?: string[]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journal_meta_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: true
+            referencedRelation: "notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lists: {
         Row: {
           created_at: string
