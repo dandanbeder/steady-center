@@ -25,6 +25,9 @@ import {
   CalendarDays,
   Copy,
   CalendarPlus,
+  Eye,
+  EyeOff,
+  Palette,
 } from "lucide-react";
 import { ReminderControls } from "@/components/reminder-controls";
 import { createNote } from "@/lib/notes";
@@ -64,8 +67,10 @@ import {
 } from "@/components/ui/popover";
 import { Calendar as MiniCalendar } from "@/components/ui/calendar";
 import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
+import { useColorBy, useHiddenSet, type ColorBy } from "@/lib/calendar-prefs";
+import { EventQuickView } from "@/components/calendar/event-popover";
 
-import { createBusiness, listBusinesses, type Business } from "@/lib/businesses";
+import { createBusiness, listBusinesses, updateBusiness, type Business } from "@/lib/businesses";
 import {
   bulkInsertEvents,
   createCalendar,
@@ -174,9 +179,12 @@ function CalendarPage() {
   const { activeId } = useActiveBusiness();
   const [view, setView] = useState<ViewMode>("month");
   const [cursor, setCursor] = useState<Date>(startOfDay(new Date()));
-  const [hiddenCals, setHiddenCals] = useState<Set<string>>(new Set());
+  const { hidden: hiddenCals, toggle: toggleHiddenCal } = useHiddenSet("cal");
+  const { hidden: hiddenBiz, toggle: toggleHiddenBiz } = useHiddenSet("biz");
+  const { colorBy, setColorBy } = useColorBy();
   const [dayOpen, setDayOpen] = useState<Date | null>(null);
   const [editing, setEditing] = useState<EventRow | null>(null);
+  const [previewing, setPreviewing] = useState<EventRow | null>(null);
   const [newOpen, setNewOpen] = useState(false);
   const [newDefaultDate, setNewDefaultDate] = useState<Date>(
     startOfDay(new Date()),
@@ -239,12 +247,20 @@ function CalendarPage() {
     [calendars, activeId],
   );
 
+  const visibleBusinesses = useMemo(
+    () => businesses.filter((b) => activeId === ALL || b.id === activeId),
+    [businesses, activeId],
+  );
+
   const visibleCalIds = useMemo(
     () =>
       new Set(
-        visibleCalendars.filter((c) => !hiddenCals.has(c.id)).map((c) => c.id),
+        visibleCalendars
+          .filter((c) => !hiddenCals.has(c.id))
+          .filter((c) => !c.business_id || !hiddenBiz.has(c.business_id))
+          .map((c) => c.id),
       ),
-    [visibleCalendars, hiddenCals],
+    [visibleCalendars, hiddenCals, hiddenBiz],
   );
 
   const visibleEvents = useMemo(
@@ -256,6 +272,40 @@ function CalendarPage() {
     () => new Map(calendars.map((c) => [c.id, c])),
     [calendars],
   );
+
+  const bizById = useMemo(
+    () => new Map(businesses.map((b) => [b.id, b])),
+    [businesses],
+  );
+
+  const colorFor = useMemo(() => {
+    return (e: EventRow): string => {
+      const cal = calById.get(e.calendar_id);
+      if (colorBy === "account") {
+        const bizId = cal?.business_id;
+        const biz = bizId ? bizById.get(bizId) : null;
+        return biz?.color ?? cal?.color ?? "#7A8471";
+      }
+      return cal?.color ?? "#7A8471";
+    };
+  }, [colorBy, calById, bizById]);
+
+  const bizForEvent = useMemo(() => {
+    return (e: EventRow) => {
+      const cal = calById.get(e.calendar_id);
+      const bizId = cal?.business_id;
+      return bizId ? bizById.get(bizId) ?? null : null;
+    };
+  }, [calById, bizById]);
+
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => deleteEvent(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["events"] });
+      toast.success("Event deleted");
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to delete"),
+  });
 
   function shift(dir: -1 | 1) {
     if (view === "month") {
@@ -436,8 +486,9 @@ function CalendarPage() {
             cursor={cursor}
             events={visibleEvents}
             calById={calById}
+            colorFor={colorFor}
             onDayClick={(d) => setDayOpen(d)}
-            onEventClick={(e) => setEditing(e)}
+            onEventClick={(e) => setPreviewing(e)}
           />
         )}
         {view === "week" && (
@@ -447,8 +498,9 @@ function CalendarPage() {
             )}
             events={visibleEvents}
             calById={calById}
+            colorFor={colorFor}
             onSlotClick={(d) => openNewOn(d)}
-            onEventClick={(e) => setEditing(e)}
+            onEventClick={(e) => setPreviewing(e)}
           />
         )}
         {view === "day" && (
@@ -456,20 +508,73 @@ function CalendarPage() {
             days={[startOfDay(cursor)]}
             events={visibleEvents}
             calById={calById}
+            colorFor={colorFor}
             onSlotClick={(d) => openNewOn(d)}
-            onEventClick={(e) => setEditing(e)}
+            onEventClick={(e) => setPreviewing(e)}
           />
         )}
         {view === "agenda" && (
           <AgendaList
             events={visibleEvents}
             calById={calById}
-            onEventClick={(e) => setEditing(e)}
+            colorFor={colorFor}
+            onEventClick={(e) => setPreviewing(e)}
           />
         )}
       </div>
 
       <aside className={cn("w-full lg:w-72 shrink-0 space-y-6 order-1 lg:order-2", expanded && "hidden")}>
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+            Colour by
+          </h3>
+          <div className="inline-flex rounded-lg border border-border overflow-hidden">
+            {(["account", "calendar"] as ColorBy[]).map((m) => (
+              <button
+                key={m}
+                onClick={() => setColorBy(m)}
+                className={cn(
+                  "px-3 py-1.5 text-xs capitalize",
+                  colorBy === m ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+                )}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-1.5">
+            {colorBy === "account"
+              ? "Events share their account colour."
+              : "Events use each calendar's colour."}
+          </p>
+        </div>
+
+        {visibleBusinesses.length > 0 && (
+          <div>
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+              Accounts
+            </h3>
+            <ul className="space-y-1.5">
+              {visibleBusinesses.map((b) => (
+                <AccountRow
+                  key={b.id}
+                  biz={b}
+                  on={!hiddenBiz.has(b.id)}
+                  onToggle={() => toggleHiddenBiz(b.id)}
+                  onColorChange={async (color) => {
+                    try {
+                      await updateBusiness(b.id, { color });
+                      qc.invalidateQueries({ queryKey: ["businesses"] });
+                    } catch (e) {
+                      toast.error(e instanceof Error ? e.message : "Failed to update");
+                    }
+                  }}
+                />
+              ))}
+            </ul>
+          </div>
+        )}
+
         <div>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
@@ -509,11 +614,14 @@ function CalendarPage() {
                   cal={c}
                   biz={businesses.find((b) => b.id === c.business_id) ?? null}
                   on={!hiddenCals.has(c.id)}
-                  onToggle={() => {
-                    const next = new Set(hiddenCals);
-                    if (next.has(c.id)) next.delete(c.id);
-                    else next.add(c.id);
-                    setHiddenCals(next);
+                  onToggle={() => toggleHiddenCal(c.id)}
+                  onRename={async (name) => {
+                    try {
+                      await updateCalendar(c.id, { name });
+                      qc.invalidateQueries({ queryKey: ["calendars"] });
+                    } catch (e) {
+                      toast.error(e instanceof Error ? e.message : "Failed to rename");
+                    }
                   }}
                   onColorChange={async (color) => {
                     try {
@@ -531,28 +639,61 @@ function CalendarPage() {
           )}
         </div>
 
-        {visibleCalendars.length > 0 && (
+        {(colorBy === "account" ? visibleBusinesses.length > 0 : visibleCalendars.length > 0) && (
           <div>
             <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
               Legend
             </h3>
             <ul className="flex flex-wrap gap-2">
-              {visibleCalendars.map((c) => (
-                <li
-                  key={c.id}
-                  className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full border border-border"
-                >
-                  <span
-                    className="h-2.5 w-2.5 rounded-full"
-                    style={{ backgroundColor: c.color }}
-                  />
-                  <span className="truncate max-w-[140px]">{c.name}</span>
-                </li>
-              ))}
+              {colorBy === "account"
+                ? visibleBusinesses.map((b) => (
+                    <li
+                      key={b.id}
+                      className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full border border-border"
+                    >
+                      <span
+                        className="h-2.5 w-2.5 rounded-full"
+                        style={{ backgroundColor: b.color }}
+                      />
+                      <span className="truncate max-w-[140px]">{b.name}</span>
+                    </li>
+                  ))
+                : visibleCalendars.map((c) => (
+                    <li
+                      key={c.id}
+                      className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full border border-border"
+                    >
+                      <span
+                        className="h-2.5 w-2.5 rounded-full"
+                        style={{ backgroundColor: c.color }}
+                      />
+                      <span className="truncate max-w-[140px]">{c.name}</span>
+                    </li>
+                  ))}
             </ul>
           </div>
         )}
       </aside>
+
+      <EventQuickView
+        event={previewing}
+        cal={previewing ? calById.get(previewing.calendar_id) ?? null : null}
+        biz={previewing ? bizForEvent(previewing) : null}
+        color={previewing ? colorFor(previewing) : "#7A8471"}
+        onClose={() => setPreviewing(null)}
+        onEdit={() => {
+          if (previewing) {
+            setEditing(previewing);
+            setPreviewing(null);
+          }
+        }}
+        onDelete={() => {
+          if (previewing) {
+            deleteMut.mutate(previewing.id);
+            setPreviewing(null);
+          }
+        }}
+      />
 
 
       {dayOpen && (
@@ -564,6 +705,7 @@ function CalendarPage() {
             return s <= dayOpen && en >= dayOpen;
           })}
           calById={calById}
+          colorFor={colorFor}
           onClose={() => setDayOpen(null)}
           onAdd={() => {
             const d = dayOpen;
@@ -572,7 +714,7 @@ function CalendarPage() {
           }}
           onEventClick={(e) => {
             setDayOpen(null);
-            setEditing(e);
+            setPreviewing(e);
           }}
         />
       )}
@@ -650,14 +792,18 @@ function CalendarRow({
   on,
   onToggle,
   onColorChange,
+  onRename,
 }: {
   cal: Cal;
   biz: { id: string; name: string; color: string } | null;
   on: boolean;
   onToggle: () => void;
   onColorChange: (color: string) => void;
+  onRename?: (name: string) => void;
 }) {
   const [picking, setPicking] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [draftName, setDraftName] = useState(cal.name);
   return (
     <li className="rounded-md hover:bg-muted/60">
       <div className="flex items-center gap-2 px-2 py-1.5">
@@ -670,27 +816,46 @@ function CalendarRow({
           }}
           aria-label="Change color"
         />
-        <button
-          onClick={onToggle}
-          className="flex-1 text-left min-w-0"
-        >
-          <div
-            className={cn(
-              "text-sm truncate",
-              !on && "text-muted-foreground line-through",
-            )}
-          >
-            {cal.name}
-          </div>
-          <div className="text-[10px] text-muted-foreground truncate">
-            {cal.provider !== "manual" && (
-              <span className="capitalize mr-1">{cal.provider}</span>
-            )}
-            <span title={cal.last_synced_at ?? ""}>
-              synced {fmtRelative(cal.last_synced_at)}
-            </span>
-          </div>
-        </button>
+        {renaming ? (
+          <Input
+            autoFocus
+            value={draftName}
+            onChange={(e) => setDraftName(e.target.value)}
+            onBlur={() => {
+              setRenaming(false);
+              const trimmed = draftName.trim();
+              if (trimmed && trimmed !== cal.name) onRename?.(trimmed);
+              else setDraftName(cal.name);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+              if (e.key === "Escape") {
+                setDraftName(cal.name);
+                setRenaming(false);
+              }
+            }}
+            className="h-7 text-sm flex-1"
+          />
+        ) : (
+          <button onClick={onToggle} className="flex-1 text-left min-w-0">
+            <div
+              className={cn(
+                "text-sm truncate",
+                !on && "text-muted-foreground line-through",
+              )}
+            >
+              {cal.name}
+            </div>
+            <div className="text-[10px] text-muted-foreground truncate">
+              {cal.provider !== "manual" && (
+                <span className="capitalize mr-1">{cal.provider}</span>
+              )}
+              <span title={cal.last_synced_at ?? ""}>
+                synced {fmtRelative(cal.last_synced_at)}
+              </span>
+            </div>
+          </button>
+        )}
         {biz && (
           <span
             className="h-2 w-2 rounded-full shrink-0"
@@ -698,6 +863,103 @@ function CalendarRow({
             title={biz.name}
           />
         )}
+        {onRename && !renaming && (
+          <button
+            onClick={() => {
+              setDraftName(cal.name);
+              setRenaming(true);
+            }}
+            className="opacity-0 group-hover:opacity-100 hover:opacity-100 text-muted-foreground hover:text-foreground"
+            title="Rename"
+            aria-label="Rename calendar"
+          >
+            <Pencil className="h-3 w-3" />
+          </button>
+        )}
+        <button
+          onClick={onToggle}
+          className="text-muted-foreground hover:text-foreground"
+          title={on ? "Hide" : "Show"}
+          aria-label={on ? "Hide calendar" : "Show calendar"}
+        >
+          {on ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+        </button>
+      </div>
+      {picking && (
+        <div className="px-2 pb-2 space-y-2">
+          <div className="flex flex-wrap gap-1.5">
+            {PALETTE.map((c) => (
+              <button
+                key={c}
+                onClick={() => {
+                  onColorChange(c);
+                  setPicking(false);
+                }}
+                className={cn(
+                  "h-5 w-5 rounded-full border border-border",
+                  c.toLowerCase() === cal.color.toLowerCase() &&
+                    "ring-2 ring-offset-1 ring-foreground/40",
+                )}
+                style={{ backgroundColor: c }}
+                aria-label={`Use color ${c}`}
+              />
+            ))}
+            <label
+              className="h-5 w-5 rounded-full border border-dashed border-border cursor-pointer overflow-hidden relative"
+              title="Custom color"
+            >
+              <Palette className="h-3 w-3 absolute inset-0 m-auto text-muted-foreground" />
+              <input
+                type="color"
+                value={cal.color}
+                onChange={(e) => onColorChange(e.target.value)}
+                className="absolute inset-0 opacity-0 cursor-pointer"
+              />
+            </label>
+          </div>
+        </div>
+      )}
+    </li>
+  );
+}
+
+function AccountRow({
+  biz,
+  on,
+  onToggle,
+  onColorChange,
+}: {
+  biz: Business;
+  on: boolean;
+  onToggle: () => void;
+  onColorChange: (color: string) => void;
+}) {
+  const [picking, setPicking] = useState(false);
+  return (
+    <li className="rounded-md hover:bg-muted/60">
+      <div className="flex items-center gap-2 px-2 py-1.5">
+        <button
+          onClick={() => setPicking((p) => !p)}
+          className="h-4 w-4 rounded-full border shrink-0"
+          style={{
+            backgroundColor: on ? biz.color : "transparent",
+            borderColor: biz.color,
+          }}
+          aria-label="Change account color"
+        />
+        <button onClick={onToggle} className="flex-1 text-left min-w-0">
+          <div className={cn("text-sm truncate", !on && "text-muted-foreground line-through")}>
+            {biz.name}
+          </div>
+        </button>
+        <button
+          onClick={onToggle}
+          className="text-muted-foreground hover:text-foreground"
+          title={on ? "Hide" : "Show"}
+          aria-label={on ? "Hide account" : "Show account"}
+        >
+          {on ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+        </button>
       </div>
       {picking && (
         <div className="px-2 pb-2 flex flex-wrap gap-1.5">
@@ -710,13 +972,25 @@ function CalendarRow({
               }}
               className={cn(
                 "h-5 w-5 rounded-full border border-border",
-                c.toLowerCase() === cal.color.toLowerCase() &&
+                c.toLowerCase() === biz.color.toLowerCase() &&
                   "ring-2 ring-offset-1 ring-foreground/40",
               )}
               style={{ backgroundColor: c }}
               aria-label={`Use color ${c}`}
             />
           ))}
+          <label
+            className="h-5 w-5 rounded-full border border-dashed border-border cursor-pointer overflow-hidden relative"
+            title="Custom color"
+          >
+            <Palette className="h-3 w-3 absolute inset-0 m-auto text-muted-foreground" />
+            <input
+              type="color"
+              value={biz.color}
+              onChange={(e) => onColorChange(e.target.value)}
+              className="absolute inset-0 opacity-0 cursor-pointer"
+            />
+          </label>
         </div>
       )}
     </li>
@@ -729,12 +1003,14 @@ function MonthGrid({
   cursor,
   events,
   calById,
+  colorFor,
   onDayClick,
   onEventClick,
 }: {
   cursor: Date;
   events: EventRow[];
   calById: Map<string, Cal>;
+  colorFor?: (e: EventRow) => string;
   onDayClick: (d: Date) => void;
   onEventClick: (e: EventRow) => void;
 }) {
@@ -799,7 +1075,7 @@ function MonthGrid({
               <div className="flex flex-col gap-0.5 min-w-0">
                 {shown.map((e) => {
                   const c = calById.get(e.calendar_id);
-                  const color = c?.color ?? "#7A8471";
+                  const color = colorFor ? colorFor(e) : (c?.color ?? "#7A8471");
                   return (
                     <button
                       key={e.id}
@@ -897,12 +1173,14 @@ function TimeGrid({
   days,
   events,
   calById,
+  colorFor,
   onSlotClick,
   onEventClick,
 }: {
   days: Date[];
   events: EventRow[];
   calById: Map<string, Cal>;
+  colorFor?: (e: EventRow) => string;
   onSlotClick: (d: Date) => void;
   onEventClick: (e: EventRow) => void;
 }) {
@@ -997,7 +1275,7 @@ function TimeGrid({
                 >
                   {list.map((e) => {
                     const c = calById.get(e.calendar_id);
-                    const color = c?.color ?? "#7A8471";
+                    const color = colorFor ? colorFor(e) : (c?.color ?? "#7A8471");
                     return (
                       <button
                         key={e.id}
@@ -1104,7 +1382,7 @@ function TimeGrid({
                     );
                     const widthPct = 100 / lanes;
                     const c = calById.get(ev.calendar_id);
-                    const color = c?.color ?? "#7A8471";
+                    const color = colorFor ? colorFor(ev) : (c?.color ?? "#7A8471");
                     return (
                       <button
                         key={ev.id}
@@ -1149,10 +1427,12 @@ function TimeGrid({
 function AgendaList({
   events,
   calById,
+  colorFor,
   onEventClick,
 }: {
   events: EventRow[];
   calById: Map<string, Cal>;
+  colorFor?: (e: EventRow) => string;
   onEventClick: (e: EventRow) => void;
 }) {
   const sorted = [...events].sort(
@@ -1206,7 +1486,7 @@ function AgendaList({
           <ul className="space-y-1.5">
             {g.items.map((e) => {
               const c = calById.get(e.calendar_id);
-              const color = c?.color ?? "#7A8471";
+              const color = colorFor ? colorFor(e) : (c?.color ?? "#7A8471");
               return (
                 <li key={e.id}>
                   <button
@@ -1246,6 +1526,7 @@ function DayAgendaDialog({
   date,
   events,
   calById,
+  colorFor,
   onClose,
   onAdd,
   onEventClick,
@@ -1253,6 +1534,7 @@ function DayAgendaDialog({
   date: Date;
   events: EventRow[];
   calById: Map<string, Cal>;
+  colorFor?: (e: EventRow) => string;
   onClose: () => void;
   onAdd: () => void;
   onEventClick: (e: EventRow) => void;
@@ -1280,7 +1562,7 @@ function DayAgendaDialog({
           ) : (
             sorted.map((e) => {
               const c = calById.get(e.calendar_id);
-              const color = c?.color ?? "#7A8471";
+              const color = colorFor ? colorFor(e) : (c?.color ?? "#7A8471");
               return (
                 <button
                   key={e.id}
