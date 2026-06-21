@@ -1,6 +1,6 @@
 /**
  * Super-admin "Financials & Analytics" read.
- * One curated payload — never user content. Pulls from rollups + small
+ * One curated payload, never user content. Pulls from rollups + small
  * targeted aggregates only; no full table scans.
  *
  * Cost assumptions for contribution margin (per user spec):

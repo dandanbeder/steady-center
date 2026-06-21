@@ -2,7 +2,7 @@
  * AI credit top-up pack catalog. Shared by client + server.
  *
  * Pricing rules (anchored to CREDIT_ANCHOR_MICROS = 0.25¢ true cost / credit):
- *   • Per-credit sell price floor: 0.35¢ (1.4× anchor) — never go below.
+ *   • Per-credit sell price floor: 0.35¢ (1.4× anchor), never go below.
  *   • Per-credit sell price target: ~0.75¢ (3× anchor) on the smallest pack.
  *   • Larger packs reward volume but always stay ≥ floor.
  *

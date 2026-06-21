@@ -32,7 +32,7 @@ export function PlanIndicator() {
       to="/billing"
       title={
         isFree
-          ? "You're on Free — upgrade to unlock more"
+          ? "You're on Free, upgrade to unlock more"
           : `${tierLabel(tier)} plan · ${total ?? 0} AI credits remaining`
       }
       className={cn(

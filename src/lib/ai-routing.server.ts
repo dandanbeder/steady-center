@@ -2,7 +2,7 @@
  * Server-side helpers for AI routing: cap-hit audit log.
  * Pairs with `ai-routing.ts` (client-safe routing table + pure helpers).
  *
- * `logCapHit` is best-effort and never throws — telemetry must not break
+ * `logCapHit` is best-effort and never throws, telemetry must not break
  * the user-facing AI call.
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";

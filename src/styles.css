@@ -232,7 +232,7 @@
 }
 
 
-/* High-contrast accessibility — stays within the Calm Wave palette: only
+/* High-contrast accessibility, stays within the Calm Wave palette: only
    deepens existing ink, strengthens borders, and lifts muted text. No new
    hues introduced. */
 .high-contrast {

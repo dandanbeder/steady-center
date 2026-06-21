@@ -241,7 +241,7 @@ function SettingsPage() {
                 {isLoading ? (
                   <p className="text-sm text-muted-foreground">Loading…</p>
                 ) : businesses.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No accounts yet — add your first below.</p>
+                  <p className="text-sm text-muted-foreground">No accounts yet, add your first below.</p>
                 ) : (
                   <ul className="divide-y divide-border">
                     {businesses.map((b, idx) => (

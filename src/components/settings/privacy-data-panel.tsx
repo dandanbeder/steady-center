@@ -93,7 +93,7 @@ function ExportSection() {
         <Download className="h-4 w-4" /> Export my data
       </h3>
       <p className="text-xs text-muted-foreground mb-3">
-        Downloads a JSON file with every row you own — accounts, calendars, events, tasks,
+        Downloads a JSON file with every row you own, accounts, calendars, events, tasks,
         notes, meetings, reports, and journal.
       </p>
       <Button variant="outline" onClick={() => exportMut.mutate()} disabled={exportMut.isPending}>
@@ -334,7 +334,7 @@ function DeleteAccountSection() {
         <AlertTriangle className="h-4 w-4" /> Delete account & data
       </h3>
       <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
-        This permanently removes all your data — accounts, calendars, events, tasks, notes,
+        This permanently removes all your data, accounts, calendars, events, tasks, notes,
         meetings, reports, and journal. It is <span className="font-medium">irreversible</span>{" "}
         once the {14}-day grace window ends. Some records may be retained where the law requires
         (for example, tax invoices held by our payment provider). Any active subscription is

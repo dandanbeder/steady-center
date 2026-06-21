@@ -1,5 +1,5 @@
 /**
- * User-facing AI usage history. Metadata only — never the prompt or content.
+ * User-facing AI usage history. Metadata only, never the prompt or content.
  *
  * Reads from `ai_usage_events` which is super-admin-only at the RLS layer.
  * This server function uses the admin client behind `requireSupabaseAuth`

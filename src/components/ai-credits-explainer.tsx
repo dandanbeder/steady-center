@@ -22,15 +22,15 @@ export function AiCreditsExplainer({ allowance }: { allowance?: number | null })
           each month, refreshed on your renewal date.
         </p>
         <p>
-          Different actions use different amounts — a quick suggestion is 1 credit, a long meeting
-          summary costs more — so heavier tasks use more of your allowance.
+          Different actions use different amounts, a quick suggestion is 1 credit, a long meeting
+          summary costs more, so heavier tasks use more of your allowance.
         </p>
         <p>
           If credits run low we'll tell you; if they run out, AI pauses until your next refresh, or you can
           top up anytime. Purchased top-up credits last 12 months.
         </p>
         <p className="text-foreground">
-          Only AI features pause — everything else keeps working.
+          Only AI features pause, everything else keeps working.
         </p>
       </CardContent>
     </Card>

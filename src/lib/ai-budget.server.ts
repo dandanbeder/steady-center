@@ -7,7 +7,7 @@
  *  2. User-set $ cap from ai_prefs (defense against runaway model cost).
  *
  * Every successful AI call also writes a per-event row into ai_usage_events
- * (metadata only — never prompt/response content). That ledger is the
+ * (metadata only, never prompt/response content). That ledger is the
  * measurement spine used to calibrate credit pricing later.
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
@@ -21,7 +21,7 @@ function monthKey(d = new Date()): string {
 }
 
 // ---------------------------------------------------------------------------
-// Pricing config — single source of truth.
+// Pricing config, single source of truth.
 // All values in micro-USD ($1 = 1_000_000). Update here when prices change.
 // ---------------------------------------------------------------------------
 
@@ -34,13 +34,13 @@ const TEXT_PRICING: Record<string, TextRate> = {
   "claude-sonnet-4-20250514": { inPerMtok: 3_000_000, outPerMtok: 15_000_000 },
   "claude-haiku-4-5": { inPerMtok: 800_000, outPerMtok: 4_000_000 },
   "claude-haiku-3-5": { inPerMtok: 250_000, outPerMtok: 1_250_000 },
-  // Lovable AI Gateway — Google
+  // Lovable AI Gateway, Google
   "google/gemini-3-flash-preview": { inPerMtok: 300_000, outPerMtok: 2_500_000 },
   "google/gemini-3.1-flash-lite": { inPerMtok: 100_000, outPerMtok: 400_000 },
   "google/gemini-2.5-flash": { inPerMtok: 300_000, outPerMtok: 2_500_000 },
   "google/gemini-2.5-flash-lite": { inPerMtok: 100_000, outPerMtok: 400_000 },
   "google/gemini-2.5-pro": { inPerMtok: 1_250_000, outPerMtok: 10_000_000 },
-  // Lovable AI Gateway — OpenAI
+  // Lovable AI Gateway, OpenAI
   "openai/gpt-5": { inPerMtok: 2_500_000, outPerMtok: 10_000_000 },
   "openai/gpt-5-mini": { inPerMtok: 250_000, outPerMtok: 2_000_000 },
   "openai/gpt-5-nano": { inPerMtok: 50_000, outPerMtok: 400_000 },
@@ -158,7 +158,7 @@ async function resolveTeamId(userId: string): Promise<string | null> {
 }
 
 /**
- * Write a per-event ledger row. METADATA ONLY — never pass prompt/response text.
+ * Write a per-event ledger row. METADATA ONLY, never pass prompt/response text.
  * Returns the inserted row id (or null on failure). Never throws: cost logging
  * must not break the user-facing AI call.
  */

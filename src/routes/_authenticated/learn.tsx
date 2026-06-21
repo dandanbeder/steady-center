@@ -103,7 +103,7 @@ function LearnPage() {
       label: "Try the AI",
       done: triedAi,
       tourId: "ai",
-      hint: "Open the assistant — ask, summarise, plan",
+      hint: "Open the assistant, ask, summarise, plan",
     },
   ];
 
@@ -111,7 +111,7 @@ function LearnPage() {
   const allDone = doneCount === checklist.length;
   const progressPct = Math.round((doneCount / checklist.length) * 100);
 
-  // Per-user dismissals (localStorage keyed by user id — client-side, per user)
+  // Per-user dismissals (localStorage keyed by user id, client-side, per user)
   const checklistCollapseKey = user?.id ? `heartbeat:learn:checklist-collapsed:${user.id}` : "";
   const helpDismissKey = user?.id ? `heartbeat:learn:help-dismissed:${user.id}` : "";
   const [checklistCollapsed, setChecklistCollapsed] = useState(false);
@@ -207,7 +207,7 @@ function LearnPage() {
     {
       icon: Sunrise,
       title: "Daily Pulse",
-      body: "A calm morning brief — what's on, what's overdue, what matters today.",
+      body: "A calm morning brief, what's on, what's overdue, what matters today.",
       tourId: "today",
       cta: "Tour Today",
     },
@@ -223,7 +223,7 @@ function LearnPage() {
               Welcome to Heartbeat
             </h1>
             <p className="text-sm text-muted-foreground max-w-2xl">
-              Heartbeat is one calm place to run all your businesses — calendar, tasks, notes,
+              Heartbeat is one calm place to run all your businesses, calendar, tasks, notes,
               meetings, and goals, together and talking to each other.
             </p>
           </div>
@@ -277,7 +277,7 @@ function LearnPage() {
                   </Button>
                 ) : (
                   <div className="text-center px-6 py-3 rounded-full bg-background/85 backdrop-blur text-xs text-muted-foreground">
-                    Welcome video coming soon — read on below.
+                    Welcome video coming soon, read on below.
                   </div>
                 )}
               </div>
@@ -292,12 +292,12 @@ function LearnPage() {
         </Card>
       </header>
 
-      {/* Start here — each card launches a guided tour on the destination page */}
+      {/* Start here, each card launches a guided tour on the destination page */}
       <section className="space-y-4">
         <div>
           <h2 className="text-xl font-serif text-foreground">Start here</h2>
           <p className="text-sm text-muted-foreground">
-            Each card opens the page and runs a short, skippable tour — 2 to 4 gentle steps,
+            Each card opens the page and runs a short, skippable tour, 2 to 4 gentle steps,
             then it gets out of the way.
           </p>
         </div>
@@ -344,7 +344,7 @@ function LearnPage() {
         </div>
       </section>
 
-      {/* Checklist — collapses gracefully once complete; always revisitable */}
+      {/* Checklist, collapses gracefully once complete; always revisitable */}
       <section className="space-y-3">
         <div className="flex items-end justify-between gap-3 flex-wrap">
           <div className="space-y-1">
@@ -442,7 +442,7 @@ function LearnPage() {
           <CardContent className="space-y-3 text-sm text-muted-foreground">
             <p>
               Your plan includes a monthly AI allowance. Quick suggestions cost a little, long
-              summaries cost more. If you run out, AI pauses — everything else keeps working.
+              summaries cost more. If you run out, AI pauses, everything else keeps working.
             </p>
             <Button asChild variant="outline" size="sm">
               <Link to="/ai">Open AI wallet</Link>

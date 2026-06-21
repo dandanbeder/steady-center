@@ -5,7 +5,7 @@
  * the next cycle reset or a top-up).
  *
  * Balances are written ONLY by SECURITY DEFINER SQL functions invoked from
- * server code — never by clients.
+ * server code, never by clients.
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { trueCostMicros, type AiActionType } from "./ai-budget.server";
@@ -49,7 +49,7 @@ export async function assertAiCredits(
 ): Promise<void> {
   const bal = await readBalance(userId);
   if (bal.paused || bal.allowance + bal.purchased < estimatedCredits) {
-    // Fire-and-forget hard-stop email — claim atomically so we only send
+    // Fire-and-forget hard-stop email, claim atomically so we only send
     // once per cycle even under concurrent AI calls. Never block or fail
     // the hard-stop on email errors.
     void notifyHardStop(bal.billingAccount).catch((e) =>
@@ -86,7 +86,7 @@ async function notifyHardStop(billingAccount: string): Promise<void> {
   const html = brandedEmail({
     heading: "Your AI is paused",
     preheader: "Top up credits to keep your AI features running.",
-    intro: `Hi ${name}, Heartbeat just paused AI features on your account — you've used your monthly allowance and any purchased credits.`,
+    intro: `Hi ${name}, Heartbeat just paused AI features on your account, you've used your monthly allowance and any purchased credits.`,
     bodyHtml: `<p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#3A3A3A">No silent overcharges, no surprise bill. You can top up to continue right away, or wait for your next billing cycle to refill your allowance automatically.</p>`,
     ctaLabel: "Top up AI credits",
     ctaUrl: billingUrl,
@@ -94,7 +94,7 @@ async function notifyHardStop(billingAccount: string): Promise<void> {
   });
   await sendEmail({
     to: email,
-    subject: "AI paused — top up to continue",
+    subject: "AI paused, top up to continue",
     html,
   });
 }
@@ -106,7 +106,7 @@ async function notifyHardStop(billingAccount: string): Promise<void> {
  *
  * If the account ends up over budget *because* of this call (the optimistic
  * pre-check passed but cost was higher than 1 credit), the RPC still debits
- * what it can — there's no half-spend, but a subsequent call will hard-stop.
+ * what it can, there's no half-spend, but a subsequent call will hard-stop.
  */
 export async function chargeAiCredits(opts: {
   userId: string;

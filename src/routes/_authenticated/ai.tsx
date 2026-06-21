@@ -95,7 +95,7 @@ function AiPage() {
               <Bot className="h-6 w-6" /> AI usage
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Your allowance, purchased credits, and what each action costs — so there
+              Your allowance, purchased credits, and what each action costs, so there
               are no surprises.
             </p>
           </div>
@@ -120,7 +120,7 @@ function AiPage() {
               <Sparkles className="h-5 w-5" /> What each action costs
             </CardTitle>
             <CardDescription>
-              You're only ever charged for the model time you actually use — these are
+              You're only ever charged for the model time you actually use, these are
               the typical credit costs when we don't have an exact measurement.
               {" "}1 credit ≈ ${(CREDIT_ANCHOR_MICROS / 1_000_000).toFixed(4)} of model cost.
             </CardDescription>
@@ -166,7 +166,7 @@ function AiPage() {
                   <History className="h-5 w-5" /> Recent AI actions
                 </CardTitle>
                 <CardDescription>
-                  Metadata only — we never store the prompt or the content of your
+                  Metadata only, we never store the prompt or the content of your
                   notes, messages, or transcripts here.
                 </CardDescription>
               </div>

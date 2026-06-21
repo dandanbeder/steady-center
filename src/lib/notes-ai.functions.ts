@@ -5,7 +5,7 @@ import { routeModel } from "./ai-routing";
 import { capAndLog } from "./ai-routing.server";
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-// Default route — reasoning. Sub-action overrides (suggest_meta, extract_actions,
+// Default route, reasoning. Sub-action overrides (suggest_meta, extract_actions,
 // cleanup_transcript) hop to the light tier inside each handler.
 const ROUTE = routeModel("notes_ai");
 const MODEL = ROUTE.model;

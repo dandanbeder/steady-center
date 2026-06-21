@@ -236,7 +236,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="h-screen flex bg-background w-full overflow-hidden">
-      {/* Desktop sidebar (lg+) — sticky full-height column */}
+      {/* Desktop sidebar (lg+), sticky full-height column */}
       <aside
         className={cn(
           "shrink-0 border-r border-sidebar-border bg-sidebar flex-col transition-[width] duration-200 ease-out hidden lg:flex h-screen sticky top-0",
@@ -329,11 +329,11 @@ export function AppShell({ children }: { children: ReactNode }) {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-          {/* Plan/Upgrade chip — hide on phone to free up header */}
+          {/* Plan/Upgrade chip, hide on phone to free up header */}
           <div className="hidden sm:inline-flex shrink-0">
             <PlanIndicator />
           </div>
-          {/* Search — icon only on mobile, label + kbd on md+ */}
+          {/* Search, icon only on mobile, label + kbd on md+ */}
           <Button
             variant="ghost"
             size="icon"
@@ -370,7 +370,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               </span>
             )}
           </Button>
-          {/* Help menu — hidden on phone (Learn lives in nav drawer) */}
+          {/* Help menu, hidden on phone (Learn lives in nav drawer) */}
           <div className="hidden sm:inline-flex shrink-0">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

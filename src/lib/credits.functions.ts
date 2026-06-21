@@ -1,6 +1,6 @@
 /**
  * Server-callable credit balance / threshold APIs. Read-only or RPC into
- * SECURITY DEFINER functions — clients never write balances directly.
+ * SECURITY DEFINER functions, clients never write balances directly.
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";

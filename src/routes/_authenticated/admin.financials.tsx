@@ -60,7 +60,7 @@ function FinancialsPage() {
           <div>
             <h1 className="text-2xl font-semibold">Financials &amp; Analytics</h1>
             <p className="text-sm text-muted-foreground">
-              Curated revenue, margin, and growth — operational metadata only.
+              Curated revenue, margin, and growth, operational metadata only.
             </p>
           </div>
         </div>
@@ -103,7 +103,7 @@ function Dashboard({ data }: { data: FinancialsSummary }) {
   const marginGood = h.contributionMarginCents >= 0;
   return (
     <div className="space-y-8">
-      {/* Headline — contribution margin is the hero */}
+      {/* Headline, contribution margin is the hero */}
       <Card className="border-2">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -273,7 +273,7 @@ function Dashboard({ data }: { data: FinancialsSummary }) {
           <Kpi
             label="Kitty remaining"
             value={fmtMoney(data.cash.kittyRemainingMicros / 10_000)}
-            sub={data.cash.runwayDays != null ? `~${data.cash.runwayDays} days runway` : "—"}
+            sub={data.cash.runwayDays != null ? `~${data.cash.runwayDays} days runway` : ","}
           />
           <Kpi
             label="Top-ups all-time"

@@ -24,13 +24,13 @@ export const Route = createFileRoute("/pricing")({
   component: PricingPage,
   head: () => ({
     meta: [
-      { title: "Pricing — Heartbeat" },
+      { title: "Pricing, Heartbeat" },
       {
         name: "description",
         content:
           "Run your businesses calmly with AI built in. Free forever, Pro for solo operators, Team for collaboration. AI included, viewers free.",
       },
-      { property: "og:title", content: "Pricing — Heartbeat" },
+      { property: "og:title", content: "Pricing, Heartbeat" },
       {
         property: "og:description",
         content:
@@ -163,7 +163,7 @@ function PricingPage() {
       <section className="px-6 pt-12 pb-8">
         <div className="mx-auto max-w-3xl text-center">
           <h1 className="font-serif text-4xl leading-tight tracking-tight md:text-5xl" style={{ color: "#26382F" }}>
-            Calm command of your businesses — with AI built in.
+            Calm command of your businesses, with AI built in.
           </h1>
           <p className="mt-5 text-lg" style={{ color: "#26382F", opacity: 0.78 }}>
             One steady place for calendars, tasks, notes and Ask Heartbeat AI. Free to start, pay only when you outgrow it.
@@ -243,14 +243,14 @@ function PricingPage() {
             }
             priceSub={
               cycle === "year"
-                ? `Billed ${fmtUsd(PRICING.pro_yearly.amount)} yearly — save ${proAnnualSavingsPct}%`
+                ? `Billed ${fmtUsd(PRICING.pro_yearly.amount)} yearly, save ${proAnnualSavingsPct}%`
                 : `Billed monthly`
             }
             features={[
               "Unlimited businesses",
               "Calendar, time-blocking & AI scheduling",
               "Tasks, outcomes, notes & journal",
-              `Ask Heartbeat AI — ${LIMITS.pro.aiAllowanceCreditsPerSeat} credits / month`,
+              `Ask Heartbeat AI, ${LIMITS.pro.aiAllowanceCreditsPerSeat} credits / month`,
               "Daily Pulse & weekly coach",
               "Meetings & AI summaries",
               "Top up AI credits anytime",
@@ -286,7 +286,7 @@ function PricingPage() {
             }
             priceSub={
               cycle === "year"
-                ? `Billed ${fmtUsd(PRICING.team_yearly.amount)}/seat yearly — save ${teamAnnualSavingsPct}%`
+                ? `Billed ${fmtUsd(PRICING.team_yearly.amount)}/seat yearly, save ${teamAnnualSavingsPct}%`
                 : `Billed monthly · ${TEAM_MIN_SEATS}-seat minimum`
             }
             features={[
@@ -368,21 +368,21 @@ function PricingPage() {
           </h2>
           <div className="mt-8 space-y-4">
             <FaqItem q="What happens when my trial ends?">
-              When a trial ends, you simply move to the Free plan — never locked out, nothing lost.
+              When a trial ends, you simply move to the Free plan, never locked out, nothing lost.
             </FaqItem>
             <FaqItem q="Can I cancel anytime?">
               Yes. Cancel anytime; you keep access until the end of your billing period.
             </FaqItem>
             <FaqItem q="What's an AI credit?">
               One credit is a small unit of AI use. Everyday actions cost a credit or a few; heavier ones cost more.
-              Your plan includes a monthly allowance, and you can top up anytime — credits you buy never expire.
+              Your plan includes a monthly allowance, and you can top up anytime, credits you buy never expire.
             </FaqItem>
             <FaqItem q="Can I switch plans later?">
-              Yes — upgrade or downgrade anytime. Downgrades keep your data; extra items just become read-only until
+              Yes, upgrade or downgrade anytime. Downgrades keep your data; extra items just become read-only until
               you upgrade again.
             </FaqItem>
             <FaqItem q="Do viewers and guests use a seat?">
-              No. Viewers and commenters are free on Team — only paid roles (owner, admin, member) consume a seat.
+              No. Viewers and commenters are free on Team, only paid roles (owner, admin, member) consume a seat.
             </FaqItem>
           </div>
         </div>
