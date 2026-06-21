@@ -20,7 +20,18 @@ import {
   Link2,
   Focus,
   UserCircle2,
+  Settings2,
+  Layers,
 } from "lucide-react";
+import { StageManagerDialog } from "@/components/tasks/stage-manager";
+import { groupTasks, type TaskGroup } from "@/components/tasks/group-tasks";
+import {
+  fetchListView,
+  saveListView,
+  DEFAULT_VIEW_CONFIG,
+  type GroupByKey,
+  type ListViewConfig,
+} from "@/lib/user-list-views";
 import {
   DndContext,
   PointerSensor,
