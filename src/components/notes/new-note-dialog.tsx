@@ -99,7 +99,7 @@ export function NewNoteDialog({
   }, [type]);
 
   const canNext =
-    (step === 0 && !!businessId) ||
+    step === 0 ||
     (step === 1 && (folderId !== null || newFolderName.trim() === "")) ||
     step === 2 ||
     step === 3;
