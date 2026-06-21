@@ -28,14 +28,14 @@ export function ReminderControls({ refType, refId, anchorAt }: Props) {
   const [open, setOpen] = useState(false);
 
   const addMut = useMutation({
-    mutationFn: (args: { lead_minutes: number; channel: "email" | "sms" }) => {
+    mutationFn: (args: { lead_minutes: number }) => {
       if (!anchorAt) throw new Error("Set a date/time first");
       return addReminder({
         ref_type: refType,
         ref_id: refId,
         anchor_at: anchorAt,
         lead_minutes: args.lead_minutes,
-        channel: args.channel,
+        channel: "email",
       });
     },
     onSuccess: () => {
@@ -45,6 +45,7 @@ export function ReminderControls({ refType, refId, anchorAt }: Props) {
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
+
 
   const delMut = useMutation({
     mutationFn: (id: string) => deleteReminder(id),
@@ -93,19 +94,20 @@ export function ReminderControls({ refType, refId, anchorAt }: Props) {
                 size="sm"
                 variant="outline"
                 disabled={!anchorAt || addMut.isPending}
-                onClick={() => addMut.mutate({ lead_minutes: opt.minutes, channel: "email" })}
+                onClick={() => addMut.mutate({ lead_minutes: opt.minutes })}
               >
                 {opt.label}
               </Button>
             ))}
           </div>
           <p className="text-xs text-muted-foreground">
-            Email · SMS coming when Twilio is connected.
+            Delivered by email.
           </p>
           <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(false)}>
             Cancel
           </Button>
         </div>
+
       ) : (
         <Button
           type="button"

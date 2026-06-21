@@ -1,12 +1,17 @@
 import { supabase } from "@/integrations/supabase/client";
 
+// Notification channels: email-only at launch. SMS is deferred — the
+// `channel` column is kept so additional channels can be reintroduced
+// without a schema rework.
+export type ReminderChannel = "email";
+
 export type Reminder = {
   id: string;
   owner_id: string;
   ref_type: "event" | "task";
   ref_id: string;
   remind_at: string;
-  channel: "email" | "sms";
+  channel: ReminderChannel;
   sent: boolean;
   sent_at: string | null;
   last_error: string | null;
@@ -29,7 +34,7 @@ export async function addReminder(input: {
   ref_id: string;
   anchor_at: string; // ISO of event.start_at or task.due_at
   lead_minutes: number;
-  channel: "email" | "sms";
+  channel?: ReminderChannel;
 }) {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) throw new Error("Not signed in");
@@ -39,7 +44,7 @@ export async function addReminder(input: {
     ref_type: input.ref_type,
     ref_id: input.ref_id,
     remind_at: remindAt,
-    channel: input.channel,
+    channel: input.channel ?? "email",
   });
   if (error) throw error;
 }

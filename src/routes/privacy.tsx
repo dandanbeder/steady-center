@@ -37,7 +37,7 @@ function PrivacyPage() {
           create and secure your account.
         </li>
         <li>
-          <strong>Optional profile fields</strong>, organisation, role/title, phone, timezone.
+          <strong>Optional profile fields</strong>, organisation, role/title, timezone.
           Used to personalise your workspace and reminders.
         </li>
         <li>
@@ -102,11 +102,8 @@ function PrivacyPage() {
         <li>
           <strong>Resend</strong>, sending transactional and (opt-in) marketing emails.
         </li>
-        <li>
-          <strong>Twilio</strong>, sending SMS reminders, only when you enable SMS in
-          notification preferences.
-        </li>
       </ul>
+
 
       <h2 className="text-xl text-primary mt-8 mb-2">5. Cross-border transfers</h2>
       <p>
