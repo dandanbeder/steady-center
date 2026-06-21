@@ -42,20 +42,26 @@ const TYPE_LABEL: Record<Match["type"], string> = {
 function AskNotesPage() {
   const { activeId } = useActiveBusiness();
   const ask = useServerFn(askNotes);
+  const transcribe = useServerFn(transcribeAudio);
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);
   const [answer, setAnswer] = useState<string>("");
   const [matches, setMatches] = useState<Match[]>([]);
+  const [recording, setRecording] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
 
-  const run = async () => {
-    if (q.trim().length < 2) return;
+  const runQuery = async (question: string) => {
+    if (question.trim().length < 2) return;
     setLoading(true);
     setAnswer("");
     setMatches([]);
     try {
       const res = await ask({
         data: {
-          question: q.trim(),
+          question: question.trim(),
           businessId: activeId === ALL ? null : activeId,
         },
       });
@@ -66,6 +72,83 @@ function AskNotesPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const run = () => runQuery(q);
+
+  const stopMicTracks = () => {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+  };
+
+  const startRecording = async () => {
+    if (recording || transcribing) return;
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      toast.error("Microphone access is needed to record.");
+      return;
+    }
+    const mimeType = ["audio/webm", "audio/mp4"].find((t) => MediaRecorder.isTypeSupported(t));
+    if (!mimeType) {
+      stream.getTracks().forEach((t) => t.stop());
+      toast.error("This browser can't record a supported audio format.");
+      return;
+    }
+    streamRef.current = stream;
+    const recorder = new MediaRecorder(stream, { mimeType });
+    chunksRef.current = [];
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) chunksRef.current.push(e.data);
+    };
+    recorder.onstop = async () => {
+      stopMicTracks();
+      const blob = new Blob(chunksRef.current, { type: recorder.mimeType });
+      chunksRef.current = [];
+      if (blob.size < 1024) {
+        toast.error("That recording was empty — please try again.");
+        return;
+      }
+      setTranscribing(true);
+      try {
+        const buf = await blob.arrayBuffer();
+        // Encode to base64 in chunks to avoid large-string call stack issues.
+        let binary = "";
+        const bytes = new Uint8Array(buf);
+        const CHUNK = 0x8000;
+        for (let i = 0; i < bytes.length; i += CHUNK) {
+          binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+        }
+        const audio_base64 = btoa(binary);
+        const { text } = await transcribe({
+          data: { audio_base64, mime: recorder.mimeType },
+        });
+        if (!text) {
+          toast.error("Couldn't hear anything in that recording.");
+          return;
+        }
+        setQ((prev) => (prev.trim() ? `${prev.trim()} ${text}` : text));
+        toast.success("Transcribed — review and tap Ask.");
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Transcription failed");
+      } finally {
+        setTranscribing(false);
+      }
+    };
+    recorder.start();
+    recorderRef.current = recorder;
+    setRecording(true);
+  };
+
+  const stopRecording = () => {
+    try {
+      recorderRef.current?.stop();
+    } catch {
+      stopMicTracks();
+    }
+    recorderRef.current = null;
+    setRecording(false);
   };
 
   const examples = [
