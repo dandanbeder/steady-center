@@ -65,7 +65,12 @@ export async function createCalendar(input: {
     })
     .select("id")
     .single();
-  if (error) throw error;
+  if (error) {
+    if (/UPGRADE_REQUIRED/i.test(error.message)) {
+      throw new Error("You've reached your plan's calendar connection limit. Upgrade to add more.");
+    }
+    throw error;
+  }
   return { id: data.id };
 }
 
