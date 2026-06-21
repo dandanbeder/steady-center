@@ -54,6 +54,7 @@ import { Route as ApiPublicHooksRenewMicrosoftSubscriptionsRouteImport } from '.
 import { Route as ApiPublicHooksPurgeTrashRouteImport } from './routes/api/public/hooks/purge-trash'
 import { Route as ApiPublicHooksProcessRemindersRouteImport } from './routes/api/public/hooks/process-reminders'
 import { Route as ApiPublicHooksProcessPlatformPulseRouteImport } from './routes/api/public/hooks/process-platform-pulse'
+import { Route as ApiPublicHooksPlanLifecycleRouteImport } from './routes/api/public/hooks/plan-lifecycle'
 import { Route as ApiPublicHooksMicrosoftGraphWebhookRouteImport } from './routes/api/public/hooks/microsoft-graph-webhook'
 import { Route as ApiPublicHooksGenerateWeeklyReportsRouteImport } from './routes/api/public/hooks/generate-weekly-reports'
 import { Route as ApiPublicHooksDailyPulseRouteImport } from './routes/api/public/hooks/daily-pulse'
@@ -295,6 +296,12 @@ const ApiPublicHooksProcessPlatformPulseRoute =
     path: '/api/public/hooks/process-platform-pulse',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksPlanLifecycleRoute =
+  ApiPublicHooksPlanLifecycleRouteImport.update({
+    id: '/api/public/hooks/plan-lifecycle',
+    path: '/api/public/hooks/plan-lifecycle',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksMicrosoftGraphWebhookRoute =
   ApiPublicHooksMicrosoftGraphWebhookRouteImport.update({
     id: '/api/public/hooks/microsoft-graph-webhook',
@@ -362,6 +369,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/daily-pulse': typeof ApiPublicHooksDailyPulseRoute
   '/api/public/hooks/generate-weekly-reports': typeof ApiPublicHooksGenerateWeeklyReportsRoute
   '/api/public/hooks/microsoft-graph-webhook': typeof ApiPublicHooksMicrosoftGraphWebhookRoute
+  '/api/public/hooks/plan-lifecycle': typeof ApiPublicHooksPlanLifecycleRoute
   '/api/public/hooks/process-platform-pulse': typeof ApiPublicHooksProcessPlatformPulseRoute
   '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
   '/api/public/hooks/purge-trash': typeof ApiPublicHooksPurgeTrashRoute
@@ -411,6 +419,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/daily-pulse': typeof ApiPublicHooksDailyPulseRoute
   '/api/public/hooks/generate-weekly-reports': typeof ApiPublicHooksGenerateWeeklyReportsRoute
   '/api/public/hooks/microsoft-graph-webhook': typeof ApiPublicHooksMicrosoftGraphWebhookRoute
+  '/api/public/hooks/plan-lifecycle': typeof ApiPublicHooksPlanLifecycleRoute
   '/api/public/hooks/process-platform-pulse': typeof ApiPublicHooksProcessPlatformPulseRoute
   '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
   '/api/public/hooks/purge-trash': typeof ApiPublicHooksPurgeTrashRoute
@@ -463,6 +472,7 @@ export interface FileRoutesById {
   '/api/public/hooks/daily-pulse': typeof ApiPublicHooksDailyPulseRoute
   '/api/public/hooks/generate-weekly-reports': typeof ApiPublicHooksGenerateWeeklyReportsRoute
   '/api/public/hooks/microsoft-graph-webhook': typeof ApiPublicHooksMicrosoftGraphWebhookRoute
+  '/api/public/hooks/plan-lifecycle': typeof ApiPublicHooksPlanLifecycleRoute
   '/api/public/hooks/process-platform-pulse': typeof ApiPublicHooksProcessPlatformPulseRoute
   '/api/public/hooks/process-reminders': typeof ApiPublicHooksProcessRemindersRoute
   '/api/public/hooks/purge-trash': typeof ApiPublicHooksPurgeTrashRoute
@@ -515,6 +525,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/daily-pulse'
     | '/api/public/hooks/generate-weekly-reports'
     | '/api/public/hooks/microsoft-graph-webhook'
+    | '/api/public/hooks/plan-lifecycle'
     | '/api/public/hooks/process-platform-pulse'
     | '/api/public/hooks/process-reminders'
     | '/api/public/hooks/purge-trash'
@@ -564,6 +575,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/daily-pulse'
     | '/api/public/hooks/generate-weekly-reports'
     | '/api/public/hooks/microsoft-graph-webhook'
+    | '/api/public/hooks/plan-lifecycle'
     | '/api/public/hooks/process-platform-pulse'
     | '/api/public/hooks/process-reminders'
     | '/api/public/hooks/purge-trash'
@@ -615,6 +627,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/daily-pulse'
     | '/api/public/hooks/generate-weekly-reports'
     | '/api/public/hooks/microsoft-graph-webhook'
+    | '/api/public/hooks/plan-lifecycle'
     | '/api/public/hooks/process-platform-pulse'
     | '/api/public/hooks/process-reminders'
     | '/api/public/hooks/purge-trash'
@@ -640,6 +653,7 @@ export interface RootRouteChildren {
   ApiPublicHooksDailyPulseRoute: typeof ApiPublicHooksDailyPulseRoute
   ApiPublicHooksGenerateWeeklyReportsRoute: typeof ApiPublicHooksGenerateWeeklyReportsRoute
   ApiPublicHooksMicrosoftGraphWebhookRoute: typeof ApiPublicHooksMicrosoftGraphWebhookRoute
+  ApiPublicHooksPlanLifecycleRoute: typeof ApiPublicHooksPlanLifecycleRoute
   ApiPublicHooksProcessPlatformPulseRoute: typeof ApiPublicHooksProcessPlatformPulseRoute
   ApiPublicHooksProcessRemindersRoute: typeof ApiPublicHooksProcessRemindersRoute
   ApiPublicHooksPurgeTrashRoute: typeof ApiPublicHooksPurgeTrashRoute
@@ -966,6 +980,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksProcessPlatformPulseRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/plan-lifecycle': {
+      id: '/api/public/hooks/plan-lifecycle'
+      path: '/api/public/hooks/plan-lifecycle'
+      fullPath: '/api/public/hooks/plan-lifecycle'
+      preLoaderRoute: typeof ApiPublicHooksPlanLifecycleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/microsoft-graph-webhook': {
       id: '/api/public/hooks/microsoft-graph-webhook'
       path: '/api/public/hooks/microsoft-graph-webhook'
@@ -1108,6 +1129,7 @@ const rootRouteChildren: RootRouteChildren = {
     ApiPublicHooksGenerateWeeklyReportsRoute,
   ApiPublicHooksMicrosoftGraphWebhookRoute:
     ApiPublicHooksMicrosoftGraphWebhookRoute,
+  ApiPublicHooksPlanLifecycleRoute: ApiPublicHooksPlanLifecycleRoute,
   ApiPublicHooksProcessPlatformPulseRoute:
     ApiPublicHooksProcessPlatformPulseRoute,
   ApiPublicHooksProcessRemindersRoute: ApiPublicHooksProcessRemindersRoute,

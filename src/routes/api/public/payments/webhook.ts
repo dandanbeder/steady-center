@@ -27,6 +27,42 @@ function extractItem(data: any) {
   return { priceId, productId, quantity, billingCycle };
 }
 
+function planAllowanceFromProduct(productId: string | undefined, qty: number): number {
+  // Mirrors LIMITS in src/lib/entitlements.ts. Kept here intentionally small —
+  // webhook handler has no client/shared deps.
+  if (productId === "team_plan") return 400 * Math.max(qty, 2);
+  if (productId === "pro_plan") return 400;
+  return 20; // free / unknown
+}
+
+async function resetCycleIfNew(
+  userId: string,
+  productId: string | undefined,
+  quantity: number,
+  periodStart: string | undefined | null,
+  periodEnd: string | undefined | null,
+) {
+  if (!periodStart || !periodEnd) return;
+  const supabase = getSupabase();
+  const { data: existing } = await supabase
+    .from("account_credits")
+    .select("current_cycle_start")
+    .eq("account_user_id", userId)
+    .maybeSingle();
+  const same =
+    existing?.current_cycle_start &&
+    new Date(existing.current_cycle_start as string).getTime() ===
+      new Date(periodStart).getTime();
+  if (same) return;
+  const allowance = planAllowanceFromProduct(productId, quantity);
+  await supabase.rpc("reset_cycle_allowance", {
+    _user_id: userId,
+    _allowance: allowance,
+    _start: periodStart,
+    _end: periodEnd,
+  });
+}
+
 async function handleSubscriptionCreated(data: any, env: PaddleEnv) {
   const { id, customerId, status, currentBillingPeriod, customData } = data;
   const userId = customData?.userId as string | undefined;
@@ -34,10 +70,15 @@ async function handleSubscriptionCreated(data: any, env: PaddleEnv) {
     console.error("[payments-webhook] No userId in customData");
     return;
   }
-  const { priceId, productId, quantity, billingCycle } = extractItem(data);
+  let { priceId, productId, quantity, billingCycle } = extractItem(data);
   if (!priceId || !productId) {
     console.warn("[payments-webhook] Skipping subscription: missing importMeta.externalId");
     return;
+  }
+  // Team minimum: if Paddle ever delivers a team item with qty<2, demote locally.
+  if (productId === "team_plan" && (quantity ?? 1) < 2) {
+    productId = "pro_plan";
+    quantity = 1;
   }
   const trialEnd =
     data.startedAt && data.firstBilledAt && data.startedAt !== data.firstBilledAt
@@ -65,17 +106,27 @@ async function handleSubscriptionCreated(data: any, env: PaddleEnv) {
       },
       { onConflict: "paddle_subscription_id" },
     );
+
+  // New paid sub → fresh cycle, set allowance, leave purchased credits.
+  await resetCycleIfNew(userId, productId, quantity ?? 1, currentBillingPeriod?.startsAt, currentBillingPeriod?.endsAt);
+  // Re-upgraded after a previous lock? Clear read-only flags now within new cap.
+  await getSupabase().rpc("clear_plan_locks", { _user_id: userId });
 }
 
 async function handleSubscriptionUpdated(data: any, env: PaddleEnv) {
   const { id, status, currentBillingPeriod, scheduledChange } = data;
-  const { priceId, productId, quantity, billingCycle } = extractItem(data);
+  let { priceId, productId, quantity, billingCycle } = extractItem(data);
   const supabase = getSupabase();
 
-  // past_due_since: stamp when first entering past_due, clear when leaving it.
+  // Team min enforcement: a Team sub at <2 seats becomes Pro.
+  if (productId === "team_plan" && (quantity ?? 2) < 2) {
+    productId = "pro_plan";
+    quantity = 1;
+  }
+
   const { data: existing } = await supabase
     .from("subscriptions")
-    .select("status, past_due_since")
+    .select("user_id, status, past_due_since, product_id, quantity")
     .eq("paddle_subscription_id", id)
     .eq("environment", env)
     .maybeSingle();
@@ -105,17 +156,32 @@ async function handleSubscriptionUpdated(data: any, env: PaddleEnv) {
     .update(update)
     .eq("paddle_subscription_id", id)
     .eq("environment", env);
+
+  const userId = existing?.user_id as string | undefined;
+  if (userId && (status === "active" || status === "trialing")) {
+    // Allowance resets on billing anniversary; purchased credits untouched.
+    await resetCycleIfNew(
+      userId, productId ?? (existing?.product_id as string | undefined),
+      quantity ?? (existing?.quantity as number | undefined) ?? 1,
+      currentBillingPeriod?.startsAt, currentBillingPeriod?.endsAt,
+    );
+    // Plan change that increases caps should unlock anything previously locked.
+    const planChanged = productId && existing?.product_id && productId !== existing.product_id;
+    const seatsGrew = quantity != null && (quantity as number) > ((existing?.quantity as number) ?? 0);
+    if (planChanged || seatsGrew) {
+      await supabase.rpc("clear_plan_locks", { _user_id: userId });
+    }
+    // A downgrade (Team→Pro, more seats removed, etc.) may now exceed caps.
+    if (planChanged || (quantity != null && (quantity as number) < ((existing?.quantity as number) ?? 0))) {
+      await supabase.rpc("apply_plan_downgrade", { _user_id: userId });
+    }
+  }
 }
 
 async function handleSubscriptionCanceled(data: any, env: PaddleEnv) {
   const supabase = getSupabase();
-  const { data: row } = await supabase
-    .from("subscriptions")
-    .select("user_id")
-    .eq("paddle_subscription_id", data.id)
-    .eq("environment", env)
-    .maybeSingle();
-
+  // Stays active until current_period_end. Do NOT apply read-only lock now —
+  // the lifecycle sweeper applies it once the period actually ends.
   await supabase
     .from("subscriptions")
     .update({
@@ -126,9 +192,6 @@ async function handleSubscriptionCanceled(data: any, env: PaddleEnv) {
     })
     .eq("paddle_subscription_id", data.id)
     .eq("environment", env);
-
-  const userId = (row?.user_id as string | undefined) ?? (data.customData?.userId as string | undefined);
-  if (userId) await applyDowngradeReadonly(userId);
 }
 
 async function handleTransactionPaymentFailed(data: any, env: PaddleEnv) {
@@ -151,13 +214,13 @@ async function handleTransactionPaymentFailed(data: any, env: PaddleEnv) {
     })
     .eq("paddle_subscription_id", subId)
     .eq("environment", env);
+  // Stays past_due through Paddle's retry window; sweeper drops to Free
+  // only after grace expires. Never suspend or delete here.
 }
 
 async function handleTransactionCompleted(data: any, env: PaddleEnv) {
   const subId = data.subscriptionId as string | undefined;
   if (!subId) return;
-  // A successful charge clears past_due flags. Status stays whatever Paddle says
-  // it is via subscription.updated, but we clear the grace counter eagerly.
   await getSupabase()
     .from("subscriptions")
     .update({
@@ -167,30 +230,6 @@ async function handleTransactionCompleted(data: any, env: PaddleEnv) {
     .eq("paddle_subscription_id", subId)
     .eq("environment", env)
     .eq("status", "past_due");
-}
-
-async function applyDowngradeReadonly(userId: string) {
-  const supabase = getSupabase();
-  const { data: businesses } = await supabase
-    .from("businesses")
-    .select("id")
-    .eq("owner_id", userId)
-    .order("created_at", { ascending: true });
-  const keepBiz = (businesses ?? []).slice(0, 1).map((b: any) => b.id);
-  const dropBiz = (businesses ?? []).slice(1).map((b: any) => b.id);
-  if (dropBiz.length) await supabase.from("businesses").update({ read_only: true }).in("id", dropBiz);
-  if (keepBiz.length) await supabase.from("businesses").update({ read_only: false }).in("id", keepBiz);
-
-  const { data: cals } = await supabase
-    .from("calendars")
-    .select("id")
-    .eq("owner_id", userId)
-    .neq("provider", "manual")
-    .order("created_at", { ascending: true });
-  const keepCal = (cals ?? []).slice(0, 1).map((c: any) => c.id);
-  const dropCal = (cals ?? []).slice(1).map((c: any) => c.id);
-  if (dropCal.length) await supabase.from("calendars").update({ read_only: true }).in("id", dropCal);
-  if (keepCal.length) await supabase.from("calendars").update({ read_only: false }).in("id", keepCal);
 }
 
 async function handleWebhook(req: Request, env: PaddleEnv) {

@@ -70,6 +70,7 @@ export type Database = {
           current_cycle_end: string | null
           current_cycle_start: string | null
           id: string
+          purchased_credits: number
           updated_at: string
         }
         Insert: {
@@ -80,6 +81,7 @@ export type Database = {
           current_cycle_end?: string | null
           current_cycle_start?: string | null
           id?: string
+          purchased_credits?: number
           updated_at?: string
         }
         Update: {
@@ -90,6 +92,7 @@ export type Database = {
           current_cycle_end?: string | null
           current_cycle_start?: string | null
           id?: string
+          purchased_credits?: number
           updated_at?: string
         }
         Relationships: []
@@ -1871,6 +1874,7 @@ export type Database = {
           deletion_requested_by: string | null
           deletion_scheduled_at: string | null
           density: string
+          downgrade_pending_at: string | null
           font_size: string
           full_name: string | null
           hear_about_us: string | null
@@ -1916,6 +1920,7 @@ export type Database = {
           deletion_requested_by?: string | null
           deletion_scheduled_at?: string | null
           density?: string
+          downgrade_pending_at?: string | null
           font_size?: string
           full_name?: string | null
           hear_about_us?: string | null
@@ -1961,6 +1966,7 @@ export type Database = {
           deletion_requested_by?: string | null
           deletion_scheduled_at?: string | null
           density?: string
+          downgrade_pending_at?: string | null
           font_size?: string
           full_name?: string | null
           hear_about_us?: string | null
@@ -2773,6 +2779,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_plan_downgrade: { Args: { _user_id: string }; Returns: undefined }
       bump_account_usage: {
         Args: { p_biz: number; p_cal: number; p_user: string }
         Returns: undefined
@@ -2782,6 +2789,7 @@ export type Database = {
         Args: { _id: string; _min_role: string; _type: string; _user: string }
         Returns: boolean
       }
+      clear_plan_locks: { Args: { _user_id: string }; Returns: undefined }
       current_membership_role: { Args: { p_business: string }; Returns: string }
       empty_my_trash: {
         Args: never
@@ -2885,8 +2893,21 @@ export type Database = {
         Returns: boolean
       }
       refresh_analytics_for_day: { Args: { p_day: string }; Returns: undefined }
+      refresh_downgrade_pending: {
+        Args: { _user_id: string }
+        Returns: undefined
+      }
       refresh_subscription_snapshot_for_day: {
         Args: { p_day: string }
+        Returns: undefined
+      }
+      reset_cycle_allowance: {
+        Args: {
+          _allowance: number
+          _end: string
+          _start: string
+          _user_id: string
+        }
         Returns: undefined
       }
       resolve_comment_parent: {
@@ -2902,6 +2923,52 @@ export type Database = {
       seed_default_task_stages: {
         Args: { p_list_id: string }
         Returns: undefined
+      }
+      set_business_active: {
+        Args: { _active: boolean; _id: string }
+        Returns: {
+          archived_at: string | null
+          color: string
+          created_at: string
+          created_by: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          owner_id: string
+          priority_labels: Json
+          read_only: boolean
+          sort_order: number
+          task_statuses: Json
+        }
+        SetofOptions: {
+          from: "*"
+          to: "businesses"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      set_calendar_active: {
+        Args: { _active: boolean; _id: string }
+        Returns: {
+          business_id: string | null
+          color: string
+          created_at: string
+          created_by: string | null
+          external_id: string | null
+          id: string
+          last_synced_at: string | null
+          name: string
+          owner_id: string
+          provider: string
+          read_only: boolean
+          sync_token: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "calendars"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       start_free_trial: {
         Args: { _env: string; _plan: string }
@@ -2930,6 +2997,15 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      sweep_plan_lifecycle: {
+        Args: never
+        Returns: {
+          cancel_period_ended: number
+          past_due_dropped: number
+          team_to_pro: number
+          trial_expired: number
+        }[]
       }
       transfer_team_ownership: {
         Args: { p_business: string; p_new_owner: string }
