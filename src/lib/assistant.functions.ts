@@ -1,9 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
+import { routeModel } from "./ai-routing";
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-const MODEL = "claude-sonnet-4-5";
+// Reasoning-tier route: assistant does cross-content asks + tool planning.
+const ROUTE = routeModel("assistant");
+const MODEL = ROUTE.model;
 const MAX_ITER = 6;
 
 // ---------- Tool catalog (read + propose only; no writes here) ----------
@@ -274,7 +277,7 @@ async function callClaude(messages: AnthropicMsg[], system: string): Promise<any
     },
     body: JSON.stringify({
       model: MODEL,
-      max_tokens: 1500,
+      max_tokens: ROUTE.maxOutputTokens,
       system,
       tools: TOOLS,
       messages,
