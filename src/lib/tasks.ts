@@ -86,6 +86,8 @@ export type Task = {
   stage_id: string | null;
   /** Position within its stage column. */
   stage_position: number;
+  /** The note this task was created from (null if not note-sourced). FK ON DELETE SET NULL. */
+  source_note_id: string | null;
 };
 
 export type TaskAssignment = {
