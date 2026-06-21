@@ -99,6 +99,16 @@ export function AppShell({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // First-login: send brand-new users to Learn once. Skippable from there.
+  useEffect(() => {
+    if (typeof window === "undefined" || !user?.id) return;
+    const key = welcomedStorageKey(user.id);
+    if (window.localStorage.getItem(key)) return;
+    const skipOn = ["/learn", "/auth", "/accept-terms", "/onboarding"];
+    if (skipOn.some((p) => pathname === p || pathname.startsWith(p + "/"))) return;
+    navigate({ to: "/learn" });
+  }, [user?.id, pathname, navigate]);
+
   const toggleCollapsed = () => {
     setCollapsed((c) => {
       const next = !c;
@@ -344,6 +354,47 @@ export function AppShell({ children }: { children: ReactNode }) {
               </span>
             )}
           </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              setAssistantPrompt(undefined);
+              setAssistantOpen(true);
+            }}
+            aria-label="Open assistant"
+            title="Heartbeat Assistant"
+            className="h-9 w-9 text-muted-foreground hover:text-foreground shrink-0"
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Help"
+                title="Help"
+                className="h-9 w-9 text-muted-foreground hover:text-foreground shrink-0"
+              >
+                <HelpCircle className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem asChild>
+                <Link to="/learn" className="gap-2">
+                  <GraduationCap className="h-4 w-4" /> Learn / Tutorial
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/ai" className="gap-2">
+                  <Sparkles className="h-4 w-4" /> AI &amp; credits
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link to="/settings" className="gap-2">
+                  <Settings className="h-4 w-4" /> Settings
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button
             variant="ghost"
             size="icon"
