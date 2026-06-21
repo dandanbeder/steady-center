@@ -126,41 +126,47 @@ function LearnPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
-  const walkthroughs = [
+  const walkthroughs: Array<{
+    icon: typeof Building2;
+    title: string;
+    body: string;
+    tourId: keyof typeof import("@/lib/tours").TOURS;
+    cta: string;
+  }> = [
     {
       icon: Building2,
-      title: "Add your businesses",
-      body: "One Heartbeat. Many accounts. Tag everything with the business it belongs to.",
-      to: "/settings",
-      cta: "Open Accounts",
+      title: "Accounts",
+      body: "Accounts keep each business separate but together. Tag everything with the business it belongs to.",
+      tourId: "accounts",
+      cta: "Tour Accounts",
     },
     {
       icon: CalendarIcon,
-      title: "Connect a calendar",
-      body: "Bring Google or Microsoft in so Today, Plan and Meetings have the full picture.",
-      to: "/calendar",
-      cta: "Connect calendar",
+      title: "Calendar",
+      body: "Connect Google or Microsoft so Today, Plan and Meetings work from your real schedule.",
+      tourId: "calendar",
+      cta: "Tour Calendar",
     },
     {
       icon: Target,
-      title: "Capture tasks → roll into an Outcome",
-      body: "Create an outcome, link tasks to it, watch progress fill in as you finish them.",
-      to: "/outcomes",
-      cta: "Try outcomes",
+      title: "Outcomes",
+      body: "Bigger goals your tasks roll up into. Create one, link tasks, watch progress fill.",
+      tourId: "outcomes",
+      cta: "Tour Outcomes",
     },
     {
       icon: Sparkles,
-      title: "Try the AI",
-      body: "Ask a question, summarise a meeting, or plan your day. The assistant lives in the top bar.",
-      to: "/ai",
-      cta: "Open AI",
+      title: "The AI assistant",
+      body: "Ask, summarise, plan. It only acts after you confirm.",
+      tourId: "ai",
+      cta: "Tour AI",
     },
     {
       icon: Sunrise,
-      title: "Your Daily Pulse",
+      title: "Daily Pulse",
       body: "A calm morning brief — what's on, what's overdue, what matters today.",
-      to: "/today",
-      cta: "See Today",
+      tourId: "today",
+      cta: "Tour Today",
     },
   ];
 
@@ -243,17 +249,20 @@ function LearnPage() {
         </Card>
       </header>
 
-      {/* Start here */}
+      {/* Start here — each card launches a guided tour on the destination page */}
       <section className="space-y-4">
         <div>
           <h2 className="text-xl font-serif text-foreground">Start here</h2>
           <p className="text-sm text-muted-foreground">
-            The essentials — short and on purpose. Open whichever calls to you.
+            Each card opens the page and runs a short, skippable tour — 2 to 4 gentle steps,
+            then it gets out of the way.
           </p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {walkthroughs.map((w) => {
             const Icon = w.icon;
+            const done = user?.id ? isTourDone(user.id, w.tourId) : false;
+            const route = TOURS[w.tourId].route;
             return (
               <Card
                 key={w.title}
@@ -263,11 +272,28 @@ function LearnPage() {
                   <div className="flex items-center gap-2 text-foreground">
                     <Icon className="h-4 w-4 text-primary" />
                     <h3 className="font-medium text-sm">{w.title}</h3>
+                    {done && (
+                      <span className="ml-auto inline-flex items-center gap-1 text-[11px] text-primary">
+                        <CheckCircle2 className="h-3 w-3" /> Done
+                      </span>
+                    )}
                   </div>
                   <p className="text-sm text-muted-foreground leading-relaxed">{w.body}</p>
-                  <Button asChild variant="outline" size="sm">
-                    <Link to={w.to}>{w.cta}</Link>
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant={done ? "outline" : "default"}
+                      onClick={() => {
+                        if (done && user?.id) resetTour(user.id, w.tourId);
+                        navigate({ to: route, search: { tour: w.tourId } as never });
+                      }}
+                    >
+                      {done ? "Replay tour" : w.cta}
+                    </Button>
+                    <Button asChild size="sm" variant="ghost">
+                      <Link to={route}>Just open</Link>
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             );
