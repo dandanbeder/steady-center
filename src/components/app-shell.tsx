@@ -161,7 +161,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {NAV.filter((item) => !(localSupportSession && item.to === "/journal")).map((item) => {
         const Icon = item.icon;
         const active = isActive(item.to);
-        const showBadge = item.to === "/inbox" && inboxCount > 0;
+        const showBadge = item.to === "/capture" && inboxCount > 0;
         return (
           <Link
             key={item.to}
