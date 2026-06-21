@@ -124,7 +124,10 @@ function UserDetailPage() {
             {isSelf && <Badge variant="outline">you</Badge>}
           </div>
         </div>
-        <ViewAsButton targetUserId={userId} />
+        <div className="flex gap-2">
+          <ViewAsButton targetUserId={userId} />
+          {!isSelf && <RequestJournalAccessButton targetUserId={userId} />}
+        </div>
       </div>
 
       <Customer360Sections userId={userId} onDone={invalidate} />
