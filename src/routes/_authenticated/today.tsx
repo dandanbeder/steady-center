@@ -163,9 +163,9 @@ function TodayPage() {
           ? <>You're focused on <span className="text-accent">{active.name}</span> today.</>
           : "Looking across everything today."}
       </p>
-      <div className="mt-10"><DailyPulseCard /></div>
+      <div className="mt-10" data-tour="daily-pulse"><DailyPulseCard /></div>
 
-      <section className="mt-8 rounded-xl border border-border bg-card/40 px-4 pt-3 pb-2" style={{ boxShadow: "var(--shadow-soft)" }}>
+      <section data-tour="week-pulse" className="mt-8 rounded-xl border border-border bg-card/40 px-4 pt-3 pb-2" style={{ boxShadow: "var(--shadow-soft)" }}>
         <div className="flex items-baseline justify-between mb-1">
           <h2 className="text-xs uppercase tracking-wider text-muted-foreground">Week pulse</h2>
           <span className="text-[10px] text-muted-foreground/70">tap a day</span>

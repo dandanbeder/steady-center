@@ -133,7 +133,7 @@ function OutcomesPage() {
             Bigger goals your tasks roll up into. Quietly powerful.
           </p>
         </div>
-        <Button onClick={() => setCreating(true)} className="gap-2">
+        <Button data-tour="new-outcome" onClick={() => setCreating(true)} className="gap-2">
           <Plus className="h-4 w-4" /> New outcome
         </Button>
       </header>

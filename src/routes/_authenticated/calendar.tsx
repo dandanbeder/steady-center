@@ -681,7 +681,7 @@ function CalendarPage() {
                   <CalendarPlus className="h-4 w-4 mr-1.5" />
                   Create calendar
                 </Button>
-                <Button asChild size="sm" variant="outline">
+                <Button data-tour="calendar-connect" asChild size="sm" variant="outline">
                   <Link to="/settings">Connect Google / Outlook</Link>
                 </Button>
 

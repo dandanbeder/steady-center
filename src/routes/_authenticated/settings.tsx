@@ -264,6 +264,7 @@ function SettingsPage() {
                   if (!newName.trim()) return;
                   createMut.mutate();
                 }}
+                data-tour="new-account"
                 className="rounded-2xl border border-border bg-card p-6 space-y-4"
                 style={{ boxShadow: "var(--shadow-soft)" }}
               >
