@@ -10,6 +10,10 @@ export type PerTypeChannels = {
   weekly_review: ChannelPair;
   meeting_summary_ready: ChannelPair;
   tagged: ChannelPair;
+  assigned_to_me: ChannelPair;
+  access_share_requests: ChannelPair;
+  security_events: ChannelPair;
+  payment_failed: ChannelPair;
 };
 export type NotificationEvents = {
   event_reminders: boolean;
@@ -18,16 +22,23 @@ export type NotificationEvents = {
   weekly_review: boolean;
   meeting_summary_ready: boolean;
   tagged: boolean;
+  assigned_to_me: boolean;
+  access_share_requests: boolean;
+  security_events: boolean;
+  payment_failed: boolean;
   meeting_extra_lead_minutes: number | null;
   meeting_quiet_hours_bypass: boolean;
   // Daily Pulse
   morning_pulse_enabled: boolean;
-  morning_pulse_hour: number;      // 0-23 in user's timezone
-  morning_pulse_minute: number;    // 0 or 30
-  morning_pulse_email: boolean;    // also email the morning brief
+  morning_pulse_hour: number;
+  morning_pulse_minute: number;
+  morning_pulse_email: boolean;
   evening_winddown_enabled: boolean;
   evening_winddown_hour: number;
   evening_winddown_minute: number;
+  // Selective-by-default master switches
+  selective_mode: boolean;          // when on, only push-worthy types ever push
+  batch_low_priority: boolean;      // roll non-urgent items into the Daily Pulse instead of pinging
   // Per-type channel routing (which channels deliver each type)
   type_channels: PerTypeChannels;
 };
@@ -40,11 +51,17 @@ export type NotificationPrefs = {
 };
 
 const DEFAULT_TYPE_CHANNELS: PerTypeChannels = {
-  event_reminders: { email: true, browser: true },
-  task_due: { email: true, browser: true },
-  weekly_review: { email: true, browser: false },
+  // Push-worthy: time-sensitive, from/about another person, or needs my action
+  event_reminders:       { email: true,  browser: true },
   meeting_summary_ready: { email: false, browser: true },
-  tagged: { email: true, browser: true },
+  tagged:                { email: true,  browser: true },
+  assigned_to_me:        { email: true,  browser: true },
+  access_share_requests: { email: true,  browser: true },
+  security_events:       { email: true,  browser: true },
+  payment_failed:        { email: true,  browser: true },
+  // Batched / in-app only by default
+  task_due:              { email: false, browser: false },
+  weekly_review:         { email: true,  browser: false },
 };
 
 const DEFAULT_NOTIF: NotificationPrefs = {
@@ -56,6 +73,10 @@ const DEFAULT_NOTIF: NotificationPrefs = {
     weekly_review: true,
     meeting_summary_ready: true,
     tagged: true,
+    assigned_to_me: true,
+    access_share_requests: true,
+    security_events: true,
+    payment_failed: true,
     meeting_extra_lead_minutes: null,
     meeting_quiet_hours_bypass: true,
     morning_pulse_enabled: true,
@@ -65,6 +86,8 @@ const DEFAULT_NOTIF: NotificationPrefs = {
     evening_winddown_enabled: true,
     evening_winddown_hour: 17,
     evening_winddown_minute: 30,
+    selective_mode: true,
+    batch_low_priority: true,
     type_channels: DEFAULT_TYPE_CHANNELS,
   },
   quiet_enabled: false,
