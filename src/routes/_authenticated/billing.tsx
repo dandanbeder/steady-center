@@ -403,7 +403,7 @@ function FreePlanView({
     setBusy(plan);
     try {
       await startFn({ data: { plan, environment: env } });
-      toast.success(`${plan === "pro" ? "Pro" : "Team"} trial started — 7 days, no card required`);
+      toast.success(`${plan === "pro" ? "Pro" : "Team"} trial started — 14 days, no card required`);
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["subscription"] }),
         qc.invalidateQueries({ queryKey: ["plan-context"] }),
@@ -427,7 +427,7 @@ function FreePlanView({
         <div className="text-center">
           <h1 className="text-3xl">You're on the Free plan</h1>
           <p className="mt-2 text-muted-foreground">
-            Try Pro or Team free for 7 days. No card required.
+            Try Pro or Team free for 14 days. No card required.
           </p>
         </div>
 
@@ -444,7 +444,7 @@ function FreePlanView({
                   onClick={() => handleStart("pro")}
                   disabled={busy !== null}
                 >
-                  {busy === "pro" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Start 7-day Pro trial"}
+                  {busy === "pro" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Start 14-day Pro trial"}
                 </Button>
               </CardContent>
             </Card>
@@ -459,7 +459,7 @@ function FreePlanView({
                   onClick={() => handleStart("team")}
                   disabled={busy !== null}
                 >
-                  {busy === "team" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Start 7-day Team trial"}
+                  {busy === "team" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Start 14-day Team trial"}
                 </Button>
               </CardContent>
             </Card>
