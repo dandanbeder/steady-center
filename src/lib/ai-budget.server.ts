@@ -13,6 +13,8 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { getUserPlanContext, requireAiAction } from "./entitlements.server";
 import { UPGRADE_REQUIRED_PREFIX } from "./entitlements";
+import type { AiActionType } from "./credits-types";
+export type { AiActionType } from "./credits-types";
 
 function monthKey(d = new Date()): string {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
