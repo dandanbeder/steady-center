@@ -45,6 +45,7 @@ function dayStartEndUtc(dateStr: string, tz: string): { start: Date; end: Date }
 async function callAi(
   systemPrompt: string,
   userPrompt: string,
+  userId?: string,
 ): Promise<string> {
   const apiKey = process.env.LOVABLE_API_KEY;
   if (!apiKey) return "";
@@ -62,6 +63,21 @@ async function callAi(
     });
     if (!res.ok) return "";
     const j = await res.json();
+    if (userId) {
+      try {
+        const { logAiUsageEvent } = await import("./ai-budget.server");
+        await logAiUsageEvent({
+          userId,
+          actionType: "daily_pulse",
+          model: "google/gemini-3-flash-preview",
+          tokensIn: j?.usage?.prompt_tokens ?? 0,
+          tokensOut: j?.usage?.completion_tokens ?? 0,
+          creditsCharged: 1,
+        });
+      } catch {
+        /* ignore */
+      }
+    }
     return (j?.choices?.[0]?.message?.content ?? "").toString().trim();
   } catch {
     return "";
