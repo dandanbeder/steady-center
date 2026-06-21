@@ -525,6 +525,57 @@ function CalendarPage() {
 
       <aside className={cn("w-full lg:w-72 shrink-0 space-y-6 order-1 lg:order-2", expanded && "hidden")}>
         <div>
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+            Colour by
+          </h3>
+          <div className="inline-flex rounded-lg border border-border overflow-hidden">
+            {(["account", "calendar"] as ColorBy[]).map((m) => (
+              <button
+                key={m}
+                onClick={() => setColorBy(m)}
+                className={cn(
+                  "px-3 py-1.5 text-xs capitalize",
+                  colorBy === m ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+                )}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-1.5">
+            {colorBy === "account"
+              ? "Events share their account colour."
+              : "Events use each calendar's colour."}
+          </p>
+        </div>
+
+        {visibleBusinesses.length > 0 && (
+          <div>
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+              Accounts
+            </h3>
+            <ul className="space-y-1.5">
+              {visibleBusinesses.map((b) => (
+                <AccountRow
+                  key={b.id}
+                  biz={b}
+                  on={!hiddenBiz.has(b.id)}
+                  onToggle={() => toggleHiddenBiz(b.id)}
+                  onColorChange={async (color) => {
+                    try {
+                      await updateBusiness(b.id, { color });
+                      qc.invalidateQueries({ queryKey: ["businesses"] });
+                    } catch (e) {
+                      toast.error(e instanceof Error ? e.message : "Failed to update");
+                    }
+                  }}
+                />
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
               Calendars
