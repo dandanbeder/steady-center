@@ -271,7 +271,7 @@ function InboxCard({
       qc.invalidateQueries({ queryKey: ["inbox"] });
       qc.invalidateQueries({ queryKey: ["inbox", "count"] });
       qc.invalidateQueries();
-      toast.success("Filed from Inbox");
+      toast.success("Filed from Capture");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not accept");
     } finally {
