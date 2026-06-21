@@ -2209,6 +2209,7 @@ export type Database = {
           created_at: string
           daily_capacity_hours: number
           default_calendar_view: string
+          default_landing: string
           deletion_requested_by: string | null
           deletion_scheduled_at: string | null
           density: string
@@ -2216,6 +2217,7 @@ export type Database = {
           font_size: string
           full_name: string | null
           hear_about_us: string | null
+          hour_format: string
           id: string
           is_protected_primary: boolean
           journal_lock_enabled: boolean
@@ -2253,6 +2255,7 @@ export type Database = {
           trial_used_env: string | null
           updated_at: string
           warned_by: string | null
+          week_start_day: number
           weekly_review_day: number
           weekly_review_enabled: boolean
           weekly_review_hour: number
@@ -2265,6 +2268,7 @@ export type Database = {
           created_at?: string
           daily_capacity_hours?: number
           default_calendar_view?: string
+          default_landing?: string
           deletion_requested_by?: string | null
           deletion_scheduled_at?: string | null
           density?: string
@@ -2272,6 +2276,7 @@ export type Database = {
           font_size?: string
           full_name?: string | null
           hear_about_us?: string | null
+          hour_format?: string
           id: string
           is_protected_primary?: boolean
           journal_lock_enabled?: boolean
@@ -2309,6 +2314,7 @@ export type Database = {
           trial_used_env?: string | null
           updated_at?: string
           warned_by?: string | null
+          week_start_day?: number
           weekly_review_day?: number
           weekly_review_enabled?: boolean
           weekly_review_hour?: number
@@ -2321,6 +2327,7 @@ export type Database = {
           created_at?: string
           daily_capacity_hours?: number
           default_calendar_view?: string
+          default_landing?: string
           deletion_requested_by?: string | null
           deletion_scheduled_at?: string | null
           density?: string
@@ -2328,6 +2335,7 @@ export type Database = {
           font_size?: string
           full_name?: string | null
           hear_about_us?: string | null
+          hour_format?: string
           id?: string
           is_protected_primary?: boolean
           journal_lock_enabled?: boolean
@@ -2365,6 +2373,7 @@ export type Database = {
           trial_used_env?: string | null
           updated_at?: string
           warned_by?: string | null
+          week_start_day?: number
           weekly_review_day?: number
           weekly_review_enabled?: boolean
           weekly_review_hour?: number

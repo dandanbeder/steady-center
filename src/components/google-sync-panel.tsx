@@ -106,7 +106,7 @@ export function GoogleSyncPanel({ businesses }: Props) {
             <CalendarIcon className="h-4 w-4" /> Google Calendar
           </h3>
           <p className="text-xs text-muted-foreground">
-            Two-way sync. Events tagged with the business you import them into.
+            Two-way sync. Events tagged with the account you import them into.
           </p>
         </div>
         <Button size="sm" variant="outline" onClick={() => setOpen((v) => !v)}>

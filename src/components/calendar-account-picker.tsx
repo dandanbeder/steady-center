@@ -20,8 +20,8 @@ import {
  * Calendar → Account mapping picker.
  *
  * Differs from the generic AccountSelector in three ways:
- * - When unset, shows an action-style "Assign to a business…" placeholder.
- * - "No business" option is explicit and labelled "Personal (no business)".
+ * - When unset, shows an action-style "Assign to an account…" placeholder.
+ * - "No business" option is explicit and labelled "Personal (no account)".
  * - When the user has no Accounts, renders a CTA linking to settings.
  *
  * RLS: `businesses` is already filtered to the signed-in user.
@@ -41,10 +41,10 @@ export function CalendarAccountPicker({
   const hasNone = businesses.length === 0;
 
   // When unset (null), use an action-style placeholder rather than a passive
-  // label. Picking "Personal (no business)" persists null too — we can't
+  // label. Picking "Personal (no account)" persists null too — we can't
   // distinguish "unassigned" from "personal" once saved, so the trigger
   // keeps prompting until a business is chosen.
-  const triggerLabel = active ? active.name : "Assign to a business…";
+  const triggerLabel = active ? active.name : "Assign to an account…";
   const triggerTone = active ? "text-foreground" : "text-primary";
 
   return (
@@ -77,7 +77,7 @@ export function CalendarAccountPicker({
               <Link to="/settings" className="flex items-start gap-2">
                 <Plus className="h-3.5 w-3.5 mt-0.5 shrink-0" />
                 <div className="flex flex-col">
-                  <span>Create a business to assign</span>
+                  <span>Create an account to assign</span>
                   <span className="text-xs text-muted-foreground">
                     You don&apos;t have any Accounts yet.
                   </span>
@@ -101,7 +101,7 @@ export function CalendarAccountPicker({
           <DropdownMenuItem onClick={() => onChange(null)}>
             <span className="h-2.5 w-2.5 rounded-full mr-2 bg-muted-foreground/40 shrink-0" />
             <div className="flex flex-col">
-              <span>Personal (no business)</span>
+              <span>Personal (no account)</span>
               <span className="text-xs text-muted-foreground">
                 Events stay visible but aren&apos;t tied to any Account.
               </span>
@@ -119,7 +119,7 @@ export function CalendarAccountPicker({
             </span>
           </TooltipTrigger>
           <TooltipContent side="top" className="max-w-xs">
-            Events from this calendar are tagged with this business.
+            Events from this calendar are tagged with this account.
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
