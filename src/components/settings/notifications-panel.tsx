@@ -178,6 +178,70 @@ export function NotificationsPanel() {
               else setChannel("browser", false);
             }}
           />
+          {/* SMS — gated on having a mobile number on the profile. */}
+          <div className="flex items-start justify-between gap-4 py-1">
+            <div className="min-w-0 flex items-start gap-3">
+              <span className="mt-0.5 text-muted-foreground">
+                <MessageSquare className="h-4 w-4" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-sm font-medium leading-tight">SMS</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Time-critical pings to your mobile. Reserved for high-priority alerts;
+                  carrier rates may apply.
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={hasPhone && draft.channels.sms}
+              onCheckedChange={(v) => setChannel("sms", v)}
+              disabled={!hasPhone}
+              aria-label={`SMS, ${draft.channels.sms ? "on" : "off"}`}
+            />
+          </div>
+          {!hasPhone ? (
+            <div className="rounded-md border border-dashed border-border bg-muted/30 p-3 space-y-2">
+              <p className="text-xs text-muted-foreground">
+                Add a mobile number to enable SMS alerts. We&apos;ll only use it for
+                notifications you opt into below.
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  type="tel"
+                  inputMode="tel"
+                  placeholder="+1 555 123 4567"
+                  value={phoneDraft}
+                  onChange={(e) => setPhoneDraft(e.target.value)}
+                  className="max-w-xs"
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={savePhone.isPending || !phoneDraft.trim()}
+                  onClick={() => savePhone.mutate(phoneDraft.trim() || null)}
+                >
+                  {savePhone.isPending ? "Saving…" : "Save number"}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground pl-7">
+              <span>Mobile on file: <span className="font-mono text-foreground">{phone}</span></span>
+              <button
+                type="button"
+                className="text-xs underline hover:text-foreground"
+                onClick={() => {
+                  if (confirm("Remove this number? SMS notifications will be turned off.")) {
+                    setChannel("sms", false);
+                    savePhone.mutate(null);
+                    setPhoneDraft("");
+                  }
+                }}
+              >
+                Remove
+              </button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
