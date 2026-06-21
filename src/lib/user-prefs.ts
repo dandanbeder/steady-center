@@ -82,10 +82,24 @@ export async function getNotificationPrefs(): Promise<NotificationPrefs> {
     .maybeSingle();
   if (error) throw error;
   if (!data) return DEFAULT_NOTIF;
+  const rawChannels = (data.channels as Record<string, unknown>) ?? {};
+  const rawEvents = (data.events as Record<string, unknown>) ?? {};
+  const rawTypeChannels = (rawEvents.type_channels as Partial<PerTypeChannels>) ?? {};
   return {
-    channels: { ...DEFAULT_NOTIF.channels, ...((data.channels as object) ?? {}) } as NotificationChannels,
-    events: { ...DEFAULT_NOTIF.events, ...((data.events as object) ?? {}) } as NotificationEvents,
+    channels: {
+      email: typeof rawChannels.email === "boolean" ? rawChannels.email : DEFAULT_NOTIF.channels.email,
+      browser: typeof rawChannels.browser === "boolean" ? rawChannels.browser : DEFAULT_NOTIF.channels.browser,
+    },
+    events: {
+      ...DEFAULT_NOTIF.events,
+      ...rawEvents,
+      type_channels: { ...DEFAULT_TYPE_CHANNELS, ...rawTypeChannels },
+    } as NotificationEvents,
     quiet_enabled: data.quiet_enabled,
+    quiet_start: data.quiet_start,
+    quiet_end: data.quiet_end,
+  };
+}
     quiet_start: data.quiet_start,
     quiet_end: data.quiet_end,
   };
