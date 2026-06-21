@@ -212,7 +212,9 @@ export async function getAiUsageThisMonth(): Promise<{ cents: number; tokens: nu
 // ---------------- Working hours ----------------
 export type WorkingHours = {
   work_start_hour: number;
+  work_start_minute: number;
   work_end_hour: number;
+  work_end_minute: number;
   work_days: number[]; // 0=Sun..6=Sat
   daily_capacity_hours: number;
 };
@@ -222,21 +224,28 @@ export async function getWorkingHours(): Promise<WorkingHours> {
   if (!u.user) throw new Error("Not signed in");
   const { data, error } = await supabase
     .from("profiles")
-    .select("work_start_hour, work_end_hour, work_days, daily_capacity_hours")
+    .select("work_start_hour, work_start_minute, work_end_hour, work_end_minute, work_days, daily_capacity_hours")
     .eq("id", u.user.id)
     .maybeSingle();
   if (error) throw error;
+  const row = (data ?? {}) as Record<string, unknown>;
   return {
-    work_start_hour: data?.work_start_hour ?? 9,
-    work_end_hour: data?.work_end_hour ?? 17,
-    work_days: (data?.work_days as number[]) ?? [1, 2, 3, 4, 5],
-    daily_capacity_hours: Number(data?.daily_capacity_hours ?? 6),
+    work_start_hour: (row.work_start_hour as number) ?? 9,
+    work_start_minute: (row.work_start_minute as number) ?? 0,
+    work_end_hour: (row.work_end_hour as number) ?? 17,
+    work_end_minute: (row.work_end_minute as number) ?? 0,
+    work_days: (row.work_days as number[]) ?? [1, 2, 3, 4, 5],
+    daily_capacity_hours: Number(row.daily_capacity_hours ?? 6),
   };
 }
 
 export async function saveWorkingHours(w: WorkingHours) {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) throw new Error("Not signed in");
-  const { error } = await supabase.from("profiles").update(w).eq("id", u.user.id);
+  const { error } = await supabase
+    .from("profiles")
+    .update(w as never)
+    .eq("id", u.user.id);
   if (error) throw error;
 }
+
