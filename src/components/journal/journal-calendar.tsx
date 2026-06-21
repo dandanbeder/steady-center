@@ -86,5 +86,4 @@ export function JournalCalendar({ entryDates, onPick }: Props) {
       </p>
     </div>
   );
-  void isSameDay;
 }
