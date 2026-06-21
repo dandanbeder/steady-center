@@ -69,6 +69,7 @@ export type Database = {
           credit_balance: number
           current_cycle_end: string | null
           current_cycle_start: string | null
+          hard_stop_alerted_at: string | null
           id: string
           low_balance_alerted_at: string | null
           low_balance_threshold: number
@@ -83,6 +84,7 @@ export type Database = {
           credit_balance?: number
           current_cycle_end?: string | null
           current_cycle_start?: string | null
+          hard_stop_alerted_at?: string | null
           id?: string
           low_balance_alerted_at?: string | null
           low_balance_threshold?: number
@@ -97,6 +99,7 @@ export type Database = {
           credit_balance?: number
           current_cycle_end?: string | null
           current_cycle_start?: string | null
+          hard_stop_alerted_at?: string | null
           id?: string
           low_balance_alerted_at?: string | null
           low_balance_threshold?: number
