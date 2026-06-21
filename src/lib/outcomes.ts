@@ -17,7 +17,7 @@ export const OUTCOME_STATUS_OPTIONS: Array<{
 }> = [
   { value: "in_progress", label: "In progress" },
   { value: "at_risk", label: "At risk" },
-  { value: "achieved", label: "Achieved" },
+  { value: "achieved", label: "Done" },
   { value: "archived", label: "Archived" },
 ];
 
