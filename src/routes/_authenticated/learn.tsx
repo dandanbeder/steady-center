@@ -70,39 +70,81 @@ function LearnPage() {
   const hasOutcome = (outcomesQ.data ?? []).length > 0;
   const triedAi = ((aiUsageQ.data?.items ?? []) as unknown[]).length > 0;
 
-  const checklist = [
+  const checklist: Array<{
+    id: string;
+    label: string;
+    done: boolean;
+    tourId: keyof typeof TOURS;
+    hint: string;
+  }> = [
     {
       id: "business",
       label: "Add your businesses",
       done: hasBusinesses,
-      to: "/settings",
+      tourId: "accounts",
       hint: "Settings → Accounts",
     },
     {
       id: "calendar",
       label: "Connect a calendar",
       done: hasCalendar,
-      to: "/calendar",
+      tourId: "calendar",
       hint: "Calendar → Connect Google or Microsoft",
     },
     {
       id: "outcome",
       label: "Create your first outcome",
       done: hasOutcome,
-      to: "/outcomes",
+      tourId: "outcomes",
       hint: "Outcomes → New outcome",
     },
     {
       id: "ai",
       label: "Try the AI",
       done: triedAi,
-      to: "/ai",
+      tourId: "ai",
       hint: "Open the assistant — ask, summarise, plan",
     },
   ];
 
   const doneCount = checklist.filter((c) => c.done).length;
   const allDone = doneCount === checklist.length;
+  const progressPct = Math.round((doneCount / checklist.length) * 100);
+
+  // Per-user dismissals (localStorage keyed by user id — client-side, per user)
+  const checklistCollapseKey = user?.id ? `heartbeat:learn:checklist-collapsed:${user.id}` : "";
+  const helpDismissKey = user?.id ? `heartbeat:learn:help-dismissed:${user.id}` : "";
+  const [checklistCollapsed, setChecklistCollapsed] = useState(false);
+  const [helpDismissed, setHelpDismissed] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !user?.id) return;
+    setHelpDismissed(window.localStorage.getItem(helpDismissKey) === "1");
+    // Auto-collapse once complete, unless the user has explicitly re-expanded.
+    const stored = window.localStorage.getItem(checklistCollapseKey);
+    if (stored === "1") setChecklistCollapsed(true);
+    else if (stored === "0") setChecklistCollapsed(false);
+    else if (allDone) setChecklistCollapsed(true);
+  }, [user?.id, allDone, checklistCollapseKey, helpDismissKey]);
+
+  const setChecklistCollapsedPersisted = (v: boolean) => {
+    setChecklistCollapsed(v);
+    if (typeof window !== "undefined" && checklistCollapseKey) {
+      window.localStorage.setItem(checklistCollapseKey, v ? "1" : "0");
+    }
+  };
+
+  const dismissHelp = () => {
+    setHelpDismissed(true);
+    if (typeof window !== "undefined" && helpDismissKey) {
+      window.localStorage.setItem(helpDismissKey, "1");
+    }
+  };
+
+  const launchTour = (tourId: keyof typeof TOURS) => {
+    if (user?.id) resetTour(user.id, tourId);
+    navigate({ to: TOURS[tourId].route, search: { tour: tourId } as never });
+  };
 
   const markWelcomed = () => {
     if (typeof window !== "undefined" && user?.id) {
@@ -302,29 +344,57 @@ function LearnPage() {
         </div>
       </section>
 
-      {/* Checklist */}
-      <section className="space-y-4">
+      {/* Checklist — collapses gracefully once complete; always revisitable */}
+      <section className="space-y-3">
         <div className="flex items-end justify-between gap-3 flex-wrap">
-          <div>
+          <div className="space-y-1">
             <h2 className="text-xl font-serif text-foreground">Getting started</h2>
             <p className="text-sm text-muted-foreground">
               {allDone
-                ? "All set. Nicely done — you're up and running."
+                ? "You're all set."
                 : `${doneCount} of ${checklist.length} done. No rush.`}
             </p>
           </div>
-          {allDone && (
-            <span className="inline-flex items-center gap-1.5 text-xs text-primary">
-              <CheckCircle2 className="h-4 w-4" /> Complete
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {allDone && (
+              <span className="inline-flex items-center gap-1.5 text-xs text-primary">
+                <CheckCircle2 className="h-4 w-4" /> Complete
+              </span>
+            )}
+            {(allDone || checklistCollapsed) && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-xs"
+                onClick={() => setChecklistCollapsedPersisted(!checklistCollapsed)}
+              >
+                {checklistCollapsed ? "Show steps" : "Hide"}
+              </Button>
+            )}
+          </div>
         </div>
-        <Card className="border-border/60">
-          <ul className="divide-y divide-border/60">
-            {checklist.map((c) => (
-              <li key={c.id}>
-                <Link
-                  to={c.to}
+
+        {/* Thin, calm progress indicator */}
+        <div
+          className="h-0.5 w-full rounded-full bg-muted overflow-hidden"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={checklist.length}
+          aria-valuenow={doneCount}
+          aria-label="Getting started progress"
+        >
+          <div
+            className="h-full bg-primary/70 transition-all duration-700 ease-out motion-reduce:transition-none"
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>
+
+        {!checklistCollapsed && (
+          <Card className="border-border/60">
+            <ul className="divide-y divide-border/60">
+              {checklist.map((c) => (
+                <li
+                  key={c.id}
                   className={cn(
                     "flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors",
                     c.done && "opacity-80",
@@ -346,14 +416,19 @@ function LearnPage() {
                     </div>
                     <div className="text-xs text-muted-foreground truncate">{c.hint}</div>
                   </div>
-                  <span className="text-xs text-muted-foreground shrink-0">
-                    {c.done ? "Done" : "Open →"}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </Card>
+                  <Button
+                    size="sm"
+                    variant={c.done ? "ghost" : "outline"}
+                    className="shrink-0 h-7 text-xs"
+                    onClick={() => launchTour(c.tourId)}
+                  >
+                    {c.done ? "Replay" : "Open"}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
       </section>
 
       {/* AI credits + deeper help */}
@@ -375,29 +450,37 @@ function LearnPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-border/60">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <HelpCircle className="h-4 w-4 text-primary" /> Need a hand?
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <p>
-              Settings holds your accounts, calendars, weekly review and billing. The assistant in
-              the top bar can answer most questions.
-            </p>
-            <div className="flex gap-2 flex-wrap">
-              <Button asChild variant="outline" size="sm">
-                <Link to="/settings">Open settings</Link>
-              </Button>
-              <Button asChild variant="ghost" size="sm">
-                <Link to="/today" onClick={markWelcomed}>
-                  <X className="h-3.5 w-3.5 mr-1" /> Close
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {!helpDismissed && (
+          <Card className="border-border/60 relative">
+            <button
+              type="button"
+              onClick={dismissHelp}
+              aria-label="Dismiss this card"
+              className="absolute top-2 right-2 p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <HelpCircle className="h-4 w-4 text-primary" /> Need a hand?
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm text-muted-foreground">
+              <p>
+                Settings holds your accounts, calendars, weekly review and billing. The assistant in
+                the top bar can answer most questions.
+              </p>
+              <div className="flex gap-2 flex-wrap">
+                <Button asChild variant="outline" size="sm">
+                  <Link to="/settings">Open settings</Link>
+                </Button>
+                <Button variant="ghost" size="sm" onClick={dismissHelp}>
+                  <X className="h-3.5 w-3.5 mr-1" /> Dismiss
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </section>
     </div>
   );
