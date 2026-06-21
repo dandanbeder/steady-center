@@ -5,7 +5,7 @@ import { useState } from "react";
 import {
   Plus, Trash2, Check, X, AlertTriangle, ArrowUp, ArrowDown, Archive, ArchiveRestore,
   User, Users, Layers, Bell, CalendarClock, ShieldCheck, CreditCard, Plug, Sparkles, Palette,
-  Clock, Skull,
+  Clock,
 } from "lucide-react";
 import {
   createBusiness,
@@ -22,7 +22,7 @@ import {
   listCalendars,
   type Calendar as Cal,
 } from "@/lib/calendars";
-import { deleteBusinessCascade, deleteMyAccount } from "@/lib/account.functions";
+import { deleteBusinessCascade } from "@/lib/account.functions";
 import { GeneralPanel } from "@/components/settings/general-panel";
 import { GoogleSyncPanel } from "@/components/google-sync-panel";
 import { MicrosoftSyncPanel } from "@/components/microsoft-sync-panel";
@@ -73,8 +73,7 @@ type SectionId =
   | "ai"
   | "privacy"
   | "billing"
-  | "team"
-  | "danger";
+  | "team";
 
 const NAV: Array<{ id: SectionId; label: string; icon: React.ComponentType<{ className?: string }>; tone?: "danger" }> = [
   { id: "general", label: "General", icon: User },
@@ -88,7 +87,6 @@ const NAV: Array<{ id: SectionId; label: string; icon: React.ComponentType<{ cla
   { id: "privacy", label: "Privacy & data", icon: ShieldCheck },
   { id: "billing", label: "Billing", icon: CreditCard },
   { id: "team", label: "Team", icon: Users },
-  { id: "danger", label: "Danger zone", icon: Skull, tone: "danger" },
 ];
 
 function SettingsPage() {
@@ -377,7 +375,6 @@ function SettingsPage() {
             </>
           )}
 
-          {active === "danger" && <DangerZone />}
         </div>
       </div>
     </div>
@@ -424,88 +421,6 @@ function Card({ children, className = "" }: { children: React.ReactNode; classNa
   );
 }
 
-function DangerZone() {
-  const navigate = useNavigate();
-  const delAccount = useServerFn(deleteMyAccount);
-  const [open, setOpen] = useState(false);
-  const [confirmText, setConfirmText] = useState("");
-
-  const mutation = useMutation({
-    mutationFn: () => delAccount({ data: { confirm: "DELETE" } }),
-    onSuccess: async () => {
-      toast.success("Account deleted.");
-      await supabase.auth.signOut();
-      navigate({ to: "/login", replace: true });
-    },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
-  });
-
-  return (
-    <section>
-      <h2 className="text-2xl mb-1 text-destructive flex items-center gap-2">
-        <AlertTriangle className="h-5 w-5" /> Danger zone
-      </h2>
-      <p className="text-sm text-muted-foreground mb-6">
-        Permanently delete your account and every row and file you own.
-      </p>
-      <div
-        className="rounded-2xl border border-destructive/40 bg-card p-6"
-        style={{ boxShadow: "var(--shadow-soft)" }}
-      >
-        <Button variant="destructive" onClick={() => setOpen(true)}>
-          Delete my account and all data
-        </Button>
-      </div>
-
-      <Dialog
-        open={open}
-        onOpenChange={(v) => {
-          if (!mutation.isPending) {
-            setOpen(v);
-            if (!v) setConfirmText("");
-          }
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete account permanently?</DialogTitle>
-            <DialogDescription>
-              This removes every account, calendar, task, note, meeting, recording,
-              and report you own, then deletes your login. This cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2">
-            <p className="text-sm">
-              Type <span className="font-mono font-semibold">DELETE</span> to confirm.
-            </p>
-            <Input
-              value={confirmText}
-              onChange={(e) => setConfirmText(e.target.value)}
-              placeholder="DELETE"
-              autoFocus
-            />
-          </div>
-          <DialogFooter>
-            <Button
-              variant="ghost"
-              onClick={() => setOpen(false)}
-              disabled={mutation.isPending}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              disabled={confirmText !== "DELETE" || mutation.isPending}
-              onClick={() => mutation.mutate()}
-            >
-              {mutation.isPending ? "Deleting…" : "Delete everything"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </section>
-  );
-}
 
 function BusinessRow({
   business,
