@@ -66,3 +66,25 @@ export async function upsertJournalMeta(input: {
   }).upsert(payload, { onConflict: "note_id" });
   if (error) throw error as Error;
 }
+
+/**
+ * Permanently remove a journal entry. RLS (`notes_journal_owner_only_delete`
+ * + `journal_meta_owner_delete`, both RESTRICTIVE) ensures only the owner can
+ * delete their own journal entries, so deletes never escape the Journal's
+ * privacy boundary into shared Trash or any admin/support view.
+ */
+export async function hardDeleteJournalEntry(noteId: string): Promise<void> {
+  // Delete the meta row first; if the notes delete fails RLS will still
+  // protect us, and an orphaned meta row is harmless.
+  await (supabase.from("journal_meta" as never) as never as {
+    delete: () => { eq: (c: string, v: string) => Promise<{ error: unknown }> };
+  })
+    .delete()
+    .eq("note_id", noteId);
+
+  const { error } = await supabase
+    .from("notes")
+    .delete()
+    .eq("id", noteId);
+  if (error) throw error as Error;
+}

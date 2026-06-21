@@ -14,6 +14,7 @@ import {
   CalendarDays,
   Download,
   ListOrdered,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { listNotes, createNote, updateNote, type Note } from "@/lib/notes";
@@ -27,9 +28,11 @@ import {
 import {
   listJournalMeta,
   upsertJournalMeta,
+  hardDeleteJournalEntry,
   REFLECTION_PROMPTS,
   type JournalMeta,
 } from "@/lib/journal";
+import { generateJournalPdf, type JournalPdfEntry } from "@/lib/journal-pdf";
 import { MarkdownEditor, useAutosave } from "@/components/notes/markdown-editor";
 import { MoodTagsBar } from "@/components/journal/mood-tags-bar";
 import { JournalCalendar } from "@/components/journal/journal-calendar";
@@ -152,33 +155,105 @@ function JournalPage() {
     }
   };
 
-  const handleExport = () => {
-    const payload = {
-      exported_at: new Date().toISOString(),
-      kind: "heartbeat-journal-export",
-      entries: entries.map((e) => {
-        const m = metaByNote.get(e.id);
-        return {
-          id: e.id,
-          created_at: e.created_at,
-          updated_at: e.updated_at,
-          title: e.title,
-          body: e.body,
-          mood: m?.mood ?? null,
-          tags: m?.tags ?? [],
-        };
-      }),
-    };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `heartbeat-journal-${format(new Date(), "yyyy-MM-dd")}.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    toast.success("Journal exported");
+  // Build a clean PDF for one entry or every entry. The PDF is built in the
+  // user's browser session — entry content never leaves the device.
+  const buildPdfEntries = (subset: Note[]): JournalPdfEntry[] =>
+    subset.map((e) => ({
+      id: e.id,
+      created_at: e.created_at,
+      title: e.title,
+      body: e.body,
+      meta: metaByNote.get(e.id) ?? null,
+    }));
+
+  const handleExportAll = async () => {
+    if (lockStatus?.enabled && !unlocked) {
+      toast.error("Unlock your Journal to export.");
+      return;
+    }
+    if (entries.length === 0) {
+      toast("No entries to export yet.");
+      return;
+    }
+    try {
+      await generateJournalPdf(buildPdfEntries(entries), {
+        filename: `heartbeat-journal-${format(new Date(), "yyyy-MM-dd")}.pdf`,
+      });
+      toast.success("Journal exported as PDF");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't build PDF");
+    }
+  };
+
+  const handleExportEntry = async (entry: Note) => {
+    if (lockStatus?.enabled && !unlocked) {
+      toast.error("Unlock your Journal to export.");
+      return;
+    }
+    try {
+      await generateJournalPdf(buildPdfEntries([entry]), {
+        filename: `heartbeat-journal-${format(parseISO(entry.created_at), "yyyy-MM-dd")}.pdf`,
+      });
+      toast.success("Entry exported as PDF");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't build PDF");
+    }
+  };
+
+  // Permanently delete a journal entry. RLS is owner-only and journal entries
+  // bypass any shared Trash, so there's no soft-delete to restore from; we
+  // capture the entry first and recreate it if the user taps Undo.
+  const handleDeleteEntry = async (entry: Note) => {
+    if (lockStatus?.enabled && !unlocked) {
+      toast.error("Unlock your Journal to delete entries.");
+      return;
+    }
+    const ok = window.confirm("Delete this journal entry? This can't be undone.");
+    if (!ok) return;
+    const savedMeta = metaByNote.get(entry.id) ?? null;
+    const savedTitle = entry.title;
+    const savedBody = entry.body;
+    try {
+      await hardDeleteJournalEntry(entry.id);
+      if (selectedId === entry.id) {
+        const next = entries.find((e) => e.id !== entry.id);
+        setSelectedId(next?.id ?? null);
+      }
+      qc.invalidateQueries({ queryKey: ["notes"] });
+      qc.invalidateQueries({ queryKey: ["journal-meta"] });
+      toast.success("Entry deleted", {
+        action: {
+          label: "Undo",
+          onClick: async () => {
+            try {
+              const restored = await createNote({
+                business_id: null,
+                folder_id: null,
+                title: savedTitle,
+                body: savedBody,
+                note_type: "journal",
+                source: "journal-undo",
+              });
+              if (savedMeta && (savedMeta.mood !== null || savedMeta.tags.length > 0)) {
+                await upsertJournalMeta({
+                  note_id: restored.id,
+                  mood: savedMeta.mood,
+                  tags: savedMeta.tags,
+                });
+              }
+              qc.invalidateQueries({ queryKey: ["notes"] });
+              qc.invalidateQueries({ queryKey: ["journal-meta"] });
+              setSelectedId(restored.id);
+              toast.success("Entry restored");
+            } catch (e) {
+              toast.error(e instanceof Error ? e.message : "Couldn't restore");
+            }
+          },
+        },
+      });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't delete");
+    }
   };
 
   if (supportSession) {
@@ -227,9 +302,9 @@ function JournalPage() {
               </button>
               <button
                 type="button"
-                onClick={handleExport}
+                onClick={handleExportAll}
                 className="text-muted-foreground hover:text-foreground"
-                title="Export my journal"
+                title="Download journal as PDF"
               >
                 <Download className="h-4 w-4" />
               </button>
@@ -355,33 +430,50 @@ function JournalPage() {
               const d = parseISO(e.created_at);
               const meta = metaByNote.get(e.id);
               return (
-                <button
+                <div
                   key={e.id}
-                  onClick={() => setSelectedId(e.id)}
                   className={cn(
-                    "w-full text-left p-2.5 rounded-lg transition-colors",
+                    "group relative rounded-lg transition-colors",
                     selectedId === e.id ? "bg-muted" : "hover:bg-muted/60",
                   )}
                 >
-                  <div className="text-sm font-medium truncate">
-                    {format(d, "EEE, MMM d")}
-                  </div>
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                    {format(d, "yyyy")}
-                  </div>
-                  {meta && (meta.tags.length > 0 || meta.mood) && (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {meta.tags.slice(0, 3).map((t) => (
-                        <span
-                          key={t}
-                          className="text-[10px] px-1.5 py-0.5 rounded-full bg-background border border-border/60 text-muted-foreground"
-                        >
-                          {t}
-                        </span>
-                      ))}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedId(e.id)}
+                    className="w-full text-left p-2.5 pr-9"
+                  >
+                    <div className="text-sm font-medium truncate">
+                      {format(d, "EEE, MMM d")}
                     </div>
-                  )}
-                </button>
+                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                      {format(d, "yyyy")}
+                    </div>
+                    {meta && (meta.tags.length > 0 || meta.mood) && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {meta.tags.slice(0, 3).map((t) => (
+                          <span
+                            key={t}
+                            className="text-[10px] px-1.5 py-0.5 rounded-full bg-background border border-border/60 text-muted-foreground"
+                          >
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(ev) => {
+                      ev.stopPropagation();
+                      handleDeleteEntry(e);
+                    }}
+                    aria-label="Delete entry"
+                    title="Delete entry"
+                    className="absolute top-1.5 right-1.5 p-1 rounded-md text-muted-foreground opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-destructive hover:bg-background transition-opacity"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               );
             })}
           </div>
@@ -398,6 +490,8 @@ function JournalPage() {
             meta={metaByNote.get(selected.id) ?? null}
             onChanged={() => qc.invalidateQueries({ queryKey: ["notes"] })}
             onMetaChanged={() => qc.invalidateQueries({ queryKey: ["journal-meta"] })}
+            onDownload={() => handleExportEntry(selected)}
+            onDelete={() => handleDeleteEntry(selected)}
           />
         ) : (
           <div className="h-full flex flex-col items-center justify-center text-center px-8 max-w-md mx-auto">
@@ -426,11 +520,15 @@ function JournalEditor({
   meta,
   onChanged,
   onMetaChanged,
+  onDownload,
+  onDelete,
 }: {
   note: Note;
   meta: JournalMeta | null;
   onChanged: () => void;
   onMetaChanged: () => void;
+  onDownload: () => void;
+  onDelete: () => void;
 }) {
   const [body, setBody] = useState(note.body);
   const [title, setTitle] = useState(note.title);
@@ -476,7 +574,27 @@ function JournalEditor({
         <div className="text-xs text-muted-foreground">
           {saving ? "Saving…" : savedAt ? "Saved" : "Edited"}
         </div>
-        <VoiceJournalButton onTranscribed={insertTranscript} />
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={onDownload}
+            title="Download this entry as PDF"
+            aria-label="Download entry as PDF"
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          >
+            <Download className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={onDelete}
+            title="Delete this entry"
+            aria-label="Delete entry"
+            className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-muted transition-colors"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+          <VoiceJournalButton onTranscribed={insertTranscript} />
+        </div>
       </div>
       <Input
         value={title}
