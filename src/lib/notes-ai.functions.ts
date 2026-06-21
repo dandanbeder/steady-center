@@ -269,7 +269,7 @@ Rules:
       user,
       maxTokens: 1200,
     });
-    await recordAiUsage(context.userId, MODEL, input_tokens, output_tokens).catch(
+    await recordAiUsage(context.userId, MODEL, input_tokens, output_tokens, { actionType: "notes_ai" }).catch(
       () => undefined,
     );
     const parsed = parseJsonBlock<{
