@@ -94,6 +94,27 @@ export type Database = {
         }
         Relationships: []
       }
+      account_usage: {
+        Row: {
+          businesses_count: number
+          calendar_connections_count: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          businesses_count?: number
+          calendar_connections_count?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          businesses_count?: number
+          calendar_connections_count?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       action_items: {
         Row: {
           business_id: string | null
@@ -2743,6 +2764,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      bump_account_usage: {
+        Args: { p_biz: number; p_cal: number; p_user: string }
+        Returns: undefined
+      }
       business_for_list: { Args: { p_list_id: string }; Returns: string }
       can_access: {
         Args: { _id: string; _min_role: string; _type: string; _user: string }
@@ -2827,6 +2852,19 @@ export type Database = {
         Returns: undefined
       }
       paid_seat_count: { Args: { p_business: string }; Returns: number }
+      plan_limits: {
+        Args: { p_user: string }
+        Returns: {
+          ai_allowance_credits: number
+          max_businesses: number
+          max_calendar_connections: number
+          paid_seats: number
+          quantity: number
+          sharing_enabled: boolean
+          team_features_enabled: boolean
+          tier: string
+        }[]
+      }
       purge_trash: {
         Args: never
         Returns: {
