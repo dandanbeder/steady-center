@@ -159,7 +159,8 @@ async function resolveTeamId(userId: string): Promise<string | null> {
 
 /**
  * Write a per-event ledger row. METADATA ONLY — never pass prompt/response text.
- * Never throws: cost logging must not break the user-facing AI call.
+ * Returns the inserted row id (or null on failure). Never throws: cost logging
+ * must not break the user-facing AI call.
  */
 export async function logAiUsageEvent(opts: {
   userId: string;
@@ -169,7 +170,7 @@ export async function logAiUsageEvent(opts: {
   tokensOut?: number;
   audioSeconds?: number;
   creditsCharged?: number;
-}): Promise<void> {
+}): Promise<string | null> {
   try {
     const tokensIn = opts.tokensIn ?? 0;
     const tokensOut = opts.tokensOut ?? 0;
@@ -182,26 +183,34 @@ export async function logAiUsageEvent(opts: {
       audioSeconds,
     });
     const team_id = await resolveTeamId(opts.userId);
-    await supabaseAdmin.from("ai_usage_events").insert({
-      user_id: opts.userId,
-      team_id,
-      action_type: opts.actionType,
-      model_used: opts.model,
-      tokens_in: tokensIn,
-      tokens_out: tokensOut,
-      audio_seconds: audioSeconds,
-      true_cost_micros,
-      credits_charged: creditsCharged,
-    });
+    const { data, error } = await supabaseAdmin
+      .from("ai_usage_events")
+      .insert({
+        user_id: opts.userId,
+        team_id,
+        action_type: opts.actionType,
+        model_used: opts.model,
+        tokens_in: tokensIn,
+        tokens_out: tokensOut,
+        audio_seconds: audioSeconds,
+        true_cost_micros,
+        credits_charged: creditsCharged,
+      })
+      .select("id")
+      .single();
+    if (error) throw error;
+    return (data?.id as string | undefined) ?? null;
   } catch (e) {
     console.warn("[ai-usage] failed to write ledger event", e);
+    return null;
   }
 }
 
 /**
  * Record AI usage after a successful call.
- * Writes the per-event ledger AND increments the monthly aggregate counter
- * (used for plan caps and the user-facing $ cap).
+ * Writes the per-event ledger, charges cost-anchored credits via the
+ * SECURITY DEFINER RPC, AND increments the monthly aggregate counter
+ * (kept as legacy defence-in-depth for the user-set $ cap).
  */
 export async function recordAiUsage(
   userId: string,
@@ -211,24 +220,51 @@ export async function recordAiUsage(
   opts?: {
     actionType?: AiActionType;
     audioSeconds?: number;
-    creditsCharged?: number;
   },
 ): Promise<void> {
-  // Per-event ledger
-  await logAiUsageEvent({
+  const actionType: AiActionType = opts?.actionType ?? "other";
+  const audioSeconds = opts?.audioSeconds ?? 0;
+
+  // Lazy import to keep ai-budget.server.ts free of a circular dep cycle.
+  const { chargeAiCredits } = await import("./credits.server");
+
+  // 1. Per-event ledger row.
+  const eventId = await logAiUsageEvent({
     userId,
-    actionType: opts?.actionType ?? "other",
+    actionType,
     model,
     tokensIn: inputTokens,
     tokensOut: outputTokens,
-    audioSeconds: opts?.audioSeconds ?? 0,
-    creditsCharged: opts?.creditsCharged ?? 1,
+    audioSeconds,
+    creditsCharged: 0, // backfilled below once we know the charge
   });
 
-  // Monthly aggregate (existing plan-cap / $-cap accounting)
+  // 2. Charge cost-anchored credits.
+  let creditsCharged = 0;
+  try {
+    creditsCharged = await chargeAiCredits({
+      userId,
+      actionType,
+      model,
+      tokensIn: inputTokens,
+      tokensOut: outputTokens,
+      audioSeconds,
+      eventId,
+    });
+    if (eventId) {
+      await supabaseAdmin
+        .from("ai_usage_events")
+        .update({ credits_charged: creditsCharged })
+        .eq("id", eventId);
+    }
+  } catch (e) {
+    console.warn("[ai-usage] credit charge failed", e);
+  }
+
+  // 3. Monthly aggregate (legacy $-cap counter).
   const cents = estimateCostCents(model, inputTokens, outputTokens);
-  const audioCents = opts?.audioSeconds
-    ? Math.ceil(trueCostMicros({ model, audioSeconds: opts.audioSeconds }) / 10_000)
+  const audioCents = audioSeconds
+    ? Math.ceil(trueCostMicros({ model, audioSeconds }) / 10_000)
     : 0;
   const totalCents = cents + audioCents;
   const tokens = inputTokens + outputTokens;
