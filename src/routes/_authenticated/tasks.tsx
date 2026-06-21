@@ -1933,7 +1933,7 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
           .limit(1);
         if ((remaining ?? []).length === 0) {
           const o = outcomes.find((x) => x.id === nextOutcomeId);
-          if (o && o.status === "active") {
+          if (o && o.status !== "achieved" && o.status !== "archived") {
             return { celebrate: { outcomeId: o.id, name: o.name } as const };
           }
         }
