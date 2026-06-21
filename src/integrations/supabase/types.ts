@@ -1141,6 +1141,92 @@ export type Database = {
         }
         Relationships: []
       }
+      journal_access_grants: {
+        Row: {
+          admin_id: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          mode: string
+          reason: string
+          requested_at: string
+          responded_at: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          status: string
+          target_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          mode?: string
+          reason: string
+          requested_at?: string
+          responded_at?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          status?: string
+          target_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          mode?: string
+          reason?: string
+          requested_at?: string
+          responded_at?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          status?: string
+          target_user_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      journal_access_log: {
+        Row: {
+          accessed_at: string
+          action: string
+          admin_id: string
+          grant_id: string
+          id: string
+          note_id: string | null
+          target_user_id: string
+        }
+        Insert: {
+          accessed_at?: string
+          action?: string
+          admin_id: string
+          grant_id: string
+          id?: string
+          note_id?: string | null
+          target_user_id: string
+        }
+        Update: {
+          accessed_at?: string
+          action?: string
+          admin_id?: string
+          grant_id?: string
+          id?: string
+          note_id?: string | null
+          target_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journal_access_log_grant_id_fkey"
+            columns: ["grant_id"]
+            isOneToOne: false
+            referencedRelation: "journal_access_grants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lists: {
         Row: {
           created_at: string
@@ -2568,9 +2654,14 @@ export type Database = {
           storage_paths: string[]
         }[]
       }
+      expire_journal_access_grants: { Args: never; Returns: number }
       get_or_create_unsubscribe_token: {
         Args: { p_user_id: string }
         Returns: string
+      }
+      has_active_journal_grant: {
+        Args: { _admin_id: string; _mode?: string; _target_user_id: string }
+        Returns: boolean
       }
       has_active_readonly_session: { Args: never; Returns: boolean }
       has_active_subscription: {
