@@ -136,7 +136,7 @@ export function TalkButton() {
               {phase === "idle" && "Talk"}
             </DialogTitle>
             <DialogDescription>
-              {phase === "listening" && "Speak naturally. We'll drop it in your Inbox and AI will suggest how to file it."}
+              {phase === "listening" && "Speak naturally. It lands in Capture and AI will suggest how to file it."}
               {phase === "saving" && "Just a sec…"}
             </DialogDescription>
           </DialogHeader>
