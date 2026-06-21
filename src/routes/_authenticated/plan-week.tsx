@@ -300,6 +300,79 @@ function PlanWeekPage() {
               <div>Committed tasks ({committedCount}): {taskLoad.toFixed(1)}h</div>
               <div>Working capacity: {workDays.length} days × {dailyCap}h</div>
             </div>
+
+            {/* Per-day load strip — work days only, drives placement */}
+            <div className="pt-2 border-t border-border/60">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
+                Per-day load
+              </div>
+              <div className="grid grid-cols-7 gap-1">
+                {Array.from({ length: 7 }, (_, i) => {
+                  const d = new Date(weekStartDate);
+                  d.setUTCDate(d.getUTCDate() + i);
+                  const dow = d.getUTCDay();
+                  const isWork = workDays.includes(dow);
+                  const evH = eventsFiltered
+                    .filter((e) => {
+                      const ed = new Date(e.start_at);
+                      return ed.getUTCFullYear() === d.getUTCFullYear()
+                        && ed.getUTCMonth() === d.getUTCMonth()
+                        && ed.getUTCDate() === d.getUTCDate();
+                    })
+                    .reduce((s, e) => s + eventHours(e), 0);
+                  const tH = committedFiltered
+                    .filter((t) => {
+                      if (t.status === "done" || !t.due_at) return false;
+                      const td = new Date(t.due_at);
+                      return td.getUTCFullYear() === d.getUTCFullYear()
+                        && td.getUTCMonth() === d.getUTCMonth()
+                        && td.getUTCDate() === d.getUTCDate();
+                    }).length * DEFAULT_TASK_HOURS;
+                  const load = evH + tH;
+                  const cap = isWork ? dailyCap : 0;
+                  const pct = cap > 0 ? Math.min(100, Math.round((load / cap) * 100)) : 0;
+                  const over = isWork && load > cap;
+                  return (
+                    <div
+                      key={i}
+                      title={isWork
+                        ? `${["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][dow]} · ${load.toFixed(1)}h of ${cap}h`
+                        : `${["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][dow]} · non-work day`}
+                      className="flex flex-col items-center gap-1"
+                    >
+                      <div className={cn(
+                        "text-[10px]",
+                        isWork ? "text-muted-foreground" : "text-muted-foreground/40",
+                      )}>
+                        {["S","M","T","W","T","F","S"][dow]}
+                      </div>
+                      <div className={cn(
+                        "h-8 w-full rounded-sm overflow-hidden",
+                        isWork ? "bg-muted" : "bg-muted/30",
+                      )}>
+                        {isWork && (
+                          <div
+                            className={cn(
+                              "w-full transition-all",
+                              over ? "bg-destructive" : pct >= 80 ? "bg-amber-500" : "bg-primary",
+                            )}
+                            style={{ height: `${pct}%`, marginTop: `${100 - pct}%` }}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <Link
+              to="/settings"
+              hash="working-hours"
+              className="block text-[11px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline pt-1"
+            >
+              Based on your working hours · edit
+            </Link>
           </Card>
 
           <Card className="p-4 space-y-3">
