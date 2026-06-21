@@ -91,6 +91,7 @@ import {
 } from "@/lib/calendars";
 import { showUndoToast } from "@/lib/undo-toast";
 import { cn } from "@/lib/utils";
+import { getWorkingHours } from "@/lib/user-prefs";
 import { TagPeople } from "@/components/tag-people";
 import { ActivityAndComments } from "@/components/comments/activity-and-comments";
 
