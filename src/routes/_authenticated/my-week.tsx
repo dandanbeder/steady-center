@@ -115,6 +115,11 @@ function MyWeekPage() {
     queryFn: getWorkingHours,
     enabled: ready,
   });
+  const { data: outcomes = [] } = useQuery({
+    queryKey: ["outcomes", "all-names"],
+    queryFn: () => listOutcomes(),
+    enabled: ready,
+  });
 
   const dailyCap = hours?.daily_capacity_hours ?? 6;
   const workDays = hours?.work_days ?? [1, 2, 3, 4, 5];
@@ -123,6 +128,10 @@ function MyWeekPage() {
   const businessById = useMemo(
     () => new Map(businesses.map((b) => [b.id, b])),
     [businesses],
+  );
+  const outcomeNameById = useMemo(
+    () => new Map(outcomes.map((o) => [o.id, o.name])),
+    [outcomes],
   );
 
   // Apply active business filter
