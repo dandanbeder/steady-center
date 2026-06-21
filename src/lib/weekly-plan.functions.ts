@@ -54,15 +54,31 @@ export const suggestDeferrals = createServerFn({ method: "POST" })
     const committed = (rows ?? []) as TaskLite[];
 
     if (committed.length <= max) {
-      return { defer_task_ids: [], reason: "Your commitment already looks balanced." };
+      return { defer_task_ids: [], reason: "Your week looks balanced — no need to trim." };
     }
 
     const deterministic = fallbackPick(committed, max);
+
+    // Honour the user's coach setting and meter against their AI allowance.
+    const { data: prefRow } = await supabase
+      .from("ai_prefs")
+      .select("coach_style")
+      .eq("user_id", userId)
+      .maybeSingle();
+    const coachStyle = ((prefRow?.coach_style as "warm" | "direct" | "off" | null) ?? "warm");
+    if (coachStyle === "off") return deterministic;
 
     const key = process.env.ANTHROPIC_API_KEY;
     if (!key) return deterministic;
 
     try {
+      const { assertAiBudget, recordAiUsage } = await import("./ai-budget.server");
+      await assertAiBudget(userId);
+
+      const styleHint =
+        coachStyle === "direct"
+          ? "Be warm but a touch more direct."
+          : "Be warm, supportive, gentle.";
       const res = await fetch(ANTHROPIC_URL, {
         method: "POST",
         headers: {
@@ -74,24 +90,39 @@ export const suggestDeferrals = createServerFn({ method: "POST" })
           model: MODEL,
           max_tokens: 400,
           system:
-            "You help a busy operator trim an overloaded weekly commitment. " +
+            "You are a kind coach helping a busy operator protect their week. " +
             "Return ONLY JSON: { \"defer_task_ids\": string[], \"reason\": string }. " +
-            "Pick the LOWEST priority tasks and the LATEST due dates first. Never defer 'urgent'. " +
-            "Keep the reason to ONE supportive sentence under 140 chars.",
+            "Pick the LOWEST priority tasks and LATEST due dates first. Never defer 'urgent'. " +
+            "The reason should be ONE warm, supportive sentence under 140 chars that frames this as " +
+            "protecting their focus, not as failing. No guilt, no 'hustle', no shame. " +
+            styleHint,
           messages: [
             {
               role: "user",
               content:
                 `Week starting ${data.week_start}. ` +
-                `Suggest up to ${max} tasks to move back to the backlog from this committed list:\n` +
+                `Suggest up to ${max} tasks to gently move back to the backlog from this committed list:\n` +
                 JSON.stringify(committed, null, 2),
             },
           ],
         }),
       });
       if (!res.ok) return deterministic;
-      const json = (await res.json()) as { content?: Array<{ type: string; text?: string }> };
+      const json = (await res.json()) as {
+        content?: Array<{ type: string; text?: string }>;
+        usage?: { input_tokens?: number; output_tokens?: number };
+      };
       const text = json.content?.find((c) => c.type === "text")?.text?.trim() ?? "";
+      try {
+        await recordAiUsage(
+          userId,
+          MODEL,
+          json.usage?.input_tokens ?? 0,
+          json.usage?.output_tokens ?? 0,
+        );
+      } catch {
+        /* metering is best-effort */
+      }
       const cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
       const parsed = JSON.parse(cleaned) as Partial<SuggestResult>;
       const ids = Array.isArray(parsed.defer_task_ids)
@@ -107,7 +138,9 @@ export const suggestDeferrals = createServerFn({ method: "POST" })
           ? parsed.reason.slice(0, 200)
           : deterministic.reason,
       };
-    } catch {
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "";
+      if (msg.startsWith("UPGRADE_REQUIRED")) throw e;
       return deterministic;
     }
   });
@@ -129,7 +162,7 @@ function fallbackPick(tasks: TaskLite[], max: number): SuggestResult {
     defer_task_ids: ids,
     reason:
       ids.length > 0
-        ? "Suggested by priority and due date — you decide what stays."
-        : "Nothing safe to defer automatically.",
+        ? "Gently sorted by priority and due date — you stay in the driver's seat."
+        : "Nothing obvious to defer — your week looks well-shaped.",
   };
 }
