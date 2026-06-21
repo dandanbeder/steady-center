@@ -65,15 +65,14 @@ async function callAi(
     const j = await res.json();
     if (userId) {
       try {
-        const { logAiUsageEvent } = await import("./ai-budget.server");
-        await logAiUsageEvent({
+        const { recordAiUsage } = await import("./ai-budget.server");
+        await recordAiUsage(
           userId,
-          actionType: "daily_pulse",
-          model: "google/gemini-3-flash-preview",
-          tokensIn: j?.usage?.prompt_tokens ?? 0,
-          tokensOut: j?.usage?.completion_tokens ?? 0,
-          creditsCharged: 1,
-        });
+          "google/gemini-3-flash-preview",
+          j?.usage?.prompt_tokens ?? 0,
+          j?.usage?.completion_tokens ?? 0,
+          { actionType: "daily_pulse" },
+        );
       } catch {
         /* ignore */
       }
