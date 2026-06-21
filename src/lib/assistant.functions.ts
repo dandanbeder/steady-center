@@ -388,7 +388,7 @@ user can approve a proposal. Keep answers concise (markdown ok). If a tool retur
       messages.push({ role: "user", content: toolResults });
     }
 
-    await recordAiUsage(context.userId, MODEL, totalIn, totalOut).catch(() => undefined);
+    await recordAiUsage(context.userId, MODEL, totalIn, totalOut, { actionType: "assistant" }).catch(() => undefined);
 
     return {
       text: finalText || "(no response)",
