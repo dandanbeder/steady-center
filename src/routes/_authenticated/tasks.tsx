@@ -1117,6 +1117,7 @@ function ListWorkspace({
           members={memberList}
           myId={myId}
           outcomes={scopeOutcomes}
+          businesses={businesses}
           collapsedGroups={collapsedGroups}
           onToggleCollapsed={toggleGroupCollapsed}
         />
@@ -1132,6 +1133,17 @@ function ListWorkspace({
       )}
       {view === "calendar" && (
         <TaskCalendarView tasks={filteredTopLevel} onOpen={setOpenTask} />
+      )}
+      {view === "timeline" && (
+        <TimelineView
+          tasks={filteredTopLevel}
+          onOpen={setOpenTask}
+          outcomes={scopeOutcomes.map((o) => ({
+            id: o.id,
+            name: o.name,
+            target_date: o.target_date,
+          }))}
+        />
       )}
 
       <StageManagerDialog
