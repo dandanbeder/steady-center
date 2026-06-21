@@ -397,6 +397,7 @@ function DayColumn({
   loadPct,
   overloaded,
   businessById,
+  outcomeNameById,
   onDropTask,
   onToggleTask,
 }: {
@@ -411,6 +412,7 @@ function DayColumn({
   loadPct: number;
   overloaded: boolean;
   businessById: Map<string, { name: string; color: string }>;
+  outcomeNameById: Map<string, string>;
   onDropTask: (taskId: string) => void;
   onToggleTask: (t: Task) => void;
 }) {
