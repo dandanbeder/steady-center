@@ -219,6 +219,7 @@ export type Database = {
       }
       ai_prefs: {
         Row: {
+          coach_style: string
           created_at: string
           model: string
           monthly_cap_cents: number
@@ -228,6 +229,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          coach_style?: string
           created_at?: string
           model?: string
           monthly_cap_cents?: number
@@ -237,6 +239,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          coach_style?: string
           created_at?: string
           model?: string
           monthly_cap_cents?: number
