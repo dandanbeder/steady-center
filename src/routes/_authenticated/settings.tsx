@@ -64,6 +64,8 @@ const PALETTE = [
 
 type SectionId =
   | "general"
+  | "appearance"
+  | "security"
   | "accounts"
   | "connections"
   | "notifications"
@@ -76,11 +78,13 @@ type SectionId =
 
 const NAV: Array<{ id: SectionId; label: string; icon: React.ComponentType<{ className?: string }>; tone?: "danger" }> = [
   { id: "general", label: "General", icon: User },
+  { id: "appearance", label: "Appearance", icon: Palette },
   { id: "accounts", label: "Accounts", icon: Layers },
   { id: "connections", label: "Connections", icon: Plug },
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "weekly", label: "Weekly review", icon: CalendarClock },
   { id: "ai", label: "AI preferences", icon: Sparkles },
+  { id: "security", label: "Security", icon: ShieldCheck },
   { id: "privacy", label: "Privacy & data", icon: ShieldCheck },
   { id: "billing", label: "Billing", icon: CreditCard },
   { id: "team", label: "Team", icon: Users },
