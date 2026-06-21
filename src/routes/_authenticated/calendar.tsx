@@ -1083,12 +1083,14 @@ function TimeGrid({
   days,
   events,
   calById,
+  colorFor,
   onSlotClick,
   onEventClick,
 }: {
   days: Date[];
   events: EventRow[];
   calById: Map<string, Cal>;
+  colorFor?: (e: EventRow) => string;
   onSlotClick: (d: Date) => void;
   onEventClick: (e: EventRow) => void;
 }) {
