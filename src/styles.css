@@ -231,3 +231,25 @@
   .page-container { padding-inline: 2.5rem; }
 }
 
+
+/* High-contrast accessibility — stays within the Calm Wave palette: only
+   deepens existing ink, strengthens borders, and lifts muted text. No new
+   hues introduced. */
+.high-contrast {
+  --foreground: oklch(0.16 0.05 165);
+  --muted-foreground: oklch(0.32 0.04 165);
+  --border: oklch(0.62 0.04 85);
+  --input: oklch(0.62 0.04 85);
+  --ring: oklch(0.45 0.05 165);
+}
+.dark.high-contrast {
+  --foreground: oklch(0.99 0.01 85);
+  --muted-foreground: oklch(0.85 0.01 85);
+  --border: oklch(1 0 0 / 28%);
+  --input: oklch(1 0 0 / 28%);
+  --ring: oklch(0.85 0.04 165);
+}
+.high-contrast :focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}

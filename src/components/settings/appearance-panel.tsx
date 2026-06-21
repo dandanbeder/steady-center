@@ -116,6 +116,32 @@ export function AppearancePanel() {
             onCheckedChange={(v) => update({ reduced_motion: v })}
           />
         </div>
+        <div className="flex items-center justify-between rounded-lg border border-border p-3">
+          <div>
+            <p className="text-sm font-medium">High contrast</p>
+            <p className="text-xs text-muted-foreground">Deeper ink and stronger borders for easier reading.</p>
+          </div>
+          <Switch
+            checked={local.high_contrast}
+            onCheckedChange={(v) => update({ high_contrast: v })}
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="text-sm font-medium block mb-2">Colour events by</label>
+          <Select
+            value={local.event_color_by}
+            onValueChange={(v) => update({ event_color_by: v as Appearance["event_color_by"] })}
+          >
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="account">Business</SelectItem>
+              <SelectItem value="calendar">Calendar</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground mt-1.5">
+            How synced and created events are coloured on the calendar.
+          </p>
+        </div>
       </div>
 
       <Button onClick={() => mut.mutate(local)} disabled={mut.isPending}>

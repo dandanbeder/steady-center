@@ -4,6 +4,7 @@ export type Theme = "light" | "dark" | "system";
 export type Density = "comfortable" | "compact";
 export type CalendarView = "day" | "week" | "month";
 export type FontSize = "small" | "normal" | "large";
+export type EventColorBy = "account" | "calendar";
 
 export type Appearance = {
   theme: Theme;
@@ -11,6 +12,8 @@ export type Appearance = {
   default_calendar_view: CalendarView;
   reduced_motion: boolean;
   font_size: FontSize;
+  high_contrast: boolean;
+  event_color_by: EventColorBy;
 };
 
 export const DEFAULT_APPEARANCE: Appearance = {
@@ -19,6 +22,8 @@ export const DEFAULT_APPEARANCE: Appearance = {
   default_calendar_view: "week",
   reduced_motion: false,
   font_size: "normal",
+  high_contrast: false,
+  event_color_by: "account",
 };
 
 const LS_KEY = "heartbeat-appearance";
@@ -60,6 +65,9 @@ export function applyAppearance(a: Appearance) {
   } else {
     root.style.removeProperty("--motion-duration");
   }
+  // High contrast
+  root.classList.toggle("high-contrast", !!a.high_contrast);
+  root.dataset.highContrast = a.high_contrast ? "true" : "false";
 }
 
 export async function getAppearance(): Promise<Appearance> {
@@ -67,7 +75,7 @@ export async function getAppearance(): Promise<Appearance> {
   if (!u.user) return readLocalAppearance();
   const { data } = await supabase
     .from("profiles")
-    .select("theme, density, default_calendar_view, reduced_motion, font_size")
+    .select("theme, density, default_calendar_view, reduced_motion, font_size, high_contrast, event_color_by")
     .eq("id", u.user.id)
     .maybeSingle();
   if (!data) return readLocalAppearance();
@@ -77,6 +85,8 @@ export async function getAppearance(): Promise<Appearance> {
     default_calendar_view: (data.default_calendar_view as CalendarView) ?? "week",
     reduced_motion: !!data.reduced_motion,
     font_size: (data.font_size as FontSize) ?? "normal",
+    high_contrast: !!(data as { high_contrast?: boolean }).high_contrast,
+    event_color_by: ((data as { event_color_by?: EventColorBy }).event_color_by ?? "account"),
   };
 }
 

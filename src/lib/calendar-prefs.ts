@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { getAppearance } from "@/lib/appearance";
 
 export type ColorBy = "account" | "calendar";
 
@@ -18,10 +20,22 @@ function readJSON<T>(k: string, fb: T): T {
 
 export function useColorBy() {
   const [colorBy, setColorByState] = useState<ColorBy>("account");
+  const { data: appearance } = useQuery({
+    queryKey: ["appearance"],
+    queryFn: getAppearance,
+    staleTime: 60_000,
+  });
   useEffect(() => {
-    const v = readJSON<ColorBy>(KEY_COLOR_BY, "account");
-    if (v === "account" || v === "calendar") setColorByState(v);
-  }, []);
+    // Local override (set when the user toggles from the calendar UI) wins.
+    const v = readJSON<ColorBy | null>(KEY_COLOR_BY, null);
+    if (v === "account" || v === "calendar") {
+      setColorByState(v);
+      return;
+    }
+    if (appearance?.event_color_by === "account" || appearance?.event_color_by === "calendar") {
+      setColorByState(appearance.event_color_by);
+    }
+  }, [appearance?.event_color_by]);
   const setColorBy = (v: ColorBy) => {
     setColorByState(v);
     if (typeof window !== "undefined") localStorage.setItem(KEY_COLOR_BY, JSON.stringify(v));
