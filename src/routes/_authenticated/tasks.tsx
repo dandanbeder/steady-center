@@ -2381,11 +2381,13 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
         />
       )}
       {focusOn && (
-        <FocusMode
-          task={task}
-          onClose={() => setFocusOn(false)}
-          onChange={onChange}
-        />
+        <Suspense fallback={null}>
+          <FocusMode
+            task={task}
+            onClose={() => setFocusOn(false)}
+            onChange={onChange}
+          />
+        </Suspense>
       )}
     </>
   );
