@@ -2058,6 +2058,71 @@ export type Database = {
         }
         Relationships: []
       }
+      task_views: {
+        Row: {
+          collapsed_groups: string[]
+          column_order: string[]
+          created_at: string
+          filters: Json
+          group_by: string
+          id: string
+          is_default: boolean
+          is_shared: boolean
+          list_id: string
+          name: string
+          owner_id: string
+          pinned: boolean
+          position: number
+          sort: Json
+          updated_at: string
+          view: string
+        }
+        Insert: {
+          collapsed_groups?: string[]
+          column_order?: string[]
+          created_at?: string
+          filters?: Json
+          group_by?: string
+          id?: string
+          is_default?: boolean
+          is_shared?: boolean
+          list_id: string
+          name: string
+          owner_id: string
+          pinned?: boolean
+          position?: number
+          sort?: Json
+          updated_at?: string
+          view?: string
+        }
+        Update: {
+          collapsed_groups?: string[]
+          column_order?: string[]
+          created_at?: string
+          filters?: Json
+          group_by?: string
+          id?: string
+          is_default?: boolean
+          is_shared?: boolean
+          list_id?: string
+          name?: string
+          owner_id?: string
+          pinned?: boolean
+          position?: number
+          sort?: Json
+          updated_at?: string
+          view?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_views_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           assigned_at: string | null
