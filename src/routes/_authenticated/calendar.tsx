@@ -639,28 +639,61 @@ function CalendarPage() {
           )}
         </div>
 
-        {visibleCalendars.length > 0 && (
+        {(colorBy === "account" ? visibleBusinesses.length > 0 : visibleCalendars.length > 0) && (
           <div>
             <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
               Legend
             </h3>
             <ul className="flex flex-wrap gap-2">
-              {visibleCalendars.map((c) => (
-                <li
-                  key={c.id}
-                  className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full border border-border"
-                >
-                  <span
-                    className="h-2.5 w-2.5 rounded-full"
-                    style={{ backgroundColor: c.color }}
-                  />
-                  <span className="truncate max-w-[140px]">{c.name}</span>
-                </li>
-              ))}
+              {colorBy === "account"
+                ? visibleBusinesses.map((b) => (
+                    <li
+                      key={b.id}
+                      className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full border border-border"
+                    >
+                      <span
+                        className="h-2.5 w-2.5 rounded-full"
+                        style={{ backgroundColor: b.color }}
+                      />
+                      <span className="truncate max-w-[140px]">{b.name}</span>
+                    </li>
+                  ))
+                : visibleCalendars.map((c) => (
+                    <li
+                      key={c.id}
+                      className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full border border-border"
+                    >
+                      <span
+                        className="h-2.5 w-2.5 rounded-full"
+                        style={{ backgroundColor: c.color }}
+                      />
+                      <span className="truncate max-w-[140px]">{c.name}</span>
+                    </li>
+                  ))}
             </ul>
           </div>
         )}
       </aside>
+
+      <EventQuickView
+        event={previewing}
+        cal={previewing ? calById.get(previewing.calendar_id) ?? null : null}
+        biz={previewing ? bizForEvent(previewing) : null}
+        color={previewing ? colorFor(previewing) : "#7A8471"}
+        onClose={() => setPreviewing(null)}
+        onEdit={() => {
+          if (previewing) {
+            setEditing(previewing);
+            setPreviewing(null);
+          }
+        }}
+        onDelete={() => {
+          if (previewing) {
+            deleteMut.mutate(previewing.id);
+            setPreviewing(null);
+          }
+        }}
+      />
 
 
       {dayOpen && (
