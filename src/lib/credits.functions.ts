@@ -9,15 +9,19 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 export const getCreditBalance = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabase, userId } = context;
+    const { userId } = context;
+    // Use service-role to read the pooled balance: a non-owner team member
+    // legitimately needs to see their team's account_credits row, which RLS
+    // alone won't allow. resolve_billing_account is the only thing that
+    // decides which account they're billed against.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // resolve_billing_account is SECURITY DEFINER, callable by authenticated.
-    const { data: billing } = await supabase.rpc("resolve_billing_account", {
+    const { data: billing } = await supabaseAdmin.rpc("resolve_billing_account", {
       _user: userId,
     });
     const billingAccount = (billing as string | null) ?? userId;
 
-    const { data } = await supabase
+    const { data } = await supabaseAdmin
       .from("account_credits")
       .select(
         "credit_balance, purchased_credits, allowance_credits, current_cycle_start, current_cycle_end, low_balance_threshold, low_balance_alerted_at, topup_paused",
@@ -28,8 +32,7 @@ export const getCreditBalance = createServerFn({ method: "GET" })
     const allowance = (data?.credit_balance as number | null) ?? 0;
     const purchased = (data?.purchased_credits as number | null) ?? 0;
 
-    // Lots — read-only, owner only via RLS.
-    const { data: lots } = await supabase
+    const { data: lots } = await supabaseAdmin
       .from("credit_lots")
       .select("id, credits_remaining, credits_initial, purchased_at, expires_at")
       .eq("account_user_id", billingAccount)
