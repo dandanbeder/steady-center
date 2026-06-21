@@ -28,9 +28,11 @@ import {
 import {
   listJournalMeta,
   upsertJournalMeta,
+  hardDeleteJournalEntry,
   REFLECTION_PROMPTS,
   type JournalMeta,
 } from "@/lib/journal";
+import { generateJournalPdf, type JournalPdfEntry } from "@/lib/journal-pdf";
 import { MarkdownEditor, useAutosave } from "@/components/notes/markdown-editor";
 import { MoodTagsBar } from "@/components/journal/mood-tags-bar";
 import { JournalCalendar } from "@/components/journal/journal-calendar";
