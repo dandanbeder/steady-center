@@ -543,6 +543,8 @@ function CalendarPage() {
             colorFor={colorFor}
             onDayClick={(d) => setDayOpen(d)}
             onEventClick={(e) => setPreviewing(e)}
+            workDays={workDaysSet}
+            dailyCap={dailyCap}
           />
         )}
         {view === "week" && (
@@ -558,6 +560,9 @@ function CalendarPage() {
             onEventChange={(ev, start, end) =>
               moveMut.mutate({ id: ev.id, start, end })
             }
+            workStart={workStart}
+            workEnd={workEnd}
+            workDays={workDaysSet}
           />
         )}
         {view === "day" && (
@@ -571,6 +576,9 @@ function CalendarPage() {
             onEventChange={(ev, start, end) =>
               moveMut.mutate({ id: ev.id, start, end })
             }
+            workStart={workStart}
+            workEnd={workEnd}
+            workDays={workDaysSet}
           />
         )}
         {view === "agenda" && (
@@ -580,6 +588,18 @@ function CalendarPage() {
             colorFor={colorFor}
             onEventClick={(e) => setPreviewing(e)}
           />
+        )}
+
+        {view !== "agenda" && (
+          <div className="mt-2 text-[11px] text-muted-foreground">
+            <Link
+              to="/settings"
+              hash="working-hours"
+              className="hover:text-foreground underline-offset-2 hover:underline"
+            >
+              Based on your working hours ({String(workStart).padStart(2, "0")}:00–{String(workEnd).padStart(2, "0")}:00, {workDaysSet.length} days · {dailyCap}h/day) · edit
+            </Link>
+          </div>
         )}
 
       </div>
