@@ -561,7 +561,7 @@ export async function generateForUser(
     goals,
     outcomes,
   };
-  const narrative = await writeNarrative(metrics, weekStart, weekEnd);
+  const narrative = await writeNarrative(metrics, weekStart, weekEnd, userId);
 
   const { data: inserted, error: insErr } = await supabaseAdmin
     .from("weekly_reports")
