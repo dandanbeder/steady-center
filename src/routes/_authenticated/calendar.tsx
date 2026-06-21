@@ -91,6 +91,7 @@ import {
 } from "@/lib/calendars";
 import { showUndoToast } from "@/lib/undo-toast";
 import { cn } from "@/lib/utils";
+import { getWorkingHours } from "@/lib/user-prefs";
 import { TagPeople } from "@/components/tag-people";
 import { ActivityAndComments } from "@/components/comments/activity-and-comments";
 
@@ -221,6 +222,15 @@ function CalendarPage() {
     queryFn: listCalendars,
     enabled: ready,
   });
+  const { data: workingHours } = useQuery({
+    queryKey: ["working-hours"],
+    queryFn: getWorkingHours,
+    enabled: ready,
+  });
+  const workStart = workingHours?.work_start_hour ?? 9;
+  const workEnd = workingHours?.work_end_hour ?? 17;
+  const workDaysSet = workingHours?.work_days ?? [1, 2, 3, 4, 5];
+  const dailyCap = workingHours?.daily_capacity_hours ?? 6;
 
   const range = useMemo(() => {
     if (view === "month") {
@@ -533,6 +543,8 @@ function CalendarPage() {
             colorFor={colorFor}
             onDayClick={(d) => setDayOpen(d)}
             onEventClick={(e) => setPreviewing(e)}
+            workDays={workDaysSet}
+            dailyCap={dailyCap}
           />
         )}
         {view === "week" && (
@@ -548,6 +560,9 @@ function CalendarPage() {
             onEventChange={(ev, start, end) =>
               moveMut.mutate({ id: ev.id, start, end })
             }
+            workStart={workStart}
+            workEnd={workEnd}
+            workDays={workDaysSet}
           />
         )}
         {view === "day" && (
@@ -561,6 +576,9 @@ function CalendarPage() {
             onEventChange={(ev, start, end) =>
               moveMut.mutate({ id: ev.id, start, end })
             }
+            workStart={workStart}
+            workEnd={workEnd}
+            workDays={workDaysSet}
           />
         )}
         {view === "agenda" && (
@@ -570,6 +588,18 @@ function CalendarPage() {
             colorFor={colorFor}
             onEventClick={(e) => setPreviewing(e)}
           />
+        )}
+
+        {view !== "agenda" && (
+          <div className="mt-2 text-[11px] text-muted-foreground">
+            <Link
+              to="/settings"
+              hash="working-hours"
+              className="hover:text-foreground underline-offset-2 hover:underline"
+            >
+              Based on your working hours ({String(workStart).padStart(2, "0")}:00–{String(workEnd).padStart(2, "0")}:00, {workDaysSet.length} days · {dailyCap}h/day) · edit
+            </Link>
+          </div>
         )}
 
       </div>
@@ -1066,6 +1096,8 @@ function MonthGrid({
   colorFor,
   onDayClick,
   onEventClick,
+  workDays,
+  dailyCap,
 }: {
   cursor: Date;
   events: EventRow[];
@@ -1073,29 +1105,43 @@ function MonthGrid({
   colorFor?: (e: EventRow) => string;
   onDayClick: (d: Date) => void;
   onEventClick: (e: EventRow) => void;
+  workDays?: number[];
+  dailyCap?: number;
 }) {
   const start = startOfMonthGrid(cursor);
   const days = Array.from({ length: 42 }, (_, i) => addDays(start, i));
   const today = startOfDay(new Date());
   const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const workDaySet = workDays ?? [1, 2, 3, 4, 5];
+  const cap = dailyCap ?? 6;
 
   return (
     <div
       className="rounded-2xl border border-border bg-card overflow-hidden"
       style={{ boxShadow: "var(--shadow-soft)" }}
     >
-      <div className="grid grid-cols-7 text-[10px] sm:text-xs uppercase tracking-wider text-muted-foreground border-b border-border">
-        {weekdays.map((w) => (
-          <div key={w} className="px-1 py-2 text-center truncate">
-            <span className="hidden sm:inline">{w}</span>
-            <span className="sm:hidden">{w[0]}</span>
-          </div>
-        ))}
+      <div className="grid grid-cols-7 text-[10px] sm:text-xs uppercase tracking-wider border-b border-border">
+        {weekdays.map((w, idx) => {
+          const isWork = workDaySet.includes(idx);
+          return (
+            <div
+              key={w}
+              className={cn(
+                "px-1 py-2 text-center truncate",
+                isWork ? "text-muted-foreground" : "text-muted-foreground/40",
+              )}
+            >
+              <span className="hidden sm:inline">{w}</span>
+              <span className="sm:hidden">{w[0]}</span>
+            </div>
+          );
+        })}
       </div>
       <div className="grid grid-cols-7 grid-rows-6">
         {days.map((d, i) => {
           const inMonth = d.getMonth() === cursor.getMonth();
           const isToday = sameDay(d, today);
+          const isWorkDay = workDaySet.includes(d.getDay());
           const dayEvts = events
             .filter((e) => {
               const s = startOfDay(new Date(e.start_at));
@@ -1103,7 +1149,6 @@ function MonthGrid({
               return s <= d && en >= d;
             })
             .sort((a, b) => {
-              // multi-day / all-day first, then by time
               const am = isAllDayLike(a) ? 0 : 1;
               const bm = isAllDayLike(b) ? 0 : 1;
               if (am !== bm) return am - bm;
@@ -1111,7 +1156,7 @@ function MonthGrid({
             });
           const shown = dayEvts.slice(0, 3);
           const overflow = dayEvts.length - shown.length;
-          // Per-day capacity cue from timed events
+          // Per-day capacity cue from timed events vs daily capacity
           const dayStartMs = startOfDay(d).getTime();
           const dayEndMs = endOfDay(d).getTime();
           const timedMins = dayEvts.reduce((acc, e) => {
@@ -1121,26 +1166,26 @@ function MonthGrid({
             return acc + Math.max(0, (en - s) / 60_000);
           }, 0);
           const hours = timedMins / 60;
-          // Calm shading — never alarming
+          const ratio = cap > 0 ? hours / cap : 0;
           const capacityTint =
-            hours >= 9
+            ratio >= 1.0
               ? "bg-accent/15"
-              : hours >= 6
+              : ratio >= 0.66
                 ? "bg-accent/10"
-                : hours >= 3
+                : ratio >= 0.33
                   ? "bg-accent/5"
                   : "";
           return (
             <div
               key={i}
-              title={hours > 0 ? `${hours.toFixed(1)}h booked` : undefined}
+              title={hours > 0 ? `${hours.toFixed(1)}h of ${cap}h capacity` : isWorkDay ? undefined : "Non-work day"}
               className={cn(
                 "min-w-0 min-h-[88px] sm:min-h-[110px] border-r border-b border-border p-1 sm:p-1.5 flex flex-col gap-1 hover:bg-muted/30 transition-colors",
                 (i + 1) % 7 === 0 && "border-r-0",
                 i >= 35 && "border-b-0",
                 !inMonth && "bg-muted/20",
-                inMonth && capacityTint,
-
+                inMonth && !isWorkDay && "bg-muted/15",
+                inMonth && isWorkDay && capacityTint,
               )}
             >
               <button
@@ -1259,6 +1304,9 @@ function TimeGrid({
   onSlotClick,
   onEventClick,
   onEventChange,
+  workStart = 9,
+  workEnd = 17,
+  workDays = [1, 2, 3, 4, 5],
 }: {
   days: Date[];
   events: EventRow[];
@@ -1267,6 +1315,9 @@ function TimeGrid({
   onSlotClick: (d: Date) => void;
   onEventClick: (e: EventRow) => void;
   onEventChange?: (ev: EventRow, start: Date, end: Date) => void;
+  workStart?: number;
+  workEnd?: number;
+  workDays?: number[];
 }) {
 
   const today = startOfDay(new Date());
@@ -1390,24 +1441,31 @@ function TimeGrid({
           >
             {/* Hour labels */}
             <div className="flex flex-col">
-              {Array.from({ length: 24 }, (_, h) => (
-                <div
-                  key={h}
-                  className="text-[10px] text-muted-foreground text-right pr-1"
-                  style={{ height: HOUR_PX }}
-                >
-                  {h === 0
-                    ? ""
-                    : new Date(2000, 0, 1, h).toLocaleTimeString(undefined, {
-                        hour: "numeric",
-                      })}
-                </div>
-              ))}
+              {Array.from({ length: 24 }, (_, h) => {
+                const inWindow = h >= workStart && h < workEnd;
+                return (
+                  <div
+                    key={h}
+                    className={cn(
+                      "text-[10px] text-right pr-1",
+                      inWindow ? "text-muted-foreground" : "text-muted-foreground/40",
+                    )}
+                    style={{ height: HOUR_PX }}
+                  >
+                    {h === 0
+                      ? ""
+                      : new Date(2000, 0, 1, h).toLocaleTimeString(undefined, {
+                          hour: "numeric",
+                        })}
+                  </div>
+                );
+              })}
             </div>
 
             {days.map((d) => {
               const dayKey = d.toISOString();
               const isToday = sameDay(d, today);
+              const isWorkDay = workDays.includes(d.getDay());
               const timed = timedByDay[dayKey];
               const laid = layoutOverlaps(timed);
               const minutesNow =
@@ -1415,7 +1473,10 @@ function TimeGrid({
               return (
                 <div
                   key={dayKey}
-                  className="relative border-l border-border"
+                  className={cn(
+                    "relative border-l border-border",
+                    !isWorkDay && "bg-muted/15",
+                  )}
                   style={{ height: HOUR_PX * 24 }}
                   onClick={(ev) => {
                     if ((ev.target as HTMLElement).dataset.slot) {
@@ -1428,14 +1489,20 @@ function TimeGrid({
                     }
                   }}
                 >
-                  {Array.from({ length: 24 }, (_, h) => (
-                    <div
-                      key={h}
-                      data-slot={h}
-                      className="border-b border-border/60 hover:bg-muted/30 cursor-pointer"
-                      style={{ height: HOUR_PX }}
-                    />
-                  ))}
+                  {Array.from({ length: 24 }, (_, h) => {
+                    const inWindow = h >= workStart && h < workEnd;
+                    return (
+                      <div
+                        key={h}
+                        data-slot={h}
+                        className={cn(
+                          "border-b border-border/60 hover:bg-muted/30 cursor-pointer",
+                          !inWindow && "bg-muted/30",
+                        )}
+                        style={{ height: HOUR_PX }}
+                      />
+                    );
+                  })}
                   {isToday && (
                     <div
                       className="absolute left-0 right-0 pointer-events-none"
