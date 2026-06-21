@@ -5,8 +5,7 @@ import { PaymentTestModeBanner } from "@/components/payment-test-mode-banner";
 import { PastDueBanner } from "@/components/past-due-banner";
 import { countPendingInbox } from "@/lib/inbox";
 import { countUnreadNotifications } from "@/lib/notifications";
-import { NotificationCenter } from "@/components/notification-center";
-import { useEffect, useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import heartbeatLogo from "@/assets/heartbeat-horizontal.svg";
 import heartbeatMono from "@/assets/heartbeat-mono.svg";
 import { useAuth } from "@/hooks/use-auth";
@@ -27,8 +26,18 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AppFooter } from "@/components/app-footer";
-import { CommandPalette } from "@/components/command-palette";
-import { AssistantPanel } from "@/components/assistant-panel";
+
+// Lazy-load the heavy on-demand panels. They only need to ship code when the
+// user opens them, which keeps the initial bundle small for first paint.
+const NotificationCenter = lazy(() =>
+  import("@/components/notification-center").then((m) => ({ default: m.NotificationCenter })),
+);
+const CommandPalette = lazy(() =>
+  import("@/components/command-palette").then((m) => ({ default: m.CommandPalette })),
+);
+const AssistantPanel = lazy(() =>
+  import("@/components/assistant-panel").then((m) => ({ default: m.AssistantPanel })),
+);
 import { PlanIndicator } from "@/components/plan-indicator";
 import { welcomedStorageKey } from "@/routes/_authenticated/learn";
 import { TourProvider } from "@/components/tour/tour-engine";
@@ -419,23 +428,37 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Sparkles className="h-4 w-4" />
           </Button>
         </header>
-        <NotificationCenter open={notifOpen} onOpenChange={setNotifOpen} />
-        <CommandPalette
-          open={cmdOpen}
-          onOpenChange={setCmdOpen}
-          onAskAssistant={(prompt) => {
-            setAssistantPrompt(prompt);
-            setAssistantOpen(true);
-          }}
-        />
-        <AssistantPanel
-          open={assistantOpen}
-          onOpenChange={(v) => {
-            setAssistantOpen(v);
-            if (!v) setAssistantPrompt(undefined);
-          }}
-          initialPrompt={assistantPrompt}
-        />
+        {/* Mount these only after the user first opens them, so their JS
+            chunks load on demand instead of in the initial bundle. */}
+        {notifOpen && (
+          <Suspense fallback={null}>
+            <NotificationCenter open={notifOpen} onOpenChange={setNotifOpen} />
+          </Suspense>
+        )}
+        {cmdOpen && (
+          <Suspense fallback={null}>
+            <CommandPalette
+              open={cmdOpen}
+              onOpenChange={setCmdOpen}
+              onAskAssistant={(prompt) => {
+                setAssistantPrompt(prompt);
+                setAssistantOpen(true);
+              }}
+            />
+          </Suspense>
+        )}
+        {assistantOpen && (
+          <Suspense fallback={null}>
+            <AssistantPanel
+              open={assistantOpen}
+              onOpenChange={(v) => {
+                setAssistantOpen(v);
+                if (!v) setAssistantPrompt(undefined);
+              }}
+              initialPrompt={assistantPrompt}
+            />
+          </Suspense>
+        )}
 
 
 

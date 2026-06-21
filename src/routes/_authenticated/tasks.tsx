@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ChevronDown,
@@ -155,7 +155,10 @@ import { listOutcomes, updateOutcome } from "@/lib/outcomes";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { TaskTimerInline, TaskTimePanel } from "@/components/task-timer";
-import { FocusMode } from "@/components/focus-mode";
+// Lazy: Focus Mode is a heavy full-screen panel; only ship its chunk on demand.
+const FocusMode = lazy(() =>
+  import("@/components/focus-mode").then((m) => ({ default: m.FocusMode })),
+);
 import { ShareDialog } from "@/components/share-dialog";
 
 export const Route = createFileRoute("/_authenticated/tasks")({
@@ -1439,7 +1442,9 @@ function TaskRow({
   return (
     <>
       {focusOn && (
-        <FocusMode task={task} onClose={() => setFocusOn(false)} onChange={onChange} />
+        <Suspense fallback={null}>
+          <FocusMode task={task} onClose={() => setFocusOn(false)} onChange={onChange} />
+        </Suspense>
       )}
     <div className={cn(selected && "bg-accent/5")}>
       <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5">
@@ -2376,11 +2381,13 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
         />
       )}
       {focusOn && (
-        <FocusMode
-          task={task}
-          onClose={() => setFocusOn(false)}
-          onChange={onChange}
-        />
+        <Suspense fallback={null}>
+          <FocusMode
+            task={task}
+            onClose={() => setFocusOn(false)}
+            onChange={onChange}
+          />
+        </Suspense>
       )}
     </>
   );
