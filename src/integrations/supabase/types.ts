@@ -2069,7 +2069,7 @@ export type Database = {
           description: string | null
           due_at: string | null
           id: string
-          list_id: string
+          list_id: string | null
           outcome_id: string | null
           owner_id: string
           parent_task_id: string | null
@@ -2098,7 +2098,7 @@ export type Database = {
           description?: string | null
           due_at?: string | null
           id?: string
-          list_id: string
+          list_id?: string | null
           outcome_id?: string | null
           owner_id: string
           parent_task_id?: string | null
@@ -2127,7 +2127,7 @@ export type Database = {
           description?: string | null
           due_at?: string | null
           id?: string
-          list_id?: string
+          list_id?: string | null
           outcome_id?: string | null
           owner_id?: string
           parent_task_id?: string | null
