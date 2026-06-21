@@ -70,39 +70,81 @@ function LearnPage() {
   const hasOutcome = (outcomesQ.data ?? []).length > 0;
   const triedAi = ((aiUsageQ.data?.items ?? []) as unknown[]).length > 0;
 
-  const checklist = [
+  const checklist: Array<{
+    id: string;
+    label: string;
+    done: boolean;
+    tourId: keyof typeof TOURS;
+    hint: string;
+  }> = [
     {
       id: "business",
       label: "Add your businesses",
       done: hasBusinesses,
-      to: "/settings",
+      tourId: "accounts",
       hint: "Settings → Accounts",
     },
     {
       id: "calendar",
       label: "Connect a calendar",
       done: hasCalendar,
-      to: "/calendar",
+      tourId: "calendar",
       hint: "Calendar → Connect Google or Microsoft",
     },
     {
       id: "outcome",
       label: "Create your first outcome",
       done: hasOutcome,
-      to: "/outcomes",
+      tourId: "outcomes",
       hint: "Outcomes → New outcome",
     },
     {
       id: "ai",
       label: "Try the AI",
       done: triedAi,
-      to: "/ai",
+      tourId: "ai",
       hint: "Open the assistant — ask, summarise, plan",
     },
   ];
 
   const doneCount = checklist.filter((c) => c.done).length;
   const allDone = doneCount === checklist.length;
+  const progressPct = Math.round((doneCount / checklist.length) * 100);
+
+  // Per-user dismissals (localStorage keyed by user id — client-side, per user)
+  const checklistCollapseKey = user?.id ? `heartbeat:learn:checklist-collapsed:${user.id}` : "";
+  const helpDismissKey = user?.id ? `heartbeat:learn:help-dismissed:${user.id}` : "";
+  const [checklistCollapsed, setChecklistCollapsed] = useState(false);
+  const [helpDismissed, setHelpDismissed] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !user?.id) return;
+    setHelpDismissed(window.localStorage.getItem(helpDismissKey) === "1");
+    // Auto-collapse once complete, unless the user has explicitly re-expanded.
+    const stored = window.localStorage.getItem(checklistCollapseKey);
+    if (stored === "1") setChecklistCollapsed(true);
+    else if (stored === "0") setChecklistCollapsed(false);
+    else if (allDone) setChecklistCollapsed(true);
+  }, [user?.id, allDone, checklistCollapseKey, helpDismissKey]);
+
+  const setChecklistCollapsedPersisted = (v: boolean) => {
+    setChecklistCollapsed(v);
+    if (typeof window !== "undefined" && checklistCollapseKey) {
+      window.localStorage.setItem(checklistCollapseKey, v ? "1" : "0");
+    }
+  };
+
+  const dismissHelp = () => {
+    setHelpDismissed(true);
+    if (typeof window !== "undefined" && helpDismissKey) {
+      window.localStorage.setItem(helpDismissKey, "1");
+    }
+  };
+
+  const launchTour = (tourId: keyof typeof TOURS) => {
+    if (user?.id) resetTour(user.id, tourId);
+    navigate({ to: TOURS[tourId].route, search: { tour: tourId } as never });
+  };
 
   const markWelcomed = () => {
     if (typeof window !== "undefined" && user?.id) {
