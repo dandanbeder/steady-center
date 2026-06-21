@@ -363,14 +363,6 @@ export function AppShell({ children }: { children: ReactNode }) {
                 title="Help"
                 className="h-9 w-9 text-muted-foreground hover:text-foreground shrink-0"
               >
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Help"
-                title="Help"
-                className="h-9 w-9 text-muted-foreground hover:text-foreground shrink-0"
-              >
                 <HelpCircle className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
