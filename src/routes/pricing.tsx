@@ -28,13 +28,13 @@ export const Route = createFileRoute("/pricing")({
       {
         name: "description",
         content:
-          "Run your businesses calmly with AI built in. Free forever, Pro for solo operators, Team for collaboration. AI included, viewers free.",
+          "One calm place for everything you're juggling, with AI built in. Free forever, Pro for everyday focus, Team for collaboration. AI included, viewers free.",
       },
       { property: "og:title", content: "Pricing, Heartbeat" },
       {
         property: "og:description",
         content:
-          "Calm command of multiple businesses with AI built in. AI included, not a $9 add-on. Viewers & guests free.",
+          "One calm place for everything you're juggling, with AI built in. AI included, not a $9 add-on. Viewers & guests free.",
       },
     ],
   }),
