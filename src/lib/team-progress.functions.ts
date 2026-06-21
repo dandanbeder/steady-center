@@ -408,6 +408,7 @@ export const askTeam = createServerFn({ method: "POST" })
       MODEL,
       j.usage?.input_tokens ?? 0,
       j.usage?.output_tokens ?? 0,
+      { actionType: "team_progress" },
     ).catch(() => undefined);
 
     return { answer, matches: sources };

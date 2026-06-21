@@ -111,6 +111,19 @@ Return ONLY the structured arguments via the provided tool.`;
     const args = call?.function?.arguments ? JSON.parse(call.function.arguments) : null;
     if (!args) throw new Error("AI returned no suggestion");
 
+    try {
+      const { recordAiUsage } = await import("./ai-budget.server");
+      await recordAiUsage(
+        context.userId,
+        "google/gemini-3-flash-preview",
+        json.usage?.prompt_tokens ?? 0,
+        json.usage?.completion_tokens ?? 0,
+        { actionType: "inbox_ai" },
+      );
+    } catch {
+      /* never break the user-facing call */
+    }
+
     const patch = {
       suggested_type: args.type,
       suggested_title: args.title ?? null,

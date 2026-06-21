@@ -340,6 +340,48 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_usage_events: {
+        Row: {
+          action_type: string
+          audio_seconds: number
+          created_at: string
+          credits_charged: number
+          id: string
+          model_used: string
+          team_id: string | null
+          tokens_in: number
+          tokens_out: number
+          true_cost_micros: number
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          audio_seconds?: number
+          created_at?: string
+          credits_charged?: number
+          id?: string
+          model_used: string
+          team_id?: string | null
+          tokens_in?: number
+          tokens_out?: number
+          true_cost_micros?: number
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          audio_seconds?: number
+          created_at?: string
+          credits_charged?: number
+          id?: string
+          model_used?: string
+          team_id?: string | null
+          tokens_in?: number
+          tokens_out?: number
+          true_cost_micros?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       analytics_daily_metrics: {
         Row: {
           accounts_created: number

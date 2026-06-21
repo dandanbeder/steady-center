@@ -5,6 +5,10 @@
  * Two limits gate every AI call:
  *  1. Plan-level monthly action cap (Free=20, Pro=400, Team=400×seats).
  *  2. User-set $ cap from ai_prefs (defense against runaway model cost).
+ *
+ * Every successful AI call also writes a per-event row into ai_usage_events
+ * (metadata only — never prompt/response content). That ledger is the
+ * measurement spine used to calibrate credit pricing later.
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { getUserPlanContext, requireAiAction } from "./entitlements.server";
@@ -14,17 +18,81 @@ function monthKey(d = new Date()): string {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
-const PRICING: Record<string, { in: number; out: number }> = {
-  "claude-sonnet-4-5": { in: 3, out: 15 },
-  "claude-sonnet-4-20250514": { in: 3, out: 15 },
-  "claude-haiku-4-5": { in: 0.8, out: 4 },
-  "claude-haiku-3-5": { in: 0.25, out: 1.25 },
+// ---------------------------------------------------------------------------
+// Pricing config — single source of truth.
+// All values in micro-USD ($1 = 1_000_000). Update here when prices change.
+// ---------------------------------------------------------------------------
+
+type TextRate = { inPerMtok: number; outPerMtok: number };
+type AudioRate = { perSecond: number };
+
+const TEXT_PRICING: Record<string, TextRate> = {
+  // Anthropic
+  "claude-sonnet-4-5": { inPerMtok: 3_000_000, outPerMtok: 15_000_000 },
+  "claude-sonnet-4-20250514": { inPerMtok: 3_000_000, outPerMtok: 15_000_000 },
+  "claude-haiku-4-5": { inPerMtok: 800_000, outPerMtok: 4_000_000 },
+  "claude-haiku-3-5": { inPerMtok: 250_000, outPerMtok: 1_250_000 },
+  // Lovable AI Gateway — Google
+  "google/gemini-3-flash-preview": { inPerMtok: 300_000, outPerMtok: 2_500_000 },
+  "google/gemini-3.1-flash-lite": { inPerMtok: 100_000, outPerMtok: 400_000 },
+  "google/gemini-2.5-flash": { inPerMtok: 300_000, outPerMtok: 2_500_000 },
+  "google/gemini-2.5-flash-lite": { inPerMtok: 100_000, outPerMtok: 400_000 },
+  "google/gemini-2.5-pro": { inPerMtok: 1_250_000, outPerMtok: 10_000_000 },
+  // Lovable AI Gateway — OpenAI
+  "openai/gpt-5": { inPerMtok: 2_500_000, outPerMtok: 10_000_000 },
+  "openai/gpt-5-mini": { inPerMtok: 250_000, outPerMtok: 2_000_000 },
+  "openai/gpt-5-nano": { inPerMtok: 50_000, outPerMtok: 400_000 },
 };
 
+const AUDIO_PRICING: Record<string, AudioRate> = {
+  // gpt-4o-mini-transcribe ≈ $0.003/min ≈ 50 micro-USD/sec
+  "openai/gpt-4o-mini-transcribe": { perSecond: 50 },
+  "openai/gpt-4o-transcribe": { perSecond: 100 },
+};
+
+// Fallback for unknown text models: bias high so unknowns are visible
+// in the ledger rather than silently free.
+const FALLBACK_TEXT: TextRate = { inPerMtok: 3_000_000, outPerMtok: 15_000_000 };
+const FALLBACK_AUDIO: AudioRate = { perSecond: 50 };
+
+const warnedMissing = new Set<string>();
+function warnOnce(model: string, kind: "text" | "audio") {
+  const k = `${kind}:${model}`;
+  if (warnedMissing.has(k)) return;
+  warnedMissing.add(k);
+  console.warn(`[ai-usage] no ${kind} pricing for model "${model}"; using fallback`);
+}
+
+export function trueCostMicros(opts: {
+  model: string;
+  tokensIn?: number;
+  tokensOut?: number;
+  audioSeconds?: number;
+}): number {
+  const tokensIn = opts.tokensIn ?? 0;
+  const tokensOut = opts.tokensOut ?? 0;
+  const audioSeconds = opts.audioSeconds ?? 0;
+  let micros = 0;
+  if (tokensIn > 0 || tokensOut > 0) {
+    const rate = TEXT_PRICING[opts.model];
+    if (!rate) warnOnce(opts.model, "text");
+    const r = rate ?? FALLBACK_TEXT;
+    micros += Math.round((tokensIn * r.inPerMtok) / 1_000_000);
+    micros += Math.round((tokensOut * r.outPerMtok) / 1_000_000);
+  }
+  if (audioSeconds > 0) {
+    const rate = AUDIO_PRICING[opts.model];
+    if (!rate) warnOnce(opts.model, "audio");
+    const r = rate ?? FALLBACK_AUDIO;
+    micros += Math.round(audioSeconds * r.perSecond);
+  }
+  return micros;
+}
+
 export function estimateCostCents(model: string, inputTokens: number, outputTokens: number): number {
-  const p = PRICING[model] ?? PRICING["claude-sonnet-4-5"];
-  const dollars = (inputTokens / 1_000_000) * p.in + (outputTokens / 1_000_000) * p.out;
-  return Math.ceil(dollars * 100);
+  const micros = trueCostMicros({ model, tokensIn: inputTokens, tokensOut: outputTokens });
+  // 1 cent = 10_000 micro-USD
+  return Math.ceil(micros / 10_000);
 }
 
 export async function getUserAiBudget(userId: string): Promise<{
@@ -64,14 +132,118 @@ export async function assertAiBudget(userId: string): Promise<void> {
   }
 }
 
-/** Record AI usage after a successful call. Also increments the plan-level action counter. */
+// ---------------------------------------------------------------------------
+// Per-event ledger
+// ---------------------------------------------------------------------------
+
+export type AiActionType =
+  | "assistant"
+  | "coach"
+  | "transcribe"
+  | "journal_reflect"
+  | "notes_ai"
+  | "notes_journal"
+  | "outcomes_ai"
+  | "task_views_ai"
+  | "inbox_ai"
+  | "daily_pulse"
+  | "weekly_plan"
+  | "weekly_report"
+  | "team_progress"
+  | "other";
+
+// Cache the user's team_id resolution so a chatty caller doesn't N+1 memberships.
+const teamIdCache = new Map<string, { team_id: string | null; at: number }>();
+async function resolveTeamId(userId: string): Promise<string | null> {
+  const hit = teamIdCache.get(userId);
+  if (hit && Date.now() - hit.at < 60_000) return hit.team_id;
+  const { data } = await supabaseAdmin
+    .from("memberships")
+    .select("business_id")
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  const team_id = (data?.business_id as string | null) ?? null;
+  teamIdCache.set(userId, { team_id, at: Date.now() });
+  return team_id;
+}
+
+/**
+ * Write a per-event ledger row. METADATA ONLY — never pass prompt/response text.
+ * Never throws: cost logging must not break the user-facing AI call.
+ */
+export async function logAiUsageEvent(opts: {
+  userId: string;
+  actionType: AiActionType;
+  model: string;
+  tokensIn?: number;
+  tokensOut?: number;
+  audioSeconds?: number;
+  creditsCharged?: number;
+}): Promise<void> {
+  try {
+    const tokensIn = opts.tokensIn ?? 0;
+    const tokensOut = opts.tokensOut ?? 0;
+    const audioSeconds = opts.audioSeconds ?? 0;
+    const creditsCharged = opts.creditsCharged ?? 0;
+    const true_cost_micros = trueCostMicros({
+      model: opts.model,
+      tokensIn,
+      tokensOut,
+      audioSeconds,
+    });
+    const team_id = await resolveTeamId(opts.userId);
+    await supabaseAdmin.from("ai_usage_events").insert({
+      user_id: opts.userId,
+      team_id,
+      action_type: opts.actionType,
+      model_used: opts.model,
+      tokens_in: tokensIn,
+      tokens_out: tokensOut,
+      audio_seconds: audioSeconds,
+      true_cost_micros,
+      credits_charged: creditsCharged,
+    });
+  } catch (e) {
+    console.warn("[ai-usage] failed to write ledger event", e);
+  }
+}
+
+/**
+ * Record AI usage after a successful call.
+ * Writes the per-event ledger AND increments the monthly aggregate counter
+ * (used for plan caps and the user-facing $ cap).
+ */
 export async function recordAiUsage(
   userId: string,
   model: string,
   inputTokens: number,
   outputTokens: number,
+  opts?: {
+    actionType?: AiActionType;
+    audioSeconds?: number;
+    creditsCharged?: number;
+  },
 ): Promise<void> {
+  // Per-event ledger
+  await logAiUsageEvent({
+    userId,
+    actionType: opts?.actionType ?? "other",
+    model,
+    tokensIn: inputTokens,
+    tokensOut: outputTokens,
+    audioSeconds: opts?.audioSeconds ?? 0,
+    creditsCharged: opts?.creditsCharged ?? 1,
+  });
+
+  // Monthly aggregate (existing plan-cap / $-cap accounting)
   const cents = estimateCostCents(model, inputTokens, outputTokens);
+  const audioCents = opts?.audioSeconds
+    ? Math.ceil(trueCostMicros({ model, audioSeconds: opts.audioSeconds }) / 10_000)
+    : 0;
+  const totalCents = cents + audioCents;
   const tokens = inputTokens + outputTokens;
   const month = monthKey();
   const { data: existing } = await supabaseAdmin
@@ -84,7 +256,7 @@ export async function recordAiUsage(
     await supabaseAdmin
       .from("ai_usage")
       .update({
-        cents: existing.cents + cents,
+        cents: existing.cents + totalCents,
         tokens: existing.tokens + tokens,
         actions: ((existing.actions as number | null) ?? 0) + 1,
       })
@@ -92,6 +264,6 @@ export async function recordAiUsage(
   } else {
     await supabaseAdmin
       .from("ai_usage")
-      .insert({ user_id: userId, month, cents, tokens, actions: 1 });
+      .insert({ user_id: userId, month, cents: totalCents, tokens, actions: 1 });
   }
 }

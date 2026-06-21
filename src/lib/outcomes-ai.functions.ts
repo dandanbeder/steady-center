@@ -101,7 +101,7 @@ Rules:
       user: userMsg,
       maxTokens: 1000,
     });
-    await recordAiUsage(context.userId, MODEL, input_tokens, output_tokens).catch(() => undefined);
+    await recordAiUsage(context.userId, MODEL, input_tokens, output_tokens, { actionType: "outcomes_ai" }).catch(() => undefined);
 
     const parsed = parseJsonBlock<{
       tasks: Array<{

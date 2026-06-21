@@ -377,7 +377,7 @@ export const askNotes = createServerFn({ method: "POST" })
       user,
       maxTokens: 900,
     });
-    await recordAiUsage(context.userId, MODEL, input_tokens, output_tokens).catch(
+    await recordAiUsage(context.userId, MODEL, input_tokens, output_tokens, { actionType: "notes_journal" }).catch(
       () => undefined,
     );
 

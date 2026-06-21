@@ -86,6 +86,7 @@ export const describeView = createServerFn({ method: "POST" })
         MODEL,
         json.usage?.input_tokens ?? 0,
         json.usage?.output_tokens ?? 0,
+        { actionType: "task_views_ai" },
       );
     } catch {
       /* best effort */

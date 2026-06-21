@@ -119,6 +119,7 @@ export const suggestDeferrals = createServerFn({ method: "POST" })
           MODEL,
           json.usage?.input_tokens ?? 0,
           json.usage?.output_tokens ?? 0,
+          { actionType: "weekly_plan" },
         );
       } catch {
         /* metering is best-effort */

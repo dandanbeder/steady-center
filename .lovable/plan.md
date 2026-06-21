@@ -1,119 +1,120 @@
-# Plans, seats & entitlements rebuild
+## Goal
 
-Heartbeat goes from "$10 Pro / $35 Team flat" to:
+Today the platform only tracks AI usage as a monthly aggregate (`ai_usage`: actions / tokens / cents per user per month). That's enough for plan caps, but not for setting the price of a credit later. This adds a per-event ledger so true cost (model price × tokens, plus per-minute audio) can be measured precisely while credits are still being calibrated.
 
-- **Free** $0 — 1 account, 1 calendar connection, 20 AI actions/month, no sharing.
-- **Pro (solo)** $10/mo or $96/yr — 1 user, unlimited accounts + calendar connections, 400 AI actions/mo, all features except team sharing.
-- **Team** per-seat — $12/seat/mo or $10/seat/mo billed annually ($120/seat/yr). Min 2 seats. Pro features + collaboration. AI = 400 × paid seats, pooled.
+**Privacy rule:** the ledger stores METADATA ONLY. No prompts, no completions, no transcripts, no tool arguments.
 
-**Paid seat** = owner / admin / member. Viewers, commenters, tagged guests = always free, never counted.
+## Database
 
----
+New table `public.ai_usage_events`:
 
-## 1. Paddle catalog
+| column | type | notes |
+|---|---|---|
+| id | uuid pk | |
+| user_id | uuid fk auth.users | not null |
+| team_id | uuid | nullable; resolved from caller's owner-team membership at write time |
+| action_type | text | e.g. `assistant`, `journal_reflect`, `notes_ai`, `outcomes_ai`, `task_views_ai`, `inbox_ai`, `coach`, `daily_pulse`, `transcribe` |
+| model_used | text | e.g. `claude-sonnet-4-5`, `openai/gpt-4o-mini-transcribe` |
+| tokens_in | int | 0 for audio |
+| tokens_out | int | 0 for audio |
+| audio_seconds | int | 0 for text; tracked separately so Whisper minutes survive any token-only re-aggregation |
+| true_cost_micros | bigint | computed at write time = micro-USD ($1 = 1,000,000); precise enough for fractional-cent models |
+| credits_charged | int | what we deducted from the user's allowance for this action (0 if free / unmetered) |
+| created_at | timestamptz default now() |
 
-- Update `team_monthly`: $12, `quantity.minimum=2`, `quantity.maximum=1000`.
-- Create `pro_yearly`: $96/yr (single qty).
-- Create `team_yearly`: $120/seat/yr, min 2, max 1000.
-- Leave `pro_monthly` ($10) as is.
+Indexes: `(user_id, created_at desc)`, `(action_type, created_at desc)`.
 
-## 2. Database (one migration)
+RLS:
+- `SELECT`: super-admin only (via `has_role(auth.uid(),'superadmin')`). The aggregate table `ai_usage` is what users see; the raw ledger is operator-only.
+- `INSERT / UPDATE / DELETE`: service role only — writes come from server functions using `supabaseAdmin`.
 
-- Add columns to `public.subscriptions`: `quantity int default 1`, `billing_cycle text` (`'month' | 'year'`), `trial_end timestamptz`.
-- Add `public.user_entitlements_view` style helper in code, not a view — keep it in `entitlements.ts`.
-- Add helper `public.paid_seat_count(business_id uuid) returns int` (counts active memberships with role in owner/admin/member).
-- Add helper `public.account_owner_subscription(business_id uuid)` returning the owner's active sub `(tier, quantity, billing_cycle, status, current_period_end)`.
-- Add `BEFORE INSERT/UPDATE` trigger `memberships_enforce_seats` on `public.memberships`:
-  - Counts paid roles after the change; if it would exceed the owner's Team subscription quantity (or owner isn't on Team), raise `SEAT_LIMIT_REACHED`.
-  - Viewer/commenter rows skip the check.
-  - Bypassed for `service_role` (so the "add seat then grant" server fn can stage changes atomically).
-- New table `public.entitlement_usage_monthly(user_id, month, ai_actions int)` for per-action counting (the existing `ai_usage` is $-based). Service-role writes only; user SELECT own row. Includes GRANTs and RLS per the rules.
+Grants: `service_role ALL`, `authenticated SELECT` (gated by the super-admin policy — no anon).
 
-## 3. Shared entitlements module (`src/lib/entitlements.ts`)
+## Pricing config (single source of truth)
 
-Single source of truth, imported by client and server:
+Extend `src/lib/ai-budget.server.ts` so all per-model rates live in one place. Replace the current Claude-only `PRICING` with a full map:
+
+- Text models: `{ inMicrosPerMtok, outMicrosPerMtok }` in micro-USD per million tokens.
+  Seed values from the docs already in this repo (Claude Sonnet 4.5, Haiku 4.5, etc.) plus Lovable-AI defaults (`google/gemini-3-flash-preview`, `openai/gpt-5-mini`, `openai/gpt-5-nano`).
+- Audio models: `{ audioMicrosPerSecond }` (Whisper-equivalent).
+
+Two pure helpers exported from the same file:
+- `trueCostMicros({ model, tokensIn, tokensOut, audioSeconds }) → bigint`
+- (kept) `estimateCostCents()` — re-implemented in terms of the new map so existing callers keep working.
+
+If a model is missing from the map, the helper falls back to a conservative default and logs once — we still write the event so we don't lose the action.
+
+## Write helper
+
+New `logAiUsageEvent()` in `src/lib/ai-budget.server.ts`:
 
 ```ts
-type Tier = 'free' | 'pro' | 'team';
-type BillingCycle = 'month' | 'year';
-const PAID_SEAT_ROLES = ['owner','admin','member'] as const;
-const FREE_ROLES = ['viewer','commenter'] as const;
-
-const LIMITS: Record<Tier, {
-  accounts: number;        // -1 = unlimited
-  calendarConnections: number;
-  aiActionsPerSeat: number;
-  teamSharing: boolean;
-}> = {
-  free: { accounts: 1, calendarConnections: 1, aiActionsPerSeat: 20, teamSharing: false },
-  pro:  { accounts: -1, calendarConnections: -1, aiActionsPerSeat: 400, teamSharing: false },
-  team: { accounts: -1, calendarConnections: -1, aiActionsPerSeat: 400, teamSharing: true },
-};
+logAiUsageEvent({
+  userId,
+  actionType,              // string union of the action types listed above
+  model,
+  tokensIn = 0,
+  tokensOut = 0,
+  audioSeconds = 0,
+  creditsCharged = 0,
+})
 ```
 
-Exports: `getEffectiveLimits(tier, paidSeats)`, `isPaidRole(role)`, `aiActionsCap(tier, paidSeats)`, `UPGRADE_REQUIRED_PREFIX`.
+It:
+1. Computes `true_cost_micros` from the pricing map.
+2. Resolves `team_id` by reading `memberships` for the user's primary owned team (nullable).
+3. Inserts the row via `supabaseAdmin`.
+4. **Never throws** — wrapped in try/catch with a `console.warn`. Cost logging must not break the user-facing AI call.
 
-## 4. Server enforcement
+The existing `recordAiUsage()` is updated to call `logAiUsageEvent()` first, then do its monthly aggregate update. Both run in the same code path so wiring is a one-line change at the call site.
 
-- `src/lib/entitlements.server.ts` — `getUserPlanContext(userId)` returns `{ tier, billingCycle, quantity, paidSeats, trialEnd, aiCap, aiUsed }`. Resolves the owner's account when called for business-scoped checks.
-- Wrap every server fn that creates accounts / calendar connections / runs AI:
-  - `requireAccountSlot`, `requireCalendarSlot`, `requireAiAction` — throw `UPGRADE_REQUIRED:` errors caught by UI.
-- AI fns (`assistant.functions.ts`, `weekly-plan.functions.ts`, `notes-journal.functions.ts`, `ask-notes.tsx` action, `meetings.functions.ts`) call `requireAiAction` then `recordAiAction` (increments `entitlement_usage_monthly.ai_actions`).
-- `invitations.functions.ts` / membership role-change fns: before promoting to paid role, check seat headroom; if short, return `{ needsSeat: true, currentQty, neededQty }` instead of mutating — UI runs the add-seat flow then retries.
-- New `subscriptions.functions.ts`:
-  - `addSeatAndAssign({ businessId, targetUserId, role })` — Paddle `PATCH /subscriptions/{id}` with `proration_billing_mode: 'prorated_immediately'`, increment quantity by 1, then perform the membership change via service role.
-  - `removeSeatIfFreed({ businessId })` — after demotion/removal, if `paid_seats < quantity`, decrement Paddle quantity (`do_not_bill` proration so credit applies).
-  - `startTrial(userId)` — set `trial_end = now() + 14d` on a synthetic Free→Pro trial record (no Paddle row); webhook later replaces it. Called from `handle_new_user` follow-up server fn.
+## Call site wiring
 
-## 5. Webhook updates (`api/public/payments/webhook.ts`)
+Every AI call site already converges on a small set of files. Each gets:
+- `model` constant in scope (already true).
+- After a successful response: `await logAiUsageEvent({...})` with the right `action_type`, token usage from the model response, and `creditsCharged` (1 per action for text today, matching the existing action counter; transcribe charges per-minute rounded up).
 
-- Persist `quantity`, `billing_cycle` (`items[0].price.billingCycle.interval`), `trial_end`.
-- On `subscription.updated` with quantity decrease, also call no-op (DB row reflects truth).
+Files touched:
+- `src/lib/assistant.functions.ts` — Claude Sonnet, per-iteration token usage from the API response. `action_type: 'assistant'`.
+- `src/lib/transcribe.functions.ts` — Whisper. Read audio duration from response or estimate from blob size; `action_type: 'transcribe'`, `audio_seconds` set, tokens 0.
+- `src/lib/journal-reflect.functions.ts` → `journal_reflect`.
+- `src/lib/notes-ai.functions.ts` → `notes_ai`.
+- `src/lib/outcomes-ai.functions.ts` → `outcomes_ai`.
+- `src/lib/task-views-ai.functions.ts` → `task_views_ai`.
+- `src/lib/inbox-ai.functions.ts` → `inbox_ai`.
+- `src/lib/coach.functions.ts` → `coach`.
+- `src/lib/daily-pulse-generator.server.ts` → `daily_pulse`.
 
-## 6. UI
+For each, only metadata is captured. Prompt/response text is never passed to the helper.
 
-### Pricing page rewrite
-- Monthly/Annual toggle (annual shows "2 months free" badge).
-- Three cards: Free / Pro / Team. Team card shows "$12 per seat/mo" with sub-text "per seat · 2-seat minimum · viewers & commenters free", and a seat stepper (min 2) that previews `quantity × price`.
-- AI shown in features as "400 AI actions / mo" (per seat for Team) — INCLUDED, not an add-on.
-- New sign-ups: surface "14-day Pro trial active until {date}" banner; CTA changes to "Add billing details before {date}".
-- Footer keeps Paddle / cancel / privacy / terms line.
+## Admin read
 
-### Settings → Team & seats
-- "X of Y paid seats used" + separate "Z free viewers/commenters/guests".
-- Add Seat / Remove Seat buttons calling the new server fns.
-- Invite/role-change UI catches `needsSeat` and shows an "Add a seat ($12 prorated)" confirm dialog.
+Two server functions in a new `src/lib/ai-usage-admin.functions.ts` (super-admin guard via `has_role`):
+- `listAiUsageEvents({ from, to, userId?, actionType?, limit, cursor })` — paged read of the ledger.
+- `aiUsageRollup({ from, to, groupBy: 'user'|'action_type'|'model' })` — SUMs of true_cost_micros and credits_charged plus action counts.
 
-### Usage meter
-- AI usage card on dashboard + settings: `used / cap` progress bar reading `entitlement_usage_monthly`. Red at 100%, friendly upsell when free user hits cap.
+These are wired into a small admin page later; not part of this task's UI scope.
 
-### Upgrade wall
-- Extend existing `UpgradeGate` to render per-limit copy: account limit, calendar limit, AI cap, team sharing.
+## What this does NOT change
 
-### Downgrade behaviour
-- Server fn `applyDowngradeReadonly(userId)` runs on `subscription.canceled` / tier drop: flags extra accounts/calendars as `read_only=true` instead of deleting. Add `read_only boolean default false` to `businesses` and `calendars`; UI hides write actions when set. Re-upgrading clears the flag.
+- The plan-cap counter (`ai_usage` monthly aggregate) and the user-facing $ cap remain unchanged — they keep gating calls exactly as today.
+- Credit pricing is not finalised here. `credits_charged` reflects today's "1 action = 1 credit" rule (or audio-minutes for transcribe); once real cost data accumulates from this ledger we can revisit.
+- No prompt, completion, or transcript text is written anywhere new.
 
-## 7. RLS confirmation
+## Files
 
-- `subscriptions` already user-scoped SELECT + service-role writes. ✅
-- `entitlement_usage_monthly`: user SELECT own; service-role ALL.
-- `memberships` seat trigger fires regardless of caller role except `service_role`, so a client cannot bypass via direct insert.
-- All limit checks duplicated server-side; client checks are UX only.
+Created
+- `supabase/migrations/<ts>_ai_usage_events.sql`
+- `src/lib/ai-usage-admin.functions.ts`
 
-## 8. Out of scope (will note to user)
-
-- Switching currency from USD.
-- Mid-cycle proration UX preview (Paddle handles it; we just call `prorated_immediately`).
-- SCA / dunning UI beyond the existing past-due banner.
-
----
-
-## Technical notes
-
-- File touches: ~6 new files (`subscriptions.functions.ts`, `entitlement-usage.server.ts`, seat dialog, AI meter component, downgrade fn, plus 1 migration). ~12 edits (pricing page, hook, webhook, all AI server fns, invitations, UpgradeGate, app-shell for usage badge).
-- Reuse the gateway via `getPaddleClient` for quantity changes — no new secrets.
-- Use the SDK's `subscriptions.update(id, { items: [{ priceId, quantity }], prorationBillingMode: 'prorated_immediately' })` shape.
-- Migration includes all required GRANTs and RLS per the public-schema rules.
-- Existing `pro_plan` / `team_plan` IDs stay; webhook still resolves tier via `product_id`.
-
-This will go out as a single migration + one round of code changes; I'll verify by running the seat trigger against a fake over-limit insert and round-tripping a Paddle quantity bump in test.
+Edited
+- `src/lib/ai-budget.server.ts` — full pricing map, `trueCostMicros`, `logAiUsageEvent`, `recordAiUsage` calls into it.
+- `src/lib/assistant.functions.ts`
+- `src/lib/transcribe.functions.ts`
+- `src/lib/journal-reflect.functions.ts`
+- `src/lib/notes-ai.functions.ts`
+- `src/lib/outcomes-ai.functions.ts`
+- `src/lib/task-views-ai.functions.ts`
+- `src/lib/inbox-ai.functions.ts`
+- `src/lib/coach.functions.ts`
+- `src/lib/daily-pulse-generator.server.ts`
