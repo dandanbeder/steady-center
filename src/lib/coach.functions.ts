@@ -127,7 +127,9 @@ export const coachWeekCheck = createServerFn({ method: "POST" })
 
     try {
       const { assertAiBudget, recordAiUsage } = await import("./ai-budget.server");
+      const { assertAiCredits } = await import("./credits.server");
       await assertAiBudget(userId);
+      await assertAiCredits(userId, 1);
 
       const styleHint =
         style === "direct"

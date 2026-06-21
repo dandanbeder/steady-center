@@ -313,7 +313,9 @@ export const assistantChat = createServerFn({ method: "POST" })
     const { requireFeature } = await import("./entitlements.server");
     await requireFeature(context.supabase, context.userId, "ai_assistant");
     const { assertAiBudget, recordAiUsage } = await import("./ai-budget.server");
+    const { assertAiCredits } = await import("./credits.server");
     await assertAiBudget(context.userId);
+    await assertAiCredits(context.userId, 1);
 
 
     const businessId = data.businessId ?? null;
