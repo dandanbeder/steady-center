@@ -43,7 +43,9 @@ const NAV: { to: string; label: string; icon: typeof Home }[] = [
   { to: "/ask-notes", label: "Ask my notes", icon: Sparkles },
   { to: "/meetings", label: "Meetings", icon: Users },
   { to: "/shared", label: "Shared with me", icon: AtSign },
+  { to: "/team-access", label: "Team & Access", icon: ShieldCheck },
   { to: "/reports", label: "Reports", icon: BarChart3 },
+
   
   { to: "/trash", label: "Trash", icon: Trash2 },
   { to: "/settings", label: "Settings", icon: Settings },
