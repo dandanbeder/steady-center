@@ -702,14 +702,18 @@ function CalendarRow({
   on,
   onToggle,
   onColorChange,
+  onRename,
 }: {
   cal: Cal;
   biz: { id: string; name: string; color: string } | null;
   on: boolean;
   onToggle: () => void;
   onColorChange: (color: string) => void;
+  onRename?: (name: string) => void;
 }) {
   const [picking, setPicking] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [draftName, setDraftName] = useState(cal.name);
   return (
     <li className="rounded-md hover:bg-muted/60">
       <div className="flex items-center gap-2 px-2 py-1.5">
@@ -722,27 +726,46 @@ function CalendarRow({
           }}
           aria-label="Change color"
         />
-        <button
-          onClick={onToggle}
-          className="flex-1 text-left min-w-0"
-        >
-          <div
-            className={cn(
-              "text-sm truncate",
-              !on && "text-muted-foreground line-through",
-            )}
-          >
-            {cal.name}
-          </div>
-          <div className="text-[10px] text-muted-foreground truncate">
-            {cal.provider !== "manual" && (
-              <span className="capitalize mr-1">{cal.provider}</span>
-            )}
-            <span title={cal.last_synced_at ?? ""}>
-              synced {fmtRelative(cal.last_synced_at)}
-            </span>
-          </div>
-        </button>
+        {renaming ? (
+          <Input
+            autoFocus
+            value={draftName}
+            onChange={(e) => setDraftName(e.target.value)}
+            onBlur={() => {
+              setRenaming(false);
+              const trimmed = draftName.trim();
+              if (trimmed && trimmed !== cal.name) onRename?.(trimmed);
+              else setDraftName(cal.name);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+              if (e.key === "Escape") {
+                setDraftName(cal.name);
+                setRenaming(false);
+              }
+            }}
+            className="h-7 text-sm flex-1"
+          />
+        ) : (
+          <button onClick={onToggle} className="flex-1 text-left min-w-0">
+            <div
+              className={cn(
+                "text-sm truncate",
+                !on && "text-muted-foreground line-through",
+              )}
+            >
+              {cal.name}
+            </div>
+            <div className="text-[10px] text-muted-foreground truncate">
+              {cal.provider !== "manual" && (
+                <span className="capitalize mr-1">{cal.provider}</span>
+              )}
+              <span title={cal.last_synced_at ?? ""}>
+                synced {fmtRelative(cal.last_synced_at)}
+              </span>
+            </div>
+          </button>
+        )}
         {biz && (
           <span
             className="h-2 w-2 rounded-full shrink-0"
@@ -750,6 +773,103 @@ function CalendarRow({
             title={biz.name}
           />
         )}
+        {onRename && !renaming && (
+          <button
+            onClick={() => {
+              setDraftName(cal.name);
+              setRenaming(true);
+            }}
+            className="opacity-0 group-hover:opacity-100 hover:opacity-100 text-muted-foreground hover:text-foreground"
+            title="Rename"
+            aria-label="Rename calendar"
+          >
+            <Pencil className="h-3 w-3" />
+          </button>
+        )}
+        <button
+          onClick={onToggle}
+          className="text-muted-foreground hover:text-foreground"
+          title={on ? "Hide" : "Show"}
+          aria-label={on ? "Hide calendar" : "Show calendar"}
+        >
+          {on ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+        </button>
+      </div>
+      {picking && (
+        <div className="px-2 pb-2 space-y-2">
+          <div className="flex flex-wrap gap-1.5">
+            {PALETTE.map((c) => (
+              <button
+                key={c}
+                onClick={() => {
+                  onColorChange(c);
+                  setPicking(false);
+                }}
+                className={cn(
+                  "h-5 w-5 rounded-full border border-border",
+                  c.toLowerCase() === cal.color.toLowerCase() &&
+                    "ring-2 ring-offset-1 ring-foreground/40",
+                )}
+                style={{ backgroundColor: c }}
+                aria-label={`Use color ${c}`}
+              />
+            ))}
+            <label
+              className="h-5 w-5 rounded-full border border-dashed border-border cursor-pointer overflow-hidden relative"
+              title="Custom color"
+            >
+              <Palette className="h-3 w-3 absolute inset-0 m-auto text-muted-foreground" />
+              <input
+                type="color"
+                value={cal.color}
+                onChange={(e) => onColorChange(e.target.value)}
+                className="absolute inset-0 opacity-0 cursor-pointer"
+              />
+            </label>
+          </div>
+        </div>
+      )}
+    </li>
+  );
+}
+
+function AccountRow({
+  biz,
+  on,
+  onToggle,
+  onColorChange,
+}: {
+  biz: Business;
+  on: boolean;
+  onToggle: () => void;
+  onColorChange: (color: string) => void;
+}) {
+  const [picking, setPicking] = useState(false);
+  return (
+    <li className="rounded-md hover:bg-muted/60">
+      <div className="flex items-center gap-2 px-2 py-1.5">
+        <button
+          onClick={() => setPicking((p) => !p)}
+          className="h-4 w-4 rounded-full border shrink-0"
+          style={{
+            backgroundColor: on ? biz.color : "transparent",
+            borderColor: biz.color,
+          }}
+          aria-label="Change account color"
+        />
+        <button onClick={onToggle} className="flex-1 text-left min-w-0">
+          <div className={cn("text-sm truncate", !on && "text-muted-foreground line-through")}>
+            {biz.name}
+          </div>
+        </button>
+        <button
+          onClick={onToggle}
+          className="text-muted-foreground hover:text-foreground"
+          title={on ? "Hide" : "Show"}
+          aria-label={on ? "Hide account" : "Show account"}
+        >
+          {on ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+        </button>
       </div>
       {picking && (
         <div className="px-2 pb-2 flex flex-wrap gap-1.5">
@@ -762,13 +882,25 @@ function CalendarRow({
               }}
               className={cn(
                 "h-5 w-5 rounded-full border border-border",
-                c.toLowerCase() === cal.color.toLowerCase() &&
+                c.toLowerCase() === biz.color.toLowerCase() &&
                   "ring-2 ring-offset-1 ring-foreground/40",
               )}
               style={{ backgroundColor: c }}
               aria-label={`Use color ${c}`}
             />
           ))}
+          <label
+            className="h-5 w-5 rounded-full border border-dashed border-border cursor-pointer overflow-hidden relative"
+            title="Custom color"
+          >
+            <Palette className="h-3 w-3 absolute inset-0 m-auto text-muted-foreground" />
+            <input
+              type="color"
+              value={biz.color}
+              onChange={(e) => onColorChange(e.target.value)}
+              className="absolute inset-0 opacity-0 cursor-pointer"
+            />
+          </label>
         </div>
       )}
     </li>
