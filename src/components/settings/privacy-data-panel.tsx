@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { exportMyData } from "@/lib/export.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { JournalAccessPanel } from "@/components/settings/journal-access-panel";
+import { Separator } from "@/components/ui/separator";
 
 export function PrivacyDataPanel() {
   const runExport = useServerFn(exportMyData);
@@ -81,6 +83,10 @@ export function PrivacyDataPanel() {
           {signOutAll.isPending ? "Signing out…" : "Sign out everywhere"}
         </Button>
       </div>
+
+      <Separator />
+
+      <JournalAccessPanel />
     </div>
   );
 }

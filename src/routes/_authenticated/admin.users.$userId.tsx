@@ -54,6 +54,7 @@ import {
   adminSetUserFeatureFlag,
   adminClearUserFeatureFlag,
 } from "@/lib/customer360.functions";
+import { requestJournalAccess } from "@/lib/journal-access.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -124,7 +125,10 @@ function UserDetailPage() {
             {isSelf && <Badge variant="outline">you</Badge>}
           </div>
         </div>
-        <ViewAsButton targetUserId={userId} />
+        <div className="flex gap-2">
+          <ViewAsButton targetUserId={userId} />
+          {!isSelf && <RequestJournalAccessButton targetUserId={userId} />}
+        </div>
       </div>
 
       <Customer360Sections userId={userId} onDone={invalidate} />
@@ -699,6 +703,36 @@ function ViewAsButton({ targetUserId }: { targetUserId: string }) {
         title="Start read-only support session?"
         description="Opens this user's account in read-only mode. You can switch to write later from the banner. All actions are logged."
         confirmLabel="Start session"
+        pending={mut.isPending}
+        onConfirm={(r) => mut.mutate(r)}
+      />
+    </>
+  );
+}
+
+function RequestJournalAccessButton({ targetUserId }: { targetUserId: string }) {
+  const [open, setOpen] = useState(false);
+  const requestFn = useServerFn(requestJournalAccess);
+  const mut = useMutation({
+    mutationFn: (reason: string) =>
+      requestFn({ data: { targetUserId, reason, mode: "read" as const } }),
+    onSuccess: () => {
+      toast.success("Request sent. The user will be notified.");
+      setOpen(false);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  return (
+    <>
+      <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
+        <ShieldAlert className="h-4 w-4 mr-1" /> Request Journal access
+      </Button>
+      <ReasonConfirmDialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Request Journal access?"
+        description="The Journal is private. The user will see your request and must explicitly accept before you see anything. Read-only, expires in 24 hours."
+        confirmLabel="Send request"
         pending={mut.isPending}
         onConfirm={(r) => mut.mutate(r)}
       />
