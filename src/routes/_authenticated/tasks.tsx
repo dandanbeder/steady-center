@@ -728,6 +728,10 @@ function ListWorkspace({
     queryKey: ["task_stages", list.id],
     queryFn: () => fetchStages(list.id),
   });
+  const { data: scopeOutcomes = [] } = useQuery({
+    queryKey: ["outcomes-for-scope", businessId],
+    queryFn: () => listOutcomes(businessId),
+  });
 
   const toggleGroupCollapsed = (key: string) => {
     setCollapsedGroups((prev) => {
@@ -968,6 +972,7 @@ function ListWorkspace({
           stages={stages}
           members={memberList}
           myId={myId}
+          outcomes={scopeOutcomes}
           collapsedGroups={collapsedGroups}
           onToggleCollapsed={toggleGroupCollapsed}
         />
