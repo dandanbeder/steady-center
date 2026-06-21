@@ -182,7 +182,7 @@ export function CreditBalanceCard() {
             </div>
             <Progress value={allowancePct} />
             <div className="mt-1 text-xs text-muted-foreground">
-              Resets on {fmtDate(b.cycleEnd)}
+              {b.cycleEnd ? `Resets on ${fmtDate(b.cycleEnd)}` : "Resets on your next billing date"}
             </div>
           </div>
 
