@@ -121,7 +121,7 @@ export const revokeShare = createServerFn({ method: "POST" })
 
 export const updateShareRole = createServerFn({ method: "POST" })
   .middleware([requireActiveUser])
-  .inputValidator((d: { shareId: string; role: ShareRole; busyOnly?: boolean }) => d)
+  .inputValidator((d: { shareId: string; role: ShareRole; busyOnly?: boolean; canReshare?: boolean; canExport?: boolean }) => d)
   .handler(async ({ data, context }) => {
     const { userId } = context;
     const { data: row } = await supabaseAdmin
@@ -132,10 +132,17 @@ export const updateShareRole = createServerFn({ method: "POST" })
     if (typeof data.busyOnly === "boolean") {
       if (data.busyOnly) details.busy_only = true; else delete details.busy_only;
     }
+    if (typeof data.canReshare === "boolean") {
+      if (data.canReshare) details.can_reshare = true; else delete details.can_reshare;
+    }
+    if (typeof data.canExport === "boolean") {
+      if (data.canExport) details.can_export = true; else delete details.can_export;
+    }
     const { error } = await supabaseAdmin.from("shares").update({ role: data.role, details: details as never }).eq("id", data.shareId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
 
 export type ShareGrantee = {
   id: string;
