@@ -19,7 +19,21 @@ export const Route = createFileRoute("/_authenticated/ask-notes")({
   ),
 });
 
-type Match = { n: number; id: string; title: string; snippet: string };
+type Match = {
+  n: number;
+  type: "note" | "meeting" | "task" | "outcome";
+  id: string;
+  title: string;
+  snippet: string;
+  link: string;
+};
+
+const TYPE_LABEL: Record<Match["type"], string> = {
+  note: "Note",
+  meeting: "Meeting",
+  task: "Task",
+  outcome: "Outcome",
+};
 
 function AskNotesPage() {
   const { activeId } = useActiveBusiness();
@@ -42,7 +56,7 @@ function AskNotesPage() {
         },
       });
       setAnswer(res.answer);
-      setMatches(res.matches);
+      setMatches(res.matches as Match[]);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed");
     } finally {
@@ -51,9 +65,9 @@ function AskNotesPage() {
   };
 
   const examples = [
-    "What did I decide about pricing?",
-    "Summarise everything tagged with onboarding",
-    "What are the open questions from last week's meetings?",
+    "What did we decide about pricing in last week's meetings?",
+    "What's overdue this week?",
+    "What's linked to the Q3 outcome and how is it tracking?",
   ];
 
   return (
@@ -61,10 +75,10 @@ function AskNotesPage() {
       <header className="space-y-2">
         <h1 className="text-2xl font-serif flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-muted-foreground" />
-          Ask my notes
+          Ask Heartbeat
         </h1>
         <p className="text-sm text-muted-foreground">
-          Ask a question, I'll search your notes and summarise what I find, with sources.
+          Ask anything across your notes, meetings, tasks, and outcomes. I'll answer only from what you can access, with sources.
         </p>
       </header>
 
@@ -72,7 +86,7 @@ function AskNotesPage() {
         <Textarea
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="e.g. What did I decide about the new pricing tiers?"
+          placeholder="e.g. What did we decide about the new pricing tiers?"
           rows={3}
           onKeyDown={(e) => {
             if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) run();
@@ -115,14 +129,19 @@ function AskNotesPage() {
           </h2>
           <ol className="space-y-2">
             {matches.map((m) => (
-              <li key={m.id} className="rounded-md border border-border p-3 bg-card">
+              <li key={`${m.type}-${m.id}`} className="rounded-md border border-border p-3 bg-card">
                 <Link
-                  to="/notes"
-                  className="text-sm font-medium hover:underline"
+                  to={m.link}
+                  className="text-sm font-medium hover:underline flex items-start gap-2"
                 >
-                  [{m.n}] {m.title}
+                  <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-muted text-muted-foreground shrink-0 mt-0.5">
+                    {TYPE_LABEL[m.type]}
+                  </span>
+                  <span>[{m.n}] {m.title}</span>
                 </Link>
-                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{m.snippet}</p>
+                {m.snippet && (
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{m.snippet}</p>
+                )}
               </li>
             ))}
           </ol>
