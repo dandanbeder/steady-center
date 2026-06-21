@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export type ListViewMode = "list" | "board" | "calendar";
-export type GroupByKey = "stage" | "priority" | "assignee" | "due" | "none";
+export type GroupByKey = "stage" | "priority" | "assignee" | "due" | "outcome" | "none";
 export type SortKey = "priority" | "due" | "created" | "title";
 
 export type ListViewFilters = {
