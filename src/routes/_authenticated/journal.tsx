@@ -520,11 +520,15 @@ function JournalEditor({
   meta,
   onChanged,
   onMetaChanged,
+  onDownload,
+  onDelete,
 }: {
   note: Note;
   meta: JournalMeta | null;
   onChanged: () => void;
   onMetaChanged: () => void;
+  onDownload: () => void;
+  onDelete: () => void;
 }) {
   const [body, setBody] = useState(note.body);
   const [title, setTitle] = useState(note.title);
