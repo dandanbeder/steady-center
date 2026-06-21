@@ -10,16 +10,23 @@ export type Business = {
   archived_at: string | null;
 };
 
-export async function listBusinesses(opts?: { includeArchived?: boolean }): Promise<Business[]> {
-  let q = supabase
+export async function listBusinesses(): Promise<Business[]> {
+  const { data, error } = await supabase
+    .from("businesses")
+    .select("*")
+    .is("archived_at", null)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as Business[];
+}
+
+export async function listAllBusinesses(): Promise<Business[]> {
+  const { data, error } = await supabase
     .from("businesses")
     .select("*")
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
-  if (!opts?.includeArchived) {
-    q = q.is("archived_at", null);
-  }
-  const { data, error } = await q;
   if (error) throw error;
   return (data ?? []) as Business[];
 }
