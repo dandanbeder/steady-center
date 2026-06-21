@@ -1913,6 +1913,10 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
   const [focusOn, setFocusOn] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
 
+  const { data: allBusinesses = [] } = useQuery({ queryKey: ["businesses"], queryFn: listBusinesses });
+  const { data: allFolders = [] } = useQuery({ queryKey: ["folders"], queryFn: listFolders });
+  const { data: allLists = [] } = useQuery({ queryKey: ["lists"], queryFn: listLists });
+
   const dueIso = dueAt ? new Date(`${dueAt}T12:00:00`).toISOString() : null;
 
   // Outcomes for this task's account (or personal if no business)
