@@ -3109,6 +3109,10 @@ export type Database = {
         Returns: string
       }
       resource_owner: { Args: { _id: string; _type: string }; Returns: string }
+      revoke_purchased_credits_by_tx: {
+        Args: { _paddle_tx_prefix: string }
+        Returns: number
+      }
       role_rank: { Args: { _role: string }; Returns: number }
       seed_default_task_stages: {
         Args: { p_list_id: string }
