@@ -1038,6 +1038,7 @@ function ListView({
   stages?: TaskStage[];
   members?: AssignableMember[];
   myId?: string | null;
+  outcomes?: { id: string; name: string }[];
   collapsedGroups: Set<string>;
   onToggleCollapsed: (key: string) => void;
 }) {
@@ -1046,6 +1047,7 @@ function ListView({
     stages,
     members,
     myId,
+    outcomes,
   });
 
   return (
