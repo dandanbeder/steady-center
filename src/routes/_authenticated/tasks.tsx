@@ -999,9 +999,12 @@ function ListView({
   onToggleSelect,
   onChange,
   onOpen,
-  groupByAssignee = false,
+  groupBy = "stage",
+  stages = [],
   members = [],
   myId = null,
+  collapsedGroups,
+  onToggleCollapsed,
 }: {
   tasks: Task[];
   subtasksByParent: Map<string, Task[]>;
@@ -1011,77 +1014,167 @@ function ListView({
   onToggleSelect: (id: string) => void;
   onChange: () => void;
   onOpen: (t: Task) => void;
-  groupByAssignee?: boolean;
+  groupBy?: GroupByKey;
+  stages?: TaskStage[];
   members?: AssignableMember[];
   myId?: string | null;
+  collapsedGroups: Set<string>;
+  onToggleCollapsed: (key: string) => void;
 }) {
-  type Group = { key: string; label: string; items: Task[] };
-  let groups: Group[];
-
-  if (groupByAssignee) {
-    const map = new Map<string, Task[]>();
-    for (const t of tasks) {
-      const k = t.assignee_id ?? "__unassigned__";
-      const arr = map.get(k) ?? [];
-      arr.push(t);
-      map.set(k, arr);
-    }
-    groups = Array.from(map.entries()).map(([k, items]) => ({
-      key: k,
-      label: k === "__unassigned__"
-        ? "Unassigned"
-        : (k === myId ? "Me" : memberLabel(members, k)),
-      items,
-    }));
-    // Stable order: me first, then by name, unassigned last
-    groups.sort((a, b) => {
-      if (a.key === "__unassigned__") return 1;
-      if (b.key === "__unassigned__") return -1;
-      if (a.key === myId) return -1;
-      if (b.key === myId) return 1;
-      return a.label.localeCompare(b.label);
-    });
-  } else {
-    groups = STATUSES.map((s) => ({
-      key: s.value,
-      label: s.label,
-      items: tasks.filter((t) => t.status === s.value),
-    }));
-  }
+  const qc = useQueryClient();
+  const groups: TaskGroup[] = groupTasks(tasks, groupBy, {
+    stages,
+    members,
+    myId,
+  });
 
   return (
     <div className="space-y-6">
-      {groups.map((g) => (
-        <div key={g.key}>
-          <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
-            {g.label} <span className="text-foreground/40">{g.items.length}</span>
-          </h3>
-          <div className="rounded-xl border border-border bg-card divide-y divide-border" style={{ boxShadow: "var(--shadow-soft)" }}>
-            {g.items.length === 0 ? (
-              <p className="p-4 text-sm text-muted-foreground">Nothing here.</p>
-            ) : (
-              g.items.map((t) => (
-                <TaskRow
-                  key={t.id}
-                  task={t}
-                  subtasks={subtasksByParent.get(t.id) ?? []}
+      {groups.map((g) => {
+        const collapsed = collapsedGroups.has(g.key);
+        return (
+          <div key={g.key}>
+            <button
+              type="button"
+              onClick={() => onToggleCollapsed(g.key)}
+              className="w-full flex items-center gap-2 mb-2 text-left group/header"
+            >
+              {collapsed ? (
+                <ChevronRight className="h-3 w-3 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="h-3 w-3 text-muted-foreground" />
+              )}
+              {g.color && (
+                <span
+                  className="h-2 w-2 rounded-full shrink-0"
+                  style={{ backgroundColor: g.color }}
+                />
+              )}
+              <h3 className="text-xs uppercase tracking-wider text-muted-foreground">
+                {g.label}{" "}
+                <span className="text-foreground/40">{g.items.length}</span>
+              </h3>
+            </button>
+            {!collapsed && (
+              <>
+                <div
+                  className="rounded-xl border border-border bg-card divide-y divide-border"
+                  style={{ boxShadow: "var(--shadow-soft)" }}
+                >
+                  {g.items.length === 0 ? (
+                    <p className="p-4 text-sm text-muted-foreground">Nothing here.</p>
+                  ) : (
+                    g.items.map((t) => (
+                      <TaskRow
+                        key={t.id}
+                        task={t}
+                        subtasks={subtasksByParent.get(t.id) ?? []}
+                        listId={listId}
+                        businessId={businessId}
+                        selected={selectedIds.has(t.id)}
+                        onToggleSelect={() => onToggleSelect(t.id)}
+                        onChange={onChange}
+                        onOpen={onOpen}
+                        members={members}
+                        myId={myId}
+                      />
+                    ))
+                  )}
+                </div>
+                <GroupAddTask
                   listId={listId}
                   businessId={businessId}
-                  selected={selectedIds.has(t.id)}
-                  onToggleSelect={() => onToggleSelect(t.id)}
-                  onChange={onChange}
-                  onOpen={onOpen}
-                  members={members}
-                  myId={myId}
+                  groupBy={groupBy}
+                  groupKey={g.key}
+                  position={tasks.length}
+                  onAdded={() => {
+                    qc.invalidateQueries({ queryKey: ["tasks", listId] });
+                    onChange();
+                  }}
                 />
-              ))
+              </>
             )}
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
+
+function GroupAddTask({
+  listId,
+  businessId,
+  groupBy,
+  groupKey,
+  position,
+  onAdded,
+}: {
+  listId: string;
+  businessId: string | null;
+  groupBy: GroupByKey;
+  groupKey: string;
+  position: number;
+  onAdded: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState("");
+
+  const create = useMutation({
+    mutationFn: async () => {
+      const patch: Parameters<typeof createTask>[0] = {
+        list_id: listId,
+        business_id: businessId,
+        title: title.trim(),
+        position,
+      };
+      if (groupBy === "stage" && groupKey !== "__all__") {
+        patch.stage_id = groupKey;
+      } else if (groupBy === "priority") {
+        patch.priority = groupKey as TaskPriority;
+      } else if (groupBy === "assignee" && groupKey !== "__unassigned__") {
+        patch.assignee_id = groupKey;
+      }
+      return createTask(patch);
+    },
+    onSuccess: () => {
+      setTitle("");
+      setOpen(false);
+      onAdded();
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="mt-1.5 text-xs text-muted-foreground hover:text-accent flex items-center gap-1 px-2 py-1 rounded"
+      >
+        <Plus className="h-3 w-3" /> Add task
+      </button>
+    );
+  }
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (title.trim()) create.mutate();
+      }}
+      className="mt-1.5"
+    >
+      <Input
+        autoFocus
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        onBlur={() => !title.trim() && setOpen(false)}
+        placeholder="Task title — Enter to add"
+        className="h-7 text-sm"
+      />
+    </form>
+  );
+}
+
 
 function TaskRow({
   task,
