@@ -132,7 +132,7 @@ export function TalkButton() {
           <DialogHeader>
             <DialogTitle>
               {phase === "listening" && "Listening…"}
-              {phase === "saving" && "Saving to Inbox…"}
+              {phase === "saving" && "Saving…"}
               {phase === "idle" && "Talk"}
             </DialogTitle>
             <DialogDescription>
