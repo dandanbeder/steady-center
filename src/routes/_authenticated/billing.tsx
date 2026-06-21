@@ -20,6 +20,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { PaymentTestModeBanner } from "@/components/payment-test-mode-banner";
 import { AiUsageMeter } from "@/components/ai-usage-meter";
+import { CreditBalanceCard } from "@/components/credit-balance-card";
 import { getPaddleEnvironment } from "@/lib/paddle";
 import {
   createCustomerPortalUrl,
