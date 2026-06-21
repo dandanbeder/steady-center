@@ -235,11 +235,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 
   return (
-    <div className="min-h-screen flex bg-background w-full overflow-x-hidden">
-      {/* Desktop sidebar (lg+) */}
+    <div className="h-screen flex bg-background w-full overflow-hidden">
+      {/* Desktop sidebar (lg+) — sticky full-height column */}
       <aside
         className={cn(
-          "shrink-0 border-r border-sidebar-border bg-sidebar flex-col transition-[width] duration-200 ease-out hidden lg:flex",
+          "shrink-0 border-r border-sidebar-border bg-sidebar flex-col transition-[width] duration-200 ease-out hidden lg:flex h-screen sticky top-0",
           collapsed ? "w-16" : "w-60",
         )}
       >
@@ -270,7 +270,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </SheetContent>
       </Sheet>
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         <header className="h-16 border-b border-border bg-background/80 backdrop-blur flex items-center justify-between px-4 sm:px-6 lg:px-8 gap-2 safe-top safe-x">
           <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-1">
             {/* Mobile hamburger */}
