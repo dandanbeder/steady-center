@@ -78,7 +78,7 @@ export function QuickAddBar({
             submit();
           }
         }}
-        placeholder='Quick add — e.g. "Coffee with Sam Friday 9am"'
+        placeholder='Quick add, e.g. "Coffee with Sam Friday 9am"'
         className="flex-1 min-w-0 border-0 bg-transparent shadow-none focus-visible:ring-0 px-0 sm:px-2"
       />
       <div className="flex items-center gap-2">
