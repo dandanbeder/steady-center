@@ -1879,6 +1879,22 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
     },
   });
 
+  // Source note (set when task was created from a note via Notes -> Tasks bridge)
+  const { data: sourceNote = null } = useQuery({
+    queryKey: ["task-source-note", task.source_note_id],
+    queryFn: async () => {
+      if (!task.source_note_id) return null;
+      const { data } = await supabase
+        .from("notes")
+        .select("id,title")
+        .eq("id", task.source_note_id)
+        .is("deleted_at", null)
+        .maybeSingle();
+      return data as { id: string; title: string } | null;
+    },
+    enabled: !!task.source_note_id,
+  });
+
   return (
     <>
       <Dialog open onOpenChange={(o) => !o && onClose()}>
