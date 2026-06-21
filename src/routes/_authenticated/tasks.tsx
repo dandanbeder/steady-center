@@ -1442,7 +1442,9 @@ function TaskRow({
   return (
     <>
       {focusOn && (
-        <FocusMode task={task} onClose={() => setFocusOn(false)} onChange={onChange} />
+        <Suspense fallback={null}>
+          <FocusMode task={task} onClose={() => setFocusOn(false)} onChange={onChange} />
+        </Suspense>
       )}
     <div className={cn(selected && "bg-accent/5")}>
       <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5">
