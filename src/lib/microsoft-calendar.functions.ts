@@ -274,3 +274,85 @@ export const deleteEventInMicrosoft = createServerFn({ method: "POST" })
     }
     return { ok: true };
   });
+
+// ============================================================
+// Disconnect a single Microsoft calendar
+// ============================================================
+//
+// Per-row disconnect: removes the Graph subscription for THIS calendar,
+// stops sync, and either keeps the events (converts the row to a local
+// 'manual' calendar) or deletes them (cascade). If it was the last
+// Microsoft calendar for the user, the account-level OAuth tokens are
+// revoked as well so the row returns to the "Connect" state.
+export const disconnectMicrosoftCalendar = createServerFn({ method: "POST" })
+  .middleware([requireActiveUser])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        calendar_id: z.string().uuid(),
+        remove_events: z.boolean().default(false),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { graphFetch } = await import("./microsoft-calendar.server");
+
+    const { data: cal, error } = await supabase
+      .from("calendars")
+      .select("id, owner_id, provider, external_id")
+      .eq("id", data.calendar_id)
+      .single();
+    if (error) throw error;
+    if (cal.owner_id !== userId) throw new Error("Not authorized");
+    if (cal.provider !== "microsoft") throw new Error("Not a Microsoft calendar");
+
+    // Best-effort: remove Graph subscriptions tied to this calendar.
+    const { data: subs } = await supabaseAdmin
+      .from("ms_subscriptions")
+      .select("subscription_id")
+      .eq("user_id", userId)
+      .eq("calendar_id", cal.id);
+    for (const s of subs ?? []) {
+      try {
+        await graphFetch(userId, `/subscriptions/${s.subscription_id}`, { method: "DELETE" });
+      } catch {
+        // token may already be revoked
+      }
+    }
+    await supabaseAdmin
+      .from("ms_subscriptions")
+      .delete()
+      .eq("user_id", userId)
+      .eq("calendar_id", cal.id);
+
+    if (data.remove_events) {
+      const { error: delErr } = await supabase.from("calendars").delete().eq("id", cal.id);
+      if (delErr) throw delErr;
+    } else {
+      const { error: updErr } = await supabase
+        .from("calendars")
+        .update({
+          provider: "manual",
+          external_id: null,
+          sync_token: null,
+          last_synced_at: null,
+        })
+        .eq("id", cal.id);
+      if (updErr) throw updErr;
+    }
+
+    // If this was the user's last Microsoft calendar, revoke the OAuth tokens
+    // so the account-level "Connect Outlook" state is restored.
+    const { count } = await supabaseAdmin
+      .from("calendars")
+      .select("id", { count: "exact", head: true })
+      .eq("owner_id", userId)
+      .eq("provider", "microsoft");
+    if (!count || count === 0) {
+      await supabaseAdmin.from("ms_oauth_tokens").delete().eq("user_id", userId);
+    }
+
+    return { ok: true, removed_events: data.remove_events };
+  });
