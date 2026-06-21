@@ -632,6 +632,15 @@ function ListWorkspace({
     );
   };
 
+  // Persist view mode + filters + sort whenever they change post-hydration
+  useEffect(() => {
+    if (!myId || hydratedListId !== list.id) return;
+    saveListView(list.id, myId, { view, filters, sort: { key: sortKey } }).catch(
+      (e) => console.error("saveListView failed", e),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, filters, sortKey, list.id, myId, hydratedListId]);
+
   const create = useMutation({
     mutationFn: () =>
       createTask({
