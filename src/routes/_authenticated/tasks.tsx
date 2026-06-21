@@ -125,7 +125,22 @@ import {
   restoreList,
   restoreTask,
   bulkRestoreTasks,
+  listUncategorisedTasks,
 } from "@/lib/tasks";
+import { AccountSelector } from "@/components/account-selector";
+
+const UNCATEGORISED_LIST_ID = "__uncategorised__";
+const UNCATEGORISED_LIST: ListRow = {
+  id: UNCATEGORISED_LIST_ID,
+  owner_id: "",
+  folder_id: "",
+  name: "Uncategorised",
+  created_at: "",
+};
+
+function isUncategorised(list: { id: string }) {
+  return list.id === UNCATEGORISED_LIST_ID;
+}
 import { listAssignedToMe, listAssignedByMe, listAssignmentHistory, assignTask } from "@/lib/tasks";
 import { AssigneePicker, useAssignableMembers, memberLabel, type AssignableMember } from "@/components/assignee-picker";
 import { useAuth } from "@/hooks/use-auth";
