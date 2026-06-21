@@ -223,10 +223,15 @@ async function handleTransactionPaymentFailed(data: any, env: PaddleEnv) {
 // sync with src/lib/topup-packs.ts (shared catalog), duplicated here so the
 // webhook stays free of client-bundle imports.
 const TOPUP_PACKS: Record<string, number> = {
+  // Honour any legacy purchases that may still complete after archival.
   topup_500: 500,
   topup_2000: 2000,
-  topup_5000: 5000,
   topup_12000: 12000,
+  // Current catalogue (large packs only at $0.0035/credit sell price).
+  topup_5000: 5000,
+  topup_10000: 10000,
+  topup_25000: 25000,
+  topup_50000: 50000,
 };
 const TOPUP_MONTHS = 12;
 
