@@ -707,9 +707,21 @@ function ListWorkspace({
     (filters.due !== "all" ? 1 : 0) +
     (filters.assigned !== "all" ? 1 : 0);
 
-  const [groupByAssignee, setGroupByAssignee] = useState(false);
   const { data: members = [] } = useAssignableMembers(businessId);
   const memberList = members as AssignableMember[];
+  const { data: stages = [] } = useQuery({
+    queryKey: ["task_stages", list.id],
+    queryFn: () => fetchStages(list.id),
+  });
+
+  const toggleGroupCollapsed = (key: string) => {
+    setCollapsedGroups((prev) => {
+      const n = new Set(prev);
+      if (n.has(key)) n.delete(key); else n.add(key);
+      persistView({ collapsed_groups: [...n] });
+      return n;
+    });
+  };
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
