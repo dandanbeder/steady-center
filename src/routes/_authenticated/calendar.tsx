@@ -724,7 +724,16 @@ function CalendarPage() {
             </ul>
           </div>
         )}
+
+        <TimeSplitSummary
+          events={visibleEvents}
+          calendars={calendars}
+          businesses={businesses}
+          rangeStart={range.start}
+          rangeEnd={range.end}
+        />
       </aside>
+
 
       <EventQuickView
         event={previewing}
