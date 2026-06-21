@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { AlertTriangle, BellRing, Coins, Loader2 } from "lucide-react";
+import { AlertTriangle, BellRing, Coins, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { getCreditBalance, setLowBalanceThreshold } from "@/lib/credits.functions";
+import { TopUpDialog } from "@/components/topup-dialog";
 
 function fmtDate(d: string | null | undefined): string {
   if (!d) return "—";
