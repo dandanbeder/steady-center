@@ -490,6 +490,8 @@ function JournalPage() {
             meta={metaByNote.get(selected.id) ?? null}
             onChanged={() => qc.invalidateQueries({ queryKey: ["notes"] })}
             onMetaChanged={() => qc.invalidateQueries({ queryKey: ["journal-meta"] })}
+            onDownload={() => handleExportEntry(selected)}
+            onDelete={() => handleDeleteEntry(selected)}
           />
         ) : (
           <div className="h-full flex flex-col items-center justify-center text-center px-8 max-w-md mx-auto">
