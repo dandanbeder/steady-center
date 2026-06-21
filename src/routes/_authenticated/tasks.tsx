@@ -647,13 +647,14 @@ function ListWorkspace({
   onAutoOpenConsumed?: () => void;
 }) {
   const qc = useQueryClient();
+  const uncategorised = isUncategorised(list);
   const { data: folders = [] } = useQuery({ queryKey: ["folders"], queryFn: listFolders });
   const folder = folders.find((f) => f.id === list.folder_id);
-  const businessId = folder?.business_id ?? null;
+  const businessId = uncategorised ? null : (folder?.business_id ?? null);
 
   const { data: tasks = [] } = useQuery({
     queryKey: ["tasks", list.id],
-    queryFn: () => listTasksByList(list.id),
+    queryFn: () => (uncategorised ? listUncategorisedTasks() : listTasksByList(list.id)),
   });
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["tasks", list.id] });
@@ -661,11 +662,11 @@ function ListWorkspace({
   const { user } = useAuth();
   const myId = user?.id ?? null;
 
-  // Saved per-user view config for this list
+  // Saved per-user view config for this list (skipped for the synthetic Uncategorised bucket)
   const viewCfgQuery = useQuery({
     queryKey: ["user_list_view", list.id, myId],
     queryFn: () => (myId ? fetchListView(list.id, myId) : Promise.resolve(null)),
-    enabled: !!myId,
+    enabled: !!myId && !uncategorised,
   });
   const savedCfg: ListViewConfig = viewCfgQuery.data ?? DEFAULT_VIEW_CONFIG;
 
@@ -699,7 +700,7 @@ function ListWorkspace({
 
   // Persist on changes
   const persistView = (patch: Partial<ListViewConfig>) => {
-    if (!myId || hydratedListId !== list.id) return;
+    if (!myId || hydratedListId !== list.id || uncategorised) return;
     saveListView(list.id, myId, patch).catch((e) =>
       console.error("saveListView failed", e),
     );
@@ -707,12 +708,12 @@ function ListWorkspace({
 
   // Persist view mode + filters + sort whenever they change post-hydration
   useEffect(() => {
-    if (!myId || hydratedListId !== list.id) return;
+    if (!myId || hydratedListId !== list.id || uncategorised) return;
     saveListView(list.id, myId, { view, filters, sort: { key: sortKey } }).catch(
       (e) => console.error("saveListView failed", e),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view, filters, sortKey, list.id, myId, hydratedListId]);
+  }, [view, filters, sortKey, list.id, myId, hydratedListId, uncategorised]);
 
   const create = useMutation({
     mutationFn: () =>
