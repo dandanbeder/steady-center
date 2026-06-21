@@ -191,11 +191,36 @@ function AskNotesPage() {
               </button>
             ))}
           </div>
-          <Button onClick={run} disabled={loading || q.trim().length < 2} className="gap-1.5">
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            Ask
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant={recording ? "default" : "outline"}
+              size="icon"
+              onClick={recording ? stopRecording : startRecording}
+              disabled={transcribing}
+              aria-label={recording ? "Stop recording" : "Record question"}
+              title={recording ? "Stop & transcribe" : "Speak your question"}
+              className={cn(recording && "animate-pulse")}
+            >
+              {transcribing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : recording ? (
+                <Square className="h-4 w-4" />
+              ) : (
+                <Mic className="h-4 w-4" />
+              )}
+            </Button>
+            <Button onClick={run} disabled={loading || q.trim().length < 2} className="gap-1.5">
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              Ask
+            </Button>
+          </div>
         </div>
+        {(recording || transcribing) && (
+          <p className="text-xs text-muted-foreground">
+            {recording ? "Listening… tap stop when you're done." : "Transcribing your recording…"}
+          </p>
+        )}
       </div>
 
       {answer && (
