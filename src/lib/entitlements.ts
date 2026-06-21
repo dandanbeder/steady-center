@@ -35,23 +35,79 @@ const FEATURE_MIN_TIER: Record<Feature, Tier> = {
 const TIER_RANK: Record<Tier, number> = { free: 0, pro: 1, team: 2 };
 
 export type PlanLimits = {
-  accounts: number; // -1 = unlimited
-  calendarConnections: number; // -1 = unlimited
+  // -1 = unlimited
+  maxBusinesses: number;
+  maxCalendarConnections: number;
+  /** Per paid seat. Team pools across paid seats; Free/Pro use a single seat. */
+  aiAllowanceCreditsPerSeat: number;
+  /** Whether the account can buy AI credit top-ups. */
+  canTopup: boolean;
+  /** Granular sharing (shares table, account-scope grants). Team-only. */
+  sharingEnabled: boolean;
+  /** Team-only surfaces (Team & Access page, member management, shared inbox). */
+  teamFeaturesEnabled: boolean;
+};
+
+/**
+ * SINGLE SOURCE OF TRUTH for per-plan limits.
+ * Every "is this account allowed to X?" check reads from here, via
+ * effectiveLimits() (client/shared) or getAccountEntitlements() (server, with
+ * status + seat_count + cycle merged in). Do not hardcode plan rules anywhere else.
+ */
+export const LIMITS: Record<Tier, PlanLimits> = {
+  free: {
+    maxBusinesses: 1,
+    maxCalendarConnections: 1,
+    aiAllowanceCreditsPerSeat: 20,
+    canTopup: true,
+    sharingEnabled: false,
+    teamFeaturesEnabled: false,
+  },
+  pro: {
+    maxBusinesses: -1,
+    maxCalendarConnections: -1,
+    aiAllowanceCreditsPerSeat: 400,
+    canTopup: true,
+    sharingEnabled: false,
+    teamFeaturesEnabled: false,
+  },
+  team: {
+    maxBusinesses: -1,
+    maxCalendarConnections: -1,
+    aiAllowanceCreditsPerSeat: 400,
+    canTopup: true,
+    sharingEnabled: true,
+    teamFeaturesEnabled: true,
+  },
+};
+
+// Back-compat aliases for existing call sites. New code should read PlanLimits fields directly.
+export type LegacyPlanLimits = PlanLimits & {
+  accounts: number;
+  calendarConnections: number;
   aiActionsPerSeat: number;
   teamSharing: boolean;
 };
 
-export const LIMITS: Record<Tier, PlanLimits> = {
-  free: { accounts: 1, calendarConnections: 1, aiActionsPerSeat: 20, teamSharing: false },
-  pro: { accounts: -1, calendarConnections: -1, aiActionsPerSeat: 400, teamSharing: false },
-  team: { accounts: -1, calendarConnections: -1, aiActionsPerSeat: 400, teamSharing: true },
-};
+function withLegacy(p: PlanLimits): LegacyPlanLimits {
+  return {
+    ...p,
+    accounts: p.maxBusinesses,
+    calendarConnections: p.maxCalendarConnections,
+    aiActionsPerSeat: p.aiAllowanceCreditsPerSeat,
+    teamSharing: p.sharingEnabled,
+  };
+}
 
 /** Effective per-account limits given tier + paid-seat count (Team pools AI per paid seat). */
-export function effectiveLimits(tier: Tier, paidSeats = 1): PlanLimits & { aiActionsCap: number } {
+export function effectiveLimits(
+  tier: Tier,
+  paidSeats = 1,
+): LegacyPlanLimits & { aiActionsCap: number; aiAllowanceCredits: number } {
   const base = LIMITS[tier];
   const seats = tier === "team" ? Math.max(paidSeats, 2) : 1;
-  return { ...base, aiActionsCap: base.aiActionsPerSeat * seats };
+  const aiAllowanceCredits = base.aiAllowanceCreditsPerSeat * seats;
+  return { ...withLegacy(base), aiActionsCap: aiAllowanceCredits, aiAllowanceCredits };
 }
 
 export function hasFeature(tier: Tier, feature: Feature): boolean {
@@ -77,4 +133,4 @@ export const PRICING = {
   team_yearly: { amount: 12000, cycle: "year" as BillingCycle, priceId: "team_yearly" },
 };
 
-export const FREE_BUSINESS_LIMIT = LIMITS.free.accounts;
+export const FREE_BUSINESS_LIMIT = LIMITS.free.maxBusinesses;
