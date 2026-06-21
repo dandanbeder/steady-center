@@ -47,7 +47,13 @@ export async function createBusiness(name: string, color: string): Promise<{ id:
     .insert({ name, color, owner_id: u.user.id, sort_order: nextOrder })
     .select("id")
     .single();
-  if (error) throw error;
+  if (error) {
+    // DB trigger raises UPGRADE_REQUIRED when the plan cap is hit.
+    if (/UPGRADE_REQUIRED/i.test(error.message)) {
+      throw new Error("You've reached your plan's account limit. Upgrade to add more.");
+    }
+    throw error;
+  }
   return { id: data.id };
 }
 
