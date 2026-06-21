@@ -647,8 +647,6 @@ function ListWorkspace({
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
-  const { user } = useAuth();
-  const myId = user?.id ?? null;
   const filteredTopLevel = useMemo(() => {
     const top = tasks.filter((t) => !t.parent_task_id);
     return sortTasks(top.filter((t) => matchesFilters(t, filters, myId)), sortKey);
