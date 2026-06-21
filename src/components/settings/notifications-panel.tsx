@@ -288,7 +288,7 @@ export function NotificationsPanel() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
-          <TypeRow
+          <TypeRow smsAvailable={hasPhone}
             label="Meeting reminders"
             helper="A nudge before scheduled events on your calendar."
             enabled={draft.events.event_reminders}
@@ -316,7 +316,7 @@ export function NotificationsPanel() {
               )
             }
           />
-          <TypeRow
+          <TypeRow smsAvailable={hasPhone}
             label="@mentions and comments to me"
             helper="When someone tags you in a comment, note, or shared item."
             enabled={draft.events.tagged}
@@ -324,7 +324,7 @@ export function NotificationsPanel() {
             channels={draft.events.type_channels.tagged}
             onChannelChange={(c, v) => setTypeChannel("tagged", c, v)}
           />
-          <TypeRow
+          <TypeRow smsAvailable={hasPhone}
             label="A task assigned to me"
             helper="Someone hands a task to you, you'll want to know."
             enabled={draft.events.assigned_to_me}
@@ -332,7 +332,7 @@ export function NotificationsPanel() {
             channels={draft.events.type_channels.assigned_to_me}
             onChannelChange={(c, v) => setTypeChannel("assigned_to_me", c, v)}
           />
-          <TypeRow
+          <TypeRow smsAvailable={hasPhone}
             label="Access and share requests"
             helper="Someone asks to join a list, or shares one with you."
             enabled={draft.events.access_share_requests}
@@ -340,7 +340,7 @@ export function NotificationsPanel() {
             channels={draft.events.type_channels.access_share_requests}
             onChannelChange={(c, v) => setTypeChannel("access_share_requests", c, v)}
           />
-          <TypeRow
+          <TypeRow smsAvailable={hasPhone}
             label="Meeting summary ready"
             helper="When a meeting's notes, decisions, and actions are ready to review."
             enabled={draft.events.meeting_summary_ready}
@@ -348,7 +348,7 @@ export function NotificationsPanel() {
             channels={draft.events.type_channels.meeting_summary_ready}
             onChannelChange={(c, v) => setTypeChannel("meeting_summary_ready", c, v)}
           />
-          <TypeRow
+          <TypeRow smsAvailable={hasPhone}
             label="Weekly review ready"
             helper="Your gentle Friday recap, what landed, what's next."
             enabled={draft.events.weekly_review}
@@ -356,7 +356,7 @@ export function NotificationsPanel() {
             channels={draft.events.type_channels.weekly_review}
             onChannelChange={(c, v) => setTypeChannel("weekly_review", c, v)}
           />
-          <TypeRow
+          <TypeRow smsAvailable={hasPhone}
             label="Security events"
             helper="Password or email changed, new sign-in. Always recommended."
             enabled={draft.events.security_events}
@@ -364,7 +364,7 @@ export function NotificationsPanel() {
             channels={draft.events.type_channels.security_events}
             onChannelChange={(c, v) => setTypeChannel("security_events", c, v)}
           />
-          <TypeRow
+          <TypeRow smsAvailable={hasPhone}
             label="Payment failed"
             helper="Heads-up if a charge doesn't go through, so you can fix it quickly."
             enabled={draft.events.payment_failed}
@@ -387,7 +387,7 @@ export function NotificationsPanel() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
-          <TypeRow
+          <TypeRow smsAvailable={hasPhone}
             label="Tasks due today"
             helper={"Summarised as one line in the Morning Pulse, e.g. \"4 tasks due today\"."}
             enabled={draft.events.task_due}
