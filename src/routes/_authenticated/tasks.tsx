@@ -140,6 +140,9 @@ import { ShareDialog } from "@/components/share-dialog";
 
 export const Route = createFileRoute("/_authenticated/tasks")({
   head: () => ({ meta: [{ title: "Tasks · Heartbeat" }] }),
+  validateSearch: (s: Record<string, unknown>) => ({
+    task: typeof s.task === "string" ? s.task : undefined,
+  }),
   component: TasksPage,
 });
 
