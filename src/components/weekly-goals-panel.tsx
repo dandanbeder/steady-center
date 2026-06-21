@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, Target, Check, X } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { Plus, Trash2, Target, Check, X, Heart } from "lucide-react";
+import { coachWeekCheck } from "@/lib/coach.functions";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
