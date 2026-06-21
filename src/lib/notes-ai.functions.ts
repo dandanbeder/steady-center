@@ -1,9 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
+import { routeModel } from "./ai-routing";
+import { capAndLog } from "./ai-routing.server";
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-const MODEL = "claude-sonnet-4-20250514";
+// Default route — reasoning. Sub-action overrides (suggest_meta, extract_actions,
+// cleanup_transcript) hop to the light tier inside each handler.
+const ROUTE = routeModel("notes_ai");
+const MODEL = ROUTE.model;
 const MAX_INPUT_CHARS = 60_000;
 
 type AnthropicResponse = {
@@ -15,9 +20,11 @@ async function callClaudeFull(opts: {
   system: string;
   user: string;
   maxTokens?: number;
-}): Promise<{ text: string; input_tokens: number; output_tokens: number }> {
+  model?: string;
+}): Promise<{ text: string; input_tokens: number; output_tokens: number; model: string }> {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error("AI is not configured (missing key).");
+  const model = opts.model ?? MODEL;
   const res = await fetch(ANTHROPIC_URL, {
     method: "POST",
     headers: {
@@ -26,7 +33,7 @@ async function callClaudeFull(opts: {
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      model: MODEL,
+      model,
       max_tokens: opts.maxTokens ?? 1600,
       system: opts.system,
       messages: [{ role: "user", content: opts.user }],
@@ -42,6 +49,7 @@ async function callClaudeFull(opts: {
     text: j.content?.find((c) => c.type === "text")?.text?.trim() ?? "",
     input_tokens: j.usage?.input_tokens ?? 0,
     output_tokens: j.usage?.output_tokens ?? 0,
+    model,
   };
 }
 
@@ -49,6 +57,7 @@ async function callClaude(opts: {
   system: string;
   user: string;
   maxTokens?: number;
+  model?: string;
 }): Promise<string> {
   return (await callClaudeFull(opts)).text;
 }
