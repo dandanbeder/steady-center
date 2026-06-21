@@ -99,7 +99,7 @@ export function NewNoteDialog({
   }, [type]);
 
   const canNext =
-    (step === 0 && !!businessId) ||
+    step === 0 ||
     (step === 1 && (folderId !== null || newFolderName.trim() === "")) ||
     step === 2 ||
     step === 3;
@@ -158,16 +158,33 @@ export function NewNoteDialog({
         {step === 0 && (
           <div className="space-y-3">
             <Label>Account</Label>
-            <Select value={businessId ?? ""} onValueChange={(v) => setBusinessId(v || null)}>
+            <Select
+              value={businessId ?? "__none"}
+              onValueChange={(v) => setBusinessId(v === "__none" ? null : v)}
+            >
               <SelectTrigger><SelectValue placeholder="Pick an account" /></SelectTrigger>
               <SelectContent>
+                <SelectItem value="__none">
+                  <span className="inline-flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground" />
+                    Uncategorised / Personal (no account)
+                  </span>
+                </SelectItem>
                 {businesses.map((b) => (
-                  <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                  <SelectItem key={b.id} value={b.id}>
+                    <span className="inline-flex items-center gap-2">
+                      <span
+                        className="h-2.5 w-2.5 rounded-full"
+                        style={{ backgroundColor: b.color }}
+                      />
+                      {b.name}
+                    </span>
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
-              Notes are scoped to an Account so everyone in it can find them.
+              Choose which account this note belongs to. It stays private to you unless you share it.
             </p>
           </div>
         )}
