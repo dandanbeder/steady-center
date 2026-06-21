@@ -45,6 +45,7 @@ import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authentic
 import { Route as AuthMicrosoftCallbackRouteImport } from './routes/auth/microsoft.callback'
 import { Route as AuthenticatedReportsReportIdRouteImport } from './routes/_authenticated/reports.$reportId'
 import { Route as AuthenticatedMeetingsMeetingIdRouteImport } from './routes/_authenticated/meetings.$meetingId'
+import { Route as AuthenticatedAdminPaymentsRouteImport } from './routes/_authenticated/admin.payments'
 import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin.analytics'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 import { Route as ApiPublicHooksSyncMicrosoftCalendarsRouteImport } from './routes/api/public/hooks/sync-microsoft-calendars'
@@ -240,6 +241,12 @@ const AuthenticatedMeetingsMeetingIdRoute =
     path: '/$meetingId',
     getParentRoute: () => AuthenticatedMeetingsRoute,
   } as any)
+const AuthenticatedAdminPaymentsRoute =
+  AuthenticatedAdminPaymentsRouteImport.update({
+    id: '/payments',
+    path: '/payments',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminAnalyticsRoute =
   AuthenticatedAdminAnalyticsRouteImport.update({
     id: '/analytics',
@@ -346,6 +353,7 @@ export interface FileRoutesByFullPath {
   '/trash': typeof AuthenticatedTrashRoute
   '/support-session/callback': typeof SupportSessionCallbackRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
+  '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
   '/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
   '/reports/$reportId': typeof AuthenticatedReportsReportIdRoute
   '/auth/microsoft/callback': typeof AuthMicrosoftCallbackRoute
@@ -394,6 +402,7 @@ export interface FileRoutesByTo {
   '/trash': typeof AuthenticatedTrashRoute
   '/support-session/callback': typeof SupportSessionCallbackRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
+  '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
   '/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
   '/reports/$reportId': typeof AuthenticatedReportsReportIdRoute
   '/auth/microsoft/callback': typeof AuthMicrosoftCallbackRoute
@@ -445,6 +454,7 @@ export interface FileRoutesById {
   '/_authenticated/trash': typeof AuthenticatedTrashRoute
   '/support-session/callback': typeof SupportSessionCallbackRoute
   '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
+  '/_authenticated/admin/payments': typeof AuthenticatedAdminPaymentsRoute
   '/_authenticated/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
   '/_authenticated/reports/$reportId': typeof AuthenticatedReportsReportIdRoute
   '/auth/microsoft/callback': typeof AuthMicrosoftCallbackRoute
@@ -496,6 +506,7 @@ export interface FileRouteTypes {
     | '/trash'
     | '/support-session/callback'
     | '/admin/analytics'
+    | '/admin/payments'
     | '/meetings/$meetingId'
     | '/reports/$reportId'
     | '/auth/microsoft/callback'
@@ -544,6 +555,7 @@ export interface FileRouteTypes {
     | '/trash'
     | '/support-session/callback'
     | '/admin/analytics'
+    | '/admin/payments'
     | '/meetings/$meetingId'
     | '/reports/$reportId'
     | '/auth/microsoft/callback'
@@ -594,6 +606,7 @@ export interface FileRouteTypes {
     | '/_authenticated/trash'
     | '/support-session/callback'
     | '/_authenticated/admin/analytics'
+    | '/_authenticated/admin/payments'
     | '/_authenticated/meetings/$meetingId'
     | '/_authenticated/reports/$reportId'
     | '/auth/microsoft/callback'
@@ -890,6 +903,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMeetingsMeetingIdRouteImport
       parentRoute: typeof AuthenticatedMeetingsRoute
     }
+    '/_authenticated/admin/payments': {
+      id: '/_authenticated/admin/payments'
+      path: '/payments'
+      fullPath: '/admin/payments'
+      preLoaderRoute: typeof AuthenticatedAdminPaymentsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/analytics': {
       id: '/_authenticated/admin/analytics'
       path: '/analytics'
@@ -979,12 +999,14 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminAnalyticsRoute: typeof AuthenticatedAdminAnalyticsRoute
+  AuthenticatedAdminPaymentsRoute: typeof AuthenticatedAdminPaymentsRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedAdminUsersUserIdRoute: typeof AuthenticatedAdminUsersUserIdRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminAnalyticsRoute: AuthenticatedAdminAnalyticsRoute,
+  AuthenticatedAdminPaymentsRoute: AuthenticatedAdminPaymentsRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   AuthenticatedAdminUsersUserIdRoute: AuthenticatedAdminUsersUserIdRoute,
 }
