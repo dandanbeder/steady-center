@@ -3315,6 +3315,10 @@ export type Database = {
         Args: { p_business: string; p_new_owner: string }
         Returns: undefined
       }
+      try_claim_hard_stop_alert: {
+        Args: { _account: string }
+        Returns: boolean
+      }
       user_effective_plan: {
         Args: { p_user: string }
         Returns: {
