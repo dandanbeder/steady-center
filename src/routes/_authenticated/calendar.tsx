@@ -25,6 +25,9 @@ import {
   CalendarDays,
   Copy,
   CalendarPlus,
+  Eye,
+  EyeOff,
+  Palette,
 } from "lucide-react";
 import { ReminderControls } from "@/components/reminder-controls";
 import { createNote } from "@/lib/notes";
@@ -64,8 +67,10 @@ import {
 } from "@/components/ui/popover";
 import { Calendar as MiniCalendar } from "@/components/ui/calendar";
 import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
+import { useColorBy, useHiddenSet, type ColorBy } from "@/lib/calendar-prefs";
+import { EventPopover } from "@/components/calendar/event-popover";
 
-import { createBusiness, listBusinesses, type Business } from "@/lib/businesses";
+import { createBusiness, listBusinesses, updateBusiness, type Business } from "@/lib/businesses";
 import {
   bulkInsertEvents,
   createCalendar,
