@@ -10,6 +10,8 @@ import { askNotes } from "@/lib/notes-journal.functions";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { UpgradeGate } from "@/components/upgrade-gate";
+import { Separator } from "@/components/ui/separator";
+import { TeamProgressPanel } from "@/components/team-progress-panel";
 
 export const Route = createFileRoute("/_authenticated/ask-notes")({
   component: () => (
