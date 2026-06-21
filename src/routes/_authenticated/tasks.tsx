@@ -720,7 +720,8 @@ function ListWorkspace({
     (filters.priority !== "all" ? 1 : 0) +
     (filters.status !== "all" ? 1 : 0) +
     (filters.due !== "all" ? 1 : 0) +
-    (filters.assigned !== "all" ? 1 : 0);
+    (filters.assigned !== "all" ? 1 : 0) +
+    (filters.outcome !== "all" ? 1 : 0);
 
   const { data: members = [] } = useAssignableMembers(businessId);
   const memberList = members as AssignableMember[];
