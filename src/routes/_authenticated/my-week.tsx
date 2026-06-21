@@ -526,11 +526,18 @@ function DayColumn({
                 <div className="flex-1 min-w-0">
                   <div
                     className={cn(
-                      "truncate",
+                      "truncate flex items-center gap-1",
                       t.status === "done" && "line-through text-muted-foreground",
                     )}
                   >
-                    {t.title}
+                    <span className="truncate">{t.title}</span>
+                    {t.outcome_id && (
+                      <OutcomeMark
+                        outcomeId={t.outcome_id}
+                        outcomeName={outcomeNameById.get(t.outcome_id)}
+                        size="xs"
+                      />
+                    )}
                   </div>
                   <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-muted-foreground">
                     <Flag className="h-2.5 w-2.5" style={{ color: PRIORITY_COLOR[t.priority] }} />
