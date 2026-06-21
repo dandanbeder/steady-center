@@ -887,7 +887,7 @@ function ListWorkspace({
         />
       )}
 
-      </div>
+
 
       <form
         onSubmit={(e) => {
