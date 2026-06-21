@@ -149,6 +149,16 @@ export function ShareDialog({ open, onOpenChange, resourceType, resourceId, reso
             </div>
           )}
 
+          <div className="flex items-center justify-between rounded border p-2">
+            <Label htmlFor="can-reshare" className="text-sm">Can re-share / invite others</Label>
+            <Switch id="can-reshare" checked={canReshare} onCheckedChange={setCanReshare} />
+          </div>
+          <div className="flex items-center justify-between rounded border p-2">
+            <Label htmlFor="can-export" className="text-sm">Can export</Label>
+            <Switch id="can-export" checked={canExport} onCheckedChange={setCanExport} />
+          </div>
+
+
           {suggestions.length > 0 && query && (
             <div className="rounded border max-h-40 overflow-auto">
               {suggestions.map((s) => (
