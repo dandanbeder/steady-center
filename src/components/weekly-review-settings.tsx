@@ -28,14 +28,17 @@ export function WeeklyReviewSettings() {
   const [day, setDay] = useState<number | null>(null);
   const [hour, setHour] = useState<number | null>(null);
   const [enabled, setEnabled] = useState<boolean | null>(null);
-  const [tz, setTz] = useState<string | null>(null);
 
   const d = day ?? data?.weekly_review_day ?? 5;
   const h = hour ?? data?.weekly_review_hour ?? 16;
   const en = enabled ?? data?.weekly_review_enabled ?? true;
-  const zone = tz ?? data?.timezone ?? "Africa/Johannesburg";
+  // Timezone is a global General setting now; we just READ it here so the
+  // "next scheduled run" preview is honest.
+  const zone = data?.timezone ?? "Africa/Johannesburg";
 
-  const timezones = useMemo(() => listTimezones(), []);
+  // listTimezones is intentionally not used here anymore — see General settings.
+  void listTimezones;
+
   const next = useMemo(
     () =>
       nextScheduledRun({
@@ -53,6 +56,7 @@ export function WeeklyReviewSettings() {
         weekly_review_day: d,
         weekly_review_hour: h,
         weekly_review_enabled: en,
+        // Keep persisted tz unchanged — General owns it.
         timezone: zone,
       }),
     onSuccess: () => {
@@ -107,20 +111,6 @@ export function WeeklyReviewSettings() {
         </div>
       </div>
 
-      <div>
-        <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
-          Timezone
-        </p>
-        <Select value={zone} onValueChange={(v) => setTz(v)}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent className="max-h-72">
-            {timezones.map((z) => (
-              <SelectItem key={z} value={z}>{z.replace(/_/g, " ")}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
       <div className="rounded-lg bg-muted/40 p-3 text-sm">
         <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
           Next scheduled run
@@ -146,6 +136,9 @@ export function WeeklyReviewSettings() {
         ) : (
           <p className="text-muted-foreground">Disabled</p>
         )}
+        <p className="text-xs text-muted-foreground mt-2">
+          Timezone is set in <span className="font-medium">General → Global timezone</span>.
+        </p>
       </div>
 
       <Button onClick={() => save.mutate()} disabled={save.isPending}>
