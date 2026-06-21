@@ -1,17 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Sparkles, Send, Loader2 } from "lucide-react";
+import { Sparkles, Send, Loader2, Mic, Square } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
 import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
 import { askNotes } from "@/lib/notes-journal.functions";
+import { transcribeAudio } from "@/lib/transcribe.functions";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { UpgradeGate } from "@/components/upgrade-gate";
 import { Separator } from "@/components/ui/separator";
 import { TeamProgressPanel } from "@/components/team-progress-panel";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/ask-notes")({
   component: () => (
@@ -40,20 +42,26 @@ const TYPE_LABEL: Record<Match["type"], string> = {
 function AskNotesPage() {
   const { activeId } = useActiveBusiness();
   const ask = useServerFn(askNotes);
+  const transcribe = useServerFn(transcribeAudio);
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);
   const [answer, setAnswer] = useState<string>("");
   const [matches, setMatches] = useState<Match[]>([]);
+  const [recording, setRecording] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
 
-  const run = async () => {
-    if (q.trim().length < 2) return;
+  const runQuery = async (question: string) => {
+    if (question.trim().length < 2) return;
     setLoading(true);
     setAnswer("");
     setMatches([]);
     try {
       const res = await ask({
         data: {
-          question: q.trim(),
+          question: question.trim(),
           businessId: activeId === ALL ? null : activeId,
         },
       });
@@ -64,6 +72,83 @@ function AskNotesPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const run = () => runQuery(q);
+
+  const stopMicTracks = () => {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+  };
+
+  const startRecording = async () => {
+    if (recording || transcribing) return;
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      toast.error("Microphone access is needed to record.");
+      return;
+    }
+    const mimeType = ["audio/webm", "audio/mp4"].find((t) => MediaRecorder.isTypeSupported(t));
+    if (!mimeType) {
+      stream.getTracks().forEach((t) => t.stop());
+      toast.error("This browser can't record a supported audio format.");
+      return;
+    }
+    streamRef.current = stream;
+    const recorder = new MediaRecorder(stream, { mimeType });
+    chunksRef.current = [];
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) chunksRef.current.push(e.data);
+    };
+    recorder.onstop = async () => {
+      stopMicTracks();
+      const blob = new Blob(chunksRef.current, { type: recorder.mimeType });
+      chunksRef.current = [];
+      if (blob.size < 1024) {
+        toast.error("That recording was empty — please try again.");
+        return;
+      }
+      setTranscribing(true);
+      try {
+        const buf = await blob.arrayBuffer();
+        // Encode to base64 in chunks to avoid large-string call stack issues.
+        let binary = "";
+        const bytes = new Uint8Array(buf);
+        const CHUNK = 0x8000;
+        for (let i = 0; i < bytes.length; i += CHUNK) {
+          binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+        }
+        const audio_base64 = btoa(binary);
+        const { text } = await transcribe({
+          data: { audio_base64, mime: recorder.mimeType },
+        });
+        if (!text) {
+          toast.error("Couldn't hear anything in that recording.");
+          return;
+        }
+        setQ((prev) => (prev.trim() ? `${prev.trim()} ${text}` : text));
+        toast.success("Transcribed — review and tap Ask.");
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Transcription failed");
+      } finally {
+        setTranscribing(false);
+      }
+    };
+    recorder.start();
+    recorderRef.current = recorder;
+    setRecording(true);
+  };
+
+  const stopRecording = () => {
+    try {
+      recorderRef.current?.stop();
+    } catch {
+      stopMicTracks();
+    }
+    recorderRef.current = null;
+    setRecording(false);
   };
 
   const examples = [
@@ -106,11 +191,36 @@ function AskNotesPage() {
               </button>
             ))}
           </div>
-          <Button onClick={run} disabled={loading || q.trim().length < 2} className="gap-1.5">
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            Ask
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant={recording ? "default" : "outline"}
+              size="icon"
+              onClick={recording ? stopRecording : startRecording}
+              disabled={transcribing}
+              aria-label={recording ? "Stop recording" : "Record question"}
+              title={recording ? "Stop & transcribe" : "Speak your question"}
+              className={cn(recording && "animate-pulse")}
+            >
+              {transcribing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : recording ? (
+                <Square className="h-4 w-4" />
+              ) : (
+                <Mic className="h-4 w-4" />
+              )}
+            </Button>
+            <Button onClick={run} disabled={loading || q.trim().length < 2} className="gap-1.5">
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              Ask
+            </Button>
+          </div>
         </div>
+        {(recording || transcribing) && (
+          <p className="text-xs text-muted-foreground">
+            {recording ? "Listening… tap stop when you're done." : "Transcribing your recording…"}
+          </p>
+        )}
       </div>
 
       {answer && (
