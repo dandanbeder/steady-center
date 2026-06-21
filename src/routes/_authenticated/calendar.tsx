@@ -69,6 +69,9 @@ import { Calendar as MiniCalendar } from "@/components/ui/calendar";
 import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
 import { useColorBy, useHiddenSet, type ColorBy } from "@/lib/calendar-prefs";
 import { EventQuickView } from "@/components/calendar/event-popover";
+import { QuickAddBar } from "@/components/calendar/quick-add-bar";
+import { TimeSplitSummary } from "@/components/calendar/time-split";
+
 
 import { createBusiness, listBusinesses, updateBusiness, type Business } from "@/lib/businesses";
 import {
@@ -307,6 +310,37 @@ function CalendarPage() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to delete"),
   });
 
+  // Optimistic move/resize for drag-and-drop. On failure we revert the cache.
+  const eventsKey = ["events", range.start.toISOString(), range.end.toISOString()];
+  const moveMut = useMutation({
+    mutationFn: ({ id, start, end }: { id: string; start: Date; end: Date }) =>
+      updateEvent(id, { start_at: start.toISOString(), end_at: end.toISOString() }),
+    onMutate: async ({ id, start, end }) => {
+      await qc.cancelQueries({ queryKey: eventsKey });
+      const prev = qc.getQueryData<EventRow[]>(eventsKey);
+      if (prev) {
+        qc.setQueryData<EventRow[]>(
+          eventsKey,
+          prev.map((e) =>
+            e.id === id
+              ? { ...e, start_at: start.toISOString(), end_at: end.toISOString() }
+              : e,
+          ),
+        );
+      }
+      return { prev };
+    },
+    onError: (err, _vars, ctx) => {
+      if (ctx?.prev) qc.setQueryData(eventsKey, ctx.prev);
+      toast.error(err instanceof Error ? err.message : "Move failed — reverted");
+    },
+    onSuccess: (res) => {
+      if (res.syncWarning) toast.warning(res.syncWarning);
+      qc.invalidateQueries({ queryKey: ["events"] });
+    },
+  });
+
+
   function shift(dir: -1 | 1) {
     if (view === "month") {
       setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + dir, 1));
@@ -481,6 +515,16 @@ function CalendarPage() {
         </div>
 
 
+        <QuickAddBar
+          calendars={visibleCalendars}
+          defaultCalendarId={
+            visibleCalendars.find((c) => !hiddenCals.has(c.id))?.id ??
+            visibleCalendars[0]?.id ??
+            null
+          }
+          onCreated={() => qc.invalidateQueries({ queryKey: ["events"] })}
+        />
+
         {view === "month" && (
           <MonthGrid
             cursor={cursor}
@@ -501,6 +545,9 @@ function CalendarPage() {
             colorFor={colorFor}
             onSlotClick={(d) => openNewOn(d)}
             onEventClick={(e) => setPreviewing(e)}
+            onEventChange={(ev, start, end) =>
+              moveMut.mutate({ id: ev.id, start, end })
+            }
           />
         )}
         {view === "day" && (
@@ -511,6 +558,9 @@ function CalendarPage() {
             colorFor={colorFor}
             onSlotClick={(d) => openNewOn(d)}
             onEventClick={(e) => setPreviewing(e)}
+            onEventChange={(ev, start, end) =>
+              moveMut.mutate({ id: ev.id, start, end })
+            }
           />
         )}
         {view === "agenda" && (
@@ -521,6 +571,7 @@ function CalendarPage() {
             onEventClick={(e) => setPreviewing(e)}
           />
         )}
+
       </div>
 
       <aside className={cn("w-full lg:w-72 shrink-0 space-y-6 order-1 lg:order-2", expanded && "hidden")}>
@@ -673,7 +724,16 @@ function CalendarPage() {
             </ul>
           </div>
         )}
+
+        <TimeSplitSummary
+          events={visibleEvents}
+          calendars={calendars}
+          businesses={businesses}
+          rangeStart={range.start}
+          rangeEnd={range.end}
+        />
       </aside>
+
 
       <EventQuickView
         event={previewing}
@@ -1051,14 +1111,36 @@ function MonthGrid({
             });
           const shown = dayEvts.slice(0, 3);
           const overflow = dayEvts.length - shown.length;
+          // Per-day capacity cue from timed events
+          const dayStartMs = startOfDay(d).getTime();
+          const dayEndMs = endOfDay(d).getTime();
+          const timedMins = dayEvts.reduce((acc, e) => {
+            if (isAllDayLike(e)) return acc;
+            const s = Math.max(new Date(e.start_at).getTime(), dayStartMs);
+            const en = Math.min(new Date(e.end_at).getTime(), dayEndMs);
+            return acc + Math.max(0, (en - s) / 60_000);
+          }, 0);
+          const hours = timedMins / 60;
+          // Calm shading — never alarming
+          const capacityTint =
+            hours >= 9
+              ? "bg-accent/15"
+              : hours >= 6
+                ? "bg-accent/10"
+                : hours >= 3
+                  ? "bg-accent/5"
+                  : "";
           return (
             <div
               key={i}
+              title={hours > 0 ? `${hours.toFixed(1)}h booked` : undefined}
               className={cn(
                 "min-w-0 min-h-[88px] sm:min-h-[110px] border-r border-b border-border p-1 sm:p-1.5 flex flex-col gap-1 hover:bg-muted/30 transition-colors",
                 (i + 1) % 7 === 0 && "border-r-0",
                 i >= 35 && "border-b-0",
                 !inMonth && "bg-muted/20",
+                inMonth && capacityTint,
+
               )}
             >
               <button
@@ -1176,6 +1258,7 @@ function TimeGrid({
   colorFor,
   onSlotClick,
   onEventClick,
+  onEventChange,
 }: {
   days: Date[];
   events: EventRow[];
@@ -1183,7 +1266,9 @@ function TimeGrid({
   colorFor?: (e: EventRow) => string;
   onSlotClick: (d: Date) => void;
   onEventClick: (e: EventRow) => void;
+  onEventChange?: (ev: EventRow, start: Date, end: Date) => void;
 }) {
+
   const today = startOfDay(new Date());
   const [now, setNow] = useState(new Date());
   useEffect(() => {
@@ -1384,34 +1469,20 @@ function TimeGrid({
                     const c = calById.get(ev.calendar_id);
                     const color = colorFor ? colorFor(ev) : (c?.color ?? "#7A8471");
                     return (
-                      <button
+                      <DraggableEvent
                         key={ev.id}
-                        onClick={(evt) => {
-                          evt.stopPropagation();
-                          onEventClick(ev);
-                        }}
-                        className="absolute rounded-md px-1.5 py-1 text-[11px] text-left overflow-hidden shadow-sm border border-black/10"
-                        style={{
-                          top,
-                          height,
-                          left: `calc(${lane * widthPct}% + 2px)`,
-                          width: `calc(${widthPct}% - 4px)`,
-                          backgroundColor: color,
-                          color: readableText(color),
-                        }}
-                        title={`${ev.title}\n${fmtTime(ev.start_at)} – ${fmtTime(ev.end_at)}`}
-                      >
-                        <div className="truncate font-medium leading-tight">
-                          {ev.title}
-                        </div>
-                        {height > 28 && (
-                          <div className="truncate opacity-80 leading-tight">
-                            {fmtTime(ev.start_at)}
-                          </div>
-                        )}
-                      </button>
+                        ev={ev}
+                        top={top}
+                        height={height}
+                        left={`calc(${lane * widthPct}% + 2px)`}
+                        width={`calc(${widthPct}% - 4px)`}
+                        color={color}
+                        onClick={() => onEventClick(ev)}
+                        onChange={onEventChange}
+                      />
                     );
                   })}
+
                 </div>
               );
             })}
@@ -1422,7 +1493,182 @@ function TimeGrid({
   );
 }
 
+// ---------- Draggable / resizable event chip ----------
+
+const SNAP_MIN = 15;
+const RESIZE_EDGE = 6; // px
+
+function DraggableEvent({
+  ev,
+  top,
+  height,
+  left,
+  width,
+  color,
+  onClick,
+  onChange,
+}: {
+  ev: EventRow;
+  top: number;
+  height: number;
+  left: string;
+  width: string;
+  color: string;
+  onClick: () => void;
+  onChange?: (ev: EventRow, start: Date, end: Date) => void;
+}) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [drag, setDrag] = useState<
+    | null
+    | {
+        mode: "move" | "resize-top" | "resize-bottom";
+        startY: number;
+        origTop: number;
+        origHeight: number;
+        offsetY: number;
+      }
+  >(null);
+  const [previewTop, setPreviewTop] = useState(top);
+  const [previewHeight, setPreviewHeight] = useState(height);
+
+  // Keep preview in sync when prop changes (e.g. cache update)
+  useEffect(() => {
+    if (!drag) {
+      setPreviewTop(top);
+      setPreviewHeight(height);
+    }
+  }, [top, height, drag]);
+
+  useEffect(() => {
+    if (!drag || !onChange) return;
+    function snapPx(px: number) {
+      const pxPerMin = HOUR_PX / 60;
+      const mins = Math.round(px / pxPerMin / SNAP_MIN) * SNAP_MIN;
+      return mins * pxPerMin;
+    }
+    function onMove(e: MouseEvent) {
+      if (!drag) return;
+      const dy = e.clientY - drag.startY;
+      if (drag.mode === "move") {
+        const next = snapPx(drag.origTop + dy);
+        setPreviewTop(Math.max(0, Math.min(24 * HOUR_PX - drag.origHeight, next)));
+      } else if (drag.mode === "resize-bottom") {
+        const next = snapPx(drag.origHeight + dy);
+        setPreviewHeight(Math.max(HOUR_PX / 4, next));
+      } else if (drag.mode === "resize-top") {
+        const deltaSnap = snapPx(dy);
+        const nextTop = Math.max(0, drag.origTop + deltaSnap);
+        const nextH = drag.origHeight - (nextTop - drag.origTop);
+        if (nextH >= HOUR_PX / 4) {
+          setPreviewTop(nextTop);
+          setPreviewHeight(nextH);
+        }
+      }
+    }
+    function onUp() {
+      if (!drag) return;
+      const moved =
+        Math.abs(previewTop - top) > 1 ||
+        Math.abs(previewHeight - height) > 1;
+      if (moved && onChange) {
+        const pxPerMin = HOUR_PX / 60;
+        const startDate = new Date(ev.start_at);
+        const dayStart = new Date(startDate);
+        dayStart.setHours(0, 0, 0, 0);
+        const startMin = Math.round(previewTop / pxPerMin);
+        const endMin = Math.round((previewTop + previewHeight) / pxPerMin);
+        const newStart = new Date(dayStart.getTime() + startMin * 60_000);
+        const newEnd = new Date(dayStart.getTime() + endMin * 60_000);
+        onChange(ev, newStart, newEnd);
+      }
+      setDrag(null);
+    }
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, [drag, ev, onChange, previewTop, previewHeight, top, height]);
+
+  const interactive = !!onChange;
+  const dragging = !!drag;
+
+  function pickMode(e: React.MouseEvent): "move" | "resize-top" | "resize-bottom" {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const offY = e.clientY - rect.top;
+    if (offY < RESIZE_EDGE) return "resize-top";
+    if (offY > rect.height - RESIZE_EDGE) return "resize-bottom";
+    return "move";
+  }
+
+  return (
+    <div
+      ref={ref}
+      onMouseDown={(e) => {
+        if (!interactive) return;
+        if (e.button !== 0) return;
+        const mode = pickMode(e);
+        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        setDrag({
+          mode,
+          startY: e.clientY,
+          origTop: previewTop,
+          origHeight: previewHeight,
+          offsetY: e.clientY - rect.top,
+        });
+        e.preventDefault();
+      }}
+      onClick={(e) => {
+        if (dragging) return;
+        // Only treat as click if no drag movement
+        const moved =
+          Math.abs(previewTop - top) > 1 ||
+          Math.abs(previewHeight - height) > 1;
+        if (moved) return;
+        e.stopPropagation();
+        onClick();
+      }}
+      className={cn(
+        "absolute rounded-md px-1.5 py-1 text-[11px] text-left overflow-hidden shadow-sm border border-black/10 select-none",
+        interactive && "cursor-grab",
+        dragging && "cursor-grabbing opacity-90 ring-2 ring-foreground/20",
+      )}
+      style={{
+        top: previewTop,
+        height: previewHeight,
+        left,
+        width,
+        backgroundColor: color,
+        color: readableText(color),
+      }}
+      title={`${ev.title}\n${fmtTime(ev.start_at)} – ${fmtTime(ev.end_at)}`}
+    >
+      {interactive && (
+        <div
+          className="absolute top-0 left-0 right-0 h-1.5 cursor-ns-resize"
+          aria-hidden
+        />
+      )}
+      <div className="truncate font-medium leading-tight">{ev.title}</div>
+      {previewHeight > 28 && (
+        <div className="truncate opacity-80 leading-tight">
+          {fmtTime(ev.start_at)}
+        </div>
+      )}
+      {interactive && (
+        <div
+          className="absolute bottom-0 left-0 right-0 h-1.5 cursor-ns-resize"
+          aria-hidden
+        />
+      )}
+    </div>
+  );
+}
+
 // ---------- Agenda list ----------
+
+
 
 function AgendaList({
   events,
