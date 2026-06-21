@@ -1,6 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { RefreshCw, Calendar as CalendarIcon, Link as LinkIcon, AlertTriangle, Unplug } from "lucide-react";
+import {
+  RefreshCw,
+  Calendar as CalendarIcon,
+  Link as LinkIcon,
+  AlertTriangle,
+  Unplug,
+  MoreVertical,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -10,11 +17,20 @@ import {
   importMicrosoftCalendar,
   syncMicrosoftCalendarNow,
   disconnectMicrosoft,
+  disconnectMicrosoftCalendar,
 } from "@/lib/microsoft-calendar.functions";
 import { listCalendars } from "@/lib/calendars";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { setCalendarBusiness, type Business } from "@/lib/businesses";
-import { AccountSelector } from "@/components/account-selector";
+import { CalendarAccountPicker } from "@/components/calendar-account-picker";
+import { DisconnectCalendarDialog } from "@/components/disconnect-calendar-dialog";
 
 type Props = { businesses: Business[] };
 
@@ -25,10 +41,14 @@ export function MicrosoftSyncPanel({ businesses }: Props) {
   const listRemote = useServerFn(listRemoteMicrosoftCalendars);
   const importFn = useServerFn(importMicrosoftCalendar);
   const syncFn = useServerFn(syncMicrosoftCalendarNow);
-  const disconnectFn = useServerFn(disconnectMicrosoft);
+  const disconnectAccountFn = useServerFn(disconnectMicrosoft);
+  const disconnectCalFn = useServerFn(disconnectMicrosoftCalendar);
 
   const [open, setOpen] = useState(false);
-  const [selectedBusiness, setSelectedBusiness] = useState<string>("");
+  const [selectedBusiness, setSelectedBusiness] = useState<string | null>(null);
+  const [disconnectTarget, setDisconnectTarget] = useState<
+    { kind: "calendar"; id: string; name: string } | { kind: "account" } | null
+  >(null);
 
   const status = useQuery({
     queryKey: ["microsoft-status"],
@@ -55,7 +75,7 @@ export function MicrosoftSyncPanel({ businesses }: Props) {
           external_id: args.external_id,
           name: args.name,
           color: args.color,
-          business_id: selectedBusiness || null,
+          business_id: selectedBusiness,
         },
       }),
     onSuccess: (r) => {
@@ -75,13 +95,28 @@ export function MicrosoftSyncPanel({ businesses }: Props) {
     onError: (e) => toast.error(e instanceof Error ? e.message : "Sync failed"),
   });
 
-  const disconnectMut = useMutation({
-    mutationFn: (remove_events: boolean) => disconnectFn({ data: { remove_events } }),
+  const disconnectCalMut = useMutation({
+    mutationFn: (args: { calendar_id: string; remove_events: boolean }) =>
+      disconnectCalFn({ data: args }),
+    onSuccess: (r) => {
+      qc.invalidateQueries({ queryKey: ["calendars"] });
+      qc.invalidateQueries({ queryKey: ["events"] });
+      qc.invalidateQueries({ queryKey: ["microsoft-status"] });
+      qc.invalidateQueries({ queryKey: ["microsoft-calendars-remote"] });
+      setDisconnectTarget(null);
+      toast.success(r.removed_events ? "Disconnected and events removed" : "Disconnected");
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to disconnect"),
+  });
+
+  const disconnectAccountMut = useMutation({
+    mutationFn: (remove_events: boolean) => disconnectAccountFn({ data: { remove_events } }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["microsoft-status"] });
       qc.invalidateQueries({ queryKey: ["calendars"] });
       qc.invalidateQueries({ queryKey: ["events"] });
-      toast.success("Microsoft disconnected");
+      setDisconnectTarget(null);
+      toast.success("Microsoft account disconnected");
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
@@ -99,18 +134,13 @@ export function MicrosoftSyncPanel({ businesses }: Props) {
   async function connect() {
     try {
       const { authorize_url } = await startFn({ data: { origin: window.location.origin } });
-      // Open in a popup; the callback page closes itself and posts a message.
       const w = window.open(authorize_url, "ms-oauth", "width=520,height=720");
-      if (!w) {
-        // Pop-up blocked, fall back to full redirect
-        window.location.href = authorize_url;
-      }
+      if (!w) window.location.href = authorize_url;
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not start Microsoft sign-in");
     }
   }
 
-  // Listen for the callback popup to tell us it's done.
   useEffect(() => {
     function onMessage(ev: MessageEvent) {
       if (ev.data?.type === "ms-oauth:complete") {
@@ -153,18 +183,9 @@ export function MicrosoftSyncPanel({ businesses }: Props) {
               <Button
                 size="sm"
                 variant="ghost"
-                disabled={disconnectMut.isPending}
-                onClick={() => {
-                  if (confirm("Disconnect Microsoft? Existing synced events will remain. Click Cancel to also remove synced events.")) {
-                    disconnectMut.mutate(false);
-                  } else {
-                    if (confirm("Also remove synced Microsoft calendars and events from Heartbeat?")) {
-                      disconnectMut.mutate(true);
-                    }
-                  }
-                }}
+                onClick={() => setDisconnectTarget({ kind: "account" })}
               >
-                <Unplug className="h-3.5 w-3.5 mr-1" /> Disconnect
+                <Unplug className="h-3.5 w-3.5 mr-1" /> Disconnect account
               </Button>
             </>
           ) : (
@@ -196,12 +217,10 @@ export function MicrosoftSyncPanel({ businesses }: Props) {
                   </span>
                 )}
               </div>
-              <AccountSelector
+              <CalendarAccountPicker
                 businesses={businesses}
                 value={c.business_id}
                 onChange={(business_id) => remapMut.mutate({ calendar_id: c.id, business_id })}
-                size="sm"
-                noneLabel="No account"
               />
               <Button
                 size="sm"
@@ -212,6 +231,25 @@ export function MicrosoftSyncPanel({ businesses }: Props) {
                 <RefreshCw className={`h-3.5 w-3.5 mr-1 ${syncMut.isPending ? "animate-spin" : ""}`} />
                 Sync now
               </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="icon" variant="ghost" className="h-8 w-8" aria-label="More actions">
+                    <MoreVertical className="h-3.5 w-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => syncMut.mutate(c.id)}>
+                    <RefreshCw className="h-3.5 w-3.5 mr-2" /> Sync now
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() => setDisconnectTarget({ kind: "calendar", id: c.id, name: c.name })}
+                  >
+                    <Unplug className="h-3.5 w-3.5 mr-2" /> Disconnect…
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           ))}
         </div>
@@ -221,12 +259,10 @@ export function MicrosoftSyncPanel({ businesses }: Props) {
         <div className="rounded-md border border-border bg-card p-4 space-y-3">
           <div className="block text-sm space-y-1">
             <span>Tag newly imported calendars to account:</span>
-            <AccountSelector
+            <CalendarAccountPicker
               businesses={businesses}
-              value={selectedBusiness || null}
-              onChange={(id) => setSelectedBusiness(id ?? "")}
-              noneLabel="No account"
-              className="w-full"
+              value={selectedBusiness}
+              onChange={(id) => setSelectedBusiness(id)}
             />
           </div>
 
@@ -265,6 +301,30 @@ export function MicrosoftSyncPanel({ businesses }: Props) {
             })}
           </ul>
         </div>
+      )}
+
+      {disconnectTarget?.kind === "calendar" && (
+        <DisconnectCalendarDialog
+          open
+          onOpenChange={(o) => !o && setDisconnectTarget(null)}
+          provider="Microsoft"
+          calendarName={disconnectTarget.name}
+          busy={disconnectCalMut.isPending}
+          onConfirm={(remove_events) =>
+            disconnectCalMut.mutate({ calendar_id: disconnectTarget.id, remove_events })
+          }
+        />
+      )}
+
+      {disconnectTarget?.kind === "account" && (
+        <DisconnectCalendarDialog
+          open
+          onOpenChange={(o) => !o && setDisconnectTarget(null)}
+          provider="Microsoft"
+          calendarName="your entire Microsoft account"
+          busy={disconnectAccountMut.isPending}
+          onConfirm={(remove_events) => disconnectAccountMut.mutate(remove_events)}
+        />
       )}
     </div>
   );
