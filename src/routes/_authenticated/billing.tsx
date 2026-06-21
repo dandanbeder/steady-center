@@ -353,7 +353,14 @@ function BillingPage() {
         </Card>
 
         {/* AI credits */}
-        <CreditBalanceCard />
+        <div className="space-y-2">
+          <CreditBalanceCard />
+          <div className="flex justify-end">
+            <Link to="/ai" className="text-xs text-muted-foreground hover:underline">
+              View AI usage history →
+            </Link>
+          </div>
+        </div>
 
         {/* Legacy AI $ usage meter (defense in depth for the user-set $ cap) */}
         <Card>

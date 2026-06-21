@@ -39,6 +39,7 @@ import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticated/billing'
 import { Route as AuthenticatedBacklogRouteImport } from './routes/_authenticated/backlog'
 import { Route as AuthenticatedAskNotesRouteImport } from './routes/_authenticated/ask-notes'
+import { Route as AuthenticatedAiRouteImport } from './routes/_authenticated/ai'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAcceptTermsRouteImport } from './routes/_authenticated/accept-terms'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
@@ -209,6 +210,11 @@ const AuthenticatedAskNotesRoute = AuthenticatedAskNotesRouteImport.update({
   path: '/ask-notes',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedAiRoute = AuthenticatedAiRouteImport.update({
+  id: '/ai',
+  path: '/ai',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -339,6 +345,7 @@ export interface FileRoutesByFullPath {
   '/unsubscribe': typeof UnsubscribeRoute
   '/accept-terms': typeof AuthenticatedAcceptTermsRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/ai': typeof AuthenticatedAiRoute
   '/ask-notes': typeof AuthenticatedAskNotesRoute
   '/backlog': typeof AuthenticatedBacklogRoute
   '/billing': typeof AuthenticatedBillingRoute
@@ -389,6 +396,7 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/accept-terms': typeof AuthenticatedAcceptTermsRoute
+  '/ai': typeof AuthenticatedAiRoute
   '/ask-notes': typeof AuthenticatedAskNotesRoute
   '/backlog': typeof AuthenticatedBacklogRoute
   '/billing': typeof AuthenticatedBillingRoute
@@ -442,6 +450,7 @@ export interface FileRoutesById {
   '/unsubscribe': typeof UnsubscribeRoute
   '/_authenticated/accept-terms': typeof AuthenticatedAcceptTermsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/_authenticated/ai': typeof AuthenticatedAiRoute
   '/_authenticated/ask-notes': typeof AuthenticatedAskNotesRoute
   '/_authenticated/backlog': typeof AuthenticatedBacklogRoute
   '/_authenticated/billing': typeof AuthenticatedBillingRoute
@@ -495,6 +504,7 @@ export interface FileRouteTypes {
     | '/unsubscribe'
     | '/accept-terms'
     | '/admin'
+    | '/ai'
     | '/ask-notes'
     | '/backlog'
     | '/billing'
@@ -545,6 +555,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/unsubscribe'
     | '/accept-terms'
+    | '/ai'
     | '/ask-notes'
     | '/backlog'
     | '/billing'
@@ -597,6 +608,7 @@ export interface FileRouteTypes {
     | '/unsubscribe'
     | '/_authenticated/accept-terms'
     | '/_authenticated/admin'
+    | '/_authenticated/ai'
     | '/_authenticated/ask-notes'
     | '/_authenticated/backlog'
     | '/_authenticated/billing'
@@ -875,6 +887,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAskNotesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/ai': {
+      id: '/_authenticated/ai'
+      path: '/ai'
+      fullPath: '/ai'
+      preLoaderRoute: typeof AuthenticatedAiRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/admin': {
       id: '/_authenticated/admin'
       path: '/admin'
@@ -1062,6 +1081,7 @@ const AuthenticatedReportsRouteWithChildren =
 interface AuthenticatedRouteChildren {
   AuthenticatedAcceptTermsRoute: typeof AuthenticatedAcceptTermsRoute
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
+  AuthenticatedAiRoute: typeof AuthenticatedAiRoute
   AuthenticatedAskNotesRoute: typeof AuthenticatedAskNotesRoute
   AuthenticatedBacklogRoute: typeof AuthenticatedBacklogRoute
   AuthenticatedBillingRoute: typeof AuthenticatedBillingRoute
@@ -1086,6 +1106,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAcceptTermsRoute: AuthenticatedAcceptTermsRoute,
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
+  AuthenticatedAiRoute: AuthenticatedAiRoute,
   AuthenticatedAskNotesRoute: AuthenticatedAskNotesRoute,
   AuthenticatedBacklogRoute: AuthenticatedBacklogRoute,
   AuthenticatedBillingRoute: AuthenticatedBillingRoute,
