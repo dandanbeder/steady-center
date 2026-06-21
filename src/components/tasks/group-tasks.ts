@@ -20,6 +20,7 @@ export function groupTasks(
     members: AssignableMember[];
     myId: string | null;
     outcomes?: { id: string; name: string }[];
+    businesses?: { id: string; name: string; color: string | null }[];
   },
 ): TaskGroup[] {
   if (by === "none") {
