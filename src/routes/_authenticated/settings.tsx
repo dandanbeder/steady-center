@@ -115,7 +115,7 @@ function SettingsPage() {
       <section id="accounts">
         <h2 className="text-2xl mb-1">Accounts</h2>
         <p className="text-sm text-muted-foreground mb-6">
-          The business contexts your work belongs to — EvacoMed, FlightMed, Personal.
+          The business contexts your work belongs to — e.g. Acme Co, Side Project, Personal.
           Each Account's colour is reused everywhere it appears across Calendar, Tasks,
           Outcomes, Notes and Meetings.
         </p>
@@ -157,7 +157,7 @@ function SettingsPage() {
           <ColorDots value={newColor} onChange={setNewColor} />
           <div className="flex gap-3">
             <Input
-              placeholder="e.g. EvacoMed, FlightMed, Personal"
+              placeholder="e.g. Acme Co, Side Project, Personal"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
             />
