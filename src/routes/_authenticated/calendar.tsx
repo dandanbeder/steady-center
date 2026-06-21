@@ -1438,34 +1438,20 @@ function TimeGrid({
                     const c = calById.get(ev.calendar_id);
                     const color = colorFor ? colorFor(ev) : (c?.color ?? "#7A8471");
                     return (
-                      <button
+                      <DraggableEvent
                         key={ev.id}
-                        onClick={(evt) => {
-                          evt.stopPropagation();
-                          onEventClick(ev);
-                        }}
-                        className="absolute rounded-md px-1.5 py-1 text-[11px] text-left overflow-hidden shadow-sm border border-black/10"
-                        style={{
-                          top,
-                          height,
-                          left: `calc(${lane * widthPct}% + 2px)`,
-                          width: `calc(${widthPct}% - 4px)`,
-                          backgroundColor: color,
-                          color: readableText(color),
-                        }}
-                        title={`${ev.title}\n${fmtTime(ev.start_at)} – ${fmtTime(ev.end_at)}`}
-                      >
-                        <div className="truncate font-medium leading-tight">
-                          {ev.title}
-                        </div>
-                        {height > 28 && (
-                          <div className="truncate opacity-80 leading-tight">
-                            {fmtTime(ev.start_at)}
-                          </div>
-                        )}
-                      </button>
+                        ev={ev}
+                        top={top}
+                        height={height}
+                        left={`calc(${lane * widthPct}% + 2px)`}
+                        width={`calc(${widthPct}% - 4px)`}
+                        color={color}
+                        onClick={() => onEventClick(ev)}
+                        onChange={onEventChange}
+                      />
                     );
                   })}
+
                 </div>
               );
             })}
