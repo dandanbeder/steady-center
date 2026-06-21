@@ -84,7 +84,7 @@ export function TalkButton() {
         .catch(() => {});
       qc.invalidateQueries({ queryKey: ["inbox"] });
       qc.invalidateQueries({ queryKey: ["inbox", "count"] });
-      toast.success("Captured to Inbox", { description: "Triage when ready." });
+      toast.success("Saved to Capture", { description: "File it when ready." });
       setOpen(false);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to capture");
