@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-export type ResourceType = "folder" | "list" | "task" | "note" | "calendar";
+export type ResourceType = "folder" | "list" | "task" | "note" | "calendar" | "business";
 export type ShareRole = "viewer" | "commenter" | "member" | "admin";
 
 type ResourceOwnerResp = { owner_id: string | null };
@@ -14,6 +14,7 @@ async function fetchOwner(type: ResourceType, id: string): Promise<string | null
     type === "list" ? "lists" :
     type === "task" ? "tasks" :
     type === "note" ? "notes" :
+    type === "business" ? "businesses" :
     "calendars";
   const { data } = await supabaseAdmin.from(table).select("owner_id").eq("id", id).maybeSingle();
   return (data as ResourceOwnerResp | null)?.owner_id ?? null;
@@ -25,6 +26,14 @@ async function assertCanManage(userId: string, type: ResourceType, id: string) {
   if (owner === userId) return;
   const { data: prof } = await supabaseAdmin.from("profiles").select("platform_role").eq("id", userId).maybeSingle();
   if ((prof as { platform_role?: string } | null)?.platform_role === "superadmin") return;
+  if (type === "business") {
+    // Team admin of the Account can also manage business-scope shares
+    const { data: mem } = await supabaseAdmin
+      .from("memberships").select("role,status")
+      .eq("business_id", id).eq("user_id", userId).eq("status", "active").maybeSingle();
+    const role = (mem as { role?: string } | null)?.role;
+    if (role === "owner" || role === "admin") return;
+  }
   const { data: adminShare } = await supabaseAdmin
     .from("shares").select("id")
     .eq("resource_type", type).eq("resource_id", id)
@@ -32,6 +41,7 @@ async function assertCanManage(userId: string, type: ResourceType, id: string) {
   if (adminShare) return;
   throw new Error("Not allowed to manage sharing for this resource");
 }
+
 
 export const shareResource = createServerFn({ method: "POST" })
   .middleware([requireActiveUser])
