@@ -13,6 +13,8 @@ import { UpcomingMeetings } from "@/components/upcoming-meetings";
 import { DailyPulseCard } from "@/components/daily-pulse-card";
 import { WeekPulse } from "@/components/week-pulse";
 import { Skeleton } from "@/components/ui/skeleton";
+import { OutcomeMark } from "@/components/outcomes/outcome-mark";
+import { listOutcomes } from "@/lib/outcomes";
 import type { Task } from "@/lib/tasks";
 import type { Note } from "@/lib/notes";
 
