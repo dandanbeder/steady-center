@@ -683,23 +683,54 @@ function ListWorkspace({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [stageMgrOpen, setStageMgrOpen] = useState(false);
 
-  // Hydrate local state when saved config loads (or list changes)
+  const [activeViewId, setActiveViewId] = useState<string | null>(null);
+
+  // Hydrate local state when saved config loads (or list changes).
+  // If the user has a Saved View marked default for this list, prefer that.
+  const savedViewsQuery = useQuery({
+    queryKey: ["task_views", list.id],
+    queryFn: () => listTaskViews(list.id),
+    enabled: !!myId && !uncategorised,
+  });
+
   const [hydratedListId, setHydratedListId] = useState<string | null>(null);
-  if (viewCfgQuery.data && hydratedListId !== list.id) {
-    const cfg = viewCfgQuery.data;
-    setFilters({
-      priority: cfg.filters.priority as Filters["priority"],
-      status: cfg.filters.status as Filters["status"],
-      due: cfg.filters.due as Filters["due"],
-      assigned: cfg.filters.assigned as Filters["assigned"],
-      outcome: (cfg.filters.outcome ?? "all") as Filters["outcome"],
-    });
-    setSortKey(cfg.sort.key);
-    setGroupBy(cfg.group_by);
-    setCollapsedGroups(new Set(cfg.collapsed_groups));
-    if (cfg.view !== view) onViewChange(cfg.view);
+  if (
+    !uncategorised &&
+    hydratedListId !== list.id &&
+    !viewCfgQuery.isLoading &&
+    !savedViewsQuery.isLoading
+  ) {
+    const defaultView = (savedViewsQuery.data ?? []).find(
+      (v) => v.is_default && v.owner_id === myId,
+    );
+    if (defaultView) {
+      setFilters({
+        priority: defaultView.filters.priority as Filters["priority"],
+        status: defaultView.filters.status as Filters["status"],
+        due: defaultView.filters.due as Filters["due"],
+        assigned: defaultView.filters.assigned as Filters["assigned"],
+        outcome: (defaultView.filters.outcome ?? "all") as Filters["outcome"],
+      });
+      setSortKey(defaultView.sort.key);
+      setGroupBy(defaultView.group_by);
+      if (defaultView.view !== view) onViewChange(defaultView.view);
+      setActiveViewId(defaultView.id);
+    } else if (viewCfgQuery.data) {
+      const cfg = viewCfgQuery.data;
+      setFilters({
+        priority: cfg.filters.priority as Filters["priority"],
+        status: cfg.filters.status as Filters["status"],
+        due: cfg.filters.due as Filters["due"],
+        assigned: cfg.filters.assigned as Filters["assigned"],
+        outcome: (cfg.filters.outcome ?? "all") as Filters["outcome"],
+      });
+      setSortKey(cfg.sort.key);
+      setGroupBy(cfg.group_by);
+      setCollapsedGroups(new Set(cfg.collapsed_groups));
+      if (cfg.view !== view) onViewChange(cfg.view);
+    }
     setHydratedListId(list.id);
-  } else if (!viewCfgQuery.data && !viewCfgQuery.isLoading && hydratedListId !== list.id) {
+  } else if (uncategorised && hydratedListId !== list.id) {
     setHydratedListId(list.id);
   }
 
