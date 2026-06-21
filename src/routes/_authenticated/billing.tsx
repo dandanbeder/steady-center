@@ -352,17 +352,21 @@ function BillingPage() {
           </CardContent>
         </Card>
 
-        {/* AI usage */}
+        {/* AI credits */}
+        <CreditBalanceCard />
+
+        {/* Legacy AI $ usage meter (defense in depth for the user-set $ cap) */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5" /> Usage
+              <Sparkles className="h-5 w-5" /> AI spend
             </CardTitle>
           </CardHeader>
           <CardContent>
             <AiUsageMeter compact />
           </CardContent>
         </Card>
+
 
         <p className="text-center text-xs text-muted-foreground">
           Payments handled by Paddle as merchant of record.
