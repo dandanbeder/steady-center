@@ -289,14 +289,14 @@ function ActionDialog({
                   </SelectContent>
                 </Select>
               </div>
-              <Number label="Months" value={months} onChange={setMonths} min={1} max={120} />
+              <NumberInput label="Months" value={months} onChange={setMonths} min={1} max={120} />
             </>
           )}
-          {kind === "trial" && <Number label="Extend by (days)" value={days} onChange={setDays} min={1} max={365} />}
+          {kind === "trial" && <NumberInput label="Extend by (days)" value={days} onChange={setDays} min={1} max={365} />}
           {kind === "credits" && (
             <>
-              <Number label="Credits" value={credits} onChange={setCredits} min={1} max={1_000_000} />
-              <Number label="Expires in (months)" value={creditMonths} onChange={setCreditMonths} min={1} max={120} />
+              <NumberInput label="Credits" value={credits} onChange={setCredits} min={1} max={1_000_000} />
+              <NumberInput label="Expires in (months)" value={creditMonths} onChange={setCreditMonths} min={1} max={120} />
             </>
           )}
           {kind === "override" && (
@@ -313,7 +313,7 @@ function ActionDialog({
                   </SelectContent>
                 </Select>
               </div>
-              <Number label="Value" value={overrideValue} onChange={setOverrideValue} min={-1000000} max={1000000} />
+              <NumberInput label="Value" value={overrideValue} onChange={setOverrideValue} min={-1000000} max={1000000} />
             </>
           )}
           <div>
@@ -340,7 +340,7 @@ function ActionDialog({
   );
 }
 
-function Number({ label, value, onChange, min, max }: { label: string; value: number; onChange: (n: number) => void; min: number; max: number }) {
+function NumberInput({ label, value, onChange, min, max }: { label: string; value: number; onChange: (n: number) => void; min: number; max: number }) {
   return (
     <div>
       <Label>{label}</Label>
@@ -349,7 +349,7 @@ function Number({ label, value, onChange, min, max }: { label: string; value: nu
         value={value}
         min={min}
         max={max}
-        onChange={(e) => onChange(Number(e.target.value))}
+        onChange={(e) => onChange(NumberInput(e.target.value))}
       />
     </div>
   );
