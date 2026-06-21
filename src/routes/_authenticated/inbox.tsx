@@ -38,6 +38,15 @@ function InboxPage() {
     queryKey: ["inbox", "pending"],
     queryFn: () => listInbox("pending"),
   });
+  const { data: hasEverCaptured = false } = useQuery({
+    queryKey: ["inbox", "ever-captured"],
+    queryFn: async () => {
+      const { count, error } = await (supabase.from("inbox_items") as any)
+        .select("id", { count: "exact", head: true });
+      if (error) throw error;
+      return (count ?? 0) > 0;
+    },
+  });
   const { data: businesses = [] } = useQuery({ queryKey: ["businesses"], queryFn: listBusinesses });
   const { data: folders = [] } = useQuery({ queryKey: ["folders"], queryFn: listFolders });
   const { data: lists = [] } = useQuery({ queryKey: ["lists"], queryFn: listLists });
