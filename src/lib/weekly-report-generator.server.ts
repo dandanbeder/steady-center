@@ -614,16 +614,35 @@ async function writeNarrative(
   metrics: ReportMetrics,
   weekStart: Date,
   weekEnd: Date,
+  userId: string,
 ): Promise<ReportNarrative> {
   const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) return fallbackNarrative(metrics);
+  // Honour the user's coach preference. "off" → skip AI entirely.
+  const { data: prefRow } = await supabaseAdmin
+    .from("ai_prefs")
+    .select("coach_style")
+    .eq("user_id", userId)
+    .maybeSingle();
+  const coachStyle = ((prefRow?.coach_style as "warm" | "direct" | "off" | null) ?? "warm");
+  if (coachStyle === "off" || !key) return fallbackNarrative(metrics);
 
-  const sys = `You write candid, constructive weekly reviews for a busy multi-business operator.
+  const styleLine =
+    coachStyle === "direct"
+      ? "Style: warm and supportive, but a little more direct and candid. Still never harsh."
+      : "Style: warm, supportive, gentle. Lead with empathy.";
 
-Tone:
-- Direct, specific, never harsh. Give real credit for real wins. Reframe weaknesses as growth areas with a concrete next action.
-- Cite evidence from the metrics (numbers, task titles, hours). Do not invent numbers.
-- If the data is thin (few tasks, no hours, no goals), say so honestly. Don't pad.
+  const sys = `You are a kind, supportive weekly coach for a busy multi-business operator. You write end-of-week reflections that feel like a good mentor, not a performance review.
+
+Tone (this is the most important thing — follow it exactly):
+- Warm, human, on their side. Honest, but NEVER mean, sarcastic, judgmental, or shaming.
+- Open by acknowledging real wins and effort, including small ones. Celebrate effort, not only outcomes.
+- An unfinished goal is an observation, not a failure. Normalise that some weeks are hard.
+- If the data shows overload (many overdue tasks, lots of meetings, low completion), lean toward protecting the person — suggest boundaries, focus time, rest — NEVER push them to "hustle harder" or do more.
+- No guilt. No comparisons to other people. No platitudes ("you've got this!"). No motivational clichés.
+- Frame any problem as a gentle observation plus ONE practical, doable suggestion. Not a list of failings.
+- Keep it brief and human — a few warm sentences per field, not a lecture.
+- Ground every comment in the actual numbers / titles in the metrics. Don't invent data. If the week was quiet, say so kindly.
+${styleLine}
 
 Return ONLY JSON, no prose around it, matching exactly this shape:
 {
@@ -634,10 +653,11 @@ Return ONLY JSON, no prose around it, matching exactly this shape:
   "next_week": [string, string, string]
 }
 
-- 2-4 strengths, each with evidence drawn from the metrics.
-- 2-4 growth areas; "suggestion" must be a specific, actionable next step starting with a verb.
-- "goal_review" is one short paragraph reviewing how the week's goals went (met / missed / partial). If there were no goals, say so. If the metrics include "outcomes" (bigger goals tasks roll up to), mention 1-2 standout outcomes here with their progress percentage and days remaining (e.g. "Loyalty launch is 70% done, target in 3 weeks"). Skip outcomes with 0 tasks.
-- "next_week" is 2-3 focuses for the coming week, each starting with a verb.`;
+- "headline": one warm, human sentence acknowledging the shape of the week.
+- 2-4 "strengths" — real wins and effort, with concrete evidence from metrics (numbers, task titles, hours). Include small wins on quiet weeks.
+- 1-3 "growth_areas". Each "point" is a gentle observation, "why" is a short kind explanation, "suggestion" is ONE specific, small, doable next step starting with a verb. If the person is clearly overloaded, suggestions should protect their time (e.g. "Protect a 2-hour focus block on Tuesday morning"), not add more.
+- "goal_review": one short paragraph reviewing the week's goals with warmth. Unfinished = observation, not failure. If no goals were set, say so kindly. Mention 1-2 standout outcomes (with progress % and days remaining) if present.
+- "next_week": 2-3 gentle focuses for the coming week, each starting with a verb. Prefer protective focuses ("Block focus time", "Pick one stuck task to close") over piling on.`;
 
   const user = `Week: ${weekStart.toISOString().slice(0, 10)} → ${weekEnd
     .toISOString()
@@ -667,9 +687,22 @@ ${JSON.stringify(metrics, null, 2)}`;
     }
     const json = (await res.json()) as {
       content?: Array<{ type: string; text?: string }>;
+      usage?: { input_tokens?: number; output_tokens?: number };
     };
     const text =
       json.content?.find((c) => c.type === "text")?.text?.trim() ?? "";
+    // Meter against the AI allowance — best-effort, never blocks the report.
+    try {
+      const { recordAiUsage } = await import("./ai-budget.server");
+      await recordAiUsage(
+        userId,
+        ANTHROPIC_MODEL,
+        json.usage?.input_tokens ?? 0,
+        json.usage?.output_tokens ?? 0,
+      );
+    } catch (e) {
+      console.warn("[weekly-report] usage record failed", e);
+    }
     const parsed = parseNarrative(text);
     return parsed ? withLegacyFields(parsed, metrics) : fallbackNarrative(metrics);
   } catch (e) {
