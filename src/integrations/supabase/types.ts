@@ -1897,6 +1897,9 @@ export type Database = {
           terms_accepted_at: string | null
           theme: string
           timezone: string
+          trial_plan: string | null
+          trial_used_at: string | null
+          trial_used_env: string | null
           updated_at: string
           weekly_review_day: number
           weekly_review_enabled: boolean
@@ -1939,6 +1942,9 @@ export type Database = {
           terms_accepted_at?: string | null
           theme?: string
           timezone?: string
+          trial_plan?: string | null
+          trial_used_at?: string | null
+          trial_used_env?: string | null
           updated_at?: string
           weekly_review_day?: number
           weekly_review_enabled?: boolean
@@ -1981,6 +1987,9 @@ export type Database = {
           terms_accepted_at?: string | null
           theme?: string
           timezone?: string
+          trial_plan?: string | null
+          trial_used_at?: string | null
+          trial_used_env?: string | null
           updated_at?: string
           weekly_review_day?: number
           weekly_review_enabled?: boolean
@@ -2893,6 +2902,34 @@ export type Database = {
       seed_default_task_stages: {
         Args: { p_list_id: string }
         Returns: undefined
+      }
+      start_free_trial: {
+        Args: { _env: string; _plan: string }
+        Returns: {
+          billing_cycle: string
+          cancel_at_period_end: boolean | null
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          environment: string
+          id: string
+          paddle_customer_id: string
+          paddle_subscription_id: string
+          past_due_since: string | null
+          price_id: string
+          product_id: string
+          quantity: number
+          status: string
+          trial_end: string | null
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "subscriptions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       transfer_team_ownership: {
         Args: { p_business: string; p_new_owner: string }
