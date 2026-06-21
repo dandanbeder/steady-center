@@ -15,6 +15,9 @@ export const suggestInboxItem = createServerFn({ method: "POST" })
     if (!apiKey) throw new Error("LOVABLE_API_KEY is not configured");
     const { supabase } = context;
 
+    const { assertAiCredits } = await import("./credits.server");
+    await assertAiCredits(context.userId, 1);
+
     // Load the item (RLS scoped to user)
     const { data: item, error: itemErr } = await (supabase.from("inbox_items" as never) as any)
       .select("id, raw_text, status")
