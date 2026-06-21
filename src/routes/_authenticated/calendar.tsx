@@ -913,12 +913,14 @@ function MonthGrid({
   cursor,
   events,
   calById,
+  colorFor,
   onDayClick,
   onEventClick,
 }: {
   cursor: Date;
   events: EventRow[];
   calById: Map<string, Cal>;
+  colorFor?: (e: EventRow) => string;
   onDayClick: (d: Date) => void;
   onEventClick: (e: EventRow) => void;
 }) {
