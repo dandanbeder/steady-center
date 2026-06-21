@@ -41,13 +41,20 @@ export const getAccountEntitlements = createServerFn({ method: "GET" })
     const limits = effectiveLimits(tier, plan.paidSeats);
 
     // RLS handles self-vs-admin; just read.
-    const { data: credits } = await context.supabase
-      .from("account_credits")
-      .select(
-        "allowance_credits, credit_balance, current_cycle_start, current_cycle_end",
-      )
-      .eq("account_user_id", targetId)
-      .maybeSingle();
+    const [{ data: credits }, { data: usage }] = await Promise.all([
+      context.supabase
+        .from("account_credits")
+        .select(
+          "allowance_credits, credit_balance, current_cycle_start, current_cycle_end",
+        )
+        .eq("account_user_id", targetId)
+        .maybeSingle(),
+      context.supabase
+        .from("account_usage")
+        .select("businesses_count, calendar_connections_count, updated_at")
+        .eq("user_id", targetId)
+        .maybeSingle(),
+    ]);
 
     // Account status derived from the same plan resolution that powers gating.
     // free=no sub; trialing/active/past_due/canceled mirror Paddle's status.
@@ -72,6 +79,12 @@ export const getAccountEntitlements = createServerFn({ method: "GET" })
         canTopup: limits.canTopup,
         sharingEnabled: limits.sharingEnabled,
         teamFeaturesEnabled: limits.teamFeaturesEnabled,
+      },
+      // Live per-account usage counters, maintained by DB triggers.
+      usage: {
+        businesses: usage?.businesses_count ?? 0,
+        calendarConnections: usage?.calendar_connections_count ?? 0,
+        updatedAt: usage?.updated_at ?? null,
       },
       // Raw plan map exposed for callers that need to render comparisons.
       planRules: LIMITS[tier],
