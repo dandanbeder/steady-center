@@ -328,6 +328,10 @@ async function handleWebhook(req: Request, env: PaddleEnv) {
     case EventName.TransactionCompleted:
       await handleTransactionCompleted(event.data, env);
       break;
+    case EventName.AdjustmentCreated:
+    case EventName.AdjustmentUpdated:
+      await handleAdjustmentCreated(event.data, env);
+      break;
     default:
       console.log("[payments-webhook] Unhandled event:", event.eventType);
   }
