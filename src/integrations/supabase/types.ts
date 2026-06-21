@@ -1701,6 +1701,9 @@ export type Database = {
           hear_about_us: string | null
           id: string
           is_protected_primary: boolean
+          journal_lock_enabled: boolean
+          journal_lock_hash: string | null
+          journal_lock_updated_at: string | null
           marketing_opt_in: boolean
           marketing_opt_in_at: string | null
           must_change_password: boolean
@@ -1740,6 +1743,9 @@ export type Database = {
           hear_about_us?: string | null
           id: string
           is_protected_primary?: boolean
+          journal_lock_enabled?: boolean
+          journal_lock_hash?: string | null
+          journal_lock_updated_at?: string | null
           marketing_opt_in?: boolean
           marketing_opt_in_at?: string | null
           must_change_password?: boolean
@@ -1779,6 +1785,9 @@ export type Database = {
           hear_about_us?: string | null
           id?: string
           is_protected_primary?: boolean
+          journal_lock_enabled?: boolean
+          journal_lock_hash?: string | null
+          journal_lock_updated_at?: string | null
           marketing_opt_in?: boolean
           marketing_opt_in_at?: string | null
           must_change_password?: boolean
