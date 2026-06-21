@@ -1,9 +1,13 @@
 import { createFileRoute, Outlet, Navigate, useRouterState } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { lazy, Suspense } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { lazy, Suspense, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { AppShell } from "@/components/app-shell";
 import { getOnboardingProfile } from "@/lib/onboarding";
+import { listBusinesses } from "@/lib/businesses";
+import { listCalendars } from "@/lib/calendars";
+import { listFolders, listLists } from "@/lib/tasks";
+import { listOutcomes } from "@/lib/outcomes";
 
 // Heavy component (voice capture, dialogs, server fns), load after first paint.
 const TalkButton = lazy(() =>
