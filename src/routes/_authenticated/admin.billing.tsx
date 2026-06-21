@@ -349,7 +349,7 @@ function NumberInput({ label, value, onChange, min, max }: { label: string; valu
         value={value}
         min={min}
         max={max}
-        onChange={(e) => onChange(NumberInput(e.target.value))}
+        onChange={(e) => onChange(globalThis.Number(e.target.value))}
       />
     </div>
   );
