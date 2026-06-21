@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -2041,7 +2041,18 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
             </div>
 
             <div>
-              <Label>Outcome</Label>
+              <div className="flex items-center justify-between">
+                <Label>Outcome</Label>
+                {outcomeId && (
+                  <Link
+                    to="/outcomes"
+                    search={{ focus: outcomeId }}
+                    className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+                  >
+                    View outcome <ChevronRight className="h-3 w-3" />
+                  </Link>
+                )}
+              </div>
               <Select
                 value={outcomeId || "__none"}
                 onValueChange={(v) => setOutcomeId(v === "__none" ? "" : v)}
