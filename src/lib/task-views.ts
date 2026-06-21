@@ -115,7 +115,7 @@ export async function updateTaskView(
   }
   const { error } = await supabase
     .from("task_views")
-    .update(patch as unknown as Record<string, unknown>)
+    .update(patch as never)
     .eq("id", id);
   if (error) throw error;
 }
