@@ -662,12 +662,21 @@ Return ONLY JSON, no prose around it, matching exactly this shape:
 - "goal_review": one short paragraph reviewing the week's goals with warmth. Unfinished = observation, not failure. If no goals were set, say so kindly. Mention 1-2 standout outcomes (with progress % and days remaining) if present.
 - "next_week": 2-3 gentle focuses for the coming week, each starting with a verb. Prefer protective focuses ("Block focus time", "Pick one stuck task to close") over piling on.`;
 
-  const user = `Week: ${weekStart.toISOString().slice(0, 10)} → ${weekEnd
+  const rawUser = `Week: ${weekStart.toISOString().slice(0, 10)} → ${weekEnd
     .toISOString()
     .slice(0, 10)}
 
 Metrics JSON:
 ${JSON.stringify(metrics, null, 2)}`;
+  // Context cap: even a busy week shouldn't blow past the reasoning route's
+  // input budget. Log the hit so we can see when it's biting.
+  const { capAndLog } = await import("./ai-routing.server");
+  const user = capAndLog(rawUser, {
+    userId,
+    actionType: "weekly_report",
+    maxChars: REPORT_ROUTE.maxInputChars,
+    model: ANTHROPIC_MODEL,
+  }).text;
 
   try {
     const res = await fetch(ANTHROPIC_URL, {
@@ -679,7 +688,7 @@ ${JSON.stringify(metrics, null, 2)}`;
       },
       body: JSON.stringify({
         model: ANTHROPIC_MODEL,
-        max_tokens: 1600,
+        max_tokens: REPORT_ROUTE.maxOutputTokens,
         system: sys,
         messages: [{ role: "user", content: user }],
       }),
