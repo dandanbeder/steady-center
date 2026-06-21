@@ -856,28 +856,37 @@ function ListWorkspace({
     });
   };
 
+  const applyViewState = (s: ActiveViewState, sourceId: string | null) => {
+    setFilters({
+      priority: s.filters.priority as Filters["priority"],
+      status: s.filters.status as Filters["status"],
+      due: s.filters.due as Filters["due"],
+      assigned: s.filters.assigned as Filters["assigned"],
+      outcome: (s.filters.outcome ?? "all") as Filters["outcome"],
+    });
+    setSortKey(s.sort.key);
+    setGroupBy(s.group_by);
+    if (s.view !== view) onViewChange(s.view);
+    setActiveViewId(sourceId);
+  };
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-2 gap-4 flex-wrap">
+      <div className="flex items-center justify-between mb-3 gap-4 flex-wrap">
         <h1 className="text-2xl sm:text-3xl text-primary">{list.name}</h1>
-        <div className="flex rounded-lg border border-border overflow-hidden">
-          {([
-            ["list", LayoutList, "List"],
-            ["board", Columns, "Board"],
-            ["calendar", CalendarDays, "Calendar"],
-          ] as const).map(([k, Icon, label]) => (
-            <button
-              key={k}
-              onClick={() => onViewChange(k)}
-              className={cn(
-                "px-3 py-1.5 text-sm flex items-center gap-1.5",
-                view === k ? "bg-primary text-primary-foreground" : "hover:bg-muted",
-              )}
-            >
-              <Icon className="h-3.5 w-3.5" /> {label}
-            </button>
-          ))}
-        </div>
+      </div>
+
+      {!uncategorised && myId && (
+        <ViewBar
+          listId={list.id}
+          myId={myId}
+          active={{ view, group_by: groupBy, filters, sort: { key: sortKey } }}
+          activeViewId={activeViewId}
+          onApply={applyViewState}
+          onActiveViewIdChange={setActiveViewId}
+        />
+      )}
+
       </div>
 
       <form
