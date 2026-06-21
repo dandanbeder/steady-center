@@ -234,7 +234,7 @@ export function CommandPalette({ open, onOpenChange, onAskAssistant }: Props) {
       bumpRecentCommand("action.generate_review");
       close();
       toast.loading("Generating weekly review…", { id: "wk-review" });
-      const r = await generateReport({ data: undefined } as never);
+      const r = await (generateReport as unknown as () => Promise<{ id?: string }>)();
       toast.success("Weekly review ready", { id: "wk-review" });
       if (r?.id) navigate({ to: "/reports/$reportId", params: { reportId: r.id } as never });
       else navigate({ to: "/reports" });
