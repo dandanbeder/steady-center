@@ -168,7 +168,7 @@ export function TalkButton() {
                     disabled={!liveText.trim()}
                     className="flex-1"
                   >
-                    Send to Inbox
+                    Capture
                   </Button>
                 </>
               )}
