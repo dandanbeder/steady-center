@@ -139,17 +139,51 @@ export function NotificationsPanel() {
         </CardContent>
       </Card>
 
-      {/* What to notify me about */}
+      {/* The bar: selective by default */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <ListChecks className="h-4 w-4" /> What to notify me about
+            <Sparkles className="h-4 w-4" /> Selective by default
           </CardTitle>
-          <CardDescription>Pick the types you care about, and which channels deliver them.</CardDescription>
+          <CardDescription>
+            Heartbeat only pushes when something is time-sensitive, from or about another person, or
+            needs your action. Everything else stays visible in-app, quietly, and rolls into your
+            Daily Pulse so nothing important gets buried.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <RowToggle
+            label="Keep me on the selective default"
+            description="Recommended. Only the push-worthy types below can ping you. Turn off to allow every enabled type to push."
+            checked={draft.events.selective_mode}
+            onChange={(v) => setEvent("selective_mode", v)}
+          />
+          <RowToggle
+            label="Batch low-priority items into the Daily Pulse"
+            description={"e.g. \"4 tasks due today\" as one Morning Pulse line, not four pings."}
+            checked={draft.events.batch_low_priority}
+            onChange={(v) => setEvent("batch_low_priority", v)}
+          />
+          <p className="text-xs text-muted-foreground pt-1">
+            Duplicates within a short window are merged, and notifications auto-expire once they're
+            no longer useful.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Push-worthy */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <ListChecks className="h-4 w-4" /> Push-worthy
+          </CardTitle>
+          <CardDescription>
+            These earn a ping. Tune the channels per type, or switch any of them off.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
           <TypeRow
-            label="Event reminders"
+            label="Meeting reminders"
             helper="A nudge before scheduled events on your calendar."
             enabled={draft.events.event_reminders}
             onEnabledChange={(v) => setEvent("event_reminders", v)}
@@ -177,15 +211,39 @@ export function NotificationsPanel() {
             }
           />
           <TypeRow
-            label="Task due reminders"
-            helper="A heads-up when a task is approaching its due date."
-            enabled={draft.events.task_due}
-            onEnabledChange={(v) => setEvent("task_due", v)}
-            channels={draft.events.type_channels.task_due}
-            onChannelChange={(c, v) => setTypeChannel("task_due", c, v)}
+            label="@mentions and comments to me"
+            helper="When someone tags you in a comment, note, or shared item."
+            enabled={draft.events.tagged}
+            onEnabledChange={(v) => setEvent("tagged", v)}
+            channels={draft.events.type_channels.tagged}
+            onChannelChange={(c, v) => setTypeChannel("tagged", c, v)}
           />
           <TypeRow
-            label="Weekly review"
+            label="A task assigned to me"
+            helper="Someone hands a task to you, you'll want to know."
+            enabled={draft.events.assigned_to_me}
+            onEnabledChange={(v) => setEvent("assigned_to_me", v)}
+            channels={draft.events.type_channels.assigned_to_me}
+            onChannelChange={(c, v) => setTypeChannel("assigned_to_me", c, v)}
+          />
+          <TypeRow
+            label="Access and share requests"
+            helper="Someone asks to join a list, or shares one with you."
+            enabled={draft.events.access_share_requests}
+            onEnabledChange={(v) => setEvent("access_share_requests", v)}
+            channels={draft.events.type_channels.access_share_requests}
+            onChannelChange={(c, v) => setTypeChannel("access_share_requests", c, v)}
+          />
+          <TypeRow
+            label="Meeting summary ready"
+            helper="When a meeting's notes, decisions, and actions are ready to review."
+            enabled={draft.events.meeting_summary_ready}
+            onEnabledChange={(v) => setEvent("meeting_summary_ready", v)}
+            channels={draft.events.type_channels.meeting_summary_ready}
+            onChannelChange={(c, v) => setTypeChannel("meeting_summary_ready", c, v)}
+          />
+          <TypeRow
+            label="Weekly review ready"
             helper="Your gentle Friday recap, what landed, what's next."
             enabled={draft.events.weekly_review}
             onEnabledChange={(v) => setEvent("weekly_review", v)}
@@ -193,23 +251,52 @@ export function NotificationsPanel() {
             onChannelChange={(c, v) => setTypeChannel("weekly_review", c, v)}
           />
           <TypeRow
-            label="Meeting summary ready"
-            helper="We'll tell you when a meeting's notes, decisions, and actions are ready."
-            enabled={draft.events.meeting_summary_ready}
-            onEnabledChange={(v) => setEvent("meeting_summary_ready", v)}
-            channels={draft.events.type_channels.meeting_summary_ready}
-            onChannelChange={(c, v) => setTypeChannel("meeting_summary_ready", c, v)}
+            label="Security events"
+            helper="Password or email changed, new sign-in. Always recommended."
+            enabled={draft.events.security_events}
+            onEnabledChange={(v) => setEvent("security_events", v)}
+            channels={draft.events.type_channels.security_events}
+            onChannelChange={(c, v) => setTypeChannel("security_events", c, v)}
           />
           <TypeRow
-            label="When someone tags me"
-            helper="In a comment, note, or shared item."
-            enabled={draft.events.tagged}
-            onEnabledChange={(v) => setEvent("tagged", v)}
-            channels={draft.events.type_channels.tagged}
-            onChannelChange={(c, v) => setTypeChannel("tagged", c, v)}
+            label="Payment failed"
+            helper="Heads-up if a charge doesn't go through, so you can fix it quickly."
+            enabled={draft.events.payment_failed}
+            onEnabledChange={(v) => setEvent("payment_failed", v)}
+            channels={draft.events.type_channels.payment_failed}
+            onChannelChange={(c, v) => setTypeChannel("payment_failed", c, v)}
           />
         </CardContent>
       </Card>
+
+      {/* Batched into Daily Pulse */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Sun className="h-4 w-4" /> Batched into your Daily Pulse
+          </CardTitle>
+          <CardDescription>
+            Useful but not urgent. These stay in-app and roll into the Morning Pulse instead of
+            pinging one by one. Switch any of them on for push if you want the extra nudge.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <TypeRow
+            label="Tasks due today"
+            helper={"Summarised as one line in the Morning Pulse, e.g. \"4 tasks due today\"."}
+            enabled={draft.events.task_due}
+            onEnabledChange={(v) => setEvent("task_due", v)}
+            channels={draft.events.type_channels.task_due}
+            onChannelChange={(c, v) => setTypeChannel("task_due", c, v)}
+          />
+          <p className="text-xs text-muted-foreground">
+            Your own actions (tasks and notes you create, edit, or complete), routine calendar
+            syncs, and minor edits to shared items you're not mentioned in stay silent in-app, they
+            never push.
+          </p>
+        </CardContent>
+      </Card>
+
 
       {/* Daily Pulse */}
       <Card>
