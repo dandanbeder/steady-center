@@ -129,7 +129,7 @@ import {
   bulkRestoreTasks,
   listUncategorisedTasks,
 } from "@/lib/tasks";
-import { AccountSelector } from "@/components/account-selector";
+
 
 const UNCATEGORISED_LIST_ID = "__uncategorised__";
 const UNCATEGORISED_LIST: ListRow = {
