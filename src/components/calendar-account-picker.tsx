@@ -38,16 +38,14 @@ export function CalendarAccountPicker({
   disabled?: boolean;
 }) {
   const active = value ? businesses.find((b) => b.id === value) ?? null : null;
-  const isPersonal = value === null;
   const hasNone = businesses.length === 0;
 
-  const triggerLabel = active
-    ? active.name
-    : isPersonal
-      ? "Personal (no business)"
-      : "Assign to a business…";
-
-  const triggerTone = active || isPersonal ? "text-foreground" : "text-primary";
+  // When unset (null), use an action-style placeholder rather than a passive
+  // label. Picking "Personal (no business)" persists null too — we can't
+  // distinguish "unassigned" from "personal" once saved, so the trigger
+  // keeps prompting until a business is chosen.
+  const triggerLabel = active ? active.name : "Assign to a business…";
+  const triggerTone = active ? "text-foreground" : "text-primary";
 
   return (
     <div className="inline-flex items-center gap-1">
