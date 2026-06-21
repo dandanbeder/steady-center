@@ -21,6 +21,7 @@ import { Separator } from "@/components/ui/separator";
 import { PaymentTestModeBanner } from "@/components/payment-test-mode-banner";
 import { AiUsageMeter } from "@/components/ai-usage-meter";
 import { CreditBalanceCard } from "@/components/credit-balance-card";
+import { PlansBreakdown } from "@/components/plans-breakdown";
 import { getPaddleEnvironment } from "@/lib/paddle";
 import {
   createCustomerPortalUrl,
@@ -352,12 +353,15 @@ function BillingPage() {
           </CardContent>
         </Card>
 
+        {/* Plans breakdown */}
+        <PlansBreakdown currentTier={tier} />
+
         {/* AI credits */}
         <div className="space-y-2">
           <CreditBalanceCard />
           <div className="flex justify-end">
             <Link to="/ai" className="text-xs text-muted-foreground hover:underline">
-              View AI usage history →
+              Open AI wallet & usage →
             </Link>
           </div>
         </div>
