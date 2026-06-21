@@ -46,6 +46,12 @@ export const Route = createFileRoute("/_authenticated/plan-week")({
       { name: "description", content: "Build this week's commitment from your backlog with a live capacity check." },
     ],
   }),
+  loader: ({ context }) => {
+    // Prime the week's committed + rolled-over lists so the page renders instantly.
+    const monday = mondayOf();
+    context.queryClient.prefetchQuery({ queryKey: ["committed", monday], queryFn: () => listCommitted(monday) });
+    context.queryClient.prefetchQuery({ queryKey: ["rolled-over", monday], queryFn: () => listRolledOver(monday) });
+  },
   component: PlanWeekPage,
 });
 
