@@ -762,49 +762,58 @@ function fallbackNarrative(m: ReportMetrics): ReportNarrative {
   const o = m.overall;
   const hours = o.tracked_hours ?? 0;
   const goals = m.goals ?? [];
+  const metCount = goals.filter((g) => g.status === "met").length;
   const goalReview =
     goals.length === 0
-      ? "No weekly goals were set for this week."
-      : `${goals.filter((g) => g.status === "met").length}/${goals.length} goals met.`;
+      ? "No weekly goals were set — that's okay, some weeks don't need them."
+      : metCount === goals.length
+        ? `All ${goals.length} goals moved forward. Nice work.`
+        : `${metCount}/${goals.length} goals moved forward this week — the rest are simply still in flight.`;
   const strengths: Strength[] = [];
   if (o.tasks_completed > 0) {
     strengths.push({
-      point: `Closed ${o.tasks_completed} tasks this week`,
-      evidence: `${o.completed_on_time} on time, ${o.completed_late} late.`,
+      point: `You closed ${o.tasks_completed} task${o.tasks_completed === 1 ? "" : "s"} this week`,
+      evidence: `${o.completed_on_time} on time${o.completed_late ? `, ${o.completed_late} a little late` : ""}.`,
     });
   }
   if (hours > 0) {
     strengths.push({
-      point: `Tracked ${hours}h of focused work`,
-      evidence: `Across ${(m.top_tasks_hours ?? []).length} tasks.`,
+      point: `You tracked ${hours}h of focused work`,
+      evidence: `Across ${(m.top_tasks_hours ?? []).length} task${(m.top_tasks_hours ?? []).length === 1 ? "" : "s"}.`,
+    });
+  }
+  if (strengths.length === 0) {
+    strengths.push({
+      point: "A quieter week — and that's allowed",
+      evidence: "Not every week needs to be a big one.",
     });
   }
   const growth: GrowthArea[] = [];
-  if (o.dropped_balls.length > 0) {
+  if (o.dropped_balls.length >= 3) {
     growth.push({
-      point: `${o.dropped_balls.length} high-impact items overdue`,
-      why: "These were past their due date with no movement.",
-      suggestion: "Clear or reschedule the top 3 overdue items first thing Monday.",
+      point: `A few items have drifted past their date (${o.dropped_balls.length})`,
+      why: "No judgement — it happens when the week fills up.",
+      suggestion: "Pick just the top 1-2 to reschedule on Monday morning, then move on.",
     });
   }
-  if ((m.flow?.stuck?.length ?? 0) > 0) {
+  if ((m.flow?.stuck?.length ?? 0) > 3) {
     growth.push({
       point: `${m.flow!.stuck.length} tasks have been open more than a week`,
-      why: "They're sitting without progress.",
-      suggestion: "Pick one stuck task and either close it, delegate it, or break it down.",
+      why: "They may need breaking down, delegating, or letting go.",
+      suggestion: "Pick one and decide kindly: do, delegate, or drop.",
     });
   }
   const n: ReportNarrative = {
     headline:
       o.tasks_completed === 0 && o.tasks_created === 0 && hours === 0
-        ? "Quiet week, almost no activity logged."
-        : `${o.tasks_completed} done · ${hours}h tracked · ${o.dropped_balls.length} overdue`,
+        ? "A quiet week — that's okay too."
+        : `${o.tasks_completed} done · ${hours}h tracked — solid work.`,
     strengths,
     growth_areas: growth,
     goal_review: goalReview,
     next_week: [
-      "Block calendar time for at-risk high-priority work.",
-      "Review the oldest open tasks and decide: do, delegate, or drop.",
+      "Protect one focus block in your calendar early in the week.",
+      "Look at the oldest open task and decide gently: do, delegate, or drop.",
     ],
   };
   return withLegacyFields(n, m);
