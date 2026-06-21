@@ -166,22 +166,4 @@ async function sendReminderEmail(to: string, subject: string, body: string) {
   await sendEmail({ to, subject, html });
 }
 
-async function sendSms(to: string, body: string) {
-  const lovableKey = process.env.LOVABLE_API_KEY;
-  const twilioKey = process.env.TWILIO_API_KEY;
-  const from = process.env.TWILIO_FROM_NUMBER;
-  if (!lovableKey || !twilioKey || !from) throw new Error("Twilio not fully configured");
-  const params = new URLSearchParams({ To: to, From: from, Body: body });
-  const res = await fetch(TWILIO_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${lovableKey}`,
-      "X-Connection-Api-Key": twilioKey,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: params.toString(),
-  });
-  if (!res.ok) {
-    throw new Error(`Twilio ${res.status}: ${(await res.text()).slice(0, 300)}`);
-  }
-}
+
