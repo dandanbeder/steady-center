@@ -1168,101 +1168,290 @@ function SubtaskRow({ task, onChange }: { task: Task; onChange: () => void }) {
   );
 }
 
-// ---------- Board view (kanban with dnd-kit) ----------
+// ---------- Board view (kanban: stage-driven, drag tasks + columns) ----------
+
+const COLUMN_PREFIX = "col:";
+const TASK_PREFIX = "task:";
 
 function BoardView({
+  listId,
   tasks,
   onChange,
   onOpen,
 }: {
+  listId: string;
   tasks: Task[];
   onChange: () => void;
   onOpen: (t: Task) => void;
 }) {
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  const qc = useQueryClient();
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+  );
 
-  const setStatus = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: TaskStatus }) => updateTask(id, { status }),
+  const stagesQuery = useQuery({
+    queryKey: ["task_stages", listId],
+    queryFn: () => fetchStages(listId),
+  });
+  const stages = stagesQuery.data ?? [];
+
+  // Group tasks by stage (fallback: any task with no stage_id buckets under the first stage)
+  const tasksByStage = useMemo(() => {
+    const map = new Map<string, Task[]>();
+    for (const s of stages) map.set(s.id, []);
+    const firstId = stages[0]?.id;
+    for (const t of tasks) {
+      const sid = t.stage_id ?? firstId;
+      if (!sid) continue;
+      if (!map.has(sid)) map.set(sid, []);
+      map.get(sid)!.push(t);
+    }
+    for (const arr of map.values()) {
+      arr.sort((a, b) => a.stage_position - b.stage_position);
+    }
+    return map;
+  }, [tasks, stages]);
+
+  const reorderColumns = useMutation({
+    mutationFn: reorderStages,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["task_stages", listId] }),
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
+  const moveTask = useMutation({
+    mutationFn: ({ id, stageId, pos }: { id: string; stageId: string; pos: number }) =>
+      moveTaskToStage(id, stageId, pos),
+    onSuccess: onChange,
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
+  const reorderInStage = useMutation({
+    mutationFn: reorderTasksInStage,
     onSuccess: onChange,
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
   function onDragEnd(e: DragEndEvent) {
-    const taskId = e.active.id as string;
-    const overId = e.over?.id as string | undefined;
-    if (!overId) return;
-    const t = tasks.find((x) => x.id === taskId);
-    if (!t || t.status === overId) return;
-    if (!STATUSES.find((s) => s.value === overId)) return;
-    setStatus.mutate({ id: taskId, status: overId as TaskStatus });
+    const activeId = String(e.active.id);
+    const overId = e.over ? String(e.over.id) : null;
+    if (!overId || activeId === overId) return;
+
+    // Column reorder
+    if (activeId.startsWith(COLUMN_PREFIX) && overId.startsWith(COLUMN_PREFIX)) {
+      const a = activeId.slice(COLUMN_PREFIX.length);
+      const o = overId.slice(COLUMN_PREFIX.length);
+      const oldIdx = stages.findIndex((s) => s.id === a);
+      const newIdx = stages.findIndex((s) => s.id === o);
+      if (oldIdx < 0 || newIdx < 0) return;
+      const next = arrayMove(stages, oldIdx, newIdx).map((s) => s.id);
+      // Optimistic
+      qc.setQueryData<TaskStage[]>(
+        ["task_stages", listId],
+        arrayMove(stages, oldIdx, newIdx).map((s, i) => ({ ...s, position: i })),
+      );
+      reorderColumns.mutate(next);
+      return;
+    }
+
+    // Task drag
+    if (!activeId.startsWith(TASK_PREFIX)) return;
+    const taskId = activeId.slice(TASK_PREFIX.length);
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) return;
+
+    // Dropped on a column (empty area)
+    let targetStageId: string | null = null;
+    let targetIndex = -1;
+    if (overId.startsWith(COLUMN_PREFIX)) {
+      targetStageId = overId.slice(COLUMN_PREFIX.length);
+      targetIndex = (tasksByStage.get(targetStageId) ?? []).length;
+    } else if (overId.startsWith(TASK_PREFIX)) {
+      const overTaskId = overId.slice(TASK_PREFIX.length);
+      const overTask = tasks.find((t) => t.id === overTaskId);
+      if (!overTask?.stage_id) return;
+      targetStageId = overTask.stage_id;
+      const arr = tasksByStage.get(targetStageId) ?? [];
+      targetIndex = arr.findIndex((t) => t.id === overTaskId);
+      if (targetIndex < 0) targetIndex = arr.length;
+    }
+    if (!targetStageId) return;
+
+    const sameStage = task.stage_id === targetStageId;
+    const arr = tasksByStage.get(targetStageId) ?? [];
+
+    if (sameStage) {
+      const fromIdx = arr.findIndex((t) => t.id === taskId);
+      if (fromIdx < 0 || fromIdx === targetIndex) return;
+      const next = arrayMove(arr, fromIdx, targetIndex);
+      reorderInStage.mutate(next.map((t) => t.id));
+    } else {
+      // Insert into target column at targetIndex; cascade positions
+      const next = [...arr];
+      next.splice(targetIndex, 0, { ...task, stage_id: targetStageId, stage_position: targetIndex });
+      moveTask.mutate({ id: taskId, stageId: targetStageId, pos: targetIndex });
+      // Renumber the rest of the column behind the scenes
+      const ids = next.map((t) => t.id);
+      // Fire-and-forget; moveTask already handles the dragged task itself
+      reorderInStage.mutate(ids);
+    }
+  }
+
+  if (stagesQuery.isLoading) {
+    return <p className="text-sm text-muted-foreground p-4">Loading board…</p>;
+  }
+  if (stages.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground p-4">
+        No stages yet. Default stages will appear when the list is set up.
+      </p>
+    );
   }
 
   return (
-    <DndContext sensors={sensors} onDragEnd={onDragEnd}>
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
       <div className="-mx-4 sm:mx-0 overflow-x-auto pb-2">
-        <div className="flex gap-3 px-4 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 min-w-max sm:min-w-0">
-          {STATUSES.map((s) => (
-            <div key={s.value} className="w-72 shrink-0 sm:w-auto">
-              <BoardColumn status={s.value} label={s.label}>
-                {tasks
-                  .filter((t) => t.status === s.value)
-                  .sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority])
-                  .map((t) => (
-                    <BoardCard key={t.id} task={t} onOpen={onOpen} />
-                  ))}
-              </BoardColumn>
-            </div>
-          ))}
-        </div>
+        <SortableContext
+          items={stages.map((s) => COLUMN_PREFIX + s.id)}
+          strategy={horizontalListSortingStrategy}
+        >
+          <div className="flex gap-3 px-4 sm:px-0 min-w-max">
+            {stages.map((stage) => {
+              const items = tasksByStage.get(stage.id) ?? [];
+              return (
+                <SortableColumn
+                  key={stage.id}
+                  stage={stage}
+                  count={items.length}
+                >
+                  <SortableContext
+                    items={items.map((t) => TASK_PREFIX + t.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {items.length === 0 ? (
+                      <div className="text-xs text-muted-foreground/60 px-2 py-3 italic">
+                        Drop here
+                      </div>
+                    ) : (
+                      items.map((t) => (
+                        <SortableCard key={t.id} task={t} onOpen={onOpen} />
+                      ))
+                    )}
+                  </SortableContext>
+                </SortableColumn>
+              );
+            })}
+          </div>
+        </SortableContext>
       </div>
     </DndContext>
   );
 }
 
-
-function BoardColumn({ status, label, children }: { status: TaskStatus; label: string; children: React.ReactNode }) {
-  const { setNodeRef, isOver } = useDroppable({ id: status });
+function SortableColumn({
+  stage,
+  count,
+  children,
+}: {
+  stage: TaskStage;
+  count: number;
+  children: React.ReactNode;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: COLUMN_PREFIX + stage.id });
+  const { setNodeRef: setDropRef, isOver } = useDroppable({
+    id: COLUMN_PREFIX + stage.id,
+  });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.6 : 1,
+  };
   return (
-    <div
-      ref={setNodeRef}
-      className={cn(
-        "rounded-xl border border-border bg-card p-3 min-h-[400px] transition-colors",
-        isOver && "border-accent bg-accent/5",
-      )}
-      style={{ boxShadow: "var(--shadow-soft)" }}
-    >
-      <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-3">{label}</h3>
-      <div className="space-y-2">{children}</div>
+    <div ref={setNodeRef} style={style} className="w-72 shrink-0">
+      <div
+        ref={setDropRef}
+        className={cn(
+          "rounded-xl border border-border bg-card p-3 min-h-[400px] transition-colors flex flex-col",
+          isOver && "border-accent bg-accent/5",
+        )}
+        style={{ boxShadow: "var(--shadow-soft)" }}
+      >
+        <div
+          {...attributes}
+          {...listeners}
+          className="flex items-center gap-2 mb-3 cursor-grab active:cursor-grabbing select-none"
+        >
+          <span
+            className="h-2.5 w-2.5 rounded-full shrink-0"
+            style={{ backgroundColor: stage.color }}
+            aria-hidden
+          />
+          <h3 className="text-xs uppercase tracking-wider text-muted-foreground truncate">
+            {stage.name}
+          </h3>
+          <span className="text-xs text-foreground/40 ml-auto tabular-nums">
+            {count}
+          </span>
+        </div>
+        <div className="space-y-2 flex-1">{children}</div>
+      </div>
     </div>
   );
 }
 
-function BoardCard({ task, onOpen }: { task: Task; onOpen: (t: Task) => void }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: task.id });
-  const style = transform
-    ? { transform: `translate(${transform.x}px, ${transform.y}px)`, zIndex: 50 }
-    : undefined;
-  const overdue = task.due_at && new Date(task.due_at) < new Date() && task.status !== "done";
+function SortableCard({ task, onOpen }: { task: Task; onOpen: (t: Task) => void }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: TASK_PREFIX + task.id });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+  const overdue =
+    task.due_at && new Date(task.due_at) < new Date() && task.status !== "done";
   return (
     <div
       ref={setNodeRef}
       style={style}
-      {...listeners}
       {...attributes}
+      {...listeners}
       onClick={() => !isDragging && onOpen(task)}
       className={cn(
         "rounded-lg border border-border bg-background p-2.5 text-sm cursor-grab active:cursor-grabbing",
-        isDragging && "opacity-60 shadow-lg",
+        isDragging && "shadow-lg",
       )}
     >
       <div className="flex items-start gap-2">
-        <Flag className="h-3 w-3 mt-1 shrink-0" style={{ color: PRIORITY_COLOR[task.priority] }} />
+        <Flag
+          className="h-3 w-3 mt-1 shrink-0"
+          style={{ color: PRIORITY_COLOR[task.priority] }}
+        />
         <span className="flex-1">{task.title}</span>
       </div>
       {task.due_at && (
-        <div className={cn("text-xs mt-1.5 flex items-center gap-1", overdue ? "text-destructive" : "text-muted-foreground")}>
+        <div
+          className={cn(
+            "text-xs mt-1.5 flex items-center gap-1",
+            overdue ? "text-destructive" : "text-muted-foreground",
+          )}
+        >
           <CalIcon className="h-3 w-3" />
-          {new Date(task.due_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+          {new Date(task.due_at).toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+          })}
         </div>
       )}
     </div>
