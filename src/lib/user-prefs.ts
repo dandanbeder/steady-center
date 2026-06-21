@@ -68,7 +68,7 @@ const DEFAULT_TYPE_CHANNELS: PerTypeChannels = {
 };
 
 const DEFAULT_NOTIF: NotificationPrefs = {
-  channels: { email: true, browser: false },
+  channels: { email: true, sms: false, browser: false },
   events: {
     event_reminders: true,
     event_reminder_lead_minutes: 15,
