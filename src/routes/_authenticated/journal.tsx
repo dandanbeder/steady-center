@@ -430,33 +430,50 @@ function JournalPage() {
               const d = parseISO(e.created_at);
               const meta = metaByNote.get(e.id);
               return (
-                <button
+                <div
                   key={e.id}
-                  onClick={() => setSelectedId(e.id)}
                   className={cn(
-                    "w-full text-left p-2.5 rounded-lg transition-colors",
+                    "group relative rounded-lg transition-colors",
                     selectedId === e.id ? "bg-muted" : "hover:bg-muted/60",
                   )}
                 >
-                  <div className="text-sm font-medium truncate">
-                    {format(d, "EEE, MMM d")}
-                  </div>
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                    {format(d, "yyyy")}
-                  </div>
-                  {meta && (meta.tags.length > 0 || meta.mood) && (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {meta.tags.slice(0, 3).map((t) => (
-                        <span
-                          key={t}
-                          className="text-[10px] px-1.5 py-0.5 rounded-full bg-background border border-border/60 text-muted-foreground"
-                        >
-                          {t}
-                        </span>
-                      ))}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedId(e.id)}
+                    className="w-full text-left p-2.5 pr-9"
+                  >
+                    <div className="text-sm font-medium truncate">
+                      {format(d, "EEE, MMM d")}
                     </div>
-                  )}
-                </button>
+                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                      {format(d, "yyyy")}
+                    </div>
+                    {meta && (meta.tags.length > 0 || meta.mood) && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {meta.tags.slice(0, 3).map((t) => (
+                          <span
+                            key={t}
+                            className="text-[10px] px-1.5 py-0.5 rounded-full bg-background border border-border/60 text-muted-foreground"
+                          >
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(ev) => {
+                      ev.stopPropagation();
+                      handleDeleteEntry(e);
+                    }}
+                    aria-label="Delete entry"
+                    title="Delete entry"
+                    className="absolute top-1.5 right-1.5 p-1 rounded-md text-muted-foreground opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-destructive hover:bg-background transition-opacity"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               );
             })}
           </div>
