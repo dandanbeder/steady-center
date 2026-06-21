@@ -24,7 +24,13 @@ export const Route = createFileRoute("/api/public/hooks/plan-lifecycle")({
         }
         const { data, error } = await supabaseAdmin.rpc("sweep_plan_lifecycle");
         if (error) return Response.json({ error: error.message }, { status: 500 });
-        return Response.json({ ok: true, result: (data ?? [])[0] ?? null });
+        // Expire any rolling top-up lots whose 12 months are up.
+        const { data: expired } = await supabaseAdmin.rpc("expire_credit_lots");
+        return Response.json({
+          ok: true,
+          result: (data ?? [])[0] ?? null,
+          expired_lots: expired ?? 0,
+        });
       },
     },
   },
