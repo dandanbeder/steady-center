@@ -312,6 +312,8 @@ export async function createTask(input: {
   position?: number;
   recurrence_rule?: RecurrenceRule | null;
   outcome_id?: string | null;
+  stage_id?: string | null;
+  assignee_id?: string | null;
 }) {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) throw new Error("Not signed in");
@@ -329,9 +331,12 @@ export async function createTask(input: {
     recurrence_rule: input.recurrence_rule ?? null,
     recurrence_anchor: input.recurrence_rule && input.due_at ? input.due_at : null,
     outcome_id: input.outcome_id ?? null,
+    stage_id: input.stage_id ?? null,
+    assignee_id: input.assignee_id ?? null,
   });
   if (error) throw error;
 }
+
 
 export async function updateTask(id: string, patch: Partial<Omit<Task, "id" | "owner_id" | "created_at">>) {
   const { error } = await supabase.from("tasks").update(patch).eq("id", id);

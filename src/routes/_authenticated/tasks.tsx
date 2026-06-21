@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ChevronDown,
@@ -20,7 +20,18 @@ import {
   Link2,
   Focus,
   UserCircle2,
+  Settings2,
+  Layers,
 } from "lucide-react";
+import { StageManagerDialog } from "@/components/tasks/stage-manager";
+import { groupTasks, type TaskGroup } from "@/components/tasks/group-tasks";
+import {
+  fetchListView,
+  saveListView,
+  DEFAULT_VIEW_CONFIG,
+  type GroupByKey,
+  type ListViewConfig,
+} from "@/lib/user-list-views";
 import {
   DndContext,
   PointerSensor,
@@ -575,10 +586,60 @@ function ListWorkspace({
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["tasks", list.id] });
 
+  const { user } = useAuth();
+  const myId = user?.id ?? null;
+
+  // Saved per-user view config for this list
+  const viewCfgQuery = useQuery({
+    queryKey: ["user_list_view", list.id, myId],
+    queryFn: () => (myId ? fetchListView(list.id, myId) : Promise.resolve(null)),
+    enabled: !!myId,
+  });
+  const savedCfg: ListViewConfig = viewCfgQuery.data ?? DEFAULT_VIEW_CONFIG;
+
   const [quickAdd, setQuickAdd] = useState("");
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [sortKey, setSortKey] = useState<SortKey>("priority");
+  const [groupBy, setGroupBy] = useState<GroupByKey>("stage");
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [stageMgrOpen, setStageMgrOpen] = useState(false);
+
+  // Hydrate local state when saved config loads (or list changes)
+  const [hydratedListId, setHydratedListId] = useState<string | null>(null);
+  if (viewCfgQuery.data && hydratedListId !== list.id) {
+    const cfg = viewCfgQuery.data;
+    setFilters({
+      priority: cfg.filters.priority as Filters["priority"],
+      status: cfg.filters.status as Filters["status"],
+      due: cfg.filters.due as Filters["due"],
+      assigned: cfg.filters.assigned as Filters["assigned"],
+    });
+    setSortKey(cfg.sort.key);
+    setGroupBy(cfg.group_by);
+    setCollapsedGroups(new Set(cfg.collapsed_groups));
+    if (cfg.view !== view) onViewChange(cfg.view);
+    setHydratedListId(list.id);
+  } else if (!viewCfgQuery.data && !viewCfgQuery.isLoading && hydratedListId !== list.id) {
+    setHydratedListId(list.id);
+  }
+
+  // Persist on changes
+  const persistView = (patch: Partial<ListViewConfig>) => {
+    if (!myId || hydratedListId !== list.id) return;
+    saveListView(list.id, myId, patch).catch((e) =>
+      console.error("saveListView failed", e),
+    );
+  };
+
+  // Persist view mode + filters + sort whenever they change post-hydration
+  useEffect(() => {
+    if (!myId || hydratedListId !== list.id) return;
+    saveListView(list.id, myId, { view, filters, sort: { key: sortKey } }).catch(
+      (e) => console.error("saveListView failed", e),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, filters, sortKey, list.id, myId, hydratedListId]);
 
   const create = useMutation({
     mutationFn: () =>
@@ -595,8 +656,6 @@ function ListWorkspace({
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
-  const { user } = useAuth();
-  const myId = user?.id ?? null;
   const filteredTopLevel = useMemo(() => {
     const top = tasks.filter((t) => !t.parent_task_id);
     return sortTasks(top.filter((t) => matchesFilters(t, filters, myId)), sortKey);
@@ -657,9 +716,21 @@ function ListWorkspace({
     (filters.due !== "all" ? 1 : 0) +
     (filters.assigned !== "all" ? 1 : 0);
 
-  const [groupByAssignee, setGroupByAssignee] = useState(false);
   const { data: members = [] } = useAssignableMembers(businessId);
   const memberList = members as AssignableMember[];
+  const { data: stages = [] } = useQuery({
+    queryKey: ["task_stages", list.id],
+    queryFn: () => fetchStages(list.id),
+  });
+
+  const toggleGroupCollapsed = (key: string) => {
+    setCollapsedGroups((prev) => {
+      const n = new Set(prev);
+      if (n.has(key)) n.delete(key); else n.add(key);
+      persistView({ collapsed_groups: [...n] });
+      return n;
+    });
+  };
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
@@ -764,14 +835,46 @@ function ListWorkspace({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {view === "list" && businessId && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm">
+              <Layers className="h-3.5 w-3.5" /> Group:{" "}
+              {groupBy === "stage" ? "Stage" :
+               groupBy === "priority" ? "Priority" :
+               groupBy === "assignee" ? "Assignee" :
+               groupBy === "due" ? "Due date" : "None"}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            {([
+              ["stage", "Stage"],
+              ["priority", "Priority"],
+              ["assignee", "Assignee"],
+              ["due", "Due date"],
+              ["none", "None"],
+            ] as const).map(([k, label]) => (
+              <DropdownMenuItem
+                key={k}
+                onClick={() => {
+                  setGroupBy(k);
+                  persistView({ group_by: k });
+                }}
+              >
+                {label}
+                {groupBy === k && <span className="ml-auto">✓</span>}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {view === "board" && (
           <Button
-            variant={groupByAssignee ? "default" : "outline"}
+            variant="outline"
             size="sm"
-            onClick={() => setGroupByAssignee((v) => !v)}
-            title="Group by assignee — see who's working on what"
+            onClick={() => setStageMgrOpen(true)}
+            title="Add, rename, recolour, or reorder stages"
           >
-            <UserCircle2 className="h-3.5 w-3.5" /> Who's on what
+            <Settings2 className="h-3.5 w-3.5" /> Stages
           </Button>
         )}
 
@@ -855,9 +958,12 @@ function ListWorkspace({
           onToggleSelect={toggleSelect}
           onChange={invalidate}
           onOpen={setOpenTask}
-          groupByAssignee={groupByAssignee}
+          groupBy={groupBy}
+          stages={stages}
           members={memberList}
           myId={myId}
+          collapsedGroups={collapsedGroups}
+          onToggleCollapsed={toggleGroupCollapsed}
         />
       )}
       {view === "board" && (
@@ -866,11 +972,19 @@ function ListWorkspace({
           tasks={filteredTopLevel}
           onChange={invalidate}
           onOpen={setOpenTask}
+          onManageStages={() => setStageMgrOpen(true)}
         />
       )}
       {view === "calendar" && (
         <TaskCalendarView tasks={filteredTopLevel} onOpen={setOpenTask} />
       )}
+
+      <StageManagerDialog
+        listId={list.id}
+        open={stageMgrOpen}
+        onOpenChange={setStageMgrOpen}
+      />
+
 
       {openTask && (
         <TaskDialog
@@ -894,9 +1008,12 @@ function ListView({
   onToggleSelect,
   onChange,
   onOpen,
-  groupByAssignee = false,
+  groupBy = "stage",
+  stages = [],
   members = [],
   myId = null,
+  collapsedGroups,
+  onToggleCollapsed,
 }: {
   tasks: Task[];
   subtasksByParent: Map<string, Task[]>;
@@ -906,77 +1023,167 @@ function ListView({
   onToggleSelect: (id: string) => void;
   onChange: () => void;
   onOpen: (t: Task) => void;
-  groupByAssignee?: boolean;
+  groupBy?: GroupByKey;
+  stages?: TaskStage[];
   members?: AssignableMember[];
   myId?: string | null;
+  collapsedGroups: Set<string>;
+  onToggleCollapsed: (key: string) => void;
 }) {
-  type Group = { key: string; label: string; items: Task[] };
-  let groups: Group[];
-
-  if (groupByAssignee) {
-    const map = new Map<string, Task[]>();
-    for (const t of tasks) {
-      const k = t.assignee_id ?? "__unassigned__";
-      const arr = map.get(k) ?? [];
-      arr.push(t);
-      map.set(k, arr);
-    }
-    groups = Array.from(map.entries()).map(([k, items]) => ({
-      key: k,
-      label: k === "__unassigned__"
-        ? "Unassigned"
-        : (k === myId ? "Me" : memberLabel(members, k)),
-      items,
-    }));
-    // Stable order: me first, then by name, unassigned last
-    groups.sort((a, b) => {
-      if (a.key === "__unassigned__") return 1;
-      if (b.key === "__unassigned__") return -1;
-      if (a.key === myId) return -1;
-      if (b.key === myId) return 1;
-      return a.label.localeCompare(b.label);
-    });
-  } else {
-    groups = STATUSES.map((s) => ({
-      key: s.value,
-      label: s.label,
-      items: tasks.filter((t) => t.status === s.value),
-    }));
-  }
+  const qc = useQueryClient();
+  const groups: TaskGroup[] = groupTasks(tasks, groupBy, {
+    stages,
+    members,
+    myId,
+  });
 
   return (
     <div className="space-y-6">
-      {groups.map((g) => (
-        <div key={g.key}>
-          <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
-            {g.label} <span className="text-foreground/40">{g.items.length}</span>
-          </h3>
-          <div className="rounded-xl border border-border bg-card divide-y divide-border" style={{ boxShadow: "var(--shadow-soft)" }}>
-            {g.items.length === 0 ? (
-              <p className="p-4 text-sm text-muted-foreground">Nothing here.</p>
-            ) : (
-              g.items.map((t) => (
-                <TaskRow
-                  key={t.id}
-                  task={t}
-                  subtasks={subtasksByParent.get(t.id) ?? []}
+      {groups.map((g) => {
+        const collapsed = collapsedGroups.has(g.key);
+        return (
+          <div key={g.key}>
+            <button
+              type="button"
+              onClick={() => onToggleCollapsed(g.key)}
+              className="w-full flex items-center gap-2 mb-2 text-left group/header"
+            >
+              {collapsed ? (
+                <ChevronRight className="h-3 w-3 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="h-3 w-3 text-muted-foreground" />
+              )}
+              {g.color && (
+                <span
+                  className="h-2 w-2 rounded-full shrink-0"
+                  style={{ backgroundColor: g.color }}
+                />
+              )}
+              <h3 className="text-xs uppercase tracking-wider text-muted-foreground">
+                {g.label}{" "}
+                <span className="text-foreground/40">{g.items.length}</span>
+              </h3>
+            </button>
+            {!collapsed && (
+              <>
+                <div
+                  className="rounded-xl border border-border bg-card divide-y divide-border"
+                  style={{ boxShadow: "var(--shadow-soft)" }}
+                >
+                  {g.items.length === 0 ? (
+                    <p className="p-4 text-sm text-muted-foreground">Nothing here.</p>
+                  ) : (
+                    g.items.map((t) => (
+                      <TaskRow
+                        key={t.id}
+                        task={t}
+                        subtasks={subtasksByParent.get(t.id) ?? []}
+                        listId={listId}
+                        businessId={businessId}
+                        selected={selectedIds.has(t.id)}
+                        onToggleSelect={() => onToggleSelect(t.id)}
+                        onChange={onChange}
+                        onOpen={onOpen}
+                        members={members}
+                        myId={myId}
+                      />
+                    ))
+                  )}
+                </div>
+                <GroupAddTask
                   listId={listId}
                   businessId={businessId}
-                  selected={selectedIds.has(t.id)}
-                  onToggleSelect={() => onToggleSelect(t.id)}
-                  onChange={onChange}
-                  onOpen={onOpen}
-                  members={members}
-                  myId={myId}
+                  groupBy={groupBy}
+                  groupKey={g.key}
+                  position={tasks.length}
+                  onAdded={() => {
+                    qc.invalidateQueries({ queryKey: ["tasks", listId] });
+                    onChange();
+                  }}
                 />
-              ))
+              </>
             )}
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
+
+function GroupAddTask({
+  listId,
+  businessId,
+  groupBy,
+  groupKey,
+  position,
+  onAdded,
+}: {
+  listId: string;
+  businessId: string | null;
+  groupBy: GroupByKey;
+  groupKey: string;
+  position: number;
+  onAdded: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState("");
+
+  const create = useMutation({
+    mutationFn: async () => {
+      const patch: Parameters<typeof createTask>[0] = {
+        list_id: listId,
+        business_id: businessId,
+        title: title.trim(),
+        position,
+      };
+      if (groupBy === "stage" && groupKey !== "__all__") {
+        patch.stage_id = groupKey;
+      } else if (groupBy === "priority") {
+        patch.priority = groupKey as TaskPriority;
+      } else if (groupBy === "assignee" && groupKey !== "__unassigned__") {
+        patch.assignee_id = groupKey;
+      }
+      return createTask(patch);
+    },
+    onSuccess: () => {
+      setTitle("");
+      setOpen(false);
+      onAdded();
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="mt-1.5 text-xs text-muted-foreground hover:text-accent flex items-center gap-1 px-2 py-1 rounded"
+      >
+        <Plus className="h-3 w-3" /> Add task
+      </button>
+    );
+  }
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (title.trim()) create.mutate();
+      }}
+      className="mt-1.5"
+    >
+      <Input
+        autoFocus
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        onBlur={() => !title.trim() && setOpen(false)}
+        placeholder="Task title — Enter to add"
+        className="h-7 text-sm"
+      />
+    </form>
+  );
+}
+
 
 function TaskRow({
   task,
@@ -1178,11 +1385,13 @@ function BoardView({
   tasks,
   onChange,
   onOpen,
+  onManageStages,
 }: {
   listId: string;
   tasks: Task[];
   onChange: () => void;
   onOpen: (t: Task) => void;
+  onManageStages: () => void;
 }) {
   const qc = useQueryClient();
   const sensors = useSensors(
@@ -1301,9 +1510,14 @@ function BoardView({
   }
   if (stages.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground p-4">
-        No stages yet. Default stages will appear when the list is set up.
-      </p>
+      <div className="rounded-xl border border-border bg-card p-6 text-center space-y-3">
+        <p className="text-sm text-muted-foreground">
+          No stages yet. Stages organise your board columns.
+        </p>
+        <Button size="sm" onClick={onManageStages}>
+          <Plus className="h-3.5 w-3.5" /> Set up stages
+        </Button>
+      </div>
     );
   }
 
@@ -1340,6 +1554,13 @@ function BoardView({
                 </SortableColumn>
               );
             })}
+            <button
+              type="button"
+              onClick={onManageStages}
+              className="w-72 shrink-0 rounded-xl border border-dashed border-border text-sm text-muted-foreground hover:text-accent hover:border-accent/40 transition-colors flex items-center justify-center gap-1.5 min-h-[120px]"
+            >
+              <Plus className="h-4 w-4" /> Add or edit stages
+            </button>
           </div>
         </SortableContext>
       </div>
