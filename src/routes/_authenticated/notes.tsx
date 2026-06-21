@@ -374,12 +374,14 @@ function NoteEditor({
   const [body, setBody] = useState(note.body);
   const [type, setType] = useState<NoteType>(note.note_type);
   const [folderId, setFolderId] = useState<string | null>(note.folder_id);
+  const [createTaskFor, setCreateTaskFor] = useState<string | null>(null);
 
   useEffect(() => {
     setTitle(note.title);
     setBody(note.body);
     setType(note.note_type);
     setFolderId(note.folder_id);
+    setCreateTaskFor(null);
   }, [note.id]);
 
   const { savedAt, saving } = useAutosave(
