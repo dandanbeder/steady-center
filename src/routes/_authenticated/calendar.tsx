@@ -515,6 +515,16 @@ function CalendarPage() {
         </div>
 
 
+        <QuickAddBar
+          calendars={visibleCalendars}
+          defaultCalendarId={
+            visibleCalendars.find((c) => !hiddenCals.has(c.id))?.id ??
+            visibleCalendars[0]?.id ??
+            null
+          }
+          onCreated={() => qc.invalidateQueries({ queryKey: ["events"] })}
+        />
+
         {view === "month" && (
           <MonthGrid
             cursor={cursor}
@@ -535,6 +545,9 @@ function CalendarPage() {
             colorFor={colorFor}
             onSlotClick={(d) => openNewOn(d)}
             onEventClick={(e) => setPreviewing(e)}
+            onEventChange={(ev, start, end) =>
+              moveMut.mutate({ id: ev.id, start, end })
+            }
           />
         )}
         {view === "day" && (
@@ -545,6 +558,9 @@ function CalendarPage() {
             colorFor={colorFor}
             onSlotClick={(d) => openNewOn(d)}
             onEventClick={(e) => setPreviewing(e)}
+            onEventChange={(ev, start, end) =>
+              moveMut.mutate({ id: ev.id, start, end })
+            }
           />
         )}
         {view === "agenda" && (
@@ -555,6 +571,7 @@ function CalendarPage() {
             onEventClick={(e) => setPreviewing(e)}
           />
         )}
+
       </div>
 
       <aside className={cn("w-full lg:w-72 shrink-0 space-y-6 order-1 lg:order-2", expanded && "hidden")}>
