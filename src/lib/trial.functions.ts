@@ -3,11 +3,14 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 /**
- * Start a 7-day free trial of Pro or Team. No card required.
+ * Start a 14-day free trial of Pro or Team. No card required.
  *
- * - Sets status=trialing with full plan limits and AI allowance for 7 days.
+ * - Sets status=trialing with full plan limits and AI allowance for 14 days.
  * - One trial per account, ever (per environment) — enforced by
  *   `profiles.trial_used_at` and the `start_free_trial` SECURITY DEFINER fn.
+ * - New signups automatically get a 14-day Pro trial via the
+ *   `trg_profiles_grant_signup_trial` AFTER-INSERT trigger (live env only);
+ *   this RPC remains for users wanting to start a sandbox trial or pick Team.
  * - At conversion the user goes through the normal Paddle checkout and the
  *   webhook upserts a new subscription row with status='active'.
  */
