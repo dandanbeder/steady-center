@@ -68,6 +68,7 @@ function AdminPortal() {
       </Tabs>
       <div className="pt-2 flex gap-4 flex-wrap">
         <Link to="/admin/billing" className="text-sm underline text-primary">Open Billing &amp; Plans console →</Link>
+        <Link to="/admin/ai-economics" className="text-sm underline text-primary">Open AI Economics dashboard →</Link>
         <Link to="/admin/analytics" className="text-sm underline text-primary">Open Analytics dashboard →</Link>
         <Link to="/admin/payments" className="text-sm underline text-primary">Open Payments diagnostic →</Link>
       </div>
