@@ -246,12 +246,20 @@ function CalendarPage() {
     [calendars, activeId],
   );
 
+  const visibleBusinesses = useMemo(
+    () => businesses.filter((b) => activeId === ALL || b.id === activeId),
+    [businesses, activeId],
+  );
+
   const visibleCalIds = useMemo(
     () =>
       new Set(
-        visibleCalendars.filter((c) => !hiddenCals.has(c.id)).map((c) => c.id),
+        visibleCalendars
+          .filter((c) => !hiddenCals.has(c.id))
+          .filter((c) => !c.business_id || !hiddenBiz.has(c.business_id))
+          .map((c) => c.id),
       ),
-    [visibleCalendars, hiddenCals],
+    [visibleCalendars, hiddenCals, hiddenBiz],
   );
 
   const visibleEvents = useMemo(
@@ -263,6 +271,40 @@ function CalendarPage() {
     () => new Map(calendars.map((c) => [c.id, c])),
     [calendars],
   );
+
+  const bizById = useMemo(
+    () => new Map(businesses.map((b) => [b.id, b])),
+    [businesses],
+  );
+
+  const colorFor = useMemo(() => {
+    return (e: EventRow): string => {
+      const cal = calById.get(e.calendar_id);
+      if (colorBy === "account") {
+        const bizId = cal?.business_id;
+        const biz = bizId ? bizById.get(bizId) : null;
+        return biz?.color ?? cal?.color ?? "#7A8471";
+      }
+      return cal?.color ?? "#7A8471";
+    };
+  }, [colorBy, calById, bizById]);
+
+  const bizForEvent = useMemo(() => {
+    return (e: EventRow) => {
+      const cal = calById.get(e.calendar_id);
+      const bizId = cal?.business_id;
+      return bizId ? bizById.get(bizId) ?? null : null;
+    };
+  }, [calById, bizById]);
+
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => deleteEvent(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["events"] });
+      toast.success("Event deleted");
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to delete"),
+  });
 
   function shift(dir: -1 | 1) {
     if (view === "month") {
