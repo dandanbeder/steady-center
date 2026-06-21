@@ -31,6 +31,7 @@ import {
   switchBillingCycle,
   updateSeats,
 } from "@/lib/subscriptions.functions";
+import { getTrialEligibility, startFreeTrial } from "@/lib/trial.functions";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -156,23 +157,7 @@ function BillingPage() {
   if (!user) return null;
 
   if (!isActive || !subscription) {
-    return (
-      <div>
-        <PaymentTestModeBanner />
-        <div className="mx-auto max-w-3xl px-4 py-16 text-center">
-          <h1 className="text-3xl">No active subscription</h1>
-          <p className="mt-2 text-muted-foreground">
-            You're on the Free plan. Upgrade to unlock Pro or Team features.
-          </p>
-          <div className="mt-6 text-sm text-muted-foreground">
-            Contact support to change your plan.
-          </div>
-          <div className="mt-10">
-            <AiUsageMeter />
-          </div>
-        </div>
-      </div>
-    );
+    return <FreePlanView env={env} qc={qc} />;
   }
 
   const s = summary.data;
@@ -381,6 +366,101 @@ function BillingPage() {
         <p className="text-center text-xs text-muted-foreground">
           Payments handled by Paddle as merchant of record.
         </p>
+      </div>
+    </div>
+  );
+}
+
+function FreePlanView({
+  env,
+  qc,
+}: {
+  env: "sandbox" | "live";
+  qc: ReturnType<typeof useQueryClient>;
+}) {
+  const startFn = useServerFn(startFreeTrial);
+  const eligFn = useServerFn(getTrialEligibility);
+  const [busy, setBusy] = useState<"pro" | "team" | null>(null);
+
+  const elig = useQuery({
+    queryKey: ["trial-eligibility", env],
+    queryFn: () => eligFn({ data: { environment: env } }),
+  });
+
+  const handleStart = async (plan: "pro" | "team") => {
+    setBusy(plan);
+    try {
+      await startFn({ data: { plan, environment: env } });
+      toast.success(`${plan === "pro" ? "Pro" : "Team"} trial started — 7 days, no card required`);
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["subscription"] }),
+        qc.invalidateQueries({ queryKey: ["plan-context"] }),
+        qc.invalidateQueries({ queryKey: ["trial-eligibility"] }),
+        qc.invalidateQueries({ queryKey: ["account-entitlements"] }),
+      ]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not start trial");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const eligible = elig.data?.eligible ?? false;
+  const usedPlan = elig.data?.trialPlan;
+
+  return (
+    <div>
+      <PaymentTestModeBanner />
+      <div className="mx-auto max-w-3xl px-4 py-16">
+        <div className="text-center">
+          <h1 className="text-3xl">You're on the Free plan</h1>
+          <p className="mt-2 text-muted-foreground">
+            Try Pro or Team free for 7 days. No card required.
+          </p>
+        </div>
+
+        {elig.isLoading ? null : eligible ? (
+          <div className="mt-8 grid gap-4 sm:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Pro</CardTitle>
+                <CardDescription>Unlimited businesses & calendars, 400 AI credits/mo.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  className="w-full"
+                  onClick={() => handleStart("pro")}
+                  disabled={busy !== null}
+                >
+                  {busy === "pro" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Start 7-day Pro trial"}
+                </Button>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Team</CardTitle>
+                <CardDescription>Everything in Pro + sharing & team features (2 seats).</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  className="w-full"
+                  onClick={() => handleStart("team")}
+                  disabled={busy !== null}
+                >
+                  {busy === "team" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Start 7-day Team trial"}
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          <div className="mt-8 rounded-lg border bg-muted/30 p-6 text-center text-sm text-muted-foreground">
+            You've already used your free trial{usedPlan ? ` (${usedPlan})` : ""}. Contact support to upgrade.
+          </div>
+        )}
+
+        <div className="mt-10">
+          <AiUsageMeter />
+        </div>
       </div>
     </div>
   );
