@@ -302,7 +302,6 @@ function ActionDialog({
           note: `${action}: ${reason}`.slice(0, 500),
         },
       });
-      }
       invalidate();
     },
     onSuccess: () => {
