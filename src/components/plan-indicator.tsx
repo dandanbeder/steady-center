@@ -42,14 +42,14 @@ export function PlanIndicator() {
       )}
     >
       <span className="font-medium">{tierLabel(tier)}</span>
-      <span className="text-muted-foreground hidden xs:inline">·</span>
       {isFree ? (
         <span className="inline-flex items-center gap-1 text-primary font-medium">
-          <span className="hidden xs:inline">Upgrade</span>
           <ArrowUpRight className="h-3 w-3" />
+          <span className="hidden sm:inline">Upgrade</span>
         </span>
       ) : (
         <span className="inline-flex items-center gap-1 tabular-nums">
+          <span className="text-muted-foreground">·</span>
           <Sparkles className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
           {total === null ? "…" : total.toLocaleString()}
           <span className="hidden sm:inline text-muted-foreground">credits</span>
