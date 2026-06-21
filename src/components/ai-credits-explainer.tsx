@@ -15,19 +15,17 @@ export function AiCreditsExplainer({ allowance }: { allowance?: number | null })
       </CardHeader>
       <CardContent className="space-y-2 text-sm text-muted-foreground">
         <p>
-          AI features use credits. Your plan includes{" "}
-          <span className="font-medium text-foreground">
-            {allowance && allowance > 0 ? `${allowance.toLocaleString()} credits` : "a monthly allowance"}
-          </span>{" "}
-          each month, refreshed on your renewal date.
+          Credits power AI features — a quick action costs about 1 credit, longer ones cost more.
+          {allowance && allowance > 0 ? (
+            <> Your plan includes <span className="font-medium text-foreground">{allowance.toLocaleString()} credits</span> each month.</>
+          ) : null}
         </p>
         <p>
-          Different actions use different amounts, a quick suggestion is 1 credit, a long meeting
-          summary costs more, so heavier tasks use more of your allowance.
+          Your monthly allowance refills on your billing date; purchased top-ups last 12 months.
         </p>
         <p>
-          If credits run low we'll tell you; if they run out, AI pauses until your next refresh, or you can
-          top up anytime. Purchased top-up credits last 12 months.
+          If credits run low we'll tell you; if they run out, AI pauses until your next refresh — or you can
+          top up anytime.
         </p>
         <p className="text-foreground">
           Only AI features pause, everything else keeps working.
