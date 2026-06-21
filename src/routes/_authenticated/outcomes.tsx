@@ -52,8 +52,10 @@ import {
   listOutcomesWithProgress,
   listTasksForOutcome,
   normaliseOutcomeStatus,
+  OUTCOME_STATUS_OPTIONS,
   OUTCOME_STATUS_LABEL,
   updateOutcome,
+  type CanonicalOutcomeStatus,
   type OutcomeStatus,
   type OutcomeWithProgress,
 } from "@/lib/outcomes";
@@ -72,7 +74,7 @@ export const Route = createFileRoute("/_authenticated/outcomes")({
   component: OutcomesPage,
 });
 
-type TabKey = "in_progress" | "achieved" | "at_risk" | "archived";
+type TabKey = CanonicalOutcomeStatus;
 
 const TAB_FILTER: Record<TabKey, (s: OutcomeStatus) => boolean> = {
   in_progress: (s) =>
@@ -138,10 +140,11 @@ function OutcomesPage() {
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
         <TabsList>
-          <TabsTrigger value="in_progress">In progress</TabsTrigger>
-          <TabsTrigger value="at_risk">At risk</TabsTrigger>
-          <TabsTrigger value="achieved">Achieved</TabsTrigger>
-          <TabsTrigger value="archived">Archived</TabsTrigger>
+          {OUTCOME_STATUS_OPTIONS.map((statusOption) => (
+            <TabsTrigger key={statusOption.value} value={statusOption.value}>
+              {statusOption.label}
+            </TabsTrigger>
+          ))}
         </TabsList>
         <TabsContent value={tab} className="mt-5">
           {isLoading ? (
@@ -547,7 +550,7 @@ function OutcomeDialog({
   const [metricUnit, setMetricUnit] = useState(outcome?.metric_unit ?? "");
   const [targetDate, setTargetDate] = useState(outcome?.target_date ?? "");
   const [status, setStatus] = useState<OutcomeStatus>(
-    outcome ? normaliseOutcomeStatus(outcome.status) : "not_started",
+    outcome ? normaliseOutcomeStatus(outcome.status) : "in_progress",
   );
   const [businessId, setBusinessId] = useState<string>(
     outcome?.business_id ?? (activeId !== ALL ? activeId : ""),
@@ -702,25 +705,16 @@ function OutcomeDialog({
               <Select value={status} onValueChange={(v) => setStatus(v as OutcomeStatus)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="not_started">{OUTCOME_STATUS_LABEL.not_started}</SelectItem>
-                  <SelectItem value="in_progress">{OUTCOME_STATUS_LABEL.in_progress}</SelectItem>
-                  <SelectItem value="at_risk">
-                    <span className="inline-flex items-center gap-1.5">
-                      <AlertTriangle className="h-3.5 w-3.5" /> {OUTCOME_STATUS_LABEL.at_risk}
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="achieved">
-                    <span className="inline-flex items-center gap-1.5">
-                      <Trophy className="h-3.5 w-3.5" /> {OUTCOME_STATUS_LABEL.achieved}
-                    </span>
-                  </SelectItem>
-                  {isEdit && (
-                    <SelectItem value="archived">
+                  {OUTCOME_STATUS_OPTIONS.map((statusOption) => (
+                    <SelectItem key={statusOption.value} value={statusOption.value}>
                       <span className="inline-flex items-center gap-1.5">
-                        <Archive className="h-3.5 w-3.5" /> {OUTCOME_STATUS_LABEL.archived}
+                        {statusOption.value === "at_risk" && <AlertTriangle className="h-3.5 w-3.5" />}
+                        {statusOption.value === "achieved" && <Trophy className="h-3.5 w-3.5" />}
+                        {statusOption.value === "archived" && <Archive className="h-3.5 w-3.5" />}
+                        {OUTCOME_STATUS_LABEL[statusOption.value]}
                       </span>
                     </SelectItem>
-                  )}
+                  ))}
                 </SelectContent>
               </Select>
             </div>

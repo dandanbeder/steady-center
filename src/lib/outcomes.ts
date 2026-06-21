@@ -9,6 +9,18 @@ export type OutcomeStatus =
   // Legacy value kept for backward compatibility; rendered as "In progress".
   | "active";
 
+export type CanonicalOutcomeStatus = Exclude<OutcomeStatus, "not_started" | "active">;
+
+export const OUTCOME_STATUS_OPTIONS: Array<{
+  value: CanonicalOutcomeStatus;
+  label: string;
+}> = [
+  { value: "in_progress", label: "In progress" },
+  { value: "at_risk", label: "At risk" },
+  { value: "achieved", label: "Achieved" },
+  { value: "archived", label: "Archived" },
+];
+
 export const OUTCOME_STATUS_LABEL: Record<OutcomeStatus, string> = {
   not_started: "Not started",
   in_progress: "In progress",
