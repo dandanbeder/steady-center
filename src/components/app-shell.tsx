@@ -204,42 +204,30 @@ export function AppShell({ children }: { children: ReactNode }) {
           </Link>
         );
       })}
-      {isAdmin && (
-        <Link
-          to="/admin"
-          onClick={onNavigate}
-          title={compact ? "Admin" : undefined}
-          className={cn(
-            "flex items-center gap-3 rounded-lg text-sm transition-colors",
-            compact ? "justify-center px-2 py-2" : "px-3 py-2.5",
-            "min-h-[44px]",
-            isActive("/admin")
-              ? "bg-sidebar-accent text-sidebar-accent-foreground"
-              : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/60",
-          )}
-        >
-          <Shield className="h-4 w-4 shrink-0" />
-          {!compact && <span>Admin</span>}
-        </Link>
-      )}
-      {isTeamAdmin && (
-
-        <Link
-          to="/team-admin"
-          onClick={onNavigate}
-          title={compact ? "Team admin" : undefined}
-          className={cn(
-            "flex items-center gap-3 rounded-lg text-sm transition-colors",
-            compact ? "justify-center px-2 py-2" : "px-3 py-2.5",
-            "min-h-[44px]",
-            isActive("/team-admin")
-              ? "bg-sidebar-accent text-sidebar-accent-foreground"
-              : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/60",
-          )}
-        >
-          <Users className="h-4 w-4 shrink-0" />
-          {!compact && <span>Team admin</span>}
-        </Link>
+      {(isAdmin || isTeamAdmin) && (
+        <>
+          <div
+            role="separator"
+            aria-hidden="true"
+            className={cn("my-2 h-px bg-sidebar-border/70", compact ? "mx-2" : "mx-3")}
+          />
+          <Link
+            to={isAdmin ? "/admin" : "/team-admin"}
+            onClick={onNavigate}
+            title={compact ? (isAdmin ? "Admin" : "Team admin") : undefined}
+            className={cn(
+              "flex items-center gap-3 rounded-lg text-sm transition-colors",
+              compact ? "justify-center px-2 py-2" : "px-3 py-2.5",
+              "min-h-[44px]",
+              isActive(isAdmin ? "/admin" : "/team-admin")
+                ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/60",
+            )}
+          >
+            <Shield className="h-4 w-4 shrink-0" />
+            {!compact && <span>Admin</span>}
+          </Link>
+        </>
       )}
     </nav>
   );
