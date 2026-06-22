@@ -162,9 +162,25 @@ function MeetingDetail() {
         <span>·</span>
         <span>{meeting.platform}</span>
         <span>·</span>
-        <span>{new Date(meeting.created_at).toLocaleString()}</span>
+        <span>
+          {meeting.scheduled_at
+            ? new Date(meeting.scheduled_at).toLocaleString()
+            : new Date(meeting.created_at).toLocaleString()}
+        </span>
       </div>
       <h1 className="text-2xl sm:text-3xl text-primary mb-4">{meeting.title}</h1>
+
+      {meeting.attendees && meeting.attendees.length > 0 && (
+        <div className="mb-6 rounded-lg border border-border bg-card px-4 py-3">
+          <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1.5">Attendees</p>
+          <p className="text-sm text-foreground">
+            {meeting.attendees
+              .map((a) => a.name || a.email)
+              .filter(Boolean)
+              .join(", ")}
+          </p>
+        </div>
+      )}
 
       {meeting.audio_path && (
         <div className="mb-6 flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-3">
