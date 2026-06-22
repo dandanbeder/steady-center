@@ -1722,6 +1722,48 @@ export type Database = {
         }
         Relationships: []
       }
+      meeting_decisions: {
+        Row: {
+          created_at: string
+          id: string
+          meeting_id: string
+          outcome_id: string | null
+          owner_id: string
+          text: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          meeting_id: string
+          outcome_id?: string | null
+          owner_id: string
+          text: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          meeting_id?: string
+          outcome_id?: string | null
+          owner_id?: string
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_decisions_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_decisions_outcome_id_fkey"
+            columns: ["outcome_id"]
+            isOneToOne: false
+            referencedRelation: "outcomes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meetings: {
         Row: {
           audio_path: string | null
