@@ -529,7 +529,35 @@ function NoteEditor({
 
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="text-xs text-muted-foreground">{status}</div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Select
+            value={businessId ?? "__none"}
+            onValueChange={(v) => {
+              const next = v === "__none" ? null : v;
+              setBusinessId(next);
+              setFolderId(null);
+            }}
+          >
+            <SelectTrigger className="h-8 w-44 text-xs">
+              <SelectValue placeholder="Account" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none">
+                <span className="inline-flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground" />
+                  Personal / Uncategorised
+                </span>
+              </SelectItem>
+              {businesses.map((b) => (
+                <SelectItem key={b.id} value={b.id}>
+                  <span className="inline-flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ background: b.color }} />
+                    {b.name}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Select value={type} onValueChange={(v) => setType(v as NoteType)}>
             <SelectTrigger className="h-8 w-32 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
