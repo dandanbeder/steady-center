@@ -376,11 +376,16 @@ function NotesPage() {
           <div className="h-full flex flex-col items-center justify-center text-center px-8">
             <StickyNote className="h-12 w-12 text-muted-foreground/40 mb-3" />
             <p className="text-sm text-muted-foreground mb-4">
-              Pick a note, or create a new one with the guided flow.
+              Pick a note, or start a blank one — write first, organise later.
             </p>
-            <Button onClick={() => setDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-1" /> New note
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button onClick={handleInstantCreate} disabled={creatingInstant}>
+                <Plus className="h-4 w-4 mr-1" /> New note
+              </Button>
+              <Button variant="outline" onClick={() => setDialogOpen(true)}>
+                <Sparkles className="h-4 w-4 mr-1" /> Guided setup
+              </Button>
+            </div>
           </div>
         )}
       </div>
