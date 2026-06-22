@@ -99,7 +99,7 @@ export async function listEvents(rangeStart?: Date, rangeEnd?: Date): Promise<Ev
   if (rangeEnd) q = q.lte("start_at", rangeEnd.toISOString());
   const { data, error } = await q;
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []) as unknown as EventRow[];
 }
 
 export async function createEvent(input: {
