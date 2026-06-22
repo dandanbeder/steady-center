@@ -351,6 +351,8 @@ function MeetingDetail() {
         </details>
       </section>
 
+      <MeetingNotesPanel meeting={meeting} />
+
       <section>
         <ActivityAndComments
           parentType="meeting"
