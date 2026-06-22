@@ -3,7 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ArrowLeft, Check, CheckCircle2, Loader2, Trash2 } from "lucide-react";
+import { ArrowLeft, Check, CheckCircle2, Loader2, Sparkles, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -25,13 +25,16 @@ import { listFolders, listLists } from "@/lib/tasks";
 import {
   getMeeting,
   listActionItems,
+  listMeetingDecisions,
   setActionItemDone,
   linkActionItemTask,
   type ActionItem,
 } from "@/lib/meetings";
+import { generateMeetingDraft, applyMeetingDraft } from "@/lib/meetings.functions";
 import { deleteMeetingRecording } from "@/lib/account.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { ActivityAndComments } from "@/components/comments/activity-and-comments";
+import { AIDraftDialog, newDraftFrom, type AIDraft } from "@/components/meetings/ai-draft-dialog";
 
 
 import { UpgradeGate } from "@/components/upgrade-gate";
@@ -57,6 +60,10 @@ function MeetingDetail() {
     queryFn: () => listActionItems(meetingId),
   });
   const { data: businesses = [] } = useQuery({ queryKey: ["businesses"], queryFn: listBusinesses });
+  const { data: decisions = [] } = useQuery({
+    queryKey: ["meeting-decisions", meetingId],
+    queryFn: () => listMeetingDecisions(meetingId),
+  });
 
   const toggleDone = useMutation({
     mutationFn: ({ id, done }: { id: string; done: boolean }) => setActionItemDone(id, done),
@@ -74,6 +81,62 @@ function MeetingDetail() {
   });
 
   const [convertItem, setConvertItem] = useState<ActionItem | null>(null);
+
+  // User-invoked AI workflow.
+  const [confirmRunOpen, setConfirmRunOpen] = useState(false);
+  const [draftOpen, setDraftOpen] = useState(false);
+  const [draft, setDraft] = useState<AIDraft | null>(null);
+  const generate = useServerFn(generateMeetingDraft);
+  const apply = useServerFn(applyMeetingDraft);
+  const generateMut = useMutation({
+    mutationFn: () => generate({ data: { meeting_id: meetingId } }),
+    onSuccess: (res) => {
+      setDraft(newDraftFrom(res, meeting?.business_id ?? null));
+      setConfirmRunOpen(false);
+      setDraftOpen(true);
+    },
+    onError: (e) => {
+      const msg = e instanceof Error ? e.message : "AI failed";
+      if (/credit|402/i.test(msg)) {
+        toast.error("Out of AI credits. Add credits in Workspace settings.");
+      } else if (/rate|429/i.test(msg)) {
+        toast.error("Rate limited. Try again shortly.");
+      } else {
+        toast.error(msg);
+      }
+    },
+  });
+  const applyMut = useMutation({
+    mutationFn: (d: AIDraft) =>
+      apply({
+        data: {
+          meeting_id: meetingId,
+          summary: d.summary,
+          decisions: d.decisions.filter((x) => x.text.trim()),
+          tasks: d.tasks
+            .filter((t) => t.accepted && t.text.trim())
+            .map((t) => ({
+              text: t.text,
+              owner_label: t.owner_label,
+              due_at: t.due_at,
+              business_id: t.business_id,
+              list_id: t.list_id,
+              outcome_id: t.outcome_id,
+            })),
+        },
+      }),
+    onSuccess: (res) => {
+      toast.success(`Saved. Created ${res.created_count} task${res.created_count === 1 ? "" : "s"}.`);
+      setDraftOpen(false);
+      setDraft(null);
+      qc.invalidateQueries({ queryKey: ["meeting", meetingId] });
+      qc.invalidateQueries({ queryKey: ["meeting-actions", meetingId] });
+      qc.invalidateQueries({ queryKey: ["meeting-decisions", meetingId] });
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to save"),
+  });
+
 
   if (isLoading) return <div className="p-10 text-muted-foreground">Loading…</div>;
   if (!meeting) return <div className="p-10 text-muted-foreground">Meeting not found.</div>;
@@ -121,23 +184,53 @@ function MeetingDetail() {
           </Button>
         </div>
       )}
-
+      {/* User-invoked AI: heavy action, metered, with confirmation. */}
+      {(meeting.transcript || meeting.audio_path) && (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
+          <div>
+            <p className="text-sm text-foreground font-medium flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" /> AI summary &amp; action items
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Turn this {meeting.audio_path && !meeting.transcript ? "recording" : "transcript"} into a summary,
+              decisions, and suggested tasks. You review and confirm before anything is created.
+            </p>
+          </div>
+          <Button
+            onClick={() => setConfirmRunOpen(true)}
+            disabled={generateMut.isPending}
+            className="gap-2"
+          >
+            {generateMut.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4" />
+            )}
+            {meeting.summary ? "Re-generate" : "Generate with AI"}
+          </Button>
+        </div>
+      )}
 
       <section className="mb-8">
         <h2 className="text-sm uppercase tracking-wide text-muted-foreground mb-2">Summary</h2>
         <p className="text-foreground leading-relaxed whitespace-pre-wrap">
-          {meeting.summary || "No summary available."}
+          {meeting.summary || "No summary yet."}
         </p>
       </section>
 
-      {meeting.decisions && meeting.decisions.length > 0 && (
+      {decisions.length > 0 && (
         <section className="mb-8">
           <h2 className="text-sm uppercase tracking-wide text-muted-foreground mb-2">Decisions</h2>
           <ul className="space-y-1.5">
-            {meeting.decisions.map((d, i) => (
-              <li key={i} className="flex gap-2 text-foreground">
+            {decisions.map((d) => (
+              <li key={d.id} className="flex gap-2 text-foreground">
                 <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                <span>{d}</span>
+                <span className="flex-1">
+                  {d.text}
+                  {d.outcome_id && (
+                    <span className="ml-2 text-xs text-primary">→ linked to outcome</span>
+                  )}
+                </span>
               </li>
             ))}
           </ul>
@@ -213,6 +306,53 @@ function MeetingDetail() {
         onClose={() => setConvertItem(null)}
         defaultBusinessId={meeting.business_id}
         onConverted={() => qc.invalidateQueries({ queryKey: ["meeting-actions", meetingId] })}
+      />
+
+      {/* Cost confirmation before invoking AI. */}
+      <Dialog open={confirmRunOpen} onOpenChange={(v) => !generateMut.isPending && setConfirmRunOpen(v)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Generate with AI?</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 text-sm text-foreground">
+            <p>
+              This is a heavy AI action: it{" "}
+              {meeting.audio_path && !meeting.transcript ? "transcribes the recording, then " : ""}
+              writes a summary, extracts decisions, and suggests action items.
+            </p>
+            <p className="text-muted-foreground">
+              <strong>Estimated cost:</strong> ~10 AI credits
+              {meeting.audio_path && !meeting.transcript ? " (plus transcription)" : ""}.
+            </p>
+            <p className="text-muted-foreground">
+              You'll review and edit everything before any tasks or decisions are saved.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setConfirmRunOpen(false)} disabled={generateMut.isPending}>
+              Cancel
+            </Button>
+            <Button onClick={() => generateMut.mutate()} disabled={generateMut.isPending} className="gap-2">
+              {generateMut.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              Run AI
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AIDraftDialog
+        open={draftOpen}
+        onOpenChange={(v) => {
+          if (!applyMut.isPending) {
+            setDraftOpen(v);
+            if (!v) setDraft(null);
+          }
+        }}
+        draft={draft}
+        setDraft={setDraft}
+        defaultBusinessId={meeting.business_id}
+        busy={applyMut.isPending}
+        onConfirm={() => draft && applyMut.mutate(draft)}
       />
     </div>
   );

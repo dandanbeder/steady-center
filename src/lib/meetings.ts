@@ -59,6 +59,26 @@ export async function listActionItems(meetingId: string): Promise<ActionItem[]> 
   return (data ?? []) as unknown as ActionItem[];
 }
 
+export type MeetingDecision = {
+  id: string;
+  meeting_id: string;
+  owner_id: string;
+  text: string;
+  outcome_id: string | null;
+  created_at: string;
+};
+
+export async function listMeetingDecisions(meetingId: string): Promise<MeetingDecision[]> {
+  const { data, error } = await supabase
+    .from("meeting_decisions" as any)
+    .select("*")
+    .eq("meeting_id", meetingId)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as unknown as MeetingDecision[];
+}
+
+
 export async function setActionItemDone(id: string, done: boolean) {
   const { error } = await supabase.from("action_items" as any).update({ done }).eq("id", id);
   if (error) throw error;
