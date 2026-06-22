@@ -211,3 +211,183 @@ export const processMeeting = createServerFn({ method: "POST" })
 
     return { meeting_id: meetingRow.id, ai_error };
   });
+
+// ============================================================
+// User-invoked AI: generate a DRAFT (no DB writes besides storing a
+// freshly-produced transcript when audio is present). The user reviews,
+// edits, then confirms via applyMeetingDraft.
+// ============================================================
+
+export const generateMeetingDraft = createServerFn({ method: "POST" })
+  .middleware([requireActiveUser])
+  .inputValidator((input) =>
+    z.object({ meeting_id: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { requireFeature } = await import("./entitlements.server");
+    await requireFeature(supabase, userId, "meetings");
+
+    const { data: meeting, error: mErr } = await supabase
+      .from("meetings")
+      .select("id, owner_id, transcript, audio_path")
+      .eq("id", data.meeting_id)
+      .maybeSingle();
+    if (mErr || !meeting) throw new Error("Meeting not found");
+    const m = meeting as unknown as {
+      id: string;
+      owner_id: string;
+      transcript: string | null;
+      audio_path: string | null;
+    };
+    if (m.owner_id !== userId) throw new Error("Forbidden");
+
+    let transcript = (m.transcript ?? "").trim();
+    if (!transcript && m.audio_path) {
+      transcript = (await transcribeWithWhisper(m.audio_path, userId)).trim();
+      // Persist the new transcript so re-runs don't re-transcribe.
+      if (transcript) {
+        await supabase
+          .from("meetings")
+          .update({ transcript } as never)
+          .eq("id", m.id);
+      }
+    }
+    if (!transcript) {
+      throw new Error("No transcript or audio to summarise.");
+    }
+
+    const result = await summarizeTranscript(transcript);
+    return {
+      summary: result.summary,
+      decisions: result.decisions,
+      action_items: result.action_items,
+    };
+  });
+
+// Confirm: writes summary, decisions, action_items, and creates real tasks.
+const ApplyInput = z.object({
+  meeting_id: z.string().uuid(),
+  summary: z.string().max(20000),
+  decisions: z
+    .array(
+      z.object({
+        text: z.string().min(1).max(2000),
+        outcome_id: z.string().uuid().nullable().optional(),
+      }),
+    )
+    .max(50),
+  tasks: z
+    .array(
+      z.object({
+        text: z.string().min(1).max(2000),
+        owner_label: z.string().max(120).nullable().optional(),
+        due_at: z.string().nullable().optional(),
+        business_id: z.string().uuid().nullable().optional(),
+        list_id: z.string().uuid().nullable().optional(),
+        outcome_id: z.string().uuid().nullable().optional(),
+      }),
+    )
+    .max(50),
+});
+
+export const applyMeetingDraft = createServerFn({ method: "POST" })
+  .middleware([requireActiveUser])
+  .inputValidator((input) => ApplyInput.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    // Verify ownership.
+    const { data: meeting, error: mErr } = await supabase
+      .from("meetings")
+      .select("id, owner_id, business_id")
+      .eq("id", data.meeting_id)
+      .maybeSingle();
+    if (mErr || !meeting) throw new Error("Meeting not found");
+    const m = meeting as unknown as { id: string; owner_id: string; business_id: string | null };
+    if (m.owner_id !== userId) throw new Error("Forbidden");
+
+    // 1) Update summary + decisions array on meetings (keep legacy text[] in sync).
+    await supabase
+      .from("meetings")
+      .update({
+        summary: data.summary,
+        decisions: data.decisions.map((d) => d.text),
+      } as never)
+      .eq("id", m.id);
+
+    // 2) Replace meeting_decisions rows.
+    await supabase.from("meeting_decisions").delete().eq("meeting_id", m.id);
+    if (data.decisions.length > 0) {
+      const rows = data.decisions.map((d) => ({
+        meeting_id: m.id,
+        owner_id: userId,
+        text: d.text,
+        outcome_id: d.outcome_id ?? null,
+      }));
+      const { error } = await supabase.from("meeting_decisions").insert(rows as never);
+      if (error) throw new Error(error.message);
+    }
+
+    // 3) Replace action_items + their linked tasks for this meeting.
+    // Remove previously created tasks generated from this meeting.
+    const { data: oldAis } = await supabase
+      .from("action_items")
+      .select("id, task_id")
+      .eq("source_type", "meeting")
+      .eq("source_id", m.id);
+    const oldTaskIds = (oldAis ?? [])
+      .map((a: { task_id: string | null }) => a.task_id)
+      .filter((v): v is string => !!v);
+    if (oldTaskIds.length > 0) {
+      await supabase.from("tasks").delete().in("id", oldTaskIds);
+    }
+    await supabase
+      .from("action_items")
+      .delete()
+      .eq("source_type", "meeting")
+      .eq("source_id", m.id);
+
+    // 4) Create real tasks + action_items linked back to the meeting.
+    const created: { task_id: string; action_item_id: string }[] = [];
+    for (const t of data.tasks) {
+      const businessId = t.business_id ?? m.business_id ?? null;
+      const { data: task, error: tErr } = await supabase
+        .from("tasks")
+        .insert({
+          owner_id: userId,
+          list_id: t.list_id ?? null,
+          business_id: businessId,
+          title: t.text,
+          description: `From meeting: ${m.id}`,
+          status: "todo",
+          priority: "normal",
+          due_at: t.due_at ?? null,
+          outcome_id: t.outcome_id ?? null,
+        } as never)
+        .select("id")
+        .single();
+      if (tErr || !task) throw new Error(tErr?.message ?? "Failed to create task");
+      const taskRow = task as unknown as { id: string };
+
+      const { data: ai, error: aErr } = await supabase
+        .from("action_items")
+        .insert({
+          owner_id: userId,
+          business_id: businessId,
+          source_type: "meeting",
+          source_id: m.id,
+          text: t.text,
+          owner_label: t.owner_label ?? null,
+          due_at: t.due_at ?? null,
+          task_id: taskRow.id,
+        } as never)
+        .select("id")
+        .single();
+      if (aErr || !ai) throw new Error(aErr?.message ?? "Failed to create action item");
+      created.push({ task_id: taskRow.id, action_item_id: (ai as unknown as { id: string }).id });
+    }
+
+    return { ok: true, created_count: created.length };
+  });
+
