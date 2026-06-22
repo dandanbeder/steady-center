@@ -191,6 +191,7 @@ function CapturePage() {
               businesses={businesses}
               folders={folders}
               lists={lists}
+              aiEnabled={aiEnabled}
             />
           ))}
         </div>
@@ -200,16 +201,20 @@ function CapturePage() {
 }
 
 function InboxCard({
-  item, businesses, folders, lists,
+  item, businesses, folders, lists, aiEnabled,
 }: {
   item: InboxItem;
   businesses: { id: string; name: string }[];
   folders: { id: string; name: string; business_id: string }[];
   lists: { id: string; name: string; folder_id: string }[];
+  aiEnabled: boolean;
 }) {
   const qc = useQueryClient();
   const suggest = useServerFn(suggestInboxItem);
   const processed = !!item.ai_processed_at;
+  // When AI is off and the item never got a suggestion, skip the
+  // "Suggesting…" state entirely and let the user file it manually.
+  const manualMode = !processed && !aiEnabled;
 
   const [type, setType] = useState<InboxType>((item.suggested_type as InboxType) || "task");
   const [title, setTitle] = useState(item.suggested_title || "");
