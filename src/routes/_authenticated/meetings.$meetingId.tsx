@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { listBusinesses } from "@/lib/businesses";
+import { listOutcomes, type Outcome } from "@/lib/outcomes";
 import { listFolders, listLists } from "@/lib/tasks";
 import {
   getMeeting,
