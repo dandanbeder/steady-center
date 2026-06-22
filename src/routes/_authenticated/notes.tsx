@@ -49,6 +49,7 @@ import { AIPanel } from "@/components/notes/ai-panel";
 import { LinkedTasksPanel } from "@/components/notes/linked-tasks-panel";
 import { CreateTaskFromNoteDialog } from "@/components/notes/create-task-from-note-dialog";
 import { ConnectionsPanel } from "@/components/notes/connections-panel";
+import { NoteContextLinks } from "@/components/notes/note-context-links";
 import {
   NotesTreeSidebar,
   folderPath,
