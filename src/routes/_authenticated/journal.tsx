@@ -535,14 +535,6 @@ function JournalEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mood, tags, note.id]);
 
-  const insertTranscript = (text: string) => {
-    setBody((prev) => {
-      const sep = prev.endsWith("\n") || prev.length === 0 ? "" : "\n\n";
-      return `${prev}${sep}${text}`;
-    });
-    toast.success("Added to entry.");
-  };
-
   return (
     <div className="max-w-3xl mx-auto p-6 lg:p-10 space-y-4">
       <div className="flex items-center justify-between gap-3">
@@ -568,7 +560,6 @@ function JournalEditor({
           >
             <Trash2 className="h-4 w-4" />
           </button>
-          <VoiceJournalButton onTranscribed={insertTranscript} />
         </div>
       </div>
       <Input
