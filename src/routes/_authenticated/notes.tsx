@@ -623,7 +623,7 @@ function NoteEditor({
 
       <div className="pt-4 border-t border-border space-y-6">
         <AIPanel note={note} onChanged={onChanged} />
-        <LinkedTasksPanel noteId={note.id} />
+        <LinkedTasksPanel note={note} />
         <ConnectionsPanel noteId={note.id} businessId={note.business_id} />
         <AttachmentsPanel note={note} />
         <TagPeople itemType="note" itemId={note.id} businessId={note.business_id} />
