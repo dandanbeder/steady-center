@@ -777,6 +777,22 @@ function CalendarPage() {
         cal={previewing ? calById.get(previewing.calendar_id) ?? null : null}
         biz={previewing ? bizForEvent(previewing) : null}
         color={previewing ? colorFor(previewing) : "#7A8471"}
+        businesses={businesses}
+        onChangeAccount={(bizId) => {
+          if (!previewing) return;
+          // Heartbeat-only override; updateEvent does NOT push business_id to
+          // the external provider (only title/time/loc/desc are synced).
+          const prev = previewing;
+          updateEvent(prev.id, { business_id: bizId })
+            .then(() => {
+              qc.invalidateQueries({ queryKey: ["events"] });
+              setPreviewing({ ...prev, business_id: bizId });
+              toast.success(bizId ? "Account updated" : "Moved to Personal");
+            })
+            .catch((e) =>
+              toast.error(e instanceof Error ? e.message : "Couldn't reassign account"),
+            );
+        }}
         onClose={() => setPreviewing(null)}
         onEdit={() => {
           if (previewing) {
