@@ -87,6 +87,7 @@ function MeetingDetail() {
   const [confirmRunOpen, setConfirmRunOpen] = useState(false);
   const [draftOpen, setDraftOpen] = useState(false);
   const [draft, setDraft] = useState<AIDraft | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
   const generate = useServerFn(generateMeetingDraft);
   const apply = useServerFn(applyMeetingDraft);
   const generateMut = useMutation({
