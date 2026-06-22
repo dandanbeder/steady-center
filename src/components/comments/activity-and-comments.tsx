@@ -116,6 +116,32 @@ export function ActivityAndComments({ parentType, parentId, businessId, activity
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to post"),
   });
 
+  /**
+   * Private-first guard. Before posting, ask the server which mentioned
+   * users (if any) lack access to this item. If any are missing, surface
+   * an explicit-share prompt instead of either (a) silently dropping the
+   * mention or (b) silently granting access.
+   */
+  const handlePost = async () => {
+    const body = draft.trim();
+    if (!body || posting) return;
+    setPosting(true);
+    try {
+      const { missing } = await checkAccess({
+        data: { parent_type: parentType, parent_id: parentId, body },
+      });
+      if (missing.length) {
+        setMissingShare(missing);
+        return;
+      }
+      await addMut.mutateAsync(body);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to post");
+    } finally {
+      setPosting(false);
+    }
+  };
+
   const editMut = useMutation({
     mutationFn: (vars: { id: string; body: string }) => edit({ data: vars }),
     onSuccess: () => {
