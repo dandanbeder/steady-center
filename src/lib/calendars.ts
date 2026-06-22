@@ -192,7 +192,7 @@ export async function bulkInsertEvents(rows: Array<Omit<EventRow, "id" | "owner_
   // recurring event is a no-op instead of throwing.
   const { error } = await supabase
     .from("events")
-    .upsert(payload, { onConflict: "calendar_id,external_id,start_at", ignoreDuplicates: true });
+    .upsert(payload as never, { onConflict: "calendar_id,external_id,start_at", ignoreDuplicates: true });
   if (error) throw error;
   return deduped.length;
 }
