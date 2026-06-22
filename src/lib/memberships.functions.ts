@@ -117,7 +117,7 @@ export const removeMember = createServerFn({ method: "POST" })
     const { userId } = context;
     const { data: m, error: e1 } = await supabaseAdmin
       .from("memberships")
-      .select("business_id, role")
+      .select("business_id, role, user_id")
       .eq("id", data.membership_id)
       .single();
     if (e1) throw new Error(e1.message);
@@ -140,5 +140,14 @@ export const removeMember = createServerFn({ method: "POST" })
       .delete()
       .eq("id", data.membership_id);
     if (error) throw new Error(error.message);
+
+    await auditTeamAction({
+      business_id: m.business_id,
+      actor_id: userId,
+      action: "remove_member",
+      target_user_id: (m.user_id as string | null) ?? null,
+      before: { role: m.role },
+    });
     return { ok: true };
   });
+
