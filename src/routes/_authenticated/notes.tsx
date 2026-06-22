@@ -17,6 +17,8 @@ import {
   ArrowRightLeft,
   Menu,
   ChevronRight,
+  ChevronDown,
+  Sparkles,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
@@ -29,6 +31,7 @@ import {
   restoreNote,
   pinNote,
   type Note,
+  createNote,
 } from "@/lib/notes";
 import { showUndoToast } from "@/lib/undo-toast";
 import { NOTE_TYPES, type NoteType } from "@/lib/note-templates";
@@ -103,6 +106,33 @@ function NotesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
   const [moveNote, setMoveNote] = useState<Note | null>(null);
+  const [creatingInstant, setCreatingInstant] = useState(false);
+
+  const defaultBusinessId =
+    scope.kind === "folder"
+      ? scope.businessId
+      : scope.businessId ?? (activeId === ALL ? null : activeId);
+  const defaultFolderId = scope.kind === "folder" ? scope.folderId : null;
+
+  const handleInstantCreate = async () => {
+    if (creatingInstant) return;
+    setCreatingInstant(true);
+    try {
+      const n = await createNote({
+        business_id: defaultBusinessId,
+        folder_id: defaultFolderId,
+        title: "",
+        body: "",
+        note_type: "note",
+      });
+      await qc.invalidateQueries({ queryKey: ["notes"] });
+      setSelectedNoteId(n.id);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't create note");
+    } finally {
+      setCreatingInstant(false);
+    }
+  };
 
   // When active account changes, retarget smart scope
   useEffect(() => {
@@ -228,9 +258,39 @@ function NotesPage() {
                 ))}
               </div>
             </div>
-            <Button size="sm" onClick={() => setDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-1" /> New
-            </Button>
+            <div className="inline-flex rounded-md shadow-sm">
+              <Button
+                size="sm"
+                className="rounded-r-none"
+                onClick={handleInstantCreate}
+                disabled={creatingInstant}
+                title="Start writing immediately"
+              >
+                <Plus className="h-4 w-4 mr-1" /> New
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    size="sm"
+                    className="rounded-l-none border-l border-primary-foreground/20 px-1.5"
+                    aria-label="More create options"
+                  >
+                    <ChevronDown className="h-3.5 w-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem onClick={handleInstantCreate}>
+                    <Plus className="h-3.5 w-3.5 mr-2" />
+                    Blank note
+                    <span className="ml-auto text-[10px] text-muted-foreground">Default</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setDialogOpen(true)}>
+                    <Sparkles className="h-3.5 w-3.5 mr-2" />
+                    Guided setup…
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </div>
         <div className="p-2 space-y-1">
@@ -316,11 +376,16 @@ function NotesPage() {
           <div className="h-full flex flex-col items-center justify-center text-center px-8">
             <StickyNote className="h-12 w-12 text-muted-foreground/40 mb-3" />
             <p className="text-sm text-muted-foreground mb-4">
-              Pick a note, or create a new one with the guided flow.
+              Pick a note, or start a blank one — write first, organise later.
             </p>
-            <Button onClick={() => setDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-1" /> New note
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button onClick={handleInstantCreate} disabled={creatingInstant}>
+                <Plus className="h-4 w-4 mr-1" /> New note
+              </Button>
+              <Button variant="outline" onClick={() => setDialogOpen(true)}>
+                <Sparkles className="h-4 w-4 mr-1" /> Guided setup
+              </Button>
+            </div>
           </div>
         )}
       </div>
@@ -502,6 +567,7 @@ function NoteEditor({
         onChange={(e) => setTitle(e.target.value)}
         className="text-2xl font-serif border-none px-0 focus-visible:ring-0 shadow-none h-auto py-1"
         placeholder="Untitled"
+        autoFocus={!note.title}
       />
 
       <MarkdownEditor
