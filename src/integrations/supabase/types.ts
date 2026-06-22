@@ -2207,6 +2207,7 @@ export type Database = {
       profiles: {
         Row: {
           ai_optional_disabled: boolean
+          capture_ai_enabled: boolean
           created_at: string
           daily_capacity_hours: number
           default_calendar_view: string
@@ -2273,6 +2274,7 @@ export type Database = {
         }
         Insert: {
           ai_optional_disabled?: boolean
+          capture_ai_enabled?: boolean
           created_at?: string
           daily_capacity_hours?: number
           default_calendar_view?: string
@@ -2339,6 +2341,7 @@ export type Database = {
         }
         Update: {
           ai_optional_disabled?: boolean
+          capture_ai_enabled?: boolean
           created_at?: string
           daily_capacity_hours?: number
           default_calendar_view?: string
