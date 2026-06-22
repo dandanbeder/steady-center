@@ -230,6 +230,10 @@ function TeamAdminBody({ businessId }: { businessId: string }) {
           </Card>
         </TabsContent>
 
+        <TabsContent value="kitty" className="mt-4">
+          <KittyPanel businessId={businessId} />
+        </TabsContent>
+
         <TabsContent value="shared" className="mt-4">
           <Card>
             <CardHeader>
