@@ -51,8 +51,8 @@ async function sendInviteEmail(opts: {
     heading: "You've been invited to Heartbeat",
     intro: `${opts.inviterName} invited you to join ${opts.businessName} as ${opts.role}.`,
     preheader: `Join ${opts.businessName} on Heartbeat`,
-    bodyHtml: `<p style="margin:0 0 12px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#6b6b6b">After you create your account, you'll be able to request access. ${escapeHtml(opts.inviterName)} will review and approve.</p>`,
-    ctaLabel: "Sign up & request access",
+    bodyHtml: `<p style="margin:0 0 12px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#6b6b6b">This invite was sent specifically to <strong>${escapeHtml(opts.to)}</strong>. Sign in with that email to accept and join the team. The link is single-use and expires in 7 days.</p>`,
+    ctaLabel: "Accept invite & join",
     ctaUrl: opts.acceptUrl,
     ctaNoteHtml: `Or open this link directly:<br/><a href="${opts.acceptUrl}" style="color:#7A8471;word-break:break-all">${opts.acceptUrl}</a>`,
   });
@@ -141,7 +141,7 @@ export const inviteByEmail = createServerFn({ method: "POST" })
           .from("invitations")
           .update({
             proposed_role: data.role,
-            expires_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
           })
           .eq("id", existingInv.id);
       } else {
@@ -232,7 +232,7 @@ export const resendInvitation = createServerFn({ method: "POST" })
     if (inv.status !== "sent") throw new Error("Invitation is not active.");
     await requireAdmin(inv.business_id, userId);
 
-    const newExpiry = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+    const newExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
     await supabaseAdmin
       .from("invitations")
       .update({ expires_at: newExpiry })
@@ -496,4 +496,89 @@ export const decideAccessRequest = createServerFn({ method: "POST" })
     }
 
     return { ok: true, decision: "approved" as const, role: finalRole };
+  });
+
+/**
+ * Accept a targeted invitation directly. The signed-in user's VERIFIED email
+ * must match the invitation's invited_email. Single-use: sets the invitation
+ * to 'accepted' and creates an active membership at exactly the invited role.
+ * No privilege escalation: the role comes from the invitation row, not the client.
+ */
+export const acceptInvitation = createServerFn({ method: "POST" })
+  .middleware([requireActiveUser])
+  .inputValidator((i) => z.object({ token: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+
+    const { data: inv, error } = await supabaseAdmin
+      .from("invitations")
+      .select("id, business_id, invited_email, proposed_role, status, expires_at")
+      .eq("token", data.token)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!inv) throw new Error("Invitation not found.");
+    if (inv.status !== "sent") throw new Error("This invitation is no longer active.");
+    if (new Date(inv.expires_at) < new Date()) {
+      await supabaseAdmin.from("invitations").update({ status: "expired" }).eq("id", inv.id);
+      throw new Error("This invitation has expired.");
+    }
+
+    // Verified-email match required. No bearer-of-link escalation.
+    const { data: u } = await supabaseAdmin.auth.admin.getUserById(userId);
+    const myEmail = u.user?.email?.toLowerCase();
+    const verified = !!u.user?.email_confirmed_at;
+    if (!myEmail || myEmail !== inv.invited_email.toLowerCase()) {
+      throw new Error("This invite was sent to a different email address.");
+    }
+    if (!verified) {
+      throw new Error("Please verify your email address before accepting the invite.");
+    }
+
+    // Idempotent: if already an active member, just mark accepted.
+    const { data: existing } = await supabaseAdmin
+      .from("memberships")
+      .select("id, status, role")
+      .eq("business_id", inv.business_id)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (existing && existing.status === "active") {
+      await supabaseAdmin.from("invitations").update({ status: "accepted" }).eq("id", inv.id);
+      return { ok: true, status: "already_member" as const, business_id: inv.business_id };
+    }
+
+    if (existing) {
+      const { error: uErr } = await supabaseAdmin
+        .from("memberships")
+        .update({ role: inv.proposed_role, status: "active" })
+        .eq("id", existing.id);
+      if (uErr) throw new Error(uErr.message);
+    } else {
+      const { error: mErr } = await supabaseAdmin.from("memberships").insert({
+        business_id: inv.business_id,
+        user_id: userId,
+        role: inv.proposed_role,
+        status: "active",
+      });
+      if (mErr) throw new Error(mErr.message);
+    }
+
+    // Single-use: burn the invitation.
+    await supabaseAdmin.from("invitations").update({ status: "accepted" }).eq("id", inv.id);
+
+    // Best-effort audit
+    try {
+      const { auditTeamAction } = await import("@/lib/team-admin.functions");
+      await auditTeamAction({
+        business_id: inv.business_id,
+        actor_id: userId,
+        action: "invite_accepted",
+        target_user_id: userId,
+        after: { role: inv.proposed_role },
+      });
+    } catch (e) {
+      console.error("[acceptInvitation] audit failed", e);
+    }
+
+    return { ok: true, status: "joined" as const, business_id: inv.business_id };
   });
