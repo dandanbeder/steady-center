@@ -11,6 +11,8 @@ const InputSchema = z.object({
   transcript: z.string().max(200000).optional(),
   audio_path: z.string().max(500).optional(),
   keep_recording: z.boolean().optional().default(false),
+  // 'note' = manual note, no AI step. 'summarize' = run summary (and transcription if audio_path).
+  mode: z.enum(["note", "summarize"]).optional().default("summarize"),
 });
 
 const SummarySchema = z.object({
@@ -131,22 +133,10 @@ export const processMeeting = createServerFn({ method: "POST" })
     await requireFeature(supabase, userId, "meetings");
 
 
+    // 1) Always create the meeting row first so the user's input is NEVER lost,
+    //    even if a later AI step fails.
     let transcript = (data.transcript ?? "").trim();
-    if (!transcript && data.audio_path) {
-      transcript = (await transcribeWithWhisper(data.audio_path, userId)).trim();
-    }
-    if (!transcript) throw new Error("Provide either a transcript or an audio file.");
-
-    const result = await summarizeTranscript(transcript);
-
-    // Default to minimizing data: drop audio unless user explicitly opts in.
     let storedAudioPath: string | null = data.audio_path ?? null;
-    if (storedAudioPath && !data.keep_recording) {
-      if (storedAudioPath.startsWith(`${userId}/`)) {
-        await supabaseAdmin.storage.from("meeting-audio").remove([storedAudioPath]);
-      }
-      storedAudioPath = null;
-    }
 
     const { data: meeting, error: mErr } = await supabase
       .from("meetings")
@@ -157,30 +147,67 @@ export const processMeeting = createServerFn({ method: "POST" })
         platform: data.platform,
         title: data.title,
         transcript,
-        summary: result.summary,
-        decisions: result.decisions,
+        summary: "",
+        decisions: [],
         audio_path: storedAudioPath,
         keep_recording: data.keep_recording,
       } as never)
       .select("*")
       .single();
     if (mErr || !meeting) throw new Error(mErr?.message ?? "Failed to save meeting");
-
     const meetingRow = meeting as unknown as { id: string };
 
-    if (result.action_items.length > 0) {
-      const rows = result.action_items.map((ai) => ({
-        owner_id: userId,
-        business_id: data.business_id,
-        source_type: "meeting",
-        source_id: meetingRow.id,
-        text: ai.text,
-        owner_label: ai.owner ?? null,
-        due_at: ai.due_at ?? null,
-      }));
-      const { error: aiErr } = await supabase.from("action_items").insert(rows as never);
-      if (aiErr) throw new Error(aiErr.message);
+    // Manual note: stop here.
+    if (data.mode === "note") {
+      return { meeting_id: meetingRow.id, ai_error: null as string | null };
     }
 
-    return { meeting_id: meetingRow.id };
+    // 2) Best-effort AI: transcribe (if audio) + summarize. Failures are reported,
+    //    not thrown — the saved meeting stays intact.
+    let ai_error: string | null = null;
+    try {
+      if (!transcript && storedAudioPath) {
+        transcript = (await transcribeWithWhisper(storedAudioPath, userId)).trim();
+      }
+      if (!transcript) {
+        ai_error = "No transcript or audio provided to summarise.";
+      } else {
+        const result = await summarizeTranscript(transcript);
+
+        // Drop audio unless explicitly kept.
+        if (storedAudioPath && !data.keep_recording) {
+          if (storedAudioPath.startsWith(`${userId}/`)) {
+            await supabaseAdmin.storage.from("meeting-audio").remove([storedAudioPath]);
+          }
+          storedAudioPath = null;
+        }
+
+        await supabase
+          .from("meetings")
+          .update({
+            transcript,
+            summary: result.summary,
+            decisions: result.decisions,
+            audio_path: storedAudioPath,
+          } as never)
+          .eq("id", meetingRow.id);
+
+        if (result.action_items.length > 0) {
+          const rows = result.action_items.map((ai) => ({
+            owner_id: userId,
+            business_id: data.business_id,
+            source_type: "meeting",
+            source_id: meetingRow.id,
+            text: ai.text,
+            owner_label: ai.owner ?? null,
+            due_at: ai.due_at ?? null,
+          }));
+          await supabase.from("action_items").insert(rows as never);
+        }
+      }
+    } catch (e) {
+      ai_error = e instanceof Error ? e.message : "AI step failed";
+    }
+
+    return { meeting_id: meetingRow.id, ai_error };
   });

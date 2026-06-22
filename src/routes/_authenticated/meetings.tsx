@@ -150,7 +150,7 @@ function NewMeetingDialog({
   const [title, setTitle] = useState("");
   const [platform, setPlatform] = useState("other");
   const [businessId, setBusinessId] = useState<string | null>(defaultBusinessId);
-  const [mode, setMode] = useState<"paste" | "audio">("paste");
+  const [mode, setMode] = useState<"note" | "paste" | "audio">("note");
   const [transcript, setTranscript] = useState("");
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [keepRecording, setKeepRecording] = useState(false);
@@ -160,7 +160,7 @@ function NewMeetingDialog({
     setTitle("");
     setPlatform("other");
     setBusinessId(defaultBusinessId);
-    setMode("paste");
+    setMode("note");
     setTranscript("");
     setAudioFile(null);
     setKeepRecording(false);
@@ -185,27 +185,36 @@ function NewMeetingDialog({
       if (mode === "audio" && audioFile) {
         toast.info("Uploading audio…");
         audio_path = await uploadMeetingAudio(audioFile);
-        toast.info("Transcribing and summarizing…");
-      } else {
-        toast.info("Summarizing…");
+        toast.info("Transcribing and summarising…");
+      } else if (mode === "paste") {
+        toast.info("Summarising…");
       }
       const res = await process({
         data: {
           title: title.trim(),
           platform,
           business_id: businessId,
-          transcript: mode === "paste" ? transcript.trim() : undefined,
+          transcript: mode === "audio" ? undefined : transcript.trim() || undefined,
           audio_path,
           keep_recording: mode === "audio" ? keepRecording : false,
+          mode: mode === "note" ? "note" : "summarize",
         },
       });
-      toast.success("Meeting saved");
+      if (res.ai_error) {
+        // AI step failed — meeting was still saved.
+        const msg = /credit|402/i.test(res.ai_error)
+          ? "Couldn't summarise — out of AI credits. Your note was saved."
+          : `Couldn't summarise — ${res.ai_error}. Your note was saved.`;
+        toast.warning(msg);
+      } else {
+        toast.success("Meeting saved");
+      }
       qc.invalidateQueries({ queryKey: ["meetings"] });
       onOpenChange(false);
       reset();
       navigate({ to: "/meetings/$meetingId", params: { meetingId: res.meeting_id } });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to process meeting");
+      toast.error(e instanceof Error ? e.message : "Failed to save meeting");
     } finally {
       setBusy(false);
     }
@@ -228,16 +237,16 @@ function NewMeetingDialog({
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <Label>Account</Label>
+              <Label>Space</Label>
               <Select
-                value={businessId ?? "_none"}
-                onValueChange={(v) => setBusinessId(v === "_none" ? null : v)}
+                value={businessId ?? "_personal"}
+                onValueChange={(v) => setBusinessId(v === "_personal" ? null : v)}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="_none">No account</SelectItem>
+                  <SelectItem value="_personal">Personal</SelectItem>
                   {businesses.map((b) => (
                     <SelectItem key={b.id} value={b.id}>
                       {b.name}
@@ -246,29 +255,42 @@ function NewMeetingDialog({
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label>Platform</Label>
-              <Select value={platform} onValueChange={setPlatform}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="zoom">Zoom</SelectItem>
-                  <SelectItem value="meet">Google Meet</SelectItem>
-                  <SelectItem value="teams">Microsoft Teams</SelectItem>
-                  <SelectItem value="in_person">In person</SelectItem>
-                  <SelectItem value="phone">Phone</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {mode !== "note" && (
+              <div>
+                <Label>Platform</Label>
+                <Select value={platform} onValueChange={setPlatform}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="zoom">Zoom</SelectItem>
+                    <SelectItem value="teams">Microsoft Teams</SelectItem>
+                    <SelectItem value="meet">Google Meet</SelectItem>
+                    <SelectItem value="in_person">In person</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
-          <Tabs value={mode} onValueChange={(v) => setMode(v as "paste" | "audio")}>
+          <Tabs value={mode} onValueChange={(v) => setMode(v as "note" | "paste" | "audio")}>
             <TabsList>
+              <TabsTrigger value="note">Manual note</TabsTrigger>
               <TabsTrigger value="paste">Paste transcript</TabsTrigger>
               <TabsTrigger value="audio">Upload audio</TabsTrigger>
             </TabsList>
+            <TabsContent value="note" className="mt-3">
+              <Textarea
+                value={transcript}
+                onChange={(e) => setTranscript(e.target.value)}
+                placeholder="Jot down what was discussed, decisions, next steps… No AI runs on this."
+                className="min-h-[200px]"
+              />
+              <p className="text-xs text-muted-foreground mt-2">
+                Saved as-is. No AI summary, no credits used.
+              </p>
+            </TabsContent>
             <TabsContent value="paste" className="mt-3">
               <Textarea
                 value={transcript}
