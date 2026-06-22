@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { updateTask, type Task, type TaskStatus, STATUSES } from "@/lib/tasks";
+import { updateNote, type Note } from "@/lib/notes";
 import { format } from "date-fns";
 import { CheckSquare, Square } from "lucide-react";
 import { toast } from "sonner";
@@ -17,11 +18,36 @@ async function listTasksForNote(noteId: string): Promise<Task[]> {
   return (data ?? []) as Task[];
 }
 
-export function LinkedTasksPanel({ noteId }: { noteId: string }) {
+// Flip the matching `- [ ] <title>` checkbox line (case-insensitive, leading
+// markers tolerant) to `- [x]` (or back to `- [ ]`). Returns the new body, or
+// null if no matching line was found.
+function reflectTaskStateInBody(body: string, title: string, done: boolean): string | null {
+  if (!title.trim()) return null;
+  const lines = body.split(/\r?\n/);
+  const normalizedTitle = title.trim().toLowerCase();
+  const reTask = /^(\s*[-*]\s*)\[([ xX])\]\s*(.+?)\s*$/;
+  let hitIndex = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].match(reTask);
+    if (!m) continue;
+    if (m[3].toLowerCase() === normalizedTitle) {
+      hitIndex = i;
+      break;
+    }
+  }
+  if (hitIndex === -1) return null;
+  const m = lines[hitIndex].match(reTask)!;
+  const checked = m[2].toLowerCase() === "x";
+  if (checked === done) return null;
+  lines[hitIndex] = `${m[1]}[${done ? "x" : " "}] ${m[3]}`;
+  return lines.join("\n");
+}
+
+export function LinkedTasksPanel({ note }: { note: Note }) {
   const qc = useQueryClient();
   const { data: tasks = [] } = useQuery({
-    queryKey: ["note-linked-tasks", noteId],
-    queryFn: () => listTasksForNote(noteId),
+    queryKey: ["note-linked-tasks", note.id],
+    queryFn: () => listTasksForNote(note.id),
   });
 
   if (tasks.length === 0) return null;
@@ -30,7 +56,17 @@ export function LinkedTasksPanel({ noteId }: { noteId: string }) {
     const next: TaskStatus = t.status === "done" ? "todo" : "done";
     try {
       await updateTask(t.id, { status: next });
-      qc.invalidateQueries({ queryKey: ["note-linked-tasks", noteId] });
+      // Reflect completion back onto a matching checkbox line in the note.
+      const newBody = reflectTaskStateInBody(note.body, t.title, next === "done");
+      if (newBody !== null) {
+        try {
+          await updateNote(note.id, { body: newBody });
+          qc.invalidateQueries({ queryKey: ["notes"] });
+        } catch {
+          /* non-fatal: task status still updated */
+        }
+      }
+      qc.invalidateQueries({ queryKey: ["note-linked-tasks", note.id] });
       qc.invalidateQueries({ queryKey: ["tasks"] });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed");
