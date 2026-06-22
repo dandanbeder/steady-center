@@ -281,14 +281,6 @@ function JournalPage() {
             <div className="flex items-center gap-1">
               <button
                 type="button"
-                onClick={() => setReflectOpen(true)}
-                className="text-muted-foreground hover:text-foreground"
-                title="Looking back (AI reflection)"
-              >
-                <Sparkles className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
                 onClick={handleExportAll}
                 className="text-muted-foreground hover:text-foreground"
                 title="Download journal as PDF"
@@ -309,8 +301,14 @@ function JournalPage() {
               </button>
             </div>
           </div>
-          <p className="text-[11px] text-muted-foreground leading-snug">
-            Private to you. Not tied to any account. Never shared.
+          <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground leading-snug">
+            <Lock className="h-3 w-3 mt-0.5 shrink-0" />
+            <p>
+              Private to you — even team admins can&apos;t see this. Never sent to AI.
+            </p>
+          </div>
+          <p className="text-[11px] text-muted-foreground/80 leading-snug italic">
+            This is an AI-free space. Nothing you write here is ever read by AI or used to train it.
           </p>
 
           {todayEntry ? (
@@ -320,21 +318,12 @@ function JournalPage() {
               className="w-full"
               onClick={() => setSelectedId(todayEntry.id)}
             >
-              Open today's entry
+              Open today&apos;s entry
             </Button>
           ) : (
             <div className="space-y-1.5">
               <Button
                 size="sm"
-                className="w-full gap-1.5"
-                onClick={() => startToday({ prefill: true })}
-              >
-                <Sparkles className="h-3.5 w-3.5" />
-                Draft from today
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
                 className="w-full gap-1.5"
                 onClick={() => startToday({})}
               >
