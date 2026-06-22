@@ -258,6 +258,7 @@ type EventStub = {
   location?: string | null;
   start?: { dateTime?: string; date?: string };
   end?: { dateTime?: string; date?: string };
+  attendees?: Array<{ email?: string; displayName?: string; self?: boolean; responseStatus?: string }>;
 };
 
 // We accept any Supabase-like client (auth client from middleware, or admin).
@@ -356,6 +357,7 @@ export async function runSyncForCalendar(
             start_at: norm.start_at,
             end_at: norm.end_at,
             all_day: norm.all_day,
+            attendees: norm.attendees,
           })
           .eq("id", found.id);
         if (!error) updated++;
@@ -370,6 +372,7 @@ export async function runSyncForCalendar(
           start_at: norm.start_at,
           end_at: norm.end_at,
           all_day: norm.all_day,
+          attendees: norm.attendees,
           source: "google",
           external_id: ev.id,
         });
@@ -402,6 +405,10 @@ function fromGoogleEvent(ev: EventStub) {
   const start = ev.start?.dateTime ?? ev.start?.date;
   const end = ev.end?.dateTime ?? ev.end?.date;
   if (!start || !end) return null;
+  const attendees = (ev.attendees ?? [])
+    .filter((a) => !a.self)
+    .map((a) => ({ name: a.displayName ?? null, email: a.email ?? null }))
+    .filter((a) => a.name || a.email);
   return {
     title: ev.summary ?? "(no title)",
     description: ev.description ?? null,
@@ -409,6 +416,7 @@ function fromGoogleEvent(ev: EventStub) {
     start_at: allDay ? new Date(start + "T00:00:00Z").toISOString() : new Date(start).toISOString(),
     end_at: allDay ? new Date(end + "T00:00:00Z").toISOString() : new Date(end).toISOString(),
     all_day: allDay,
+    attendees,
   };
 }
 

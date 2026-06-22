@@ -1208,6 +1208,7 @@ export type Database = {
       events: {
         Row: {
           all_day: boolean
+          attendees: Json
           business_id: string | null
           calendar_id: string
           created_at: string
@@ -1230,6 +1231,7 @@ export type Database = {
         }
         Insert: {
           all_day?: boolean
+          attendees?: Json
           business_id?: string | null
           calendar_id: string
           created_at?: string
@@ -1252,6 +1254,7 @@ export type Database = {
         }
         Update: {
           all_day?: boolean
+          attendees?: Json
           business_id?: string | null
           calendar_id?: string
           created_at?: string
@@ -1766,6 +1769,7 @@ export type Database = {
       }
       meetings: {
         Row: {
+          attendees: Json
           audio_path: string | null
           business_id: string | null
           created_at: string
@@ -1776,11 +1780,13 @@ export type Database = {
           keep_recording: boolean
           owner_id: string
           platform: string
+          scheduled_at: string | null
           summary: string
           title: string
           transcript: string
         }
         Insert: {
+          attendees?: Json
           audio_path?: string | null
           business_id?: string | null
           created_at?: string
@@ -1791,11 +1797,13 @@ export type Database = {
           keep_recording?: boolean
           owner_id: string
           platform?: string
+          scheduled_at?: string | null
           summary?: string
           title?: string
           transcript?: string
         }
         Update: {
+          attendees?: Json
           audio_path?: string | null
           business_id?: string | null
           created_at?: string
@@ -1806,6 +1814,7 @@ export type Database = {
           keep_recording?: boolean
           owner_id?: string
           platform?: string
+          scheduled_at?: string | null
           summary?: string
           title?: string
           transcript?: string

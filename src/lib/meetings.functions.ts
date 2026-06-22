@@ -124,6 +124,76 @@ async function summarizeTranscript(transcript: string): Promise<z.infer<typeof S
   return SummarySchema.parse(JSON.parse(argsRaw));
 }
 
+function platformFromEvent(location: string | null, description: string | null): string {
+  const hay = `${location ?? ""}\n${description ?? ""}`.toLowerCase();
+  if (hay.includes("zoom.us")) return "zoom";
+  if (hay.includes("teams.microsoft.com") || hay.includes("teams.live.com")) return "teams";
+  if (hay.includes("meet.google.com")) return "meet";
+  if (location && !/https?:\/\//.test(location)) return "in_person";
+  return "other";
+}
+
+export const createMeetingFromEvent = createServerFn({ method: "POST" })
+  .middleware([requireActiveUser])
+  .inputValidator((input) => z.object({ event_id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { requireFeature } = await import("./entitlements.server");
+    await requireFeature(supabase, userId, "meetings");
+
+    // RLS already restricts to owner_id = auth.uid(); we also verify explicitly.
+    const { data: event, error: eErr } = await supabase
+      .from("events")
+      .select("id, owner_id, business_id, title, start_at, location, description, attendees")
+      .eq("id", data.event_id)
+      .maybeSingle();
+    if (eErr || !event) throw new Error("Event not found");
+    const ev = event as unknown as {
+      id: string;
+      owner_id: string;
+      business_id: string | null;
+      title: string;
+      start_at: string;
+      location: string | null;
+      description: string | null;
+      attendees: unknown;
+    };
+    if (ev.owner_id !== userId) throw new Error("Forbidden");
+
+    // Reuse if a meeting already exists for this event.
+    const { data: existing } = await supabase
+      .from("meetings")
+      .select("id")
+      .eq("event_id", ev.id)
+      .maybeSingle();
+    if (existing) {
+      return { meeting_id: (existing as { id: string }).id, reused: true };
+    }
+
+    const attendees = Array.isArray(ev.attendees) ? ev.attendees : [];
+    const platform = platformFromEvent(ev.location, ev.description);
+
+    const { data: meeting, error: mErr } = await supabase
+      .from("meetings")
+      .insert({
+        owner_id: userId,
+        business_id: ev.business_id, // space mapped to the calendar
+        event_id: ev.id,
+        platform,
+        title: ev.title,
+        transcript: "",
+        summary: "",
+        decisions: [],
+        attendees,
+        scheduled_at: ev.start_at,
+      } as never)
+      .select("id")
+      .single();
+    if (mErr || !meeting) throw new Error(mErr?.message ?? "Failed to create meeting");
+    return { meeting_id: (meeting as { id: string }).id, reused: false };
+  });
+
+
 export const processMeeting = createServerFn({ method: "POST" })
   .middleware([requireActiveUser])
   .inputValidator((input) => InputSchema.parse(input))

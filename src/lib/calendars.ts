@@ -36,6 +36,7 @@ export type EventRow = {
   sync_error?: string | null;
   recurrence_rule?: string | null;
   recurrence_end?: string | null;
+  attendees?: unknown;
 };
 
 
@@ -98,7 +99,7 @@ export async function listEvents(rangeStart?: Date, rangeEnd?: Date): Promise<Ev
   if (rangeEnd) q = q.lte("start_at", rangeEnd.toISOString());
   const { data, error } = await q;
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []) as unknown as EventRow[];
 }
 
 export async function createEvent(input: {
@@ -191,7 +192,7 @@ export async function bulkInsertEvents(rows: Array<Omit<EventRow, "id" | "owner_
   // recurring event is a no-op instead of throwing.
   const { error } = await supabase
     .from("events")
-    .upsert(payload, { onConflict: "calendar_id,external_id,start_at", ignoreDuplicates: true });
+    .upsert(payload as never, { onConflict: "calendar_id,external_id,start_at", ignoreDuplicates: true });
   if (error) throw error;
   return deduped.length;
 }

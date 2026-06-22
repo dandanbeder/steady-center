@@ -13,6 +13,8 @@ export type Meeting = {
   audio_path: string | null;
   keep_recording: boolean;
   created_at: string;
+  scheduled_at: string | null;
+  attendees: Array<{ name?: string | null; email?: string | null }>;
 };
 
 export type ActionItem = {

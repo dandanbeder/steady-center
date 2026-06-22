@@ -25,29 +25,32 @@ type MsEvent = {
   isAllDay?: boolean;
   isCancelled?: boolean;
   type?: string; // singleInstance | occurrence | exception | seriesMaster
+  attendees?: Array<{
+    type?: string;
+    status?: { response?: string };
+    emailAddress?: { name?: string; address?: string };
+  }>;
+  organizer?: { emailAddress?: { name?: string; address?: string } };
 };
 
 function normalize(ev: MsEvent) {
   const start = ev.start?.dateTime;
   const end = ev.end?.dateTime;
   if (!start || !end) return null;
-  // Graph returns dateTime as ISO without offset; timeZone is separate.
-  // For non-all-day, append 'Z' if it ends without timezone, Graph already
-  // returns the value in the calendar's tz; treat as that tz by passing
-  // through. The simplest safe approach: trust the dateTime as UTC when
-  // timeZone is UTC (Graph default), else convert via Intl.
   const allDay = !!ev.isAllDay;
   const toIso = (dt: string, tz: string) => {
-    // Graph dateTime format: "2024-01-31T09:30:00.0000000"
     const clean = dt.replace(/\.\d+$/, "");
     if (allDay) return new Date(clean + "Z").toISOString();
     if (!tz || tz === "UTC") return new Date(clean + "Z").toISOString();
-    // Best-effort tz conversion: ask Date to parse as UTC then offset via Intl.
-    // Most calendars use UTC after Graph normalization; for non-UTC tz we
-    // fall back to treating as UTC to avoid drift errors. Caller can
-    // re-request with Prefer: outlook.timezone="UTC", see fetchDelta.
     return new Date(clean + "Z").toISOString();
   };
+  const organizerEmail = ev.organizer?.emailAddress?.address?.toLowerCase() ?? null;
+  const attendees = (ev.attendees ?? [])
+    .map((a) => ({
+      name: a.emailAddress?.name ?? null,
+      email: a.emailAddress?.address ?? null,
+    }))
+    .filter((a) => (a.name || a.email) && a.email?.toLowerCase() !== organizerEmail);
   return {
     title: ev.subject ?? "(no title)",
     description: ev.body?.content ?? ev.bodyPreview ?? null,
@@ -55,6 +58,7 @@ function normalize(ev: MsEvent) {
     start_at: toIso(start, ev.start?.timeZone ?? "UTC"),
     end_at: toIso(end, ev.end?.timeZone ?? "UTC"),
     all_day: allDay,
+    attendees,
   };
 }
 
@@ -187,6 +191,7 @@ export async function runMicrosoftSyncForCalendar(
             start_at: norm.start_at,
             end_at: norm.end_at,
             all_day: norm.all_day,
+            attendees: norm.attendees,
           })
           .eq("id", found.id);
         if (!error) updated++;
@@ -201,6 +206,7 @@ export async function runMicrosoftSyncForCalendar(
           start_at: norm.start_at,
           end_at: norm.end_at,
           all_day: norm.all_day,
+          attendees: norm.attendees,
           source: "microsoft",
           external_id: ev.id,
         });
