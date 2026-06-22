@@ -126,13 +126,25 @@ export const revokeShare = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { userId } = context;
     const { data: row } = await supabaseAdmin
-      .from("shares").select("resource_type, resource_id").eq("id", data.shareId).maybeSingle();
+      .from("shares").select("resource_type, resource_id, grantee_user_id, role").eq("id", data.shareId).maybeSingle();
     if (!row) return { ok: true };
     await assertCanManage(userId, row.resource_type as ResourceType, row.resource_id as string);
     const { error } = await supabaseAdmin.from("shares").delete().eq("id", data.shareId);
     if (error) throw new Error(error.message);
+    if ((row.resource_type as ResourceType) === "business") {
+      await auditTeamAction({
+        business_id: row.resource_id as string,
+        actor_id: userId,
+        action: "share_revoke",
+        target_user_id: (row.grantee_user_id as string | null) ?? null,
+        before: { role: row.role },
+        resource_type: row.resource_type as string,
+        resource_id: row.resource_id as string,
+      });
+    }
     return { ok: true };
   });
+
 
 export const updateShareRole = createServerFn({ method: "POST" })
   .middleware([requireActiveUser])
