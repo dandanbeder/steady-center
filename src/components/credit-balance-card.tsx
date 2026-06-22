@@ -117,8 +117,9 @@ export function CreditBalanceCard() {
                 <Coins className="h-5 w-5" /> AI credits
               </CardTitle>
               <CardDescription>
-                {b.pooled ? "Pooled at the team account. " : ""}
-                Your allowance refills on your billing date; purchased credits roll for 12 months.
+                {b.pooled
+                  ? "You're on a team plan. AI draws from the shared team pool first; any credits you buy here are private to you and used only after the shared pool runs out. They roll for 12 months and stay with you if you leave the team."
+                  : "Your allowance refills on your billing date; purchased credits roll for 12 months."}
               </CardDescription>
             </div>
             <div className="text-right">
