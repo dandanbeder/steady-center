@@ -150,7 +150,7 @@ function NewMeetingDialog({
   const [title, setTitle] = useState("");
   const [platform, setPlatform] = useState("other");
   const [businessId, setBusinessId] = useState<string | null>(defaultBusinessId);
-  const [mode, setMode] = useState<"paste" | "audio">("paste");
+  const [mode, setMode] = useState<"note" | "paste" | "audio">("note");
   const [transcript, setTranscript] = useState("");
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [keepRecording, setKeepRecording] = useState(false);
@@ -160,7 +160,7 @@ function NewMeetingDialog({
     setTitle("");
     setPlatform("other");
     setBusinessId(defaultBusinessId);
-    setMode("paste");
+    setMode("note");
     setTranscript("");
     setAudioFile(null);
     setKeepRecording(false);
@@ -185,9 +185,9 @@ function NewMeetingDialog({
       if (mode === "audio" && audioFile) {
         toast.info("Uploading audio…");
         audio_path = await uploadMeetingAudio(audioFile);
-        toast.info("Transcribing and summarizing…");
-      } else {
-        toast.info("Summarizing…");
+        toast.info("Transcribing and summarising…");
+      } else if (mode === "paste") {
+        toast.info("Summarising…");
       }
       const res = await process({
         data: {
@@ -197,15 +197,24 @@ function NewMeetingDialog({
           transcript: mode === "paste" ? transcript.trim() : undefined,
           audio_path,
           keep_recording: mode === "audio" ? keepRecording : false,
+          mode: mode === "note" ? "note" : "summarize",
         },
       });
-      toast.success("Meeting saved");
+      if (res.ai_error) {
+        // AI step failed — meeting was still saved.
+        const msg = /credit|402/i.test(res.ai_error)
+          ? "Couldn't summarise — out of AI credits. Your note was saved."
+          : `Couldn't summarise — ${res.ai_error}. Your note was saved.`;
+        toast.warning(msg);
+      } else {
+        toast.success("Meeting saved");
+      }
       qc.invalidateQueries({ queryKey: ["meetings"] });
       onOpenChange(false);
       reset();
       navigate({ to: "/meetings/$meetingId", params: { meetingId: res.meeting_id } });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to process meeting");
+      toast.error(e instanceof Error ? e.message : "Failed to save meeting");
     } finally {
       setBusy(false);
     }
