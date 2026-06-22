@@ -196,7 +196,9 @@ function NewMeetingDialog({
       const res = await process({
         data: {
           title: title.trim(),
-          platform,
+          // Server auto-detects from join_url when present; this is the manual fallback.
+          platform: hasValidLink ? detected.id : platform,
+          join_url: hasValidLink ? joinUrl.trim() : null,
           business_id: businessId,
           transcript: mode === "audio" ? undefined : transcript.trim() || undefined,
           audio_path,
