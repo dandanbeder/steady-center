@@ -126,10 +126,13 @@ export const askNotes = createServerFn({ method: "POST" })
         : null;
 
     // Build queries. RLS scopes to what the caller can access.
+    // Journal entries (note_type = 'journal') are an AI-free sanctuary and
+    // are explicitly excluded from any AI pipeline.
     let notesQ = supabase
       .from("notes")
       .select("id, title, body, business_id, updated_at")
       .is("deleted_at", null)
+      .neq("note_type", "journal")
       .order("updated_at", { ascending: false })
       .limit(40);
     if (biz) notesQ = notesQ.eq("business_id", biz);
