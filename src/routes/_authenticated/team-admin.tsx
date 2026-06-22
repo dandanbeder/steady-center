@@ -10,10 +10,13 @@ import { useMyRole } from "@/hooks/use-my-role";
 import { listMembers } from "@/lib/memberships.functions";
 import {
   getTeamOverview,
+  getTeamKittyUsage,
   listTeamAuditLog,
   transferOwnership,
 } from "@/lib/team-admin.functions";
 import { PeoplePanel } from "@/components/people-panel";
+import { Progress } from "@/components/ui/progress";
+import { AlertTriangle, Sparkles } from "lucide-react";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
