@@ -171,7 +171,11 @@ export const createMeetingFromEvent = createServerFn({ method: "POST" })
     }
 
     const attendees = Array.isArray(ev.attendees) ? ev.attendees : [];
-    const platform = platformFromEvent(ev.location, ev.description);
+    const { extractJoinUrl, detectPlatformFromUrl } = await import("./meeting-platform");
+    const joinUrl = extractJoinUrl(ev.location, ev.description);
+    const platform = joinUrl
+      ? detectPlatformFromUrl(joinUrl).id
+      : fallbackPlatformFromEvent(ev.location);
 
     const { data: meeting, error: mErr } = await supabase
       .from("meetings")
@@ -180,6 +184,7 @@ export const createMeetingFromEvent = createServerFn({ method: "POST" })
         business_id: ev.business_id, // space mapped to the calendar
         event_id: ev.id,
         platform,
+        join_url: joinUrl,
         title: ev.title,
         transcript: "",
         summary: "",
