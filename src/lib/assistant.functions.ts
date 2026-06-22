@@ -217,21 +217,57 @@ async function execReadTool(
       return data ?? [];
     }
     case "search_notes": {
-      // Journal entries are an AI-free sanctuary; exclude them from any AI search.
+      // Journal entries are an AI-free sanctuary, exclude them from any AI search.
+      // RLS on `notes` already restricts the result set to notes the caller can
+      // read (own + explicitly shared + team-space). We never broaden that.
+      const raw = String(input?.query ?? "").trim();
+      if (!raw) return [];
+      // Tokenize: keep words of >=3 chars (or any digit), drop noise; cap to 4
+      // tokens to keep the OR predicate cheap.
+      const stop = new Set([
+        "the","and","for","with","what","when","where","why","how","did","does",
+        "was","were","are","you","your","our","note","notes","about","that","this",
+      ]);
+      const tokens = raw
+        .toLowerCase()
+        .split(/[^a-z0-9]+/)
+        .filter((t) => t && !stop.has(t) && (t.length >= 3 || /\d/.test(t)))
+        .slice(0, 4);
+      const escape = (s: string) => s.replace(/[%_,()]/g, " ");
+      const terms = tokens.length ? tokens : [raw.toLowerCase()];
+      const orExpr = terms
+        .flatMap((t) => [`title.ilike.%${escape(t)}%`, `body.ilike.%${escape(t)}%`])
+        .join(",");
       let q: any = supabase
         .from("notes")
         .select("id,title,body,folder_id,business_id,updated_at")
         .is("deleted_at", null)
         .neq("note_type", "journal")
-        .or(`title.ilike.%${input.query}%,body.ilike.%${input.query}%`)
+        .or(orExpr)
         .order("updated_at", { ascending: false })
         .limit(15);
       q = scope(q);
       const { data, error } = await q;
       if (error) throw error;
+      // Build an excerpt centered on the first matching term, ~280 chars.
+      const excerptFor = (body: string): string => {
+        if (typeof body !== "string" || !body) return "";
+        const lower = body.toLowerCase();
+        let hit = -1;
+        for (const t of terms) {
+          const i = lower.indexOf(t);
+          if (i !== -1) { hit = i; break; }
+        }
+        if (hit === -1) return body.slice(0, 280);
+        const start = Math.max(0, hit - 100);
+        const end = Math.min(body.length, hit + 180);
+        return (start > 0 ? "…" : "") + body.slice(start, end) + (end < body.length ? "…" : "");
+      };
       return (data ?? []).map((n: any) => ({
-        ...n,
-        body: typeof n.body === "string" ? n.body.slice(0, 600) : n.body,
+        id: n.id,
+        title: n.title || "Untitled",
+        excerpt: excerptFor(n.body),
+        updated_at: n.updated_at,
       }));
     }
     case "search_meetings": {
