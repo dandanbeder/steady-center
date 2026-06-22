@@ -36,7 +36,7 @@ export type EventRow = {
   sync_error?: string | null;
   recurrence_rule?: string | null;
   recurrence_end?: string | null;
-  attendees?: Array<{ name?: string | null; email?: string | null }>;
+  attendees?: unknown;
 };
 
 
