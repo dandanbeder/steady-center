@@ -221,7 +221,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Shield className="h-4 w-4 shrink-0" />
           {!compact && <span>Admin</span>}
         </Link>
+      )}
       {isTeamAdmin && (
+
         <Link
           to="/team-admin"
           onClick={onNavigate}
