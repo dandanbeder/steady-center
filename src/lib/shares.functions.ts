@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { auditTeamAction } from "@/lib/team-admin.functions";
+
 
 export type ResourceType = "folder" | "list" | "task" | "note" | "calendar" | "business";
 export type ShareRole = "viewer" | "commenter" | "member" | "admin";
@@ -101,8 +103,21 @@ export const shareResource = createServerFn({ method: "POST" })
       .select("*")
       .single();
     if (error) throw new Error(error.message);
+    // Audit business-scope grants at the team layer
+    if (data.resourceType === "business") {
+      await auditTeamAction({
+        business_id: data.resourceId,
+        actor_id: userId,
+        action: "share_grant",
+        target_user_id: granteeId,
+        after: { role: data.role },
+        resource_type: data.resourceType,
+        resource_id: data.resourceId,
+      });
+    }
     return row;
   });
+
 
 
 export const revokeShare = createServerFn({ method: "POST" })
@@ -111,13 +126,25 @@ export const revokeShare = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { userId } = context;
     const { data: row } = await supabaseAdmin
-      .from("shares").select("resource_type, resource_id").eq("id", data.shareId).maybeSingle();
+      .from("shares").select("resource_type, resource_id, grantee_user_id, role").eq("id", data.shareId).maybeSingle();
     if (!row) return { ok: true };
     await assertCanManage(userId, row.resource_type as ResourceType, row.resource_id as string);
     const { error } = await supabaseAdmin.from("shares").delete().eq("id", data.shareId);
     if (error) throw new Error(error.message);
+    if ((row.resource_type as ResourceType) === "business") {
+      await auditTeamAction({
+        business_id: row.resource_id as string,
+        actor_id: userId,
+        action: "share_revoke",
+        target_user_id: (row.grantee_user_id as string | null) ?? null,
+        before: { role: row.role },
+        resource_type: row.resource_type as string,
+        resource_id: row.resource_id as string,
+      });
+    }
     return { ok: true };
   });
+
 
 export const updateShareRole = createServerFn({ method: "POST" })
   .middleware([requireActiveUser])

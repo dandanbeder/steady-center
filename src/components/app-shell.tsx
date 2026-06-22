@@ -11,6 +11,8 @@ import heartbeatMono from "@/assets/heartbeat-mono.svg";
 import { useAuth } from "@/hooks/use-auth";
 import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
 import { useIsPlatformAdmin } from "@/hooks/use-is-platform-admin";
+import { useMyRole } from "@/hooks/use-my-role";
+
 import { listBusinesses } from "@/lib/businesses";
 import { AnnouncementBanner } from "@/components/announcement-banner";
 import { SupportSessionBanner } from "@/components/support-session-banner";
@@ -72,6 +74,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const { activeId, setActiveId } = useActiveBusiness();
   const { isAdmin } = useIsPlatformAdmin();
+  const activeBizId = activeId && activeId !== "all" ? activeId : null;
+  const myRole = useMyRole(activeBizId);
+  const isTeamAdmin = !!activeBizId && (myRole.can("admin") || isAdmin);
+
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem(STORAGE_KEY) === "1";
@@ -216,8 +222,28 @@ export function AppShell({ children }: { children: ReactNode }) {
           {!compact && <span>Admin</span>}
         </Link>
       )}
+      {isTeamAdmin && (
+
+        <Link
+          to="/team-admin"
+          onClick={onNavigate}
+          title={compact ? "Team admin" : undefined}
+          className={cn(
+            "flex items-center gap-3 rounded-lg text-sm transition-colors",
+            compact ? "justify-center px-2 py-2" : "px-3 py-2.5",
+            "min-h-[44px]",
+            isActive("/team-admin")
+              ? "bg-sidebar-accent text-sidebar-accent-foreground"
+              : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/60",
+          )}
+        >
+          <Users className="h-4 w-4 shrink-0" />
+          {!compact && <span>Team admin</span>}
+        </Link>
+      )}
     </nav>
   );
+
 
   const footer = (compact: boolean) => (
     <div className="p-3 border-t border-sidebar-border safe-bottom">

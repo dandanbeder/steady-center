@@ -23,6 +23,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SupportSessionCallbackRouteImport } from './routes/support-session.callback'
 import { Route as AuthenticatedTrashRouteImport } from './routes/_authenticated/trash'
 import { Route as AuthenticatedTodayRouteImport } from './routes/_authenticated/today'
+import { Route as AuthenticatedTeamAdminRouteImport } from './routes/_authenticated/team-admin'
 import { Route as AuthenticatedTeamAccessRouteImport } from './routes/_authenticated/team-access'
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
 import { Route as AuthenticatedSharedRouteImport } from './routes/_authenticated/shared'
@@ -135,6 +136,11 @@ const AuthenticatedTrashRoute = AuthenticatedTrashRouteImport.update({
 const AuthenticatedTodayRoute = AuthenticatedTodayRouteImport.update({
   id: '/today',
   path: '/today',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedTeamAdminRoute = AuthenticatedTeamAdminRouteImport.update({
+  id: '/team-admin',
+  path: '/team-admin',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedTeamAccessRoute = AuthenticatedTeamAccessRouteImport.update({
@@ -411,6 +417,7 @@ export interface FileRoutesByFullPath {
   '/shared': typeof AuthenticatedSharedRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/team-access': typeof AuthenticatedTeamAccessRoute
+  '/team-admin': typeof AuthenticatedTeamAdminRoute
   '/today': typeof AuthenticatedTodayRoute
   '/trash': typeof AuthenticatedTrashRoute
   '/support-session/callback': typeof SupportSessionCallbackRoute
@@ -469,6 +476,7 @@ export interface FileRoutesByTo {
   '/shared': typeof AuthenticatedSharedRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/team-access': typeof AuthenticatedTeamAccessRoute
+  '/team-admin': typeof AuthenticatedTeamAdminRoute
   '/today': typeof AuthenticatedTodayRoute
   '/trash': typeof AuthenticatedTrashRoute
   '/support-session/callback': typeof SupportSessionCallbackRoute
@@ -530,6 +538,7 @@ export interface FileRoutesById {
   '/_authenticated/shared': typeof AuthenticatedSharedRoute
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
   '/_authenticated/team-access': typeof AuthenticatedTeamAccessRoute
+  '/_authenticated/team-admin': typeof AuthenticatedTeamAdminRoute
   '/_authenticated/today': typeof AuthenticatedTodayRoute
   '/_authenticated/trash': typeof AuthenticatedTrashRoute
   '/support-session/callback': typeof SupportSessionCallbackRoute
@@ -591,6 +600,7 @@ export interface FileRouteTypes {
     | '/shared'
     | '/tasks'
     | '/team-access'
+    | '/team-admin'
     | '/today'
     | '/trash'
     | '/support-session/callback'
@@ -649,6 +659,7 @@ export interface FileRouteTypes {
     | '/shared'
     | '/tasks'
     | '/team-access'
+    | '/team-admin'
     | '/today'
     | '/trash'
     | '/support-session/callback'
@@ -709,6 +720,7 @@ export interface FileRouteTypes {
     | '/_authenticated/shared'
     | '/_authenticated/tasks'
     | '/_authenticated/team-access'
+    | '/_authenticated/team-admin'
     | '/_authenticated/today'
     | '/_authenticated/trash'
     | '/support-session/callback'
@@ -861,6 +873,13 @@ declare module '@tanstack/react-router' {
       path: '/today'
       fullPath: '/today'
       preLoaderRoute: typeof AuthenticatedTodayRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/team-admin': {
+      id: '/_authenticated/team-admin'
+      path: '/team-admin'
+      fullPath: '/team-admin'
+      preLoaderRoute: typeof AuthenticatedTeamAdminRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/team-access': {
@@ -1246,6 +1265,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedSharedRoute: typeof AuthenticatedSharedRoute
   AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
   AuthenticatedTeamAccessRoute: typeof AuthenticatedTeamAccessRoute
+  AuthenticatedTeamAdminRoute: typeof AuthenticatedTeamAdminRoute
   AuthenticatedTodayRoute: typeof AuthenticatedTodayRoute
   AuthenticatedTrashRoute: typeof AuthenticatedTrashRoute
 }
@@ -1273,6 +1293,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedSharedRoute: AuthenticatedSharedRoute,
   AuthenticatedTasksRoute: AuthenticatedTasksRoute,
   AuthenticatedTeamAccessRoute: AuthenticatedTeamAccessRoute,
+  AuthenticatedTeamAdminRoute: AuthenticatedTeamAdminRoute,
   AuthenticatedTodayRoute: AuthenticatedTodayRoute,
   AuthenticatedTrashRoute: AuthenticatedTrashRoute,
 }
@@ -1315,13 +1336,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

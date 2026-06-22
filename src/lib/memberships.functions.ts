@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { auditTeamAction } from "@/lib/team-admin.functions";
+
 
 const ALL_ROLES = ["owner", "admin", "member", "commenter", "viewer"] as const;
 type Role = (typeof ALL_ROLES)[number];
@@ -70,7 +72,7 @@ export const updateMemberRole = createServerFn({ method: "POST" })
     const { userId } = context;
     const { data: m, error: e1 } = await supabaseAdmin
       .from("memberships")
-      .select("business_id, role")
+      .select("business_id, role, user_id")
       .eq("id", data.membership_id)
       .single();
     if (e1) throw new Error(e1.message);
@@ -78,13 +80,34 @@ export const updateMemberRole = createServerFn({ method: "POST" })
     const min = data.role === "owner" || m.role === "owner" ? "owner" : "admin";
     await requireRole(m.business_id, userId, min as "admin" | "owner");
 
+    // Last-owner protection: cannot demote the only owner.
+    if (m.role === "owner" && data.role !== "owner") {
+      const { count } = await supabaseAdmin
+        .from("memberships")
+        .select("id", { count: "exact", head: true })
+        .eq("business_id", m.business_id)
+        .eq("role", "owner")
+        .eq("status", "active");
+      if ((count ?? 0) <= 1) throw new Error("Cannot demote the last owner. Transfer ownership first.");
+    }
+
     const { error } = await supabaseAdmin
       .from("memberships")
       .update({ role: data.role })
       .eq("id", data.membership_id);
     if (error) throw new Error(error.message);
+
+    await auditTeamAction({
+      business_id: m.business_id,
+      actor_id: userId,
+      action: "role_change",
+      target_user_id: (m.user_id as string | null) ?? null,
+      before: { role: m.role },
+      after: { role: data.role },
+    });
     return { ok: true };
   });
+
 
 /** Remove a member. admin+; can't remove the last owner. */
 export const removeMember = createServerFn({ method: "POST" })
@@ -94,7 +117,7 @@ export const removeMember = createServerFn({ method: "POST" })
     const { userId } = context;
     const { data: m, error: e1 } = await supabaseAdmin
       .from("memberships")
-      .select("business_id, role")
+      .select("business_id, role, user_id")
       .eq("id", data.membership_id)
       .single();
     if (e1) throw new Error(e1.message);
@@ -117,5 +140,14 @@ export const removeMember = createServerFn({ method: "POST" })
       .delete()
       .eq("id", data.membership_id);
     if (error) throw new Error(error.message);
+
+    await auditTeamAction({
+      business_id: m.business_id,
+      actor_id: userId,
+      action: "remove_member",
+      target_user_id: (m.user_id as string | null) ?? null,
+      before: { role: m.role },
+    });
     return { ok: true };
   });
+
