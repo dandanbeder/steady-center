@@ -233,7 +233,7 @@ function NewMeetingDialog({
               placeholder="e.g. Acme pricing call"
             />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
           <div>
             <Label>Space</Label>
             <Select
