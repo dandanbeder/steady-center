@@ -3,7 +3,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Plus, Upload, Loader2, Trash2, Video, Users, ExternalLink } from "lucide-react";
+import { Plus, Upload, Loader2, Trash2, Video, Users } from "lucide-react";
 import { detectPlatformFromUrl, platformInfoFromId } from "@/lib/meeting-platform";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
