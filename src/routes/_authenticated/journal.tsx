@@ -5,7 +5,6 @@ import { useServerFn } from "@tanstack/react-start";
 import { format, isSameDay, parseISO } from "date-fns";
 import {
   BookOpen,
-  Sparkles,
   Plus,
   Lock,
   ShieldCheck,
@@ -18,7 +17,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { listNotes, createNote, updateNote, type Note } from "@/lib/notes";
-import { journalPrefillToday } from "@/lib/notes-journal.functions";
 import {
   getJournalLockStatus,
   setJournalLock,
@@ -36,8 +34,6 @@ import { generateJournalPdf, type JournalPdfEntry } from "@/lib/journal-pdf";
 import { MarkdownEditor, useAutosave } from "@/components/notes/markdown-editor";
 import { MoodTagsBar } from "@/components/journal/mood-tags-bar";
 import { JournalCalendar } from "@/components/journal/journal-calendar";
-import { ReflectionDialog } from "@/components/journal/reflection-dialog";
-import { VoiceJournalButton } from "@/components/journal/voice-journal-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
