@@ -84,11 +84,13 @@ export function TopUpDialog({
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Coins className="h-5 w-5" /> Top up AI credits
+            <Coins className="h-5 w-5" />
+            {isShared ? "Top up the shared team pool" : "Top up your own AI credits"}
           </DialogTitle>
           <DialogDescription>
-            Purchased credits roll for 12 months and survive plan changes. They're
-            used after your monthly allowance.
+            {isShared
+              ? "Credits go into the shared team kitty — available to everyone on the team. They roll for 12 months and stay with the team."
+              : "Credits go into your own private space — used only by you, after the shared team pool runs out. They roll for 12 months and stay with you if you leave the team."}
           </DialogDescription>
         </DialogHeader>
 
