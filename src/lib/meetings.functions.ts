@@ -194,6 +194,7 @@ export const createMeetingFromEvent = createServerFn({ method: "POST" })
   });
 
 
+export const processMeeting = createServerFn({ method: "POST" })
   .middleware([requireActiveUser])
   .inputValidator((input) => InputSchema.parse(input))
   .handler(async ({ data, context }) => {
