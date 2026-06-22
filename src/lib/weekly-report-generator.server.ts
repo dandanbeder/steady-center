@@ -199,6 +199,7 @@ export async function generateForUser(
       .select("id, business_id, created_at")
       .eq("owner_id", userId)
       .is("deleted_at", null)
+      .neq("note_type", "journal")
       .gte("created_at", startIso)
       .lte("created_at", endIso),
     supabaseAdmin

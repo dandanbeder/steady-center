@@ -213,10 +213,12 @@ async function execReadTool(
       return data ?? [];
     }
     case "search_notes": {
+      // Journal entries are an AI-free sanctuary; exclude them from any AI search.
       let q: any = supabase
         .from("notes")
         .select("id,title,body,folder_id,business_id,updated_at")
         .is("deleted_at", null)
+        .neq("note_type", "journal")
         .or(`title.ilike.%${input.query}%,body.ilike.%${input.query}%`)
         .order("updated_at", { ascending: false })
         .limit(15);

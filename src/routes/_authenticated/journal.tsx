@@ -5,7 +5,6 @@ import { useServerFn } from "@tanstack/react-start";
 import { format, isSameDay, parseISO } from "date-fns";
 import {
   BookOpen,
-  Sparkles,
   Plus,
   Lock,
   ShieldCheck,
@@ -18,7 +17,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { listNotes, createNote, updateNote, type Note } from "@/lib/notes";
-import { journalPrefillToday } from "@/lib/notes-journal.functions";
 import {
   getJournalLockStatus,
   setJournalLock,
@@ -36,8 +34,6 @@ import { generateJournalPdf, type JournalPdfEntry } from "@/lib/journal-pdf";
 import { MarkdownEditor, useAutosave } from "@/components/notes/markdown-editor";
 import { MoodTagsBar } from "@/components/journal/mood-tags-bar";
 import { JournalCalendar } from "@/components/journal/journal-calendar";
-import { ReflectionDialog } from "@/components/journal/reflection-dialog";
-import { VoiceJournalButton } from "@/components/journal/voice-journal-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -65,7 +61,6 @@ function JournalPage() {
     queryKey: ["journal-meta"],
     queryFn: listJournalMeta,
   });
-  const prefillFn = useServerFn(journalPrefillToday);
   const statusFn = useServerFn(getJournalLockStatus);
 
   const { data: lockStatus } = useQuery({
@@ -77,7 +72,6 @@ function JournalPage() {
     () => typeof window !== "undefined" && sessionStorage.getItem(UNLOCK_KEY) === "1",
   );
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [reflectOpen, setReflectOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [sidebarTab, setSidebarTab] = useState<"list" | "calendar">("list");
 
@@ -118,29 +112,22 @@ function JournalPage() {
   );
   const selected = entries.find((e) => e.id === selectedId) ?? null;
 
-  const startToday = async (opts: { prefill?: boolean; body?: string; titleHint?: string }) => {
+  const startToday = async (opts: { body?: string; titleHint?: string }) => {
     try {
-      let body =
+      const body =
         opts.body ??
         `# ${format(today, "EEEE, MMMM d")}\n\n## What happened today\n- \n\n## What I'm noticing\n- \n\n## What I want tomorrow\n- \n`;
-      if (opts.prefill) {
-        toast.loading("Drafting from today's activity…", { id: "jp" });
-        const res = await prefillFn({ data: {} });
-        body = res.markdown;
-        toast.dismiss("jp");
-      }
       const note = await createNote({
         business_id: null,
         folder_id: null,
         title: opts.titleHint ?? format(today, "MMM d, yyyy"),
         body,
         note_type: "journal",
-        source: opts.prefill ? "journal-prefill" : "journal",
+        source: "journal",
       });
       qc.invalidateQueries({ queryKey: ["notes"] });
       setSelectedId(note.id);
     } catch (e) {
-      toast.dismiss("jp");
       toast.error(e instanceof Error ? e.message : "Failed");
     }
   };
@@ -294,14 +281,6 @@ function JournalPage() {
             <div className="flex items-center gap-1">
               <button
                 type="button"
-                onClick={() => setReflectOpen(true)}
-                className="text-muted-foreground hover:text-foreground"
-                title="Looking back (AI reflection)"
-              >
-                <Sparkles className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
                 onClick={handleExportAll}
                 className="text-muted-foreground hover:text-foreground"
                 title="Download journal as PDF"
@@ -322,8 +301,14 @@ function JournalPage() {
               </button>
             </div>
           </div>
-          <p className="text-[11px] text-muted-foreground leading-snug">
-            Private to you. Not tied to any account. Never shared.
+          <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground leading-snug">
+            <Lock className="h-3 w-3 mt-0.5 shrink-0" />
+            <p>
+              Private to you — even team admins can&apos;t see this. Never sent to AI.
+            </p>
+          </div>
+          <p className="text-[11px] text-muted-foreground/80 leading-snug italic">
+            This is an AI-free space. Nothing you write here is ever read by AI or used to train it.
           </p>
 
           {todayEntry ? (
@@ -333,21 +318,12 @@ function JournalPage() {
               className="w-full"
               onClick={() => setSelectedId(todayEntry.id)}
             >
-              Open today's entry
+              Open today&apos;s entry
             </Button>
           ) : (
             <div className="space-y-1.5">
               <Button
                 size="sm"
-                className="w-full gap-1.5"
-                onClick={() => startToday({ prefill: true })}
-              >
-                <Sparkles className="h-3.5 w-3.5" />
-                Draft from today
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
                 className="w-full gap-1.5"
                 onClick={() => startToday({})}
               >
@@ -497,8 +473,8 @@ function JournalPage() {
           <div className="h-full flex flex-col items-center justify-center text-center px-8 max-w-md mx-auto">
             <BookOpen className="h-12 w-12 text-muted-foreground/40 mb-3" />
             <p className="text-sm text-muted-foreground">
-              A gentle place for daily reflection. Use the buttons on the left to start when you're
-              ready.
+              This is yours. Write a line, or just sit with a prompt — whenever you&apos;re ready.
+              Nothing here is shared, and there&apos;s no streak to keep.
             </p>
           </div>
         )}
@@ -510,7 +486,6 @@ function JournalPage() {
         enabled={Boolean(lockStatus?.enabled)}
         onChanged={() => qc.invalidateQueries({ queryKey: ["journal-lock"] })}
       />
-      <ReflectionDialog open={reflectOpen} onOpenChange={setReflectOpen} />
     </div>
   );
 }
@@ -560,14 +535,6 @@ function JournalEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mood, tags, note.id]);
 
-  const insertTranscript = (text: string) => {
-    setBody((prev) => {
-      const sep = prev.endsWith("\n") || prev.length === 0 ? "" : "\n\n";
-      return `${prev}${sep}${text}`;
-    });
-    toast.success("Added to entry.");
-  };
-
   return (
     <div className="max-w-3xl mx-auto p-6 lg:p-10 space-y-4">
       <div className="flex items-center justify-between gap-3">
@@ -593,7 +560,6 @@ function JournalEditor({
           >
             <Trash2 className="h-4 w-4" />
           </button>
-          <VoiceJournalButton onTranscribed={insertTranscript} />
         </div>
       </div>
       <Input

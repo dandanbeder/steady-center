@@ -94,10 +94,14 @@ async function loadNoteContext(
 }> {
   const { data: note, error } = await supabase
     .from("notes")
-    .select("id,title,body,business_id,folder_id")
+    .select("id,title,body,business_id,folder_id,note_type")
     .eq("id", noteId)
     .single();
   if (error || !note) throw new Error("Note not found");
+  if ((note as { note_type?: string | null }).note_type === "journal") {
+    // The Journal is an AI-free sanctuary; no AI action may read its contents.
+    throw new Error("AI is disabled for journal entries.");
+  }
 
   let attachmentsText = "";
   if (includeAttachments) {
