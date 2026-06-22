@@ -76,6 +76,8 @@ export async function listMeetingDecisions(meetingId: string): Promise<MeetingDe
     .order("created_at", { ascending: true });
   if (error) throw error;
   return (data ?? []) as unknown as MeetingDecision[];
+}
+
 
 export async function setActionItemDone(id: string, done: boolean) {
   const { error } = await supabase.from("action_items" as any).update({ done }).eq("id", id);
