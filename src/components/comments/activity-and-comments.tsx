@@ -14,12 +14,24 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   addComment,
+  checkMentionAccess,
   deleteComment,
   editComment,
   listComments,
   suggestMentionTargets,
 } from "@/lib/comments.functions";
 import { relativeTime, subscribeToComments, type CommentParentType } from "@/lib/comments";
+import { ShareDialog } from "@/components/share-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { CommentBody } from "./comment-body";
 import { MentionInput, type MentionCandidate } from "./mention-input";
 import { useAuth } from "@/hooks/use-auth";
