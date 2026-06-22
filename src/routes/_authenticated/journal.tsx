@@ -472,8 +472,6 @@ function JournalPage() {
         ) : (
           <div className="h-full flex flex-col items-center justify-center text-center px-8 max-w-md mx-auto">
             <BookOpen className="h-12 w-12 text-muted-foreground/40 mb-3" />
-          <div className="h-full flex flex-col items-center justify-center text-center px-8 max-w-md mx-auto">
-            <BookOpen className="h-12 w-12 text-muted-foreground/40 mb-3" />
             <p className="text-sm text-muted-foreground">
               This is yours. Write a line, or just sit with a prompt — whenever you&apos;re ready.
               Nothing here is shared, and there&apos;s no streak to keep.
