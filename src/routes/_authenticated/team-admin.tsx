@@ -14,7 +14,7 @@ import {
   transferOwnership,
 } from "@/lib/team-admin.functions";
 import { PeoplePanel } from "@/components/people-panel";
-import { AppShell } from "@/components/app-shell";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
