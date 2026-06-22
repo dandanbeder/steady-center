@@ -403,6 +403,10 @@ function fromGoogleEvent(ev: EventStub) {
   const start = ev.start?.dateTime ?? ev.start?.date;
   const end = ev.end?.dateTime ?? ev.end?.date;
   if (!start || !end) return null;
+  const attendees = (ev.attendees ?? [])
+    .filter((a) => !a.self)
+    .map((a) => ({ name: a.displayName ?? null, email: a.email ?? null }))
+    .filter((a) => a.name || a.email);
   return {
     title: ev.summary ?? "(no title)",
     description: ev.description ?? null,
@@ -410,6 +414,7 @@ function fromGoogleEvent(ev: EventStub) {
     start_at: allDay ? new Date(start + "T00:00:00Z").toISOString() : new Date(start).toISOString(),
     end_at: allDay ? new Date(end + "T00:00:00Z").toISOString() : new Date(end).toISOString(),
     all_day: allDay,
+    attendees,
   };
 }
 
