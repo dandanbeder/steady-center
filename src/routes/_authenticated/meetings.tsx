@@ -104,7 +104,7 @@ function MeetingsPage() {
                         </span>
                       )}
                       <span>·</span>
-                      <span>{m.platform}</span>
+                      <PlatformBadge platform={m.platform} />
                       <span>·</span>
                       <span>{new Date(m.created_at).toLocaleString()}</span>
                     </div>
