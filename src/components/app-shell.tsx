@@ -221,9 +221,27 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Shield className="h-4 w-4 shrink-0" />
           {!compact && <span>Admin</span>}
         </Link>
+      {isTeamAdmin && (
+        <Link
+          to="/team-admin"
+          onClick={onNavigate}
+          title={compact ? "Team admin" : undefined}
+          className={cn(
+            "flex items-center gap-3 rounded-lg text-sm transition-colors",
+            compact ? "justify-center px-2 py-2" : "px-3 py-2.5",
+            "min-h-[44px]",
+            isActive("/team-admin")
+              ? "bg-sidebar-accent text-sidebar-accent-foreground"
+              : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/60",
+          )}
+        >
+          <Users className="h-4 w-4 shrink-0" />
+          {!compact && <span>Team admin</span>}
+        </Link>
       )}
     </nav>
   );
+
 
   const footer = (compact: boolean) => (
     <div className="p-3 border-t border-sidebar-border safe-bottom">
