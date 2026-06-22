@@ -247,13 +247,14 @@ export type TeamAuditEntry = {
   target_user_id: string | null;
   actor_name: string | null;
   target_name: string | null;
-  before: unknown;
-  after: unknown;
+  before: Record<string, unknown> | null;
+  after: Record<string, unknown> | null;
   reason: string | null;
   resource_type: string | null;
   resource_id: string | null;
   created_at: string;
 };
+
 
 /** Admin+ paginated audit log for a business. */
 export const listTeamAuditLog = createServerFn({ method: "POST" })
