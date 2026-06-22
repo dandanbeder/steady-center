@@ -103,8 +103,21 @@ export const shareResource = createServerFn({ method: "POST" })
       .select("*")
       .single();
     if (error) throw new Error(error.message);
+    // Audit business-scope grants at the team layer
+    if (data.resourceType === "business") {
+      await auditTeamAction({
+        business_id: data.resourceId,
+        actor_id: userId,
+        action: "share_grant",
+        target_user_id: granteeId,
+        after: { role: data.role },
+        resource_type: data.resourceType,
+        resource_id: data.resourceId,
+      });
+    }
     return row;
   });
+
 
 
 export const revokeShare = createServerFn({ method: "POST" })
