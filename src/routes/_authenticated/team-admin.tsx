@@ -31,18 +31,13 @@ export const Route = createFileRoute("/_authenticated/team-admin")({
   head: () => ({ meta: [{ title: "Team admin · Heartbeat" }] }),
   component: TeamAdminPage,
   errorComponent: ({ error }) => (
-    <AppShell>
-      <div className="p-8 text-sm text-muted-foreground" role="alert">
-        Couldn't load Team admin: {error.message}
-      </div>
-    </AppShell>
+    <div className="p-8 text-sm text-muted-foreground" role="alert">
+      Couldn't load Team admin: {error.message}
+    </div>
   ),
-  notFoundComponent: () => (
-    <AppShell>
-      <div className="p-8">Not found.</div>
-    </AppShell>
-  ),
+  notFoundComponent: () => <div className="p-8">Not found.</div>,
 });
+
 
 function TeamAdminPage() {
   const { activeId, setActiveId } = useActiveBusiness();
