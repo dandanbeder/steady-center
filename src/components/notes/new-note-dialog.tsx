@@ -167,7 +167,7 @@ export function NewNoteDialog({
                 <SelectItem value="__none">
                   <span className="inline-flex items-center gap-2">
                     <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground" />
-                    Uncategorised / Personal (no account)
+                    Personal / Uncategorised (no account)
                   </span>
                 </SelectItem>
                 {businesses.map((b) => (

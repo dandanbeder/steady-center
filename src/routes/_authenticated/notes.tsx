@@ -303,20 +303,27 @@ function NotesPage() {
             const Icon = TYPE_ICONS[n.note_type] ?? FileText;
             const biz = businesses.find((b) => b.id === n.business_id);
             const path = folderPath(n.folder_id, folders);
-            const crumbs = [biz?.name, ...path.map((f) => f.name)].filter(Boolean).join(" / ");
+            const crumbs = [biz?.name ?? "Personal", ...path.map((f) => f.name)].filter(Boolean).join(" / ");
+            const accentColor = biz?.color ?? "hsl(var(--muted-foreground))";
             return (
               <div
                 key={n.id}
                 className={cn(
-                  "group rounded-lg transition-colors",
+                  "group rounded-lg transition-colors border-l-2",
                   selectedNoteId === n.id ? "bg-muted" : "hover:bg-muted/60",
                 )}
+                style={{ borderLeftColor: accentColor }}
               >
                 <button
                   onClick={() => setSelectedNoteId(n.id)}
                   className="w-full text-left p-2.5"
                 >
                   <div className="flex items-center gap-2 text-sm font-medium">
+                    <span
+                      className="h-2 w-2 rounded-full shrink-0"
+                      style={{ background: accentColor }}
+                      title={biz?.name ?? "Personal"}
+                    />
                     <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     <span className="truncate flex-1">{n.title || "Untitled"}</span>
                     {n.pinned && <Pin className="h-3 w-3 text-muted-foreground shrink-0" />}
@@ -444,6 +451,7 @@ function NoteEditor({
   const [body, setBody] = useState(note.body);
   const [type, setType] = useState<NoteType>(note.note_type);
   const [folderId, setFolderId] = useState<string | null>(note.folder_id);
+  const [businessId, setBusinessId] = useState<string | null>(note.business_id);
   const [createTaskFor, setCreateTaskFor] = useState<string | null>(null);
 
   useEffect(() => {
@@ -451,24 +459,26 @@ function NoteEditor({
     setBody(note.body);
     setType(note.note_type);
     setFolderId(note.folder_id);
+    setBusinessId(note.business_id);
     setCreateTaskFor(null);
   }, [note.id]);
 
   const { savedAt, saving } = useAutosave(
-    { title, body, type, folderId },
+    { title, body, type, folderId, businessId },
     async (v) => {
       await updateNote(note.id, {
         title: v.title,
         body: v.body,
         note_type: v.type,
         folder_id: v.folderId,
+        business_id: v.businessId,
       });
       onChanged();
     },
   );
 
-  const scopedFolders = folders.filter((f) => f.business_id === note.business_id);
-  const biz = businesses.find((b) => b.id === note.business_id);
+  const scopedFolders = folders.filter((f) => f.business_id === businessId);
+  const biz = businesses.find((b) => b.id === businessId);
   const path = folderPath(folderId, folders);
 
   const togglePin = async () => {
@@ -526,7 +536,35 @@ function NoteEditor({
 
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="text-xs text-muted-foreground">{status}</div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Select
+            value={businessId ?? "__none"}
+            onValueChange={(v) => {
+              const next = v === "__none" ? null : v;
+              setBusinessId(next);
+              setFolderId(null);
+            }}
+          >
+            <SelectTrigger className="h-8 w-44 text-xs">
+              <SelectValue placeholder="Account" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none">
+                <span className="inline-flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground" />
+                  Personal / Uncategorised
+                </span>
+              </SelectItem>
+              {businesses.map((b) => (
+                <SelectItem key={b.id} value={b.id}>
+                  <span className="inline-flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ background: b.color }} />
+                    {b.name}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Select value={type} onValueChange={(v) => setType(v as NoteType)}>
             <SelectTrigger className="h-8 w-32 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
