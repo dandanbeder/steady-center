@@ -354,7 +354,7 @@ export const listMyMentionedItems = createServerFn({ method: "GET" })
       .eq("status", "active");
     const memberBizIds = new Set((mems ?? []).map((m) => m.business_id as string));
 
-    const allIds = [...taskIds, ...noteIds];
+    const allIds = [...taskIds, ...noteIds, ...meetingIds];
     const { data: shareRows } = allIds.length
       ? await supabaseAdmin
           .from("shares")
@@ -373,12 +373,14 @@ export const listMyMentionedItems = createServerFn({ method: "GET" })
       ...new Set([
         ...(taskRes.data ?? []).map((t) => t.owner_id),
         ...(noteRes.data ?? []).map((n) => n.owner_id),
+        ...(meetingRes.data ?? []).map((mtg) => mtg.owner_id),
         ...mentionedByIds,
       ]),
     ];
     if (allActors.length) {
       for (const t of taskRes.data ?? []) ownerIds.add(t.owner_id);
       for (const n of noteRes.data ?? []) ownerIds.add(n.owner_id);
+      for (const mtg of meetingRes.data ?? []) ownerIds.add(mtg.owner_id);
     }
     const { data: profs } = allActors.length
       ? await supabaseAdmin.from("profiles").select("id, full_name").in("id", allActors)
@@ -387,6 +389,7 @@ export const listMyMentionedItems = createServerFn({ method: "GET" })
 
     const taskById = new Map((taskRes.data ?? []).map((t) => [t.id, t]));
     const noteById = new Map((noteRes.data ?? []).map((n) => [n.id, n]));
+    const meetingById = new Map((meetingRes.data ?? []).map((mtg) => [mtg.id, mtg]));
 
     const out: MentionedItemRow[] = [];
     for (const r of rows) {
@@ -409,6 +412,15 @@ export const listMyMentionedItems = createServerFn({ method: "GET" })
         subtitle = "Note";
         owner_id = n.owner_id;
         resource_type = "note";
+      } else if (r.parent_type === "meeting") {
+        const mtg = meetingById.get(r.parent_id);
+        if (!mtg) continue;
+        title = mtg.title || "Meeting";
+        subtitle = mtg.scheduled_at
+          ? `Meeting · ${new Date(mtg.scheduled_at).toLocaleDateString()}`
+          : "Meeting";
+        owner_id = mtg.owner_id;
+        resource_type = "meeting";
       } else {
         continue;
       }
