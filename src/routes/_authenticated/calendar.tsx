@@ -265,22 +265,6 @@ function CalendarPage() {
     [businesses, activeId],
   );
 
-  const visibleCalIds = useMemo(
-    () =>
-      new Set(
-        visibleCalendars
-          .filter((c) => !hiddenCals.has(c.id))
-          .filter((c) => !c.business_id || !hiddenBiz.has(c.business_id))
-          .map((c) => c.id),
-      ),
-    [visibleCalendars, hiddenCals, hiddenBiz],
-  );
-
-  const visibleEvents = useMemo(
-    () => events.filter((e) => visibleCalIds.has(e.calendar_id)),
-    [events, visibleCalIds],
-  );
-
   const calById = useMemo(
     () => new Map(calendars.map((c) => [c.id, c])),
     [calendars],
@@ -291,25 +275,48 @@ function CalendarPage() {
     [businesses],
   );
 
+  // Effective account for an event = explicit event override, else the parent
+  // calendar's mapped account. This is the organising layer the rest of the UI
+  // (filter, colour, badges) keys off — sync sets event.business_id from the
+  // calendar mapping on insert, and the user can later reassign a single event.
+  const effectiveBizId = useMemo(() => {
+    return (e: EventRow): string | null =>
+      e.business_id ?? calById.get(e.calendar_id)?.business_id ?? null;
+  }, [calById]);
+
+  const visibleEvents = useMemo(
+    () =>
+      events.filter((e) => {
+        const cal = calById.get(e.calendar_id);
+        if (!cal || hiddenCals.has(cal.id)) return false;
+        const bizId = effectiveBizId(e);
+        if (bizId && hiddenBiz.has(bizId)) return false;
+        // "All Accounts" shows everything; a specific account filters to its
+        // events regardless of which calendar they live on.
+        if (activeId !== ALL && bizId !== activeId) return false;
+        return true;
+      }),
+    [events, calById, hiddenCals, hiddenBiz, activeId, effectiveBizId],
+  );
+
   const colorFor = useMemo(() => {
     return (e: EventRow): string => {
       const cal = calById.get(e.calendar_id);
       if (colorBy === "account") {
-        const bizId = cal?.business_id;
+        const bizId = effectiveBizId(e);
         const biz = bizId ? bizById.get(bizId) : null;
         return biz?.color ?? cal?.color ?? "#7A8471";
       }
       return cal?.color ?? "#7A8471";
     };
-  }, [colorBy, calById, bizById]);
+  }, [colorBy, calById, bizById, effectiveBizId]);
 
   const bizForEvent = useMemo(() => {
     return (e: EventRow) => {
-      const cal = calById.get(e.calendar_id);
-      const bizId = cal?.business_id;
+      const bizId = effectiveBizId(e);
       return bizId ? bizById.get(bizId) ?? null : null;
     };
-  }, [calById, bizById]);
+  }, [bizById, effectiveBizId]);
 
   const deleteMut = useMutation({
     mutationFn: (id: string) => deleteEvent(id),
