@@ -74,6 +74,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const { activeId, setActiveId } = useActiveBusiness();
   const { isAdmin } = useIsPlatformAdmin();
+  const activeBizId = activeId && activeId !== "all" ? activeId : null;
+  const myRole = useMyRole(activeBizId);
+  const isTeamAdmin = !!activeBizId && (myRole.can("admin") || isAdmin);
+
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem(STORAGE_KEY) === "1";
