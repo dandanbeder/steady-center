@@ -194,7 +194,7 @@ function NewMeetingDialog({
           title: title.trim(),
           platform,
           business_id: businessId,
-          transcript: mode === "paste" ? transcript.trim() : undefined,
+          transcript: mode === "audio" ? undefined : transcript.trim() || undefined,
           audio_path,
           keep_recording: mode === "audio" ? keepRecording : false,
           mode: mode === "note" ? "note" : "summarize",
