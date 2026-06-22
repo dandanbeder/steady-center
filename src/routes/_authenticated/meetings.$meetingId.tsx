@@ -324,6 +324,14 @@ function MeetingDetail() {
       </section>
 
 
+      <ShareDialog
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        resourceType="meeting"
+        resourceId={meeting.id}
+        resourceName={meeting.title}
+      />
+
       <ConvertDialog
         item={convertItem}
         onClose={() => setConvertItem(null)}
