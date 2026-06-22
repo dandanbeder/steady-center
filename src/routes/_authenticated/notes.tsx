@@ -303,7 +303,7 @@ function NotesPage() {
             const Icon = TYPE_ICONS[n.note_type] ?? FileText;
             const biz = businesses.find((b) => b.id === n.business_id);
             const path = folderPath(n.folder_id, folders);
-            const crumbs = [biz?.name, ...path.map((f) => f.name)].filter(Boolean).join(" / ");
+            const crumbs = [biz?.name ?? "Personal", ...path.map((f) => f.name)].filter(Boolean).join(" / ");
             const accentColor = biz?.color ?? "hsl(var(--muted-foreground))";
             return (
               <div
