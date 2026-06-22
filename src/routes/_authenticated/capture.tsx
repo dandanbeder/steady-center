@@ -394,7 +394,12 @@ function InboxCard({
         </span>
       </div>
 
-      {!processed ? (
+      {manualMode ? (
+        <div className="rounded-md border border-dashed bg-muted/30 p-3 text-xs text-muted-foreground flex items-center gap-2">
+          <SparklesIcon className="h-3.5 w-3.5 opacity-50" />
+          AI suggestions are off. File this one yourself below.
+        </div>
+      ) : !processed ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-3.5 w-3.5 animate-spin" /> Suggesting…
           <Button variant="ghost" size="sm" onClick={reSuggest} disabled={busy} className="ml-auto">
