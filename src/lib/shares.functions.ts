@@ -332,14 +332,18 @@ export const listMyMentionedItems = createServerFn({ method: "GET" })
     // could have been removed from a business after the mention landed).
     const taskIds = rows.filter((r) => r.parent_type === "task").map((r) => r.parent_id);
     const noteIds = rows.filter((r) => r.parent_type === "note").map((r) => r.parent_id);
+    const meetingIds = rows.filter((r) => r.parent_type === "meeting").map((r) => r.parent_id);
 
-    const [taskRes, noteRes] = await Promise.all([
+    const [taskRes, noteRes, meetingRes] = await Promise.all([
       taskIds.length
         ? supabaseAdmin.from("tasks").select("id, title, owner_id, due_at, status, business_id").in("id", taskIds)
         : Promise.resolve({ data: [] as Array<{ id: string; title: string; owner_id: string; due_at: string | null; status: string; business_id: string | null }> }),
       noteIds.length
         ? supabaseAdmin.from("notes").select("id, title, owner_id, business_id, note_type").in("id", noteIds)
         : Promise.resolve({ data: [] as Array<{ id: string; title: string | null; owner_id: string; business_id: string | null; note_type: string | null }> }),
+      meetingIds.length
+        ? supabaseAdmin.from("meetings").select("id, title, owner_id, business_id, scheduled_at").in("id", meetingIds)
+        : Promise.resolve({ data: [] as Array<{ id: string; title: string | null; owner_id: string; business_id: string | null; scheduled_at: string | null }> }),
     ]);
 
     // Build access set: caller's active business memberships + explicit share grantees on these resources + owner.
