@@ -426,7 +426,9 @@ function InboxCard({
             {due && <span>Due: {new Date(due).toLocaleString()}</span>}
           </div>
         </div>
-      ) : (
+      ) : null}
+
+      {(manualMode || (processed && edit)) && (
         <div className="rounded-md border p-3 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
