@@ -154,7 +154,6 @@ export function MeetingNotesPanel({
             <li key={n.id}>
               <Link
                 to="/notes"
-                search={{ id: n.id }}
                 className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
               >
                 <FileText className="h-3.5 w-3.5" />
