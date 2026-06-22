@@ -444,6 +444,7 @@ function NoteEditor({
   const [body, setBody] = useState(note.body);
   const [type, setType] = useState<NoteType>(note.note_type);
   const [folderId, setFolderId] = useState<string | null>(note.folder_id);
+  const [businessId, setBusinessId] = useState<string | null>(note.business_id);
   const [createTaskFor, setCreateTaskFor] = useState<string | null>(null);
 
   useEffect(() => {
@@ -451,24 +452,26 @@ function NoteEditor({
     setBody(note.body);
     setType(note.note_type);
     setFolderId(note.folder_id);
+    setBusinessId(note.business_id);
     setCreateTaskFor(null);
   }, [note.id]);
 
   const { savedAt, saving } = useAutosave(
-    { title, body, type, folderId },
+    { title, body, type, folderId, businessId },
     async (v) => {
       await updateNote(note.id, {
         title: v.title,
         body: v.body,
         note_type: v.type,
         folder_id: v.folderId,
+        business_id: v.businessId,
       });
       onChanged();
     },
   );
 
-  const scopedFolders = folders.filter((f) => f.business_id === note.business_id);
-  const biz = businesses.find((b) => b.id === note.business_id);
+  const scopedFolders = folders.filter((f) => f.business_id === businessId);
+  const biz = businesses.find((b) => b.id === businessId);
   const path = folderPath(folderId, folders);
 
   const togglePin = async () => {
