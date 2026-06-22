@@ -41,10 +41,13 @@ const TOOLS = [
   },
   {
     name: "search_notes",
-    description: "Search the user's notes by title/body substring. Returns at most 15 with snippets.",
+    description:
+      "Search notes the user can access (their own + notes shared with them). Excludes Journal entries (private). Returns at most 15 with title, an excerpt centered on the match, and the note id for citing. ALWAYS call this before answering 'what did I note about X' style questions.",
     input_schema: {
       type: "object",
-      properties: { query: { type: "string" } },
+      properties: {
+        query: { type: "string", description: "Free-text. Multi-word OK — each significant token is matched against title or body." },
+      },
       required: ["query"],
     },
   },
@@ -214,21 +217,57 @@ async function execReadTool(
       return data ?? [];
     }
     case "search_notes": {
-      // Journal entries are an AI-free sanctuary; exclude them from any AI search.
+      // Journal entries are an AI-free sanctuary, exclude them from any AI search.
+      // RLS on `notes` already restricts the result set to notes the caller can
+      // read (own + explicitly shared + team-space). We never broaden that.
+      const raw = String(input?.query ?? "").trim();
+      if (!raw) return [];
+      // Tokenize: keep words of >=3 chars (or any digit), drop noise; cap to 4
+      // tokens to keep the OR predicate cheap.
+      const stop = new Set([
+        "the","and","for","with","what","when","where","why","how","did","does",
+        "was","were","are","you","your","our","note","notes","about","that","this",
+      ]);
+      const tokens = raw
+        .toLowerCase()
+        .split(/[^a-z0-9]+/)
+        .filter((t) => t && !stop.has(t) && (t.length >= 3 || /\d/.test(t)))
+        .slice(0, 4);
+      const escape = (s: string) => s.replace(/[%_,()]/g, " ");
+      const terms = tokens.length ? tokens : [raw.toLowerCase()];
+      const orExpr = terms
+        .flatMap((t) => [`title.ilike.%${escape(t)}%`, `body.ilike.%${escape(t)}%`])
+        .join(",");
       let q: any = supabase
         .from("notes")
         .select("id,title,body,folder_id,business_id,updated_at")
         .is("deleted_at", null)
         .neq("note_type", "journal")
-        .or(`title.ilike.%${input.query}%,body.ilike.%${input.query}%`)
+        .or(orExpr)
         .order("updated_at", { ascending: false })
         .limit(15);
       q = scope(q);
       const { data, error } = await q;
       if (error) throw error;
+      // Build an excerpt centered on the first matching term, ~280 chars.
+      const excerptFor = (body: string): string => {
+        if (typeof body !== "string" || !body) return "";
+        const lower = body.toLowerCase();
+        let hit = -1;
+        for (const t of terms) {
+          const i = lower.indexOf(t);
+          if (i !== -1) { hit = i; break; }
+        }
+        if (hit === -1) return body.slice(0, 280);
+        const start = Math.max(0, hit - 100);
+        const end = Math.min(body.length, hit + 180);
+        return (start > 0 ? "…" : "") + body.slice(start, end) + (end < body.length ? "…" : "");
+      };
       return (data ?? []).map((n: any) => ({
-        ...n,
-        body: typeof n.body === "string" ? n.body.slice(0, 600) : n.body,
+        id: n.id,
+        title: n.title || "Untitled",
+        excerpt: excerptFor(n.body),
+        updated_at: n.updated_at,
       }));
     }
     case "search_meetings": {
@@ -331,7 +370,15 @@ Today: ${now}. Active account scope: ${businessId ? `business_id=${businessId}` 
 Use the provided tools to look up the user's tasks, events, notes and meeting summaries before answering.
 When the user wants to create, edit, complete or move something, ALWAYS use the propose_* tools, these surface
 a preview card the user must approve in the UI. NEVER claim that you have written or changed data; only the
-user can approve a proposal. Keep answers concise (markdown ok). If a tool returns no rows, say so plainly.`;
+user can approve a proposal. Keep answers concise (markdown ok).
+
+Retrieval discipline for notes & meetings:
+- For any "what did I note/say/decide about X" question, you MUST call search_notes (and search_meetings when relevant) FIRST.
+- Ground every factual claim in the returned rows. Quote or paraphrase the excerpt, then cite the source inline as
+  [Note: "<title>"] or [Meeting: "<title>"]. If you used multiple notes, cite each one.
+- If the tool returns zero rows, reply plainly: "I don't see that in your notes." Do NOT guess, invent, or fall back to general knowledge.
+- Journal entries are private and never indexed; if the user asks about a journal, tell them you don't read journal entries.
+- Access is enforced by the database: you only ever see notes the user owns or that are shared with them. Do not speculate about other users' content.`;
 
     // Per-turn input cap: clip overlong chat history messages and log the hit
     // so we can see when users are pasting in entire docs / transcripts.
