@@ -366,3 +366,34 @@ function NewMeetingDialog({
     </Dialog>
   );
 }
+
+function PlatformBadge({ platform }: { platform: string }) {
+  const info = platformInfoFromId(platform);
+  const Icon = info.icon === "video" ? Video : Users;
+  return (
+    <span className="inline-flex items-center gap-1">
+      <Icon className="h-3 w-3" />
+      {info.label}
+    </span>
+  );
+}
+
+export function JoinButton({ url, className }: { url: string; className?: string }) {
+  const info = detectPlatformFromUrl(url);
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={
+        "inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors " +
+        (className ?? "")
+      }
+    >
+      <Video className="h-3.5 w-3.5" />
+      Join {info.label !== "Other link" && info.id !== "in_person" && info.id !== "other" ? info.label : ""}
+      <ExternalLink className="h-3 w-3 opacity-70" />
+    </a>
+  );
+}
+
