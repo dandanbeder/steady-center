@@ -502,22 +502,26 @@ function InboxCard({
             <Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={3} />
           </div>
           <div className="flex justify-end gap-2">
-            <Button size="sm" variant="ghost" onClick={() => setEdit(false)}>Cancel</Button>
+            {!manualMode && (
+              <Button size="sm" variant="ghost" onClick={() => setEdit(false)}>Cancel</Button>
+            )}
             <Button size="sm" variant="secondary" onClick={saveEdits}>Save edits</Button>
           </div>
         </div>
       )}
 
       <div className="flex items-center gap-2 flex-wrap">
-        <Button size="sm" onClick={accept} disabled={busy || !processed}>
+        <Button size="sm" onClick={accept} disabled={busy || (!processed && !manualMode)}>
           <Check className="h-4 w-4 mr-1" /> Accept
         </Button>
         {!edit && processed && (
           <Button size="sm" variant="outline" onClick={() => setEdit(true)}>Edit</Button>
         )}
-        <Button size="sm" variant="ghost" onClick={reSuggest} disabled={busy}>
-          <RefreshCw className="h-3.5 w-3.5 mr-1" /> Re-suggest
-        </Button>
+        {!manualMode && (
+          <Button size="sm" variant="ghost" onClick={reSuggest} disabled={busy}>
+            <RefreshCw className="h-3.5 w-3.5 mr-1" /> Re-suggest
+          </Button>
+        )}
         <div className="ml-auto flex gap-1">
           <Button size="sm" variant="ghost" onClick={onDismiss} title="Dismiss">
             <X className="h-4 w-4" />
