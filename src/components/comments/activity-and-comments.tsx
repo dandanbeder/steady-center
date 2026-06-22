@@ -14,12 +14,24 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   addComment,
+  checkMentionAccess,
   deleteComment,
   editComment,
   listComments,
   suggestMentionTargets,
 } from "@/lib/comments.functions";
 import { relativeTime, subscribeToComments, type CommentParentType } from "@/lib/comments";
+import { ShareDialog } from "@/components/share-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { CommentBody } from "./comment-body";
 import { MentionInput, type MentionCandidate } from "./mention-input";
 import { useAuth } from "@/hooks/use-auth";
@@ -47,6 +59,7 @@ export function ActivityAndComments({ parentType, parentId, businessId, activity
 
   const list = useServerFn(listComments);
   const suggest = useServerFn(suggestMentionTargets);
+  const checkAccess = useServerFn(checkMentionAccess);
   const add = useServerFn(addComment);
   const edit = useServerFn(editComment);
   const del = useServerFn(deleteComment);
@@ -80,6 +93,18 @@ export function ActivityAndComments({ parentType, parentId, businessId, activity
   const [draft, setDraft] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
+  // Private-first guard state: holds users mentioned in the current draft
+  // who lack access. Triggers an explicit-share prompt before posting.
+  const [missingShare, setMissingShare] = useState<Array<{ user_id: string; name: string | null }>>([]);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [posting, setPosting] = useState(false);
+
+  // Only task and note resources are share-targets that map cleanly to the
+  // ShareDialog. Events and meetings still allow comments + mentions but the
+  // private-first prompt for them tells the author to share the parent
+  // task/note context instead.
+  const shareResourceType: "task" | "note" | null =
+    parentType === "task" || parentType === "note" ? parentType : null;
 
   const addMut = useMutation({
     mutationFn: (body: string) =>
@@ -90,6 +115,32 @@ export function ActivityAndComments({ parentType, parentId, businessId, activity
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to post"),
   });
+
+  /**
+   * Private-first guard. Before posting, ask the server which mentioned
+   * users (if any) lack access to this item. If any are missing, surface
+   * an explicit-share prompt instead of either (a) silently dropping the
+   * mention or (b) silently granting access.
+   */
+  const handlePost = async () => {
+    const body = draft.trim();
+    if (!body || posting) return;
+    setPosting(true);
+    try {
+      const { missing } = await checkAccess({
+        data: { parent_type: parentType, parent_id: parentId, body },
+      });
+      if (missing.length) {
+        setMissingShare(missing);
+        return;
+      }
+      await addMut.mutateAsync(body);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to post");
+    } finally {
+      setPosting(false);
+    }
+  };
 
   const editMut = useMutation({
     mutationFn: (vars: { id: string; body: string }) => edit({ data: vars }),
@@ -198,21 +249,83 @@ export function ActivityAndComments({ parentType, parentId, businessId, activity
               value={draft}
               onChange={setDraft}
               candidates={candidates as MentionCandidate[]}
-              disabled={addMut.isPending}
-              onSubmit={() => draft.trim() && addMut.mutate(draft.trim())}
+              disabled={addMut.isPending || posting}
+              onSubmit={handlePost}
             />
             <div className="flex justify-end">
               <Button
                 size="sm"
-                onClick={() => draft.trim() && addMut.mutate(draft.trim())}
-                disabled={!draft.trim() || addMut.isPending}
+                onClick={handlePost}
+                disabled={!draft.trim() || addMut.isPending || posting}
               >
-                {addMut.isPending ? "Posting…" : "Post"}
+                {addMut.isPending || posting ? "Posting…" : "Post"}
               </Button>
             </div>
           </>
         )}
       </div>
+
+      {/* Private-first guard prompt: explicit share required before mentioning. */}
+      <AlertDialog
+        open={missingShare.length > 0}
+        onOpenChange={(o) => { if (!o) setMissingShare([]); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Share this {parentType} first?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {missingShare.length === 1
+                ? `${missingShare[0].name ?? "This person"} doesn't have access to this ${parentType} yet.`
+                : `${missingShare.length} people you mentioned don't have access to this ${parentType} yet.`}
+              {" "}
+              Heartbeat won't silently share private work — grant access explicitly to continue.
+              {shareResourceType === null && (
+                <span className="block mt-2">
+                  This item can't be shared directly. Remove the mention or share the parent
+                  task / note instead.
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Remove mentions</AlertDialogCancel>
+            {shareResourceType && (
+              <AlertDialogAction onClick={() => { setShareOpen(true); }}>
+                Open sharing…
+              </AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {shareResourceType && shareOpen && (
+        <ShareDialog
+          open={shareOpen}
+          onOpenChange={(o) => {
+            setShareOpen(o);
+            if (!o) {
+              // After the user closes the share dialog, re-check access in
+              // case they granted everyone we flagged. If clean, auto-post.
+              setMissingShare([]);
+              const body = draft.trim();
+              if (body) {
+                checkAccess({ data: { parent_type: parentType, parent_id: parentId, body } })
+                  .then(({ missing }) => {
+                    if (missing.length) {
+                      setMissingShare(missing);
+                    } else {
+                      addMut.mutate(body);
+                    }
+                  })
+                  .catch(() => {});
+              }
+            }
+          }}
+          resourceType={shareResourceType}
+          resourceId={parentId}
+          resourceName={`this ${parentType}`}
+        />
+      )}
     </div>
   );
 }

@@ -8,6 +8,29 @@ const ParentInput = z.object({
   parent_id: z.string().uuid(),
 });
 
+/** Extract unique mentioned user ids from a body containing @[Name](uuid) tokens. */
+function extractMentionIds(body: string): string[] {
+  const re = /@\[[^\]]+\]\(([0-9a-fA-F-]{36})\)/g;
+  const ids = new Set<string>();
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(body)) !== null) ids.add(m[1].toLowerCase());
+  return [...ids];
+}
+
+/** Structured error thrown when a comment mentions users without access. */
+export class MentionNeedsShareError extends Error {
+  code = "MENTION_NEEDS_SHARE" as const;
+  constructor(
+    public missing: Array<{ user_id: string; name: string | null }>,
+    public parent_type: string,
+    public parent_id: string,
+  ) {
+    super(
+      "Some mentioned people don't have access to this item. Share it first.",
+    );
+  }
+}
+
 export const listComments = createServerFn({ method: "POST" })
   .middleware([requireActiveUser])
   .inputValidator((i) => ParentInput.parse(i))
@@ -72,6 +95,41 @@ export const addComment = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+
+    // Private-first guard: refuse to silently let a mention sneak past the
+    // access boundary. Trigger silently skips non-access users, but that
+    // would also hide the intent from the author. We surface it instead
+    // so the UI can prompt for an explicit share grant.
+    const mentionIds = extractMentionIds(data.body).filter((id) => id !== userId);
+    if (mentionIds.length) {
+      const { data: rows, error: accErr } = await supabase.rpc(
+        "check_comment_mention_access",
+        {
+          p_parent_type: data.parent_type,
+          p_parent_id: data.parent_id,
+          p_user_ids: mentionIds,
+        },
+      );
+      if (accErr) throw new Error(accErr.message);
+      const missingIds = (rows ?? [])
+        .filter((r: { has_access: boolean }) => !r.has_access)
+        .map((r: { user_id: string }) => r.user_id);
+      if (missingIds.length) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", missingIds);
+        const nameById = new Map(
+          (profs ?? []).map((p) => [p.id as string, (p.full_name as string | null) ?? null]),
+        );
+        throw new MentionNeedsShareError(
+          missingIds.map((id: string) => ({ user_id: id, name: nameById.get(id) ?? null })),
+          data.parent_type,
+          data.parent_id,
+        );
+      }
+    }
+
     const { data: row, error } = await supabase
       .from("comments")
       .insert({
@@ -84,6 +142,44 @@ export const addComment = createServerFn({ method: "POST" })
       .single();
     if (error) throw new Error(error.message);
     return { id: row.id };
+  });
+
+/**
+ * Lightweight pre-check: given a draft body, return which mentioned users
+ * lack access. Lets the composer prompt for a share BEFORE submitting.
+ */
+export const checkMentionAccess = createServerFn({ method: "POST" })
+  .middleware([requireActiveUser])
+  .inputValidator((i) =>
+    ParentInput.extend({ body: z.string().min(0).max(8000) }).parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const ids = extractMentionIds(data.body).filter((id) => id !== userId);
+    if (!ids.length) return { missing: [] as Array<{ user_id: string; name: string | null }> };
+    const { data: rows, error } = await supabase.rpc("check_comment_mention_access", {
+      p_parent_type: data.parent_type,
+      p_parent_id: data.parent_id,
+      p_user_ids: ids,
+    });
+    if (error) throw new Error(error.message);
+    const missingIds = (rows ?? [])
+      .filter((r: { has_access: boolean }) => !r.has_access)
+      .map((r: { user_id: string }) => r.user_id);
+    if (!missingIds.length) return { missing: [] };
+    const { data: profs } = await supabase
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", missingIds);
+    const nameById = new Map(
+      (profs ?? []).map((p) => [p.id as string, (p.full_name as string | null) ?? null]),
+    );
+    return {
+      missing: missingIds.map((id: string) => ({
+        user_id: id,
+        name: nameById.get(id) ?? null,
+      })),
+    };
   });
 
 export const editComment = createServerFn({ method: "POST" })

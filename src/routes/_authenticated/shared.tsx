@@ -3,9 +3,14 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import {
-  CheckSquare, FileText, Calendar as CalendarIcon, Folder, ListTodo, Inbox, Building2,
+  AtSign, CheckSquare, FileText, Calendar as CalendarIcon, Folder, ListTodo, Inbox, Building2,
 } from "lucide-react";
-import { listSharedWithMeResources, type SharedItemRow, type ResourceType } from "@/lib/shares.functions";
+import {
+  listSharedWithMeResources,
+  listMyMentionedItems,
+  type SharedItemRow,
+  type ResourceType,
+} from "@/lib/shares.functions";
 import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/shared")({
@@ -47,13 +52,24 @@ const LABELS: Record<ResourceType, string> = {
   business: "Accounts",
 };
 
-
 function SharedPage() {
   const fetchShared = useServerFn(listSharedWithMeResources);
+  const fetchMentions = useServerFn(listMyMentionedItems);
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["shared-with-me"],
     queryFn: () => fetchShared(),
   });
+  const { data: mentions = [], isLoading: mentionsLoading } = useQuery({
+    queryKey: ["my-mentions"],
+    queryFn: () => fetchMentions(),
+  });
+
+  const shareKey = (r: SharedItemRow) => `${r.resource_type}:${r.resource_id}`;
+  const sharedKeys = useMemo(() => new Set(rows.map(shareKey)), [rows]);
+  const mentionRows = useMemo(
+    () => mentions.filter((m) => !sharedKeys.has(shareKey(m))),
+    [mentions, sharedKeys],
+  );
 
   const grouped = useMemo(() => {
     const m = new Map<ResourceType, SharedItemRow[]>();
@@ -65,27 +81,62 @@ function SharedPage() {
     return ORDER.filter((t) => m.has(t)).map((t) => ({ type: t, items: m.get(t)! }));
   }, [rows]);
 
+  const empty = !isLoading && !mentionsLoading && rows.length === 0 && mentionRows.length === 0;
+
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-10">
       <header className="mb-6">
         <h1 className="text-2xl font-serif">Shared with me</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Folders, lists, tasks, notes and calendars other people have shared with you.
+          Items other people have shared with you, plus work where someone @mentioned you.
         </p>
       </header>
 
-      {isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
+      {(isLoading || mentionsLoading) && (
+        <p className="text-sm text-muted-foreground">Loading…</p>
+      )}
 
-      {!isLoading && rows.length === 0 && (
+      {empty && (
         <div className="rounded-lg border border-dashed border-border p-10 text-center">
           <Inbox className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground">
-            Nothing shared with you yet.
-          </p>
+          <p className="text-sm text-muted-foreground">Nothing shared with you yet.</p>
         </div>
       )}
 
       <div className="space-y-8">
+        {mentionRows.length > 0 && (
+          <section>
+            <h2 className="text-xs uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-1.5">
+              <AtSign className="h-3.5 w-3.5" /> Mentioned you
+            </h2>
+            <ul className="divide-y divide-border rounded-lg border border-border overflow-hidden">
+              {mentionRows.map((r) => {
+                const Icon = ICONS[r.resource_type];
+                return (
+                  <li key={r.share_id} className="bg-card">
+                    <Link
+                      to={LINKS[r.resource_type]}
+                      className="flex items-start gap-3 p-3 hover:bg-muted transition-colors"
+                    >
+                      <Icon className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-medium truncate">{r.title}</div>
+                        <div className="text-xs text-muted-foreground truncate mt-0.5">
+                          {r.subtitle ? `${r.subtitle} · ` : ""}
+                          {r.mentioned_by_name ?? "Someone"} mentioned you
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="text-xs shrink-0 gap-1">
+                        <AtSign className="h-3 w-3" /> mention
+                      </Badge>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
+
         {grouped.map((g) => (
           <section key={g.type}>
             <h2 className="text-xs uppercase tracking-wide text-muted-foreground mb-2">

@@ -3239,6 +3239,17 @@ export type Database = {
           purchased_after: number
         }[]
       }
+      check_comment_mention_access: {
+        Args: {
+          p_parent_id: string
+          p_parent_type: string
+          p_user_ids: string[]
+        }
+        Returns: {
+          has_access: boolean
+          user_id: string
+        }[]
+      }
       clear_plan_locks: { Args: { _user_id: string }; Returns: undefined }
       current_membership_role: { Args: { p_business: string }; Returns: string }
       empty_my_trash: {
@@ -3296,6 +3307,16 @@ export type Database = {
           role: string
           status: string
           user_id: string
+        }[]
+      }
+      list_my_mention_items: {
+        Args: { p_days?: number }
+        Returns: {
+          business_id: string
+          last_mentioned_at: string
+          last_mentioned_by: string
+          parent_id: string
+          parent_type: string
         }[]
       }
       list_trash: {
