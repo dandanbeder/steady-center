@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
-import { Inbox as InboxIcon, Check, Trash2, Sparkles, Loader2, RefreshCw, X } from "lucide-react";
+import { Inbox as InboxIcon, Check, Trash2, Sparkles, Loader2, RefreshCw, X, SparklesIcon } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,38 @@ function CapturePage() {
   const [capture, setCapture] = useState("");
   const suggest = useServerFn(suggestInboxItem);
 
+  // Per-user preference for AI suggestions on Capture. Stored on profiles
+  // (RLS already scopes profile reads/writes to auth.uid()), so it persists
+  // across visits and devices and is private to the user.
+  const { data: aiEnabled = true } = useQuery({
+    queryKey: ["capture-ai-enabled"],
+    queryFn: async () => {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) return true;
+      const { data } = await (supabase.from("profiles") as any)
+        .select("capture_ai_enabled")
+        .eq("id", u.user.id)
+        .maybeSingle();
+      return (data?.capture_ai_enabled ?? true) as boolean;
+    },
+  });
+  const toggleAi = useMutation({
+    mutationFn: async (next: boolean) => {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) throw new Error("Not signed in");
+      const { error } = await (supabase.from("profiles") as any)
+        .update({ capture_ai_enabled: next })
+        .eq("id", u.user.id);
+      if (error) throw error;
+      return next;
+    },
+    onSuccess: (next) => {
+      qc.setQueryData(["capture-ai-enabled"], next);
+      toast.success(next ? "AI suggestions on" : "AI suggestions off");
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Couldn't save"),
+  });
+
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["inbox", "pending"],
     queryFn: () => listInbox("pending"),
@@ -54,10 +87,13 @@ function CapturePage() {
   const captureMut = useMutation({
     mutationFn: async (text: string) => {
       const item = await captureToInbox({ raw_text: text, source: "quick_add" });
-      // fire-and-forget AI suggestion
-      suggest({ data: { inbox_id: item.id, now: new Date().toISOString() } })
-        .then(() => qc.invalidateQueries({ queryKey: ["inbox"] }))
-        .catch(() => {});
+      // Only call the AI when the user opted in — otherwise no credits are
+      // spent and the item stays as a plain entry the user files manually.
+      if (aiEnabled) {
+        suggest({ data: { inbox_id: item.id, now: new Date().toISOString() } })
+          .then(() => qc.invalidateQueries({ queryKey: ["inbox"] }))
+          .catch(() => {});
+      }
       return item;
     },
     onSuccess: () => {
@@ -80,21 +116,48 @@ function CapturePage() {
         </div>
       </header>
 
-      <div className="rounded-lg border bg-card p-3 flex gap-2">
-        <Input
-          placeholder="Capture anything, press Enter"
-          value={capture}
-          onChange={(e) => setCapture(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && capture.trim()) captureMut.mutate(capture.trim());
-          }}
-        />
-        <Button
-          onClick={() => capture.trim() && captureMut.mutate(capture.trim())}
-          disabled={!capture.trim() || captureMut.isPending}
-        >
-          Capture
-        </Button>
+      <div className="rounded-lg border bg-card p-3 space-y-2">
+        <div className="flex gap-2">
+          <Input
+            placeholder={aiEnabled ? "Capture anything, press Enter" : "Capture anything (no AI), press Enter"}
+            value={capture}
+            onChange={(e) => setCapture(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && capture.trim()) captureMut.mutate(capture.trim());
+            }}
+          />
+          <Button
+            onClick={() => capture.trim() && captureMut.mutate(capture.trim())}
+            disabled={!capture.trim() || captureMut.isPending}
+          >
+            Capture
+          </Button>
+        </div>
+        <div className="flex items-center justify-between gap-3 pt-1 px-0.5">
+          <label
+            htmlFor="capture-ai-toggle"
+            className="flex items-center gap-2 text-xs cursor-pointer select-none"
+          >
+            <SparklesIcon
+              className={`h-3.5 w-3.5 ${aiEnabled ? "text-primary" : "text-muted-foreground/60"}`}
+            />
+            <span className={aiEnabled ? "text-foreground font-medium" : "text-muted-foreground"}>
+              AI suggestions
+            </span>
+            <span className="text-muted-foreground">
+              {aiEnabled
+                ? "On · we'll suggest where each item belongs (uses credits)"
+                : "Off · items land as plain entries to file yourself (no credits)"}
+            </span>
+          </label>
+          <Switch
+            id="capture-ai-toggle"
+            checked={aiEnabled}
+            onCheckedChange={(v) => toggleAi.mutate(v)}
+            disabled={toggleAi.isPending}
+            aria-label="Toggle AI suggestions on Capture"
+          />
+        </div>
       </div>
 
       {isLoading ? (
