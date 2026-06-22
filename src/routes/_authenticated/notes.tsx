@@ -106,6 +106,33 @@ function NotesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
   const [moveNote, setMoveNote] = useState<Note | null>(null);
+  const [creatingInstant, setCreatingInstant] = useState(false);
+
+  const defaultBusinessId =
+    scope.kind === "folder"
+      ? scope.businessId
+      : scope.businessId ?? (activeId === ALL ? null : activeId);
+  const defaultFolderId = scope.kind === "folder" ? scope.folderId : null;
+
+  const handleInstantCreate = async () => {
+    if (creatingInstant) return;
+    setCreatingInstant(true);
+    try {
+      const n = await createNote({
+        business_id: defaultBusinessId,
+        folder_id: defaultFolderId,
+        title: "",
+        body: "",
+        note_type: "note",
+      });
+      await qc.invalidateQueries({ queryKey: ["notes"] });
+      setSelectedNoteId(n.id);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't create note");
+    } finally {
+      setCreatingInstant(false);
+    }
+  };
 
   // When active account changes, retarget smart scope
   useEffect(() => {
