@@ -93,6 +93,18 @@ export function ActivityAndComments({ parentType, parentId, businessId, activity
   const [draft, setDraft] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
+  // Private-first guard state: holds users mentioned in the current draft
+  // who lack access. Triggers an explicit-share prompt before posting.
+  const [missingShare, setMissingShare] = useState<Array<{ user_id: string; name: string | null }>>([]);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [posting, setPosting] = useState(false);
+
+  // Only task and note resources are share-targets that map cleanly to the
+  // ShareDialog. Events and meetings still allow comments + mentions but the
+  // private-first prompt for them tells the author to share the parent
+  // task/note context instead.
+  const shareResourceType: "task" | "note" | null =
+    parentType === "task" || parentType === "note" ? parentType : null;
 
   const addMut = useMutation({
     mutationFn: (body: string) =>
