@@ -307,6 +307,53 @@ function MeetingDetail() {
         defaultBusinessId={meeting.business_id}
         onConverted={() => qc.invalidateQueries({ queryKey: ["meeting-actions", meetingId] })}
       />
+
+      {/* Cost confirmation before invoking AI. */}
+      <Dialog open={confirmRunOpen} onOpenChange={(v) => !generateMut.isPending && setConfirmRunOpen(v)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Generate with AI?</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 text-sm text-foreground">
+            <p>
+              This is a heavy AI action: it{" "}
+              {meeting.audio_path && !meeting.transcript ? "transcribes the recording, then " : ""}
+              writes a summary, extracts decisions, and suggests action items.
+            </p>
+            <p className="text-muted-foreground">
+              <strong>Estimated cost:</strong> ~10 AI credits
+              {meeting.audio_path && !meeting.transcript ? " (plus transcription)" : ""}.
+            </p>
+            <p className="text-muted-foreground">
+              You'll review and edit everything before any tasks or decisions are saved.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setConfirmRunOpen(false)} disabled={generateMut.isPending}>
+              Cancel
+            </Button>
+            <Button onClick={() => generateMut.mutate()} disabled={generateMut.isPending} className="gap-2">
+              {generateMut.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              Run AI
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AIDraftDialog
+        open={draftOpen}
+        onOpenChange={(v) => {
+          if (!applyMut.isPending) {
+            setDraftOpen(v);
+            if (!v) setDraft(null);
+          }
+        }}
+        draft={draft}
+        setDraft={setDraft}
+        defaultBusinessId={meeting.business_id}
+        busy={applyMut.isPending}
+        onConfirm={() => draft && applyMut.mutate(draft)}
+      />
     </div>
   );
 }
