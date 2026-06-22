@@ -8,6 +8,29 @@ const ParentInput = z.object({
   parent_id: z.string().uuid(),
 });
 
+/** Extract unique mentioned user ids from a body containing @[Name](uuid) tokens. */
+function extractMentionIds(body: string): string[] {
+  const re = /@\[[^\]]+\]\(([0-9a-fA-F-]{36})\)/g;
+  const ids = new Set<string>();
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(body)) !== null) ids.add(m[1].toLowerCase());
+  return [...ids];
+}
+
+/** Structured error thrown when a comment mentions users without access. */
+export class MentionNeedsShareError extends Error {
+  code = "MENTION_NEEDS_SHARE" as const;
+  constructor(
+    public missing: Array<{ user_id: string; name: string | null }>,
+    public parent_type: string,
+    public parent_id: string,
+  ) {
+    super(
+      "Some mentioned people don't have access to this item. Share it first.",
+    );
+  }
+}
+
 export const listComments = createServerFn({ method: "POST" })
   .middleware([requireActiveUser])
   .inputValidator((i) => ParentInput.parse(i))
