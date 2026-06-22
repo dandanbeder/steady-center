@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Plus, Upload, Loader2, Trash2 } from "lucide-react";
+import { Plus, Upload, Loader2, Trash2, Video, Users } from "lucide-react";
+import { detectPlatformFromUrl, platformInfoFromId } from "@/lib/meeting-platform";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -103,7 +104,7 @@ function MeetingsPage() {
                         </span>
                       )}
                       <span>·</span>
-                      <span>{m.platform}</span>
+                      <PlatformBadge platform={m.platform} />
                       <span>·</span>
                       <span>{new Date(m.created_at).toLocaleString()}</span>
                     </div>
@@ -148,7 +149,8 @@ function NewMeetingDialog({
   const { data: businesses = [] } = useQuery({ queryKey: ["businesses"], queryFn: listBusinesses });
 
   const [title, setTitle] = useState("");
-  const [platform, setPlatform] = useState("other");
+  const [platform, setPlatform] = useState<"zoom" | "teams" | "meet" | "in_person" | "other">("other");
+  const [joinUrl, setJoinUrl] = useState("");
   const [businessId, setBusinessId] = useState<string | null>(defaultBusinessId);
   const [mode, setMode] = useState<"note" | "paste" | "audio">("note");
   const [transcript, setTranscript] = useState("");
@@ -156,9 +158,13 @@ function NewMeetingDialog({
   const [keepRecording, setKeepRecording] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  const detected = useMemo(() => detectPlatformFromUrl(joinUrl), [joinUrl]);
+  const hasValidLink = joinUrl.trim().length > 0 && /^https?:\/\//i.test(joinUrl.trim());
+
   const reset = () => {
     setTitle("");
     setPlatform("other");
+    setJoinUrl("");
     setBusinessId(defaultBusinessId);
     setMode("note");
     setTranscript("");
@@ -190,7 +196,9 @@ function NewMeetingDialog({
       const res = await process({
         data: {
           title: title.trim(),
-          platform,
+          // Server auto-detects from join_url when present; this is the manual fallback.
+          platform: hasValidLink ? detected.id : platform,
+          join_url: hasValidLink ? joinUrl.trim() : null,
           business_id: businessId,
           transcript: mode === "audio" ? undefined : transcript.trim() || undefined,
           audio_path,
@@ -225,37 +233,51 @@ function NewMeetingDialog({
               placeholder="e.g. Acme pricing call"
             />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <Label>Space</Label>
-              <Select
-                value={businessId ?? "_personal"}
-                onValueChange={(v) => setBusinessId(v === "_personal" ? null : v)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="_personal">Personal</SelectItem>
-                  {businesses.map((b) => (
-                    <SelectItem key={b.id} value={b.id}>
-                      {b.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {mode !== "note" && (
-              <div>
-                <Label>Platform</Label>
-                <Select value={platform} onValueChange={setPlatform}>
-                  <SelectTrigger>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
+          <div>
+            <Label>Space</Label>
+            <Select
+              value={businessId ?? "_personal"}
+              onValueChange={(v) => setBusinessId(v === "_personal" ? null : v)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_personal">Personal</SelectItem>
+                {businesses.map((b) => (
+                  <SelectItem key={b.id} value={b.id}>
+                    {b.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label>Join link <span className="text-muted-foreground font-normal">(optional)</span></Label>
+            <Input
+              value={joinUrl}
+              onChange={(e) => setJoinUrl(e.target.value)}
+              placeholder="Paste Zoom, Teams, or Google Meet link…"
+              inputMode="url"
+            />
+            {hasValidLink ? (
+              <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                <PlatformBadge platform={detected.id} />
+                <span>detected from link</span>
+              </div>
+            ) : (
+              <div className="mt-2">
+                <Label className="text-xs text-muted-foreground">No link — set platform manually</Label>
+                <Select
+                  value={platform}
+                  onValueChange={(v) => setPlatform(v as typeof platform)}
+                >
+                  <SelectTrigger className="h-9 mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="zoom">Zoom</SelectItem>
-                    <SelectItem value="teams">Microsoft Teams</SelectItem>
-                    <SelectItem value="meet">Google Meet</SelectItem>
                     <SelectItem value="in_person">In person</SelectItem>
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
@@ -263,6 +285,9 @@ function NewMeetingDialog({
               </div>
             )}
           </div>
+          </div>
+
+
 
           <Tabs value={mode} onValueChange={(v) => setMode(v as "note" | "paste" | "audio")}>
             <TabsList>
@@ -341,3 +366,16 @@ function NewMeetingDialog({
     </Dialog>
   );
 }
+
+function PlatformBadge({ platform }: { platform: string }) {
+  const info = platformInfoFromId(platform);
+  const Icon = info.icon === "video" ? Video : Users;
+  return (
+    <span className="inline-flex items-center gap-1">
+      <Icon className="h-3 w-3" />
+      {info.label}
+    </span>
+  );
+}
+
+

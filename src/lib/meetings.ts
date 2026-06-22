@@ -6,6 +6,7 @@ export type Meeting = {
   business_id: string | null;
   event_id: string | null;
   platform: string;
+  join_url: string | null;
   title: string;
   transcript: string;
   summary: string;

@@ -6,7 +6,9 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 const InputSchema = z.object({
   business_id: z.string().uuid().nullable(),
   event_id: z.string().uuid().nullable().optional(),
+  // Platform is auto-detected from join_url when present; manual fallback only.
   platform: z.string().min(1).max(40),
+  join_url: z.string().url().max(2000).nullable().optional(),
   title: z.string().min(1).max(200),
   transcript: z.string().max(200000).optional(),
   audio_path: z.string().max(500).optional(),
@@ -124,12 +126,10 @@ async function summarizeTranscript(transcript: string): Promise<z.infer<typeof S
   return SummarySchema.parse(JSON.parse(argsRaw));
 }
 
-function platformFromEvent(location: string | null, description: string | null): string {
-  const hay = `${location ?? ""}\n${description ?? ""}`.toLowerCase();
-  if (hay.includes("zoom.us")) return "zoom";
-  if (hay.includes("teams.microsoft.com") || hay.includes("teams.live.com")) return "teams";
-  if (hay.includes("meet.google.com")) return "meet";
-  if (location && !/https?:\/\//.test(location)) return "in_person";
+// Deprecated: platform is now derived from a join URL via detectPlatformFromUrl.
+// Kept as a fallback for events with no extractable URL (e.g. in-person bookings).
+function fallbackPlatformFromEvent(location: string | null): string {
+  if (location && !/https?:\/\//i.test(location)) return "in_person";
   return "other";
 }
 
@@ -171,7 +171,11 @@ export const createMeetingFromEvent = createServerFn({ method: "POST" })
     }
 
     const attendees = Array.isArray(ev.attendees) ? ev.attendees : [];
-    const platform = platformFromEvent(ev.location, ev.description);
+    const { extractJoinUrl, detectPlatformFromUrl } = await import("./meeting-platform");
+    const joinUrl = extractJoinUrl(ev.location, ev.description);
+    const platform = joinUrl
+      ? detectPlatformFromUrl(joinUrl).id
+      : fallbackPlatformFromEvent(ev.location);
 
     const { data: meeting, error: mErr } = await supabase
       .from("meetings")
@@ -180,6 +184,7 @@ export const createMeetingFromEvent = createServerFn({ method: "POST" })
         business_id: ev.business_id, // space mapped to the calendar
         event_id: ev.id,
         platform,
+        join_url: joinUrl,
         title: ev.title,
         transcript: "",
         summary: "",
@@ -208,13 +213,19 @@ export const processMeeting = createServerFn({ method: "POST" })
     let transcript = (data.transcript ?? "").trim();
     let storedAudioPath: string | null = data.audio_path ?? null;
 
+    // Auto-detect platform from the join URL when present; never trust client choice.
+    const { detectPlatformFromUrl } = await import("./meeting-platform");
+    const joinUrl = (data.join_url ?? "").trim() || null;
+    const resolvedPlatform = joinUrl ? detectPlatformFromUrl(joinUrl).id : data.platform;
+
     const { data: meeting, error: mErr } = await supabase
       .from("meetings")
       .insert({
         owner_id: userId,
         business_id: data.business_id,
         event_id: data.event_id ?? null,
-        platform: data.platform,
+        platform: resolvedPlatform,
+        join_url: joinUrl,
         title: data.title,
         transcript,
         summary: "",

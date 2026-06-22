@@ -3,8 +3,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ArrowLeft, Check, CheckCircle2, Loader2, Share2, Sparkles, Trash2 } from "lucide-react";
+import { ArrowLeft, Check, CheckCircle2, ExternalLink, Loader2, Share2, Sparkles, Trash2, Users, Video } from "lucide-react";
 import { ShareDialog } from "@/components/share-dialog";
+import { detectPlatformFromUrl, platformInfoFromId } from "@/lib/meeting-platform";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -168,7 +169,17 @@ function MeetingDetail() {
           </span>
         )}
         <span>·</span>
-        <span>{meeting.platform}</span>
+        {(() => {
+          const info = meeting.join_url
+            ? detectPlatformFromUrl(meeting.join_url)
+            : platformInfoFromId(meeting.platform);
+          const Icon = info.icon === "video" ? Video : Users;
+          return (
+            <span className="inline-flex items-center gap-1">
+              <Icon className="h-3 w-3" /> {info.label}
+            </span>
+          );
+        })()}
         <span>·</span>
         <span>
           {meeting.scheduled_at
@@ -178,9 +189,22 @@ function MeetingDetail() {
       </div>
       <div className="flex items-start justify-between gap-3 mb-4">
         <h1 className="text-2xl sm:text-3xl text-primary">{meeting.title}</h1>
-        <Button size="sm" variant="outline" onClick={() => setShareOpen(true)} className="gap-2 shrink-0">
-          <Share2 className="h-4 w-4" /> Share
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          {meeting.join_url && (
+            <a
+              href={meeting.join_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              <Video className="h-4 w-4" /> Join
+              <ExternalLink className="h-3.5 w-3.5 opacity-70" />
+            </a>
+          )}
+          <Button size="sm" variant="outline" onClick={() => setShareOpen(true)} className="gap-2">
+            <Share2 className="h-4 w-4" /> Share
+          </Button>
+        </div>
       </div>
 
       {meeting.attendees && meeting.attendees.length > 0 && (
