@@ -2,13 +2,15 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Mail } from "lucide-react";
 import { toast } from "sonner";
-import { listMyInvitations, requestAccess } from "@/lib/invitations.functions";
+import { useNavigate } from "@tanstack/react-router";
+import { acceptInvitation, listMyInvitations } from "@/lib/invitations.functions";
 import { Button } from "@/components/ui/button";
 
 export function MyInvitationsBanner() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const list = useServerFn(listMyInvitations);
-  const req = useServerFn(requestAccess);
+  const accept = useServerFn(acceptInvitation);
 
   const query = useQuery({
     queryKey: ["my-invitations"],
@@ -16,15 +18,17 @@ export function MyInvitationsBanner() {
   });
 
   const mut = useMutation({
-    mutationFn: (token: string) => req({ data: { token } }),
-    onSuccess: () => {
+    mutationFn: (token: string) => accept({ data: { token } }),
+    onSuccess: (r) => {
       qc.invalidateQueries({ queryKey: ["my-invitations"] });
-      toast.success("Access requested");
+      qc.invalidateQueries({ queryKey: ["memberships"] });
+      toast.success(r.status === "already_member" ? "You're already a member" : "Joined the team");
+      navigate({ to: "/today" });
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
 
-  const items = (query.data ?? []).filter((i) => !i.request_status);
+  const items = query.data ?? [];
   if (!items.length) return null;
 
   return (
@@ -33,7 +37,7 @@ export function MyInvitationsBanner() {
         <Mail className="h-5 w-5 text-primary mt-0.5 shrink-0" />
         <div className="flex-1 space-y-3">
           <div className="text-sm font-medium">
-            You've been invited to {items.length === 1 ? "an account" : `${items.length} accounts`}
+            You've been invited to {items.length === 1 ? "a team" : `${items.length} teams`}
           </div>
           <ul className="space-y-2">
             {items.map((i) => (
@@ -47,7 +51,7 @@ export function MyInvitationsBanner() {
                   onClick={() => mut.mutate(i.token)}
                   disabled={mut.isPending}
                 >
-                  Request access
+                  Accept & join
                 </Button>
               </li>
             ))}
