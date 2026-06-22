@@ -456,6 +456,7 @@ function NoteEditor({
   const [folderId, setFolderId] = useState<string | null>(note.folder_id);
   const [businessId, setBusinessId] = useState<string | null>(note.business_id);
   const [createTaskFor, setCreateTaskFor] = useState<string | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
 
   useEffect(() => {
     setTitle(note.title);
