@@ -258,6 +258,7 @@ type EventStub = {
   location?: string | null;
   start?: { dateTime?: string; date?: string };
   end?: { dateTime?: string; date?: string };
+  attendees?: Array<{ email?: string; displayName?: string; self?: boolean; responseStatus?: string }>;
 };
 
 // We accept any Supabase-like client (auth client from middleware, or admin).
