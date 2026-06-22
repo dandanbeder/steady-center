@@ -51,8 +51,8 @@ async function sendInviteEmail(opts: {
     heading: "You've been invited to Heartbeat",
     intro: `${opts.inviterName} invited you to join ${opts.businessName} as ${opts.role}.`,
     preheader: `Join ${opts.businessName} on Heartbeat`,
-    bodyHtml: `<p style="margin:0 0 12px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#6b6b6b">After you create your account, you'll be able to request access. ${escapeHtml(opts.inviterName)} will review and approve.</p>`,
-    ctaLabel: "Sign up & request access",
+    bodyHtml: `<p style="margin:0 0 12px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#6b6b6b">This invite was sent specifically to <strong>${escapeHtml(opts.to)}</strong>. Sign in with that email to accept and join the team. The link is single-use and expires in 7 days.</p>`,
+    ctaLabel: "Accept invite & join",
     ctaUrl: opts.acceptUrl,
     ctaNoteHtml: `Or open this link directly:<br/><a href="${opts.acceptUrl}" style="color:#7A8471;word-break:break-all">${opts.acceptUrl}</a>`,
   });
