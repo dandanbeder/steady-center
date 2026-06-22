@@ -19,7 +19,9 @@ import {
   ChevronRight,
   ChevronDown,
   Sparkles,
+  Share2,
 } from "lucide-react";
+import { ShareDialog } from "@/components/share-dialog";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { listBusinesses, type Business } from "@/lib/businesses";
