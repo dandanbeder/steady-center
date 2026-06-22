@@ -11,6 +11,8 @@ import heartbeatMono from "@/assets/heartbeat-mono.svg";
 import { useAuth } from "@/hooks/use-auth";
 import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
 import { useIsPlatformAdmin } from "@/hooks/use-is-platform-admin";
+import { useMyRole } from "@/hooks/use-my-role";
+
 import { listBusinesses } from "@/lib/businesses";
 import { AnnouncementBanner } from "@/components/announcement-banner";
 import { SupportSessionBanner } from "@/components/support-session-banner";
