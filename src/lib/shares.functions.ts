@@ -290,6 +290,146 @@ export const listSharedWithMeResources = createServerFn({ method: "GET" })
       .filter((x): x is SharedItemRow => x !== null);
   });
 
+/**
+ * Items where the current user has been @mentioned in a comment recently.
+ * Surfaces those in the "Shared with me" view even when no formal share row
+ * was created (e.g. a teammate mentioned them on a task they could already
+ * read via business membership). Only returns parent types that exist in the
+ * SharedItemRow surface (task, note); events/meetings are reachable via
+ * notifications instead.
+ *
+ * RLS is preserved: `list_my_mention_items` is SECURITY DEFINER but only
+ * returns rows where the caller is the mentioned_user_id, and the comment
+ * itself is already RLS-checked when read. We only return parents the
+ * caller can still read (membership / share / owner).
+ */
+export type MentionedItemRow = SharedItemRow & {
+  last_mentioned_at: string;
+  mentioned_by: string | null;
+  mentioned_by_name: string | null;
+};
+
+export const listMyMentionedItems = createServerFn({ method: "GET" })
+  .middleware([requireActiveUser])
+  .handler(async ({ context }): Promise<MentionedItemRow[]> => {
+    const { userId } = context;
+    const { data: mentions } = await supabaseAdmin.rpc("list_my_mention_items", {
+      p_days: 60,
+    });
+    const rows = (mentions ?? []) as Array<{
+      parent_type: string;
+      parent_id: string;
+      business_id: string | null;
+      last_mentioned_at: string;
+      last_mentioned_by: string | null;
+    }>;
+    if (rows.length === 0) return [];
+
+    // Confirm the caller still has access to each parent (defensive — they
+    // could have been removed from a business after the mention landed).
+    const taskIds = rows.filter((r) => r.parent_type === "task").map((r) => r.parent_id);
+    const noteIds = rows.filter((r) => r.parent_type === "note").map((r) => r.parent_id);
+
+    const [taskRes, noteRes] = await Promise.all([
+      taskIds.length
+        ? supabaseAdmin.from("tasks").select("id, title, owner_id, due_at, status, business_id").in("id", taskIds)
+        : Promise.resolve({ data: [] as Array<{ id: string; title: string; owner_id: string; due_at: string | null; status: string; business_id: string | null }> }),
+      noteIds.length
+        ? supabaseAdmin.from("notes").select("id, title, owner_id, business_id, note_type").in("id", noteIds)
+        : Promise.resolve({ data: [] as Array<{ id: string; title: string | null; owner_id: string; business_id: string | null; note_type: string | null }> }),
+    ]);
+
+    // Build access set: caller's active business memberships + explicit share grantees on these resources + owner.
+    const { data: mems } = await supabaseAdmin
+      .from("memberships")
+      .select("business_id")
+      .eq("user_id", userId)
+      .eq("status", "active");
+    const memberBizIds = new Set((mems ?? []).map((m) => m.business_id as string));
+
+    const allIds = [...taskIds, ...noteIds];
+    const { data: shareRows } = allIds.length
+      ? await supabaseAdmin
+          .from("shares")
+          .select("resource_type, resource_id")
+          .eq("grantee_user_id", userId)
+          .in("resource_id", allIds)
+      : { data: [] as Array<{ resource_type: string; resource_id: string }> };
+    const explicitShares = new Set(
+      (shareRows ?? []).map((s) => `${s.resource_type}:${s.resource_id}`),
+    );
+
+    const ownerIds = new Set<string>();
+    const mentionedByIds = new Set<string>();
+    for (const r of rows) if (r.last_mentioned_by) mentionedByIds.add(r.last_mentioned_by);
+    const allActors = [
+      ...new Set([
+        ...(taskRes.data ?? []).map((t) => t.owner_id),
+        ...(noteRes.data ?? []).map((n) => n.owner_id),
+        ...mentionedByIds,
+      ]),
+    ];
+    if (allActors.length) {
+      for (const t of taskRes.data ?? []) ownerIds.add(t.owner_id);
+      for (const n of noteRes.data ?? []) ownerIds.add(n.owner_id);
+    }
+    const { data: profs } = allActors.length
+      ? await supabaseAdmin.from("profiles").select("id, full_name").in("id", allActors)
+      : { data: [] as Array<{ id: string; full_name: string | null }> };
+    const nameById = new Map((profs ?? []).map((p) => [p.id, p.full_name as string | null]));
+
+    const taskById = new Map((taskRes.data ?? []).map((t) => [t.id, t]));
+    const noteById = new Map((noteRes.data ?? []).map((n) => [n.id, n]));
+
+    const out: MentionedItemRow[] = [];
+    for (const r of rows) {
+      const key = `${r.parent_type}:${r.parent_id}`;
+      let title = "";
+      let subtitle: string | null = null;
+      let owner_id = "";
+      let resource_type: ResourceType | null = null;
+      if (r.parent_type === "task") {
+        const t = taskById.get(r.parent_id);
+        if (!t) continue;
+        title = t.title;
+        subtitle = t.due_at ? `Due ${new Date(t.due_at).toLocaleDateString()}` : t.status;
+        owner_id = t.owner_id;
+        resource_type = "task";
+      } else if (r.parent_type === "note") {
+        const n = noteById.get(r.parent_id);
+        if (!n || n.note_type === "journal") continue;
+        title = n.title || "Untitled";
+        subtitle = "Note";
+        owner_id = n.owner_id;
+        resource_type = "note";
+      } else {
+        continue;
+      }
+      const hasAccess =
+        owner_id === userId
+        || (r.business_id && memberBizIds.has(r.business_id))
+        || explicitShares.has(key);
+      if (!hasAccess) continue;
+      out.push({
+        share_id: `mention:${r.parent_id}`,
+        resource_type,
+        resource_id: r.parent_id,
+        role: "commenter",
+        owner_id,
+        owner_name: nameById.get(owner_id) ?? null,
+        title,
+        subtitle,
+        created_at: r.last_mentioned_at,
+        last_mentioned_at: r.last_mentioned_at,
+        mentioned_by: r.last_mentioned_by,
+        mentioned_by_name: r.last_mentioned_by ? nameById.get(r.last_mentioned_by) ?? null : null,
+      });
+    }
+    return out.sort(
+      (a, b) => new Date(b.last_mentioned_at).getTime() - new Date(a.last_mentioned_at).getTime(),
+    );
+  });
+
 export const suggestShareTargets = createServerFn({ method: "POST" })
   .middleware([requireActiveUser])
   .inputValidator((d: { query?: string }) => d)
