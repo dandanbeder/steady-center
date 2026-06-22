@@ -4,7 +4,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { auditTeamAction } from "@/lib/team-admin.functions";
 
 
-export type ResourceType = "folder" | "list" | "task" | "note" | "calendar" | "business";
+export type ResourceType = "folder" | "list" | "task" | "note" | "calendar" | "business" | "meeting";
 export type ShareRole = "viewer" | "commenter" | "member" | "admin";
 
 type ResourceOwnerResp = { owner_id: string | null };
@@ -240,16 +240,18 @@ export const listSharedWithMeResources = createServerFn({ method: "GET" })
     const byType = {
       folder: [] as string[], list: [] as string[], task: [] as string[],
       note: [] as string[], calendar: [] as string[], business: [] as string[],
+      meeting: [] as string[],
     };
     for (const r of rows) byType[r.resource_type as ResourceType].push(r.resource_id as string);
 
-    const [folders, lists, tasks, notes, cals, bizes] = await Promise.all([
+    const [folders, lists, tasks, notes, cals, bizes, meetings] = await Promise.all([
       byType.folder.length ? supabaseAdmin.from("folders").select("id, name, owner_id").in("id", byType.folder) : Promise.resolve({ data: [] }),
       byType.list.length ? supabaseAdmin.from("lists").select("id, name, owner_id").in("id", byType.list) : Promise.resolve({ data: [] }),
       byType.task.length ? supabaseAdmin.from("tasks").select("id, title, owner_id, due_at, status").in("id", byType.task) : Promise.resolve({ data: [] }),
       byType.note.length ? supabaseAdmin.from("notes").select("id, title, owner_id").in("id", byType.note) : Promise.resolve({ data: [] }),
       byType.calendar.length ? supabaseAdmin.from("calendars").select("id, name, owner_id, color").in("id", byType.calendar) : Promise.resolve({ data: [] }),
       byType.business.length ? supabaseAdmin.from("businesses").select("id, name, owner_id").in("id", byType.business) : Promise.resolve({ data: [] }),
+      byType.meeting.length ? supabaseAdmin.from("meetings").select("id, title, owner_id, scheduled_at").in("id", byType.meeting) : Promise.resolve({ data: [] }),
     ]);
 
     type Item = { id: string; title: string; subtitle: string | null; owner_id: string };
@@ -260,6 +262,7 @@ export const listSharedWithMeResources = createServerFn({ method: "GET" })
       note: new Map((notes.data ?? []).map((x: any) => [x.id, { id: x.id, title: x.title || "Untitled", subtitle: "Note", owner_id: x.owner_id }])),
       calendar: new Map((cals.data ?? []).map((x: any) => [x.id, { id: x.id, title: x.name, subtitle: "Calendar", owner_id: x.owner_id }])),
       business: new Map((bizes.data ?? []).map((x: any) => [x.id, { id: x.id, title: x.name, subtitle: "Account", owner_id: x.owner_id }])),
+      meeting: new Map((meetings.data ?? []).map((x: any) => [x.id, { id: x.id, title: x.title || "Meeting", subtitle: x.scheduled_at ? `Meeting · ${new Date(x.scheduled_at).toLocaleDateString()}` : "Meeting", owner_id: x.owner_id }])),
     };
 
 
@@ -329,14 +332,18 @@ export const listMyMentionedItems = createServerFn({ method: "GET" })
     // could have been removed from a business after the mention landed).
     const taskIds = rows.filter((r) => r.parent_type === "task").map((r) => r.parent_id);
     const noteIds = rows.filter((r) => r.parent_type === "note").map((r) => r.parent_id);
+    const meetingIds = rows.filter((r) => r.parent_type === "meeting").map((r) => r.parent_id);
 
-    const [taskRes, noteRes] = await Promise.all([
+    const [taskRes, noteRes, meetingRes] = await Promise.all([
       taskIds.length
         ? supabaseAdmin.from("tasks").select("id, title, owner_id, due_at, status, business_id").in("id", taskIds)
         : Promise.resolve({ data: [] as Array<{ id: string; title: string; owner_id: string; due_at: string | null; status: string; business_id: string | null }> }),
       noteIds.length
         ? supabaseAdmin.from("notes").select("id, title, owner_id, business_id, note_type").in("id", noteIds)
         : Promise.resolve({ data: [] as Array<{ id: string; title: string | null; owner_id: string; business_id: string | null; note_type: string | null }> }),
+      meetingIds.length
+        ? supabaseAdmin.from("meetings").select("id, title, owner_id, business_id, scheduled_at").in("id", meetingIds)
+        : Promise.resolve({ data: [] as Array<{ id: string; title: string | null; owner_id: string; business_id: string | null; scheduled_at: string | null }> }),
     ]);
 
     // Build access set: caller's active business memberships + explicit share grantees on these resources + owner.
@@ -347,7 +354,7 @@ export const listMyMentionedItems = createServerFn({ method: "GET" })
       .eq("status", "active");
     const memberBizIds = new Set((mems ?? []).map((m) => m.business_id as string));
 
-    const allIds = [...taskIds, ...noteIds];
+    const allIds = [...taskIds, ...noteIds, ...meetingIds];
     const { data: shareRows } = allIds.length
       ? await supabaseAdmin
           .from("shares")
@@ -366,12 +373,14 @@ export const listMyMentionedItems = createServerFn({ method: "GET" })
       ...new Set([
         ...(taskRes.data ?? []).map((t) => t.owner_id),
         ...(noteRes.data ?? []).map((n) => n.owner_id),
+        ...(meetingRes.data ?? []).map((mtg) => mtg.owner_id),
         ...mentionedByIds,
       ]),
     ];
     if (allActors.length) {
       for (const t of taskRes.data ?? []) ownerIds.add(t.owner_id);
       for (const n of noteRes.data ?? []) ownerIds.add(n.owner_id);
+      for (const mtg of meetingRes.data ?? []) ownerIds.add(mtg.owner_id);
     }
     const { data: profs } = allActors.length
       ? await supabaseAdmin.from("profiles").select("id, full_name").in("id", allActors)
@@ -380,6 +389,7 @@ export const listMyMentionedItems = createServerFn({ method: "GET" })
 
     const taskById = new Map((taskRes.data ?? []).map((t) => [t.id, t]));
     const noteById = new Map((noteRes.data ?? []).map((n) => [n.id, n]));
+    const meetingById = new Map((meetingRes.data ?? []).map((mtg) => [mtg.id, mtg]));
 
     const out: MentionedItemRow[] = [];
     for (const r of rows) {
@@ -402,6 +412,15 @@ export const listMyMentionedItems = createServerFn({ method: "GET" })
         subtitle = "Note";
         owner_id = n.owner_id;
         resource_type = "note";
+      } else if (r.parent_type === "meeting") {
+        const mtg = meetingById.get(r.parent_id);
+        if (!mtg) continue;
+        title = mtg.title || "Meeting";
+        subtitle = mtg.scheduled_at
+          ? `Meeting · ${new Date(mtg.scheduled_at).toLocaleDateString()}`
+          : "Meeting";
+        owner_id = mtg.owner_id;
+        resource_type = "meeting";
       } else {
         continue;
       }

@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState, useMemo } from "react";
 import {
   Building2, Folder, ListTodo, FileText, Calendar as CalendarIcon, CheckSquare,
-  Trash2, Plus, ShieldOff, Loader2,
+  Trash2, Plus, ShieldOff, Loader2, Video,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -43,7 +43,7 @@ export const Route = createFileRoute("/_authenticated/team-access")({
 const ROLES: ShareRole[] = ["viewer", "commenter", "member", "admin"];
 const TYPE_ICON: Record<ResourceType, typeof Folder> = {
   folder: Folder, list: ListTodo, task: CheckSquare, note: FileText,
-  calendar: CalendarIcon, business: Building2,
+  calendar: CalendarIcon, business: Building2, meeting: Video,
 };
 
 function TeamAccessPage() {

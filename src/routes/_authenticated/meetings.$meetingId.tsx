@@ -3,7 +3,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ArrowLeft, Check, CheckCircle2, Loader2, Sparkles, Trash2 } from "lucide-react";
+import { ArrowLeft, Check, CheckCircle2, Loader2, Share2, Sparkles, Trash2 } from "lucide-react";
+import { ShareDialog } from "@/components/share-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { listBusinesses } from "@/lib/businesses";
+import { listOutcomes, type Outcome } from "@/lib/outcomes";
 import { listFolders, listLists } from "@/lib/tasks";
 import {
   getMeeting,
@@ -64,6 +66,11 @@ function MeetingDetail() {
     queryKey: ["meeting-decisions", meetingId],
     queryFn: () => listMeetingDecisions(meetingId),
   });
+  const { data: outcomes = [] } = useQuery({
+    queryKey: ["outcomes-for-meeting"],
+    queryFn: () => listOutcomes(null),
+  });
+  const outcomeById = new Map<string, Outcome>(outcomes.map((o) => [o.id, o]));
 
   const toggleDone = useMutation({
     mutationFn: ({ id, done }: { id: string; done: boolean }) => setActionItemDone(id, done),
@@ -86,6 +93,7 @@ function MeetingDetail() {
   const [confirmRunOpen, setConfirmRunOpen] = useState(false);
   const [draftOpen, setDraftOpen] = useState(false);
   const [draft, setDraft] = useState<AIDraft | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
   const generate = useServerFn(generateMeetingDraft);
   const apply = useServerFn(applyMeetingDraft);
   const generateMut = useMutation({
@@ -168,7 +176,12 @@ function MeetingDetail() {
             : new Date(meeting.created_at).toLocaleString()}
         </span>
       </div>
-      <h1 className="text-2xl sm:text-3xl text-primary mb-4">{meeting.title}</h1>
+      <div className="flex items-start justify-between gap-3 mb-4">
+        <h1 className="text-2xl sm:text-3xl text-primary">{meeting.title}</h1>
+        <Button size="sm" variant="outline" onClick={() => setShareOpen(true)} className="gap-2 shrink-0">
+          <Share2 className="h-4 w-4" /> Share
+        </Button>
+      </div>
 
       {meeting.attendees && meeting.attendees.length > 0 && (
         <div className="mb-6 rounded-lg border border-border bg-card px-4 py-3">
@@ -244,7 +257,12 @@ function MeetingDetail() {
                 <span className="flex-1">
                   {d.text}
                   {d.outcome_id && (
-                    <span className="ml-2 text-xs text-primary">→ linked to outcome</span>
+                    <Link
+                      to="/outcomes"
+                      className="ml-2 text-xs text-primary hover:underline"
+                    >
+                      → {outcomeById.get(d.outcome_id)?.name ?? "linked outcome"}
+                    </Link>
                   )}
                 </span>
               </li>
@@ -316,6 +334,14 @@ function MeetingDetail() {
         />
       </section>
 
+
+      <ShareDialog
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        resourceType="meeting"
+        resourceId={meeting.id}
+        resourceName={meeting.title}
+      />
 
       <ConvertDialog
         item={convertItem}
