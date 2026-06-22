@@ -1777,6 +1777,7 @@ export type Database = {
           decisions: Json
           event_id: string | null
           id: string
+          join_url: string | null
           keep_recording: boolean
           owner_id: string
           platform: string
@@ -1794,6 +1795,7 @@ export type Database = {
           decisions?: Json
           event_id?: string | null
           id?: string
+          join_url?: string | null
           keep_recording?: boolean
           owner_id: string
           platform?: string
@@ -1811,6 +1813,7 @@ export type Database = {
           decisions?: Json
           event_id?: string | null
           id?: string
+          join_url?: string | null
           keep_recording?: boolean
           owner_id?: string
           platform?: string
