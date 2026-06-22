@@ -185,10 +185,8 @@ function NewMeetingDialog({
       if (mode === "audio" && audioFile) {
         toast.info("Uploading audio…");
         audio_path = await uploadMeetingAudio(audioFile);
-        toast.info("Transcribing and summarising…");
-      } else if (mode === "paste") {
-        toast.info("Summarising…");
       }
+      // Save only — AI is invoked manually from the meeting page.
       const res = await process({
         data: {
           title: title.trim(),
@@ -197,18 +195,10 @@ function NewMeetingDialog({
           transcript: mode === "audio" ? undefined : transcript.trim() || undefined,
           audio_path,
           keep_recording: mode === "audio" ? keepRecording : false,
-          mode: mode === "note" ? "note" : "summarize",
+          mode: "note",
         },
       });
-      if (res.ai_error) {
-        // AI step failed — meeting was still saved.
-        const msg = /credit|402/i.test(res.ai_error)
-          ? "Couldn't summarise — out of AI credits. Your note was saved."
-          : `Couldn't summarise — ${res.ai_error}. Your note was saved.`;
-        toast.warning(msg);
-      } else {
-        toast.success("Meeting saved");
-      }
+      toast.success("Meeting saved");
       qc.invalidateQueries({ queryKey: ["meetings"] });
       onOpenChange(false);
       reset();
