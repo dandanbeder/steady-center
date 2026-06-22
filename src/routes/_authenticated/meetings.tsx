@@ -285,6 +285,9 @@ function NewMeetingDialog({
               </div>
             )}
           </div>
+          </div>
+
+
 
           <Tabs value={mode} onValueChange={(v) => setMode(v as "note" | "paste" | "audio")}>
             <TabsList>
