@@ -234,36 +234,50 @@ function NewMeetingDialog({
             />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <Label>Space</Label>
-              <Select
-                value={businessId ?? "_personal"}
-                onValueChange={(v) => setBusinessId(v === "_personal" ? null : v)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="_personal">Personal</SelectItem>
-                  {businesses.map((b) => (
-                    <SelectItem key={b.id} value={b.id}>
-                      {b.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {mode !== "note" && (
-              <div>
-                <Label>Platform</Label>
-                <Select value={platform} onValueChange={setPlatform}>
-                  <SelectTrigger>
+          <div>
+            <Label>Space</Label>
+            <Select
+              value={businessId ?? "_personal"}
+              onValueChange={(v) => setBusinessId(v === "_personal" ? null : v)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_personal">Personal</SelectItem>
+                {businesses.map((b) => (
+                  <SelectItem key={b.id} value={b.id}>
+                    {b.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label>Join link <span className="text-muted-foreground font-normal">(optional)</span></Label>
+            <Input
+              value={joinUrl}
+              onChange={(e) => setJoinUrl(e.target.value)}
+              placeholder="Paste Zoom, Teams, or Google Meet link…"
+              inputMode="url"
+            />
+            {hasValidLink ? (
+              <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                <PlatformBadge platform={detected.id} />
+                <span>detected from link</span>
+              </div>
+            ) : (
+              <div className="mt-2">
+                <Label className="text-xs text-muted-foreground">No link — set platform manually</Label>
+                <Select
+                  value={platform}
+                  onValueChange={(v) => setPlatform(v as typeof platform)}
+                >
+                  <SelectTrigger className="h-9 mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="zoom">Zoom</SelectItem>
-                    <SelectItem value="teams">Microsoft Teams</SelectItem>
-                    <SelectItem value="meet">Google Meet</SelectItem>
                     <SelectItem value="in_person">In person</SelectItem>
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
