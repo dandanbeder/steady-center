@@ -29,6 +29,7 @@ import {
   restoreNote,
   pinNote,
   type Note,
+  createNote,
 } from "@/lib/notes";
 import { showUndoToast } from "@/lib/undo-toast";
 import { NOTE_TYPES, type NoteType } from "@/lib/note-templates";
