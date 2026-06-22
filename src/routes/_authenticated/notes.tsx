@@ -258,9 +258,39 @@ function NotesPage() {
                 ))}
               </div>
             </div>
-            <Button size="sm" onClick={() => setDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-1" /> New
-            </Button>
+            <div className="inline-flex rounded-md shadow-sm">
+              <Button
+                size="sm"
+                className="rounded-r-none"
+                onClick={handleInstantCreate}
+                disabled={creatingInstant}
+                title="Start writing immediately"
+              >
+                <Plus className="h-4 w-4 mr-1" /> New
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    size="sm"
+                    className="rounded-l-none border-l border-primary-foreground/20 px-1.5"
+                    aria-label="More create options"
+                  >
+                    <ChevronDown className="h-3.5 w-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem onClick={handleInstantCreate}>
+                    <Plus className="h-3.5 w-3.5 mr-2" />
+                    Blank note
+                    <span className="ml-auto text-[10px] text-muted-foreground">Default</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setDialogOpen(true)}>
+                    <Sparkles className="h-3.5 w-3.5 mr-2" />
+                    Guided setup…
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </div>
         <div className="p-2 space-y-1">
