@@ -33,6 +33,7 @@ import {
   switchBillingCycle,
   updateSeats,
 } from "@/lib/subscriptions.functions";
+import { PRICING } from "@/lib/entitlements";
 import { getTrialEligibility, startFreeTrial } from "@/lib/trial.functions";
 import {
   AlertDialog,
