@@ -61,7 +61,6 @@ function JournalPage() {
     queryKey: ["journal-meta"],
     queryFn: listJournalMeta,
   });
-  const prefillFn = useServerFn(journalPrefillToday);
   const statusFn = useServerFn(getJournalLockStatus);
 
   const { data: lockStatus } = useQuery({
@@ -73,7 +72,6 @@ function JournalPage() {
     () => typeof window !== "undefined" && sessionStorage.getItem(UNLOCK_KEY) === "1",
   );
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [reflectOpen, setReflectOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [sidebarTab, setSidebarTab] = useState<"list" | "calendar">("list");
 
