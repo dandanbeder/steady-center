@@ -249,21 +249,83 @@ export function ActivityAndComments({ parentType, parentId, businessId, activity
               value={draft}
               onChange={setDraft}
               candidates={candidates as MentionCandidate[]}
-              disabled={addMut.isPending}
-              onSubmit={() => draft.trim() && addMut.mutate(draft.trim())}
+              disabled={addMut.isPending || posting}
+              onSubmit={handlePost}
             />
             <div className="flex justify-end">
               <Button
                 size="sm"
-                onClick={() => draft.trim() && addMut.mutate(draft.trim())}
-                disabled={!draft.trim() || addMut.isPending}
+                onClick={handlePost}
+                disabled={!draft.trim() || addMut.isPending || posting}
               >
-                {addMut.isPending ? "Posting…" : "Post"}
+                {addMut.isPending || posting ? "Posting…" : "Post"}
               </Button>
             </div>
           </>
         )}
       </div>
+
+      {/* Private-first guard prompt: explicit share required before mentioning. */}
+      <AlertDialog
+        open={missingShare.length > 0}
+        onOpenChange={(o) => { if (!o) setMissingShare([]); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Share this {parentType} first?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {missingShare.length === 1
+                ? `${missingShare[0].name ?? "This person"} doesn't have access to this ${parentType} yet.`
+                : `${missingShare.length} people you mentioned don't have access to this ${parentType} yet.`}
+              {" "}
+              Heartbeat won't silently share private work — grant access explicitly to continue.
+              {shareResourceType === null && (
+                <span className="block mt-2">
+                  This item can't be shared directly. Remove the mention or share the parent
+                  task / note instead.
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Remove mentions</AlertDialogCancel>
+            {shareResourceType && (
+              <AlertDialogAction onClick={() => { setShareOpen(true); }}>
+                Open sharing…
+              </AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {shareResourceType && shareOpen && (
+        <ShareDialog
+          open={shareOpen}
+          onOpenChange={(o) => {
+            setShareOpen(o);
+            if (!o) {
+              // After the user closes the share dialog, re-check access in
+              // case they granted everyone we flagged. If clean, auto-post.
+              setMissingShare([]);
+              const body = draft.trim();
+              if (body) {
+                checkAccess({ data: { parent_type: parentType, parent_id: parentId, body } })
+                  .then(({ missing }) => {
+                    if (missing.length) {
+                      setMissingShare(missing);
+                    } else {
+                      addMut.mutate(body);
+                    }
+                  })
+                  .catch(() => {});
+              }
+            }
+          }}
+          resourceType={shareResourceType}
+          resourceId={parentId}
+          resourceName={`this ${parentType}`}
+        />
+      )}
     </div>
   );
 }
