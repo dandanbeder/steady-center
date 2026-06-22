@@ -472,9 +472,11 @@ function JournalPage() {
         ) : (
           <div className="h-full flex flex-col items-center justify-center text-center px-8 max-w-md mx-auto">
             <BookOpen className="h-12 w-12 text-muted-foreground/40 mb-3" />
+          <div className="h-full flex flex-col items-center justify-center text-center px-8 max-w-md mx-auto">
+            <BookOpen className="h-12 w-12 text-muted-foreground/40 mb-3" />
             <p className="text-sm text-muted-foreground">
-              A gentle place for daily reflection. Use the buttons on the left to start when you're
-              ready.
+              This is yours. Write a line, or just sit with a prompt — whenever you&apos;re ready.
+              Nothing here is shared, and there&apos;s no streak to keep.
             </p>
           </div>
         )}
@@ -486,7 +488,6 @@ function JournalPage() {
         enabled={Boolean(lockStatus?.enabled)}
         onChanged={() => qc.invalidateQueries({ queryKey: ["journal-lock"] })}
       />
-      <ReflectionDialog open={reflectOpen} onOpenChange={setReflectOpen} />
     </div>
   );
 }
