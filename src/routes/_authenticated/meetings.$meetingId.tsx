@@ -70,7 +70,7 @@ function MeetingDetail() {
     queryKey: ["outcomes-for-meeting"],
     queryFn: () => listOutcomes(null),
   });
-  const outcomeById = new Map(outcomes.map((o) => [o.id, o]));
+  const outcomeById = new Map<string, Outcome>(outcomes.map((o) => [o.id, o]));
 
   const toggleDone = useMutation({
     mutationFn: ({ id, done }: { id: string; done: boolean }) => setActionItemDone(id, done),
