@@ -257,7 +257,12 @@ function MeetingDetail() {
                 <span className="flex-1">
                   {d.text}
                   {d.outcome_id && (
-                    <span className="ml-2 text-xs text-primary">→ linked to outcome</span>
+                    <Link
+                      to="/outcomes"
+                      className="ml-2 text-xs text-primary hover:underline"
+                    >
+                      → {outcomeById.get(d.outcome_id)?.title ?? "linked outcome"}
+                    </Link>
                   )}
                 </span>
               </li>
