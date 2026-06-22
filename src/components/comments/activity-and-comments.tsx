@@ -59,6 +59,7 @@ export function ActivityAndComments({ parentType, parentId, businessId, activity
 
   const list = useServerFn(listComments);
   const suggest = useServerFn(suggestMentionTargets);
+  const checkAccess = useServerFn(checkMentionAccess);
   const add = useServerFn(addComment);
   const edit = useServerFn(editComment);
   const del = useServerFn(deleteComment);
