@@ -126,12 +126,10 @@ async function summarizeTranscript(transcript: string): Promise<z.infer<typeof S
   return SummarySchema.parse(JSON.parse(argsRaw));
 }
 
-function platformFromEvent(location: string | null, description: string | null): string {
-  const hay = `${location ?? ""}\n${description ?? ""}`.toLowerCase();
-  if (hay.includes("zoom.us")) return "zoom";
-  if (hay.includes("teams.microsoft.com") || hay.includes("teams.live.com")) return "teams";
-  if (hay.includes("meet.google.com")) return "meet";
-  if (location && !/https?:\/\//.test(location)) return "in_person";
+// Deprecated: platform is now derived from a join URL via detectPlatformFromUrl.
+// Kept as a fallback for events with no extractable URL (e.g. in-person bookings).
+function fallbackPlatformFromEvent(location: string | null): string {
+  if (location && !/https?:\/\//i.test(location)) return "in_person";
   return "other";
 }
 
