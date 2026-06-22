@@ -618,6 +618,27 @@ function KittyPanel({
           )}
         </CardContent>
       </Card>
+
+      {(sharedOpen || personalOpen) && (
+        <Suspense fallback={null}>
+          {sharedOpen && (
+            <TopUpDialog
+              mode="shared"
+              open={sharedOpen}
+              onOpenChange={setSharedOpen}
+              successUrl={`${typeof window !== "undefined" ? window.location.origin : ""}/team-admin?topup=success&pool=shared`}
+            />
+          )}
+          {personalOpen && (
+            <TopUpDialog
+              mode="personal"
+              open={personalOpen}
+              onOpenChange={setPersonalOpen}
+              successUrl={`${typeof window !== "undefined" ? window.location.origin : ""}/team-admin?topup=success&pool=personal`}
+            />
+          )}
+        </Suspense>
+      )}
     </div>
   );
 }
