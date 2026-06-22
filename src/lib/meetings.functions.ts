@@ -6,7 +6,9 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 const InputSchema = z.object({
   business_id: z.string().uuid().nullable(),
   event_id: z.string().uuid().nullable().optional(),
+  // Platform is auto-detected from join_url when present; manual fallback only.
   platform: z.string().min(1).max(40),
+  join_url: z.string().url().max(2000).nullable().optional(),
   title: z.string().min(1).max(200),
   transcript: z.string().max(200000).optional(),
   audio_path: z.string().max(500).optional(),
