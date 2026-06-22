@@ -3,8 +3,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ArrowLeft, Check, CheckCircle2, Loader2, Share2, Sparkles, Trash2 } from "lucide-react";
+import { ArrowLeft, Check, CheckCircle2, ExternalLink, Loader2, Share2, Sparkles, Trash2, Users, Video } from "lucide-react";
 import { ShareDialog } from "@/components/share-dialog";
+import { detectPlatformFromUrl, platformInfoFromId } from "@/lib/meeting-platform";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
