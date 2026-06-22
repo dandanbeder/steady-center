@@ -235,7 +235,7 @@ function TeamAdminBody({ businessId }: { businessId: string }) {
         </TabsContent>
 
         <TabsContent value="kitty" className="mt-4">
-          <KittyPanel businessId={businessId} />
+          <KittyPanel businessId={businessId} callerIsOwner={my.role === "owner"} />
         </TabsContent>
 
         <TabsContent value="shared" className="mt-4">
