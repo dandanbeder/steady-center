@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import type { Json } from "@/integrations/supabase/types";
+
 
 const ALL_ROLES = ["owner", "admin", "member", "commenter", "viewer"] as const;
 type Role = (typeof ALL_ROLES)[number];
