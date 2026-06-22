@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState, useMemo } from "react";
 import {
   Building2, Folder, ListTodo, FileText, Calendar as CalendarIcon, CheckSquare,
-  Trash2, Plus, ShieldOff, Loader2,
+  Trash2, Plus, ShieldOff, Loader2, Video,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
