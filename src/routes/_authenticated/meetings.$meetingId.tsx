@@ -3,7 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ArrowLeft, Check, CheckCircle2, Loader2, Trash2 } from "lucide-react";
+import { ArrowLeft, Check, CheckCircle2, Loader2, Sparkles, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -25,13 +25,16 @@ import { listFolders, listLists } from "@/lib/tasks";
 import {
   getMeeting,
   listActionItems,
+  listMeetingDecisions,
   setActionItemDone,
   linkActionItemTask,
   type ActionItem,
 } from "@/lib/meetings";
+import { generateMeetingDraft, applyMeetingDraft } from "@/lib/meetings.functions";
 import { deleteMeetingRecording } from "@/lib/account.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { ActivityAndComments } from "@/components/comments/activity-and-comments";
+import { AIDraftDialog, newDraftFrom, type AIDraft } from "@/components/meetings/ai-draft-dialog";
 
 
 import { UpgradeGate } from "@/components/upgrade-gate";
