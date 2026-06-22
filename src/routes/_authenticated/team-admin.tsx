@@ -465,11 +465,19 @@ function TransferOwnershipCard({ businessId }: { businessId: string }) {
   );
 }
 
-function KittyPanel({ businessId }: { businessId: string }) {
+function KittyPanel({
+  businessId,
+  callerIsOwner,
+}: {
+  businessId: string;
+  callerIsOwner: boolean;
+}) {
   const { data, isLoading, error } = useQuery({
     queryKey: ["team-kitty-usage", businessId],
     queryFn: () => getTeamKittyUsage({ data: { business_id: businessId } }),
   });
+  const [sharedOpen, setSharedOpen] = useState(false);
+  const [personalOpen, setPersonalOpen] = useState(false);
 
   if (isLoading) return <div className="text-sm text-muted-foreground p-4">Loading…</div>;
   if (error) return <div className="text-sm text-destructive p-4">{(error as Error).message}</div>;
