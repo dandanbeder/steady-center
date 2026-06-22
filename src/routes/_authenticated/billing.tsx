@@ -33,6 +33,7 @@ import {
   switchBillingCycle,
   updateSeats,
 } from "@/lib/subscriptions.functions";
+import { PRICING } from "@/lib/entitlements";
 import { getTrialEligibility, startFreeTrial } from "@/lib/trial.functions";
 import {
   AlertDialog,
@@ -315,6 +316,34 @@ function BillingPage() {
               <p className="text-xs text-muted-foreground">
                 Adding a seat charges a prorated amount immediately. Removing a seat applies credit at your next renewal.
               </p>
+
+              {/* Transparent per-seat breakdown — display only, never auto-charges members */}
+              {(() => {
+                const seats = subscription.quantity ?? 2;
+                const perSeatCents =
+                  cycle === "year" ? PRICING.team_yearly.amount : PRICING.team_monthly.amount;
+                const totalCents = perSeatCents * seats;
+                const fmt = (c: number) =>
+                  `$${(c / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                const cycleLabel = cycle === "year" ? "/yr" : "/mo";
+                return (
+                  <div className="rounded-lg border border-dashed bg-muted/20 p-4 space-y-2">
+                    <div className="text-sm font-medium">Per-seat breakdown</div>
+                    <div className="text-sm tabular-nums">
+                      {fmt(perSeatCents)}{cycleLabel} × {seats} seats ={" "}
+                      <span className="font-semibold">{fmt(totalCents)}{cycleLabel}</span>
+                    </div>
+                    <div className="text-sm text-muted-foreground tabular-nums">
+                      That's <span className="font-medium text-foreground">{fmt(totalCents / seats)}{cycleLabel}</span> each
+                      if your team splits the bill.
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      You're billed once for the full team total. Heartbeat never charges your members directly —
+                      settle among yourselves however you like.
+                    </p>
+                  </div>
+                );
+              })()}
             </CardContent>
           </Card>
         )}
