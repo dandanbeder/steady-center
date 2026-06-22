@@ -169,6 +169,7 @@ function TeamAdminBody({ businessId }: { businessId: string }) {
         <TabsList>
           <TabsTrigger value="roster">Roster & roles</TabsTrigger>
           <TabsTrigger value="seats">Seats & billing</TabsTrigger>
+          <TabsTrigger value="kitty">AI kitty</TabsTrigger>
           <TabsTrigger value="shared">Shared resources</TabsTrigger>
           <TabsTrigger value="activity">Activity log</TabsTrigger>
           {isOwner && <TabsTrigger value="danger">Ownership</TabsTrigger>}
