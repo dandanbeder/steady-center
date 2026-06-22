@@ -460,3 +460,106 @@ function TransferOwnershipCard({ businessId }: { businessId: string }) {
     </Card>
   );
 }
+
+function KittyPanel({ businessId }: { businessId: string }) {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["team-kitty-usage", businessId],
+    queryFn: () => getTeamKittyUsage({ data: { business_id: businessId } }),
+  });
+
+  if (isLoading) return <div className="text-sm text-muted-foreground p-4">Loading…</div>;
+  if (error) return <div className="text-sm text-destructive p-4">{(error as Error).message}</div>;
+  if (!data) return null;
+
+  const { pool, members } = data;
+  const usedPct = pool.allowance > 0 ? Math.min(100, Math.round((pool.used * 100) / pool.allowance)) : 0;
+  const cycleEnd = pool.cycle_end ? new Date(pool.cycle_end).toLocaleDateString() : "—";
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4" /> Team AI kitty
+          </CardTitle>
+          <CardDescription>
+            Pooled allowance ({pool.allowance.toLocaleString()} credits = 400 × {pool.paid_seats} paid
+            seats) shared by the whole team. Refills on the owner's billing date — does not roll over.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          <div className="space-y-1">
+            <div className="flex justify-between tabular-nums">
+              <span>
+                Used <strong>{pool.used.toLocaleString()}</strong> of{" "}
+                <strong>{pool.allowance.toLocaleString()}</strong>
+              </span>
+              <span className="text-muted-foreground">{usedPct}%</span>
+            </div>
+            <Progress value={usedPct} />
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <Row label="Remaining">{pool.balance.toLocaleString()}</Row>
+            <Row label="Top-ups available">{pool.purchased.toLocaleString()}</Row>
+            <Row label="Renews">{cycleEnd}</Row>
+            <Row label="Status">
+              {pool.hard_stopped ? (
+                <Badge variant="destructive">AI paused</Badge>
+              ) : pool.paused ? (
+                <Badge variant="outline">Top-ups paused</Badge>
+              ) : (
+                <Badge variant="secondary">Active</Badge>
+              )}
+            </Row>
+          </div>
+          {pool.hard_stopped && (
+            <p className="text-xs text-destructive">
+              The kitty is empty. Team-wide included AI is paused until the next cycle or a top-up.
+              Non-AI features are unaffected.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Per-member usage this cycle</CardTitle>
+          <CardDescription>
+            Credits each member has drawn from the shared kitty. Members flagged when they've used
+            more than 2× their fair share. This view shows usage only — never anyone's private
+            content.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {members.length === 0 ? (
+            <div className="text-sm text-muted-foreground">No AI activity this cycle yet.</div>
+          ) : (
+            <div className="divide-y">
+              {members.map((m) => (
+                <div key={m.user_id} className="flex items-center justify-between py-2 gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-medium truncate flex items-center gap-2">
+                      {m.display_name ?? "Unknown member"}
+                      {m.flagged && (
+                        <Badge variant="destructive" className="gap-1">
+                          <AlertTriangle className="h-3 w-3" /> heavy use
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="text-xs text-muted-foreground capitalize">{m.role}</div>
+                  </div>
+                  <div className="text-right tabular-nums shrink-0">
+                    <div className="text-sm font-medium">{m.credits_used.toLocaleString()} cr</div>
+                    <div className="text-xs text-muted-foreground">
+                      {m.share_pct}% of pool · {m.actions} actions
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
