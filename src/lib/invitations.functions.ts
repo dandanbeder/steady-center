@@ -141,7 +141,7 @@ export const inviteByEmail = createServerFn({ method: "POST" })
           .from("invitations")
           .update({
             proposed_role: data.role,
-            expires_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
           })
           .eq("id", existingInv.id);
       } else {
@@ -232,7 +232,7 @@ export const resendInvitation = createServerFn({ method: "POST" })
     if (inv.status !== "sent") throw new Error("Invitation is not active.");
     await requireAdmin(inv.business_id, userId);
 
-    const newExpiry = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+    const newExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
     await supabaseAdmin
       .from("invitations")
       .update({ expires_at: newExpiry })
