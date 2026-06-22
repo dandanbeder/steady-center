@@ -191,6 +191,7 @@ export async function runMicrosoftSyncForCalendar(
             start_at: norm.start_at,
             end_at: norm.end_at,
             all_day: norm.all_day,
+            attendees: norm.attendees,
           })
           .eq("id", found.id);
         if (!error) updated++;
@@ -205,6 +206,7 @@ export async function runMicrosoftSyncForCalendar(
           start_at: norm.start_at,
           end_at: norm.end_at,
           all_day: norm.all_day,
+          attendees: norm.attendees,
           source: "microsoft",
           external_id: ev.id,
         });
