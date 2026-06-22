@@ -17,6 +17,8 @@ import {
   ArrowRightLeft,
   Menu,
   ChevronRight,
+  ChevronDown,
+  Sparkles,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
