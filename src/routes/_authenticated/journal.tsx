@@ -112,29 +112,22 @@ function JournalPage() {
   );
   const selected = entries.find((e) => e.id === selectedId) ?? null;
 
-  const startToday = async (opts: { prefill?: boolean; body?: string; titleHint?: string }) => {
+  const startToday = async (opts: { body?: string; titleHint?: string }) => {
     try {
-      let body =
+      const body =
         opts.body ??
         `# ${format(today, "EEEE, MMMM d")}\n\n## What happened today\n- \n\n## What I'm noticing\n- \n\n## What I want tomorrow\n- \n`;
-      if (opts.prefill) {
-        toast.loading("Drafting from today's activity…", { id: "jp" });
-        const res = await prefillFn({ data: {} });
-        body = res.markdown;
-        toast.dismiss("jp");
-      }
       const note = await createNote({
         business_id: null,
         folder_id: null,
         title: opts.titleHint ?? format(today, "MMM d, yyyy"),
         body,
         note_type: "journal",
-        source: opts.prefill ? "journal-prefill" : "journal",
+        source: "journal",
       });
       qc.invalidateQueries({ queryKey: ["notes"] });
       setSelectedId(note.id);
     } catch (e) {
-      toast.dismiss("jp");
       toast.error(e instanceof Error ? e.message : "Failed");
     }
   };
