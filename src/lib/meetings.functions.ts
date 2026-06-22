@@ -11,6 +11,8 @@ const InputSchema = z.object({
   transcript: z.string().max(200000).optional(),
   audio_path: z.string().max(500).optional(),
   keep_recording: z.boolean().optional().default(false),
+  // 'note' = manual note, no AI step. 'summarize' = run summary (and transcription if audio_path).
+  mode: z.enum(["note", "summarize"]).optional().default("summarize"),
 });
 
 const SummarySchema = z.object({
