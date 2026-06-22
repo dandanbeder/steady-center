@@ -38,6 +38,7 @@ import { deleteMeetingRecording } from "@/lib/account.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { ActivityAndComments } from "@/components/comments/activity-and-comments";
 import { AIDraftDialog, newDraftFrom, type AIDraft } from "@/components/meetings/ai-draft-dialog";
+import { MeetingNotesPanel } from "@/components/meetings/meeting-notes-panel";
 
 
 import { UpgradeGate } from "@/components/upgrade-gate";
