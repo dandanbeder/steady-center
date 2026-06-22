@@ -170,7 +170,12 @@ function MeetingDetail() {
             : new Date(meeting.created_at).toLocaleString()}
         </span>
       </div>
-      <h1 className="text-2xl sm:text-3xl text-primary mb-4">{meeting.title}</h1>
+      <div className="flex items-start justify-between gap-3 mb-4">
+        <h1 className="text-2xl sm:text-3xl text-primary">{meeting.title}</h1>
+        <Button size="sm" variant="outline" onClick={() => setShareOpen(true)} className="gap-2 shrink-0">
+          <Share2 className="h-4 w-4" /> Share
+        </Button>
+      </div>
 
       {meeting.attendees && meeting.attendees.length > 0 && (
         <div className="mb-6 rounded-lg border border-border bg-card px-4 py-3">
