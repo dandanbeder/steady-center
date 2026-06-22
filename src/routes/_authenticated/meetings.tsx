@@ -237,16 +237,16 @@ function NewMeetingDialog({
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <Label>Account</Label>
+              <Label>Space</Label>
               <Select
-                value={businessId ?? "_none"}
-                onValueChange={(v) => setBusinessId(v === "_none" ? null : v)}
+                value={businessId ?? "_personal"}
+                onValueChange={(v) => setBusinessId(v === "_personal" ? null : v)}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="_none">No account</SelectItem>
+                  <SelectItem value="_personal">Personal</SelectItem>
                   {businesses.map((b) => (
                     <SelectItem key={b.id} value={b.id}>
                       {b.name}
@@ -255,29 +255,42 @@ function NewMeetingDialog({
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label>Platform</Label>
-              <Select value={platform} onValueChange={setPlatform}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="zoom">Zoom</SelectItem>
-                  <SelectItem value="meet">Google Meet</SelectItem>
-                  <SelectItem value="teams">Microsoft Teams</SelectItem>
-                  <SelectItem value="in_person">In person</SelectItem>
-                  <SelectItem value="phone">Phone</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {mode !== "note" && (
+              <div>
+                <Label>Platform</Label>
+                <Select value={platform} onValueChange={setPlatform}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="zoom">Zoom</SelectItem>
+                    <SelectItem value="teams">Microsoft Teams</SelectItem>
+                    <SelectItem value="meet">Google Meet</SelectItem>
+                    <SelectItem value="in_person">In person</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
-          <Tabs value={mode} onValueChange={(v) => setMode(v as "paste" | "audio")}>
+          <Tabs value={mode} onValueChange={(v) => setMode(v as "note" | "paste" | "audio")}>
             <TabsList>
+              <TabsTrigger value="note">Manual note</TabsTrigger>
               <TabsTrigger value="paste">Paste transcript</TabsTrigger>
               <TabsTrigger value="audio">Upload audio</TabsTrigger>
             </TabsList>
+            <TabsContent value="note" className="mt-3">
+              <Textarea
+                value={transcript}
+                onChange={(e) => setTranscript(e.target.value)}
+                placeholder="Jot down what was discussed, decisions, next steps… No AI runs on this."
+                className="min-h-[200px]"
+              />
+              <p className="text-xs text-muted-foreground mt-2">
+                Saved as-is. No AI summary, no credits used.
+              </p>
+            </TabsContent>
             <TabsContent value="paste" className="mt-3">
               <Textarea
                 value={transcript}
