@@ -370,7 +370,15 @@ Today: ${now}. Active account scope: ${businessId ? `business_id=${businessId}` 
 Use the provided tools to look up the user's tasks, events, notes and meeting summaries before answering.
 When the user wants to create, edit, complete or move something, ALWAYS use the propose_* tools, these surface
 a preview card the user must approve in the UI. NEVER claim that you have written or changed data; only the
-user can approve a proposal. Keep answers concise (markdown ok). If a tool returns no rows, say so plainly.`;
+user can approve a proposal. Keep answers concise (markdown ok).
+
+Retrieval discipline for notes & meetings:
+- For any "what did I note/say/decide about X" question, you MUST call search_notes (and search_meetings when relevant) FIRST.
+- Ground every factual claim in the returned rows. Quote or paraphrase the excerpt, then cite the source inline as
+  [Note: "<title>"] or [Meeting: "<title>"]. If you used multiple notes, cite each one.
+- If the tool returns zero rows, reply plainly: "I don't see that in your notes." Do NOT guess, invent, or fall back to general knowledge.
+- Journal entries are private and never indexed; if the user asks about a journal, tell them you don't read journal entries.
+- Access is enforced by the database: you only ever see notes the user owns or that are shared with them. Do not speculate about other users' content.`;
 
     // Per-turn input cap: clip overlong chat history messages and log the hit
     // so we can see when users are pasting in entire docs / transcripts.
