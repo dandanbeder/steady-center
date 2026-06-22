@@ -60,6 +60,10 @@ function MeetingDetail() {
     queryFn: () => listActionItems(meetingId),
   });
   const { data: businesses = [] } = useQuery({ queryKey: ["businesses"], queryFn: listBusinesses });
+  const { data: decisions = [] } = useQuery({
+    queryKey: ["meeting-decisions", meetingId],
+    queryFn: () => listMeetingDecisions(meetingId),
+  });
 
   const toggleDone = useMutation({
     mutationFn: ({ id, done }: { id: string; done: boolean }) => setActionItemDone(id, done),
@@ -77,6 +81,62 @@ function MeetingDetail() {
   });
 
   const [convertItem, setConvertItem] = useState<ActionItem | null>(null);
+
+  // User-invoked AI workflow.
+  const [confirmRunOpen, setConfirmRunOpen] = useState(false);
+  const [draftOpen, setDraftOpen] = useState(false);
+  const [draft, setDraft] = useState<AIDraft | null>(null);
+  const generate = useServerFn(generateMeetingDraft);
+  const apply = useServerFn(applyMeetingDraft);
+  const generateMut = useMutation({
+    mutationFn: () => generate({ data: { meeting_id: meetingId } }),
+    onSuccess: (res) => {
+      setDraft(newDraftFrom(res, meeting?.business_id ?? null));
+      setConfirmRunOpen(false);
+      setDraftOpen(true);
+    },
+    onError: (e) => {
+      const msg = e instanceof Error ? e.message : "AI failed";
+      if (/credit|402/i.test(msg)) {
+        toast.error("Out of AI credits. Add credits in Workspace settings.");
+      } else if (/rate|429/i.test(msg)) {
+        toast.error("Rate limited. Try again shortly.");
+      } else {
+        toast.error(msg);
+      }
+    },
+  });
+  const applyMut = useMutation({
+    mutationFn: (d: AIDraft) =>
+      apply({
+        data: {
+          meeting_id: meetingId,
+          summary: d.summary,
+          decisions: d.decisions.filter((x) => x.text.trim()),
+          tasks: d.tasks
+            .filter((t) => t.accepted && t.text.trim())
+            .map((t) => ({
+              text: t.text,
+              owner_label: t.owner_label,
+              due_at: t.due_at,
+              business_id: t.business_id,
+              list_id: t.list_id,
+              outcome_id: t.outcome_id,
+            })),
+        },
+      }),
+    onSuccess: (res) => {
+      toast.success(`Saved. Created ${res.created_count} task${res.created_count === 1 ? "" : "s"}.`);
+      setDraftOpen(false);
+      setDraft(null);
+      qc.invalidateQueries({ queryKey: ["meeting", meetingId] });
+      qc.invalidateQueries({ queryKey: ["meeting-actions", meetingId] });
+      qc.invalidateQueries({ queryKey: ["meeting-decisions", meetingId] });
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to save"),
+  });
+
 
   if (isLoading) return <div className="p-10 text-muted-foreground">Loading…</div>;
   if (!meeting) return <div className="p-10 text-muted-foreground">Meeting not found.</div>;
