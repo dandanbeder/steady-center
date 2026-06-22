@@ -41,10 +41,13 @@ const TOOLS = [
   },
   {
     name: "search_notes",
-    description: "Search the user's notes by title/body substring. Returns at most 15 with snippets.",
+    description:
+      "Search notes the user can access (their own + notes shared with them). Excludes Journal entries (private). Returns at most 15 with title, an excerpt centered on the match, and the note id for citing. ALWAYS call this before answering 'what did I note about X' style questions.",
     input_schema: {
       type: "object",
-      properties: { query: { type: "string" } },
+      properties: {
+        query: { type: "string", description: "Free-text. Multi-word OK — each significant token is matched against title or body." },
+      },
       required: ["query"],
     },
   },
