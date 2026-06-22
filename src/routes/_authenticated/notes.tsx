@@ -304,19 +304,26 @@ function NotesPage() {
             const biz = businesses.find((b) => b.id === n.business_id);
             const path = folderPath(n.folder_id, folders);
             const crumbs = [biz?.name, ...path.map((f) => f.name)].filter(Boolean).join(" / ");
+            const accentColor = biz?.color ?? "hsl(var(--muted-foreground))";
             return (
               <div
                 key={n.id}
                 className={cn(
-                  "group rounded-lg transition-colors",
+                  "group rounded-lg transition-colors border-l-2",
                   selectedNoteId === n.id ? "bg-muted" : "hover:bg-muted/60",
                 )}
+                style={{ borderLeftColor: accentColor }}
               >
                 <button
                   onClick={() => setSelectedNoteId(n.id)}
                   className="w-full text-left p-2.5"
                 >
                   <div className="flex items-center gap-2 text-sm font-medium">
+                    <span
+                      className="h-2 w-2 rounded-full shrink-0"
+                      style={{ background: accentColor }}
+                      title={biz?.name ?? "Personal"}
+                    />
                     <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     <span className="truncate flex-1">{n.title || "Untitled"}</span>
                     {n.pinned && <Pin className="h-3 w-3 text-muted-foreground shrink-0" />}
