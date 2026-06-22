@@ -213,13 +213,19 @@ export const processMeeting = createServerFn({ method: "POST" })
     let transcript = (data.transcript ?? "").trim();
     let storedAudioPath: string | null = data.audio_path ?? null;
 
+    // Auto-detect platform from the join URL when present; never trust client choice.
+    const { detectPlatformFromUrl } = await import("./meeting-platform");
+    const joinUrl = (data.join_url ?? "").trim() || null;
+    const resolvedPlatform = joinUrl ? detectPlatformFromUrl(joinUrl).id : data.platform;
+
     const { data: meeting, error: mErr } = await supabase
       .from("meetings")
       .insert({
         owner_id: userId,
         business_id: data.business_id,
         event_id: data.event_id ?? null,
-        platform: data.platform,
+        platform: resolvedPlatform,
+        join_url: joinUrl,
         title: data.title,
         transcript,
         summary: "",
