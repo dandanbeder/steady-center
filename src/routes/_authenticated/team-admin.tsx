@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Crown, Users, CreditCard, ShieldCheck, Activity, ExternalLink } from "lucide-react";
+import { Coins, Crown, Users, CreditCard, ShieldCheck, Activity, ExternalLink } from "lucide-react";
 import { listBusinesses } from "@/lib/businesses";
 import { useActiveBusiness } from "@/hooks/use-active-business";
 import { useMyRole } from "@/hooks/use-my-role";
@@ -17,6 +17,10 @@ import {
 import { PeoplePanel } from "@/components/people-panel";
 import { Progress } from "@/components/ui/progress";
 import { AlertTriangle, Sparkles } from "lucide-react";
+
+const TopUpDialog = lazy(() =>
+  import("@/components/topup-dialog").then((m) => ({ default: m.TopUpDialog })),
+);
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
