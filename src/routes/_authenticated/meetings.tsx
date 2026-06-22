@@ -149,7 +149,8 @@ function NewMeetingDialog({
   const { data: businesses = [] } = useQuery({ queryKey: ["businesses"], queryFn: listBusinesses });
 
   const [title, setTitle] = useState("");
-  const [platform, setPlatform] = useState("other");
+  const [platform, setPlatform] = useState<"zoom" | "teams" | "meet" | "in_person" | "other">("other");
+  const [joinUrl, setJoinUrl] = useState("");
   const [businessId, setBusinessId] = useState<string | null>(defaultBusinessId);
   const [mode, setMode] = useState<"note" | "paste" | "audio">("note");
   const [transcript, setTranscript] = useState("");
@@ -157,9 +158,13 @@ function NewMeetingDialog({
   const [keepRecording, setKeepRecording] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  const detected = useMemo(() => detectPlatformFromUrl(joinUrl), [joinUrl]);
+  const hasValidLink = joinUrl.trim().length > 0 && /^https?:\/\//i.test(joinUrl.trim());
+
   const reset = () => {
     setTitle("");
     setPlatform("other");
+    setJoinUrl("");
     setBusinessId(defaultBusinessId);
     setMode("note");
     setTranscript("");
