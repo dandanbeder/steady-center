@@ -567,6 +567,7 @@ function NoteEditor({
         onChange={(e) => setTitle(e.target.value)}
         className="text-2xl font-serif border-none px-0 focus-visible:ring-0 shadow-none h-auto py-1"
         placeholder="Untitled"
+        autoFocus={!note.title}
       />
 
       <MarkdownEditor
