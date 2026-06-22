@@ -184,23 +184,53 @@ function MeetingDetail() {
           </Button>
         </div>
       )}
-
+      {/* User-invoked AI: heavy action, metered, with confirmation. */}
+      {(meeting.transcript || meeting.audio_path) && (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
+          <div>
+            <p className="text-sm text-foreground font-medium flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" /> AI summary &amp; action items
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Turn this {meeting.audio_path && !meeting.transcript ? "recording" : "transcript"} into a summary,
+              decisions, and suggested tasks. You review and confirm before anything is created.
+            </p>
+          </div>
+          <Button
+            onClick={() => setConfirmRunOpen(true)}
+            disabled={generateMut.isPending}
+            className="gap-2"
+          >
+            {generateMut.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4" />
+            )}
+            {meeting.summary ? "Re-generate" : "Generate with AI"}
+          </Button>
+        </div>
+      )}
 
       <section className="mb-8">
         <h2 className="text-sm uppercase tracking-wide text-muted-foreground mb-2">Summary</h2>
         <p className="text-foreground leading-relaxed whitespace-pre-wrap">
-          {meeting.summary || "No summary available."}
+          {meeting.summary || "No summary yet."}
         </p>
       </section>
 
-      {meeting.decisions && meeting.decisions.length > 0 && (
+      {decisions.length > 0 && (
         <section className="mb-8">
           <h2 className="text-sm uppercase tracking-wide text-muted-foreground mb-2">Decisions</h2>
           <ul className="space-y-1.5">
-            {meeting.decisions.map((d, i) => (
-              <li key={i} className="flex gap-2 text-foreground">
+            {decisions.map((d) => (
+              <li key={d.id} className="flex gap-2 text-foreground">
                 <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                <span>{d}</span>
+                <span className="flex-1">
+                  {d.text}
+                  {d.outcome_id && (
+                    <span className="ml-2 text-xs text-primary">→ linked to outcome</span>
+                  )}
+                </span>
               </li>
             ))}
           </ul>
