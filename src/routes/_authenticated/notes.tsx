@@ -594,6 +594,16 @@ function NoteEditor({
           <Button size="sm" variant="ghost" onClick={onMove} title="Move to…">
             <ArrowRightLeft className="h-4 w-4" />
           </Button>
+          {note.note_type !== "journal" && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setShareOpen(true)}
+              title="Share"
+            >
+              <Share2 className="h-4 w-4" />
+            </Button>
+          )}
           <Button size="sm" variant="ghost" onClick={togglePin} title={note.pinned ? "Unpin" : "Pin"}>
             {note.pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
           </Button>
@@ -602,6 +612,14 @@ function NoteEditor({
           </Button>
         </div>
       </div>
+
+      <ShareDialog
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        resourceType="note"
+        resourceId={note.id}
+        resourceName={note.title || "this note"}
+      />
 
       <Input
         value={title}
