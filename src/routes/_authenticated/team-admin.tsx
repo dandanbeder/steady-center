@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Crown, Users, CreditCard, ShieldCheck, Activity, ExternalLink } from "lucide-react";
+import { Coins, Crown, Users, CreditCard, ShieldCheck, Activity, ExternalLink } from "lucide-react";
 import { listBusinesses } from "@/lib/businesses";
 import { useActiveBusiness } from "@/hooks/use-active-business";
 import { useMyRole } from "@/hooks/use-my-role";
@@ -17,6 +17,10 @@ import {
 import { PeoplePanel } from "@/components/people-panel";
 import { Progress } from "@/components/ui/progress";
 import { AlertTriangle, Sparkles } from "lucide-react";
+
+const TopUpDialog = lazy(() =>
+  import("@/components/topup-dialog").then((m) => ({ default: m.TopUpDialog })),
+);
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -231,7 +235,7 @@ function TeamAdminBody({ businessId }: { businessId: string }) {
         </TabsContent>
 
         <TabsContent value="kitty" className="mt-4">
-          <KittyPanel businessId={businessId} />
+          <KittyPanel businessId={businessId} callerIsOwner={my.role === "owner"} />
         </TabsContent>
 
         <TabsContent value="shared" className="mt-4">
@@ -461,11 +465,19 @@ function TransferOwnershipCard({ businessId }: { businessId: string }) {
   );
 }
 
-function KittyPanel({ businessId }: { businessId: string }) {
+function KittyPanel({
+  businessId,
+  callerIsOwner,
+}: {
+  businessId: string;
+  callerIsOwner: boolean;
+}) {
   const { data, isLoading, error } = useQuery({
     queryKey: ["team-kitty-usage", businessId],
     queryFn: () => getTeamKittyUsage({ data: { business_id: businessId } }),
   });
+  const [sharedOpen, setSharedOpen] = useState(false);
+  const [personalOpen, setPersonalOpen] = useState(false);
 
   if (isLoading) return <div className="text-sm text-muted-foreground p-4">Loading…</div>;
   if (error) return <div className="text-sm text-destructive p-4">{(error as Error).message}</div>;
@@ -515,9 +527,55 @@ function KittyPanel({ businessId }: { businessId: string }) {
           {pool.hard_stopped && (
             <p className="text-xs text-destructive">
               The kitty is empty. Team-wide included AI is paused until the next cycle or a top-up.
-              Non-AI features are unaffected.
+              Non-AI features are unaffected. Members who've bought their own credits keep using AI
+              independently from their private balance.
             </p>
           )}
+        </CardContent>
+      </Card>
+
+      {/* How AI credits work + the two top-up paths. */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Coins className="h-4 w-4" /> How AI credits work on Team
+          </CardTitle>
+          <CardDescription>Plain-language explainer for the team.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <p>
+            Your plan includes a <strong>shared pool of AI credits</strong> each cycle (400 per
+            paid seat), used by everyone on the team and tracked per member. AI draws from the
+            shared pool first.
+          </p>
+          <p>
+            When the shared pool runs out you have two options:
+          </p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>
+              <strong>Top up the shared pool</strong> (owner only) — credits go into the kitty and
+              are available to everyone on the team.
+            </li>
+            <li>
+              <strong>Each member can top up their own</strong> — credits stay private to that
+              member and power their AI independently once the shared kitty is empty.
+            </li>
+          </ul>
+          <p>
+            The shared pool refills on your billing date and doesn't roll over. Top-ups last
+            <strong> 12 months</strong> from purchase. Members keep their own top-ups if they
+            leave the team. The shared pool stays with the team.
+          </p>
+          <div className="flex flex-wrap gap-2 pt-2">
+            {callerIsOwner && (
+              <Button onClick={() => setSharedOpen(true)}>
+                <Coins className="h-4 w-4" /> Top up shared pool
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => setPersonalOpen(true)}>
+              <Coins className="h-4 w-4" /> Top up my own credits
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -560,6 +618,27 @@ function KittyPanel({ businessId }: { businessId: string }) {
           )}
         </CardContent>
       </Card>
+
+      {(sharedOpen || personalOpen) && (
+        <Suspense fallback={null}>
+          {sharedOpen && (
+            <TopUpDialog
+              mode="shared"
+              open={sharedOpen}
+              onOpenChange={setSharedOpen}
+              successUrl={`${typeof window !== "undefined" ? window.location.origin : ""}/team-admin?topup=success&pool=shared`}
+            />
+          )}
+          {personalOpen && (
+            <TopUpDialog
+              mode="personal"
+              open={personalOpen}
+              onOpenChange={setPersonalOpen}
+              successUrl={`${typeof window !== "undefined" ? window.location.origin : ""}/team-admin?topup=success&pool=personal`}
+            />
+          )}
+        </Suspense>
+      )}
     </div>
   );
 }

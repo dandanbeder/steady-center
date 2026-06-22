@@ -22,23 +22,38 @@ import {
   type TopUpPack,
 } from "@/lib/topup-packs";
 
+type TopUpMode = "personal" | "shared";
+
 type Props = {
   /** Pre-open the dialog (used by the hard-stop banner). */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   /** Optional trigger; if omitted the parent controls open state. */
   trigger?: React.ReactNode;
+  /**
+   * "shared" = owner buying into the team kitty (everyone on the team uses).
+   * "personal" = anyone buying credits into their own private space.
+   * The webhook keys credits on the buyer's userId, so this prop only
+   * controls copy and the post-checkout redirect — the routing is implicit:
+   * owner buy → kitty; member buy → that member's personal account.
+   */
+  mode?: TopUpMode;
+  /** Where to redirect after success. Defaults to /billing?topup=success. */
+  successUrl?: string;
 };
 
-/**
- * Pack picker → Paddle.Checkout.open. The webhook does the actual crediting;
- * we just open the checkout. After a successful purchase the user returns
- * via successUrl and the credit-balance query refetches.
- */
-export function TopUpDialog({ open, onOpenChange, trigger }: Props) {
+export function TopUpDialog({
+  open,
+  onOpenChange,
+  trigger,
+  mode = "personal",
+  successUrl,
+}: Props) {
   const { user } = useAuth();
   const { openCheckout, loading } = usePaddleCheckout();
   const [pendingPriceId, setPendingPriceId] = useState<string | null>(null);
+
+  const isShared = mode === "shared";
 
   const handleBuy = async (pack: TopUpPack) => {
     if (!user?.id) {
@@ -51,8 +66,10 @@ export function TopUpDialog({ open, onOpenChange, trigger }: Props) {
         priceId: pack.priceId,
         quantity: 1,
         customerEmail: user.email ?? undefined,
-        customData: { userId: user.id },
-        successUrl: `${window.location.origin}/billing?topup=success`,
+        customData: { userId: user.id, topupTarget: mode },
+        successUrl:
+          successUrl ??
+          `${window.location.origin}/billing?topup=success&pool=${mode}`,
       });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not open checkout");
@@ -67,11 +84,13 @@ export function TopUpDialog({ open, onOpenChange, trigger }: Props) {
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Coins className="h-5 w-5" /> Top up AI credits
+            <Coins className="h-5 w-5" />
+            {isShared ? "Top up the shared team pool" : "Top up your own AI credits"}
           </DialogTitle>
           <DialogDescription>
-            Purchased credits roll for 12 months and survive plan changes. They're
-            used after your monthly allowance.
+            {isShared
+              ? "Credits go into the shared team kitty — available to everyone on the team. They roll for 12 months and stay with the team."
+              : "Credits go into your own private space — used only by you, after the shared team pool runs out. They roll for 12 months and stay with you if you leave the team."}
           </DialogDescription>
         </DialogHeader>
 
