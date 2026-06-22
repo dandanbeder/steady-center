@@ -322,3 +322,178 @@ export const listTeamAuditLog = createServerFn({ method: "POST" })
       };
     });
   });
+
+/**
+ * Team AI kitty usage: pool totals + per-member consumption this cycle.
+ *
+ * Authorization: business admin+ (or platform admin). Caller business_id is
+ * validated; we then resolve the owner's billing account (the kitty) and
+ * read this-cycle credit_ledger rows scoped to that account.
+ *
+ * Privacy: the response contains ONLY credit metering — credits_used,
+ * action counts, share-of-pool percent, display name and role. NO private
+ * content (notes, tasks, mood, journal), NO cost/margin figures. The
+ * kitty's allowance/balance is plan metadata (credits, not dollars), so
+ * surfacing it to the team admin is safe.
+ */
+export const getTeamKittyUsage = createServerFn({ method: "GET" })
+  .middleware([requireActiveUser])
+  .inputValidator(z.object({ business_id: z.string().uuid() }).parse)
+  .handler(async ({ data, context }) => {
+    await requireMin(data.business_id, context.userId, "admin");
+
+    // Owner of this business -> the kitty's account_user_id.
+    const { data: ownerMem } = await supabaseAdmin
+      .from("memberships")
+      .select("user_id")
+      .eq("business_id", data.business_id)
+      .eq("role", "owner")
+      .eq("status", "active")
+      .maybeSingle();
+    const ownerId = (ownerMem?.user_id as string | undefined) ?? null;
+    if (!ownerId) throw new Error("No active owner for this team");
+
+    // Pool stats.
+    const { data: ac } = await supabaseAdmin
+      .from("account_credits")
+      .select("allowance_credits, credit_balance, purchased_credits, current_cycle_start, current_cycle_end, topup_paused")
+      .eq("account_user_id", ownerId)
+      .maybeSingle();
+
+    const allowance = (ac?.allowance_credits as number | undefined) ?? 0;
+    const balance = (ac?.credit_balance as number | undefined) ?? 0;
+    const purchased = (ac?.purchased_credits as number | undefined) ?? 0;
+    const cycleStart = (ac?.current_cycle_start as string | null) ?? null;
+    const cycleEnd = (ac?.current_cycle_end as string | null) ?? null;
+    const paused = (ac?.topup_paused as boolean | undefined) ?? false;
+    const used = Math.max(0, allowance - balance);
+
+    // Per-member usage this cycle — only debits (delta < 0) on the allowance/purchased sources.
+    const since = cycleStart ?? new Date(Date.now() - 30 * 86_400_000).toISOString();
+    const { data: ledger } = await supabaseAdmin
+      .from("credit_ledger")
+      .select("acting_user_id, delta, source")
+      .eq("account_user_id", ownerId)
+      .lt("delta", 0)
+      .in("source", ["allowance", "purchased"])
+      .gte("created_at", since);
+
+    const perMember = new Map<string, { credits_used: number; actions: number }>();
+    for (const row of ledger ?? []) {
+      const uid = row.acting_user_id as string;
+      const spent = Math.abs((row.delta as number) ?? 0);
+      const cur = perMember.get(uid) ?? { credits_used: 0, actions: 0 };
+      cur.credits_used += spent;
+      cur.actions += 1;
+      perMember.set(uid, cur);
+    }
+
+    // Active paid-seat members (anyone who could legitimately spend kitty credits).
+    const { data: members } = await supabaseAdmin
+      .from("memberships")
+      .select("user_id, role")
+      .eq("business_id", data.business_id)
+      .eq("status", "active")
+      .in("role", ["owner", "admin", "member"]);
+
+    const memberIds = (members ?? []).map((m) => m.user_id as string);
+    const ids = Array.from(new Set([...memberIds, ...perMember.keys()]));
+    const { data: profs } = ids.length
+      ? await supabaseAdmin.from("profiles").select("id, full_name").in("id", ids)
+      : { data: [] as Array<{ id: string; full_name: string | null }> };
+    const nameMap = new Map((profs ?? []).map((p) => [p.id as string, (p.full_name as string) ?? null]));
+    const roleMap = new Map((members ?? []).map((m) => [m.user_id as string, m.role as string]));
+
+    const paidSeats = memberIds.length || 1;
+    const fairShare = used > 0 ? used / paidSeats : 0;
+
+    const breakdown = ids.map((uid) => {
+      const usage = perMember.get(uid) ?? { credits_used: 0, actions: 0 };
+      const share_pct = used > 0 ? Math.round((usage.credits_used * 1000) / used) / 10 : 0;
+      // Flag: this member alone consumed >= 2× their fair share AND > 10% of the pool.
+      const flagged =
+        fairShare > 0 &&
+        usage.credits_used >= fairShare * 2 &&
+        usage.credits_used >= used * 0.1;
+      return {
+        user_id: uid,
+        display_name: nameMap.get(uid) ?? null,
+        role: roleMap.get(uid) ?? "removed",
+        credits_used: usage.credits_used,
+        actions: usage.actions,
+        share_pct,
+        flagged,
+      };
+    }).sort((a, b) => b.credits_used - a.credits_used);
+
+    return {
+      pool: {
+        allowance,
+        balance,
+        purchased,
+        used,
+        paused,
+        hard_stopped: balance + purchased <= 0,
+        cycle_start: cycleStart,
+        cycle_end: cycleEnd,
+        paid_seats: paidSeats,
+      },
+      members: breakdown,
+    };
+  });
+
+/**
+ * What the signed-in member has personally consumed from their team's
+ * shared kitty this cycle, plus the pool's headline numbers so they can
+ * see how much is left. RLS on credit_ledger already permits self-reads
+ * (acting_user_id = auth.uid()); this server fn aggregates them.
+ */
+export const getMyKittyUsage = createServerFn({ method: "GET" })
+  .middleware([requireActiveUser])
+  .handler(async ({ context }) => {
+    const userId = context.userId;
+    const { data: billing } = await supabaseAdmin.rpc("resolve_billing_account", { _user: userId });
+    const billingAccount = (billing as string | null) ?? userId;
+    const isPooled = billingAccount !== userId;
+
+    const { data: ac } = await supabaseAdmin
+      .from("account_credits")
+      .select("allowance_credits, credit_balance, purchased_credits, current_cycle_start, current_cycle_end, topup_paused")
+      .eq("account_user_id", billingAccount)
+      .maybeSingle();
+
+    const allowance = (ac?.allowance_credits as number | undefined) ?? 0;
+    const balance = (ac?.credit_balance as number | undefined) ?? 0;
+    const purchased = (ac?.purchased_credits as number | undefined) ?? 0;
+    const cycleStart = (ac?.current_cycle_start as string | null) ?? null;
+    const since = cycleStart ?? new Date(Date.now() - 30 * 86_400_000).toISOString();
+
+    const { data: myRows } = await supabaseAdmin
+      .from("credit_ledger")
+      .select("delta, source")
+      .eq("account_user_id", billingAccount)
+      .eq("acting_user_id", userId)
+      .lt("delta", 0)
+      .in("source", ["allowance", "purchased"])
+      .gte("created_at", since);
+
+    let myCredits = 0;
+    let myActions = 0;
+    for (const r of myRows ?? []) {
+      myCredits += Math.abs((r.delta as number) ?? 0);
+      myActions += 1;
+    }
+
+    return {
+      is_team_kitty: isPooled,
+      pool: {
+        allowance,
+        balance,
+        purchased,
+        used: Math.max(0, allowance - balance),
+        paused: (ac?.topup_paused as boolean | undefined) ?? false,
+        cycle_end: (ac?.current_cycle_end as string | null) ?? null,
+      },
+      me: { credits_used: myCredits, actions: myActions },
+    };
+  });
