@@ -3,9 +3,14 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import {
-  CheckSquare, FileText, Calendar as CalendarIcon, Folder, ListTodo, Inbox, Building2,
+  AtSign, CheckSquare, FileText, Calendar as CalendarIcon, Folder, ListTodo, Inbox, Building2,
 } from "lucide-react";
-import { listSharedWithMeResources, type SharedItemRow, type ResourceType } from "@/lib/shares.functions";
+import {
+  listSharedWithMeResources,
+  listMyMentionedItems,
+  type SharedItemRow,
+  type ResourceType,
+} from "@/lib/shares.functions";
 import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/shared")({
