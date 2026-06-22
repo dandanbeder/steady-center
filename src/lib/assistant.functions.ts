@@ -50,7 +50,8 @@ const TOOLS = [
   },
   {
     name: "search_meetings",
-    description: "Search meeting summaries/transcripts. Returns at most 10.",
+    description:
+      "Search meeting notes the user can access (their own and ones shared with them or with their team space). Searches title, AI summary, decisions, and transcript. Returns at most 10. Best for questions like 'what did we decide about X?'.",
     input_schema: {
       type: "object",
       properties: { query: { type: "string" } },
