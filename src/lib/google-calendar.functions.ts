@@ -357,6 +357,7 @@ export async function runSyncForCalendar(
             start_at: norm.start_at,
             end_at: norm.end_at,
             all_day: norm.all_day,
+            attendees: norm.attendees,
           })
           .eq("id", found.id);
         if (!error) updated++;
@@ -371,6 +372,7 @@ export async function runSyncForCalendar(
           start_at: norm.start_at,
           end_at: norm.end_at,
           all_day: norm.all_day,
+          attendees: norm.attendees,
           source: "google",
           external_id: ev.id,
         });
