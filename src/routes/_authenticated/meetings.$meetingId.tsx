@@ -261,7 +261,7 @@ function MeetingDetail() {
                       to="/outcomes"
                       className="ml-2 text-xs text-primary hover:underline"
                     >
-                      → {outcomeById.get(d.outcome_id)?.title ?? "linked outcome"}
+                      → {outcomeById.get(d.outcome_id)?.name ?? "linked outcome"}
                     </Link>
                   )}
                 </span>
