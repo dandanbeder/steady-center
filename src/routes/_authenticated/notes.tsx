@@ -19,7 +19,9 @@ import {
   ChevronRight,
   ChevronDown,
   Sparkles,
+  Share2,
 } from "lucide-react";
+import { ShareDialog } from "@/components/share-dialog";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { listBusinesses, type Business } from "@/lib/businesses";
@@ -454,6 +456,7 @@ function NoteEditor({
   const [folderId, setFolderId] = useState<string | null>(note.folder_id);
   const [businessId, setBusinessId] = useState<string | null>(note.business_id);
   const [createTaskFor, setCreateTaskFor] = useState<string | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
 
   useEffect(() => {
     setTitle(note.title);
@@ -592,6 +595,16 @@ function NoteEditor({
           <Button size="sm" variant="ghost" onClick={onMove} title="Move to…">
             <ArrowRightLeft className="h-4 w-4" />
           </Button>
+          {note.note_type !== "journal" && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setShareOpen(true)}
+              title="Share"
+            >
+              <Share2 className="h-4 w-4" />
+            </Button>
+          )}
           <Button size="sm" variant="ghost" onClick={togglePin} title={note.pinned ? "Unpin" : "Pin"}>
             {note.pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
           </Button>
@@ -600,6 +613,14 @@ function NoteEditor({
           </Button>
         </div>
       </div>
+
+      <ShareDialog
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        resourceType="note"
+        resourceId={note.id}
+        resourceName={note.title || "this note"}
+      />
 
       <Input
         value={title}
