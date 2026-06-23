@@ -18,9 +18,12 @@ import {
   Menu,
   ChevronRight,
   ChevronDown,
+  ChevronLeft,
+  PanelLeftOpen,
   Sparkles,
   Share2,
 } from "lucide-react";
+import { useUiPref } from "@/lib/ui-prefs";
 import { ShareDialog } from "@/components/share-dialog";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
