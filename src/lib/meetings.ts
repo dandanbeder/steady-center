@@ -34,7 +34,10 @@ export type ActionItem = {
 
 export async function listMeetings(businessId?: string | null): Promise<Meeting[]> {
   let q = supabase.from("meetings" as any).select("*").order("created_at", { ascending: false });
-  if (businessId) q = q.eq("business_id", businessId);
+  // "__personal" sentinel = items with no account (business_id IS NULL); a
+  // concrete id narrows; null/undefined = all.
+  if (businessId === "__personal") q = q.is("business_id", null);
+  else if (businessId) q = q.eq("business_id", businessId);
   const { data, error } = await q;
   if (error) throw error;
   return (data ?? []) as unknown as Meeting[];
