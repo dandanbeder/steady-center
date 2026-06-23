@@ -62,8 +62,12 @@ async function listTopOpenTasks(limit = 5, businessId: string | null = null): Pr
   end.setHours(23, 59, 59, 999);
   const mondayStr = mondayOf();
 
-  const apply = <T extends { eq: (col: string, val: string) => T }>(q: T): T =>
-    businessId ? q.eq("business_id", businessId) : q;
+  // businessId === PERSONAL → IS NULL; specific id → eq; null → no filter (ALL).
+  const apply = <T extends { eq: (col: string, val: string) => T; is: (col: string, val: null) => T }>(q: T): T => {
+    if (businessId === PERSONAL) return q.is("business_id", null);
+    if (businessId) return q.eq("business_id", businessId);
+    return q;
+  };
 
   const [committed, dueSoon] = await Promise.all([
     apply(
@@ -128,9 +132,8 @@ function TodayPage() {
     queryKey: ["events", "today", start.toISOString()],
     queryFn: () => listEvents(start, end),
   });
-  // listTopOpenTasks accepts string|null where null = all; mirror that here,
-  // and bucket PERSONAL as "no account" by passing the sentinel through so
-  // the query layer can filter on IS NULL.
+  // listTopOpenTasks treats null = no filter; pass PERSONAL through so the
+  // query filters business_id IS NULL.
   const businessScope = activeId === ALL ? null : activeId;
   const topTasksQ = useQuery({
     queryKey: ["tasks", "today-top", 5, businessScope],
