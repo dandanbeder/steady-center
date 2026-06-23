@@ -236,8 +236,37 @@ function NotesPage() {
         </SheetContent>
       </Sheet>
 
-      {/* Notes list */}
-      <div className="w-full md:w-80 shrink-0 border-r border-border overflow-y-auto md:max-w-xs">
+      {/* Notes list — collapsible on desktop */}
+      {listCollapsed ? (
+        <div className="hidden md:flex w-10 shrink-0 border-r border-border flex-col items-center py-2 gap-2 bg-background transition-[width] duration-200">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8"
+            onClick={() => setListCollapsed(false)}
+            title="Expand notes list"
+            aria-label="Expand notes list"
+          >
+            <PanelLeftOpen className="h-4 w-4" />
+          </Button>
+          <Button
+            size="icon"
+            className="h-8 w-8"
+            onClick={handleInstantCreate}
+            disabled={creatingInstant}
+            title="New note"
+            aria-label="New note"
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+      ) : null}
+      <div
+        className={cn(
+          "w-full md:w-80 shrink-0 border-r border-border overflow-y-auto md:max-w-xs transition-[width] duration-200",
+          listCollapsed && "hidden md:hidden",
+        )}
+      >
         <div className="p-3 sticky top-0 bg-background z-10 border-b border-border space-y-2">
           <div className="flex items-center gap-2">
             <Button
@@ -298,6 +327,16 @@ function NotesPage() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="hidden md:inline-flex h-8 w-8"
+              onClick={() => setListCollapsed(true)}
+              title="Collapse notes list"
+              aria-label="Collapse notes list"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
           </div>
         </div>
         <div className="p-2 space-y-1">
