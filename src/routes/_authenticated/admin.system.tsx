@@ -200,13 +200,11 @@ function WebhookFailures() {
 
 function AuditViewer() {
   const fn = useServerFn(adminListAuditLog);
-  const { data, isLoading } = useQuery({
+  const { data = [], isLoading } = useQuery({
     queryKey: ["admin", "audit", "all"],
     queryFn: () => fn({ data: { limit: 200 } }),
   });
   if (isLoading) return <div className="text-muted-foreground">Loading audit log…</div>;
-  const rows = (data as any)?.rows ?? data ?? [];
-  const userMap: Record<string, { email?: string; full_name?: string }> = (data as any)?.users ?? {};
 
   return (
     <div className="border rounded-lg overflow-x-auto">
@@ -221,21 +219,19 @@ function AuditViewer() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.length === 0 && (
+          {data.length === 0 && (
             <TableRow>
               <TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-6">
                 No audit entries yet.
               </TableCell>
             </TableRow>
           )}
-          {rows.map((r: any) => (
+          {data.map((r) => (
             <TableRow key={r.id}>
               <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                 {new Date(r.created_at).toLocaleString()}
               </TableCell>
-              <TableCell className="text-xs">
-                {userMap[r.admin_id]?.email ?? r.admin_id?.slice(0, 8)}
-              </TableCell>
+              <TableCell className="text-xs">{r.admin_email || r.admin_id?.slice(0, 8)}</TableCell>
               <TableCell className="font-mono text-xs">{r.action}</TableCell>
               <TableCell className="text-xs">
                 {r.target_user_id ? (
@@ -244,7 +240,7 @@ function AuditViewer() {
                     params={{ userId: r.target_user_id }}
                     className="text-primary underline"
                   >
-                    {userMap[r.target_user_id]?.email ?? r.target_user_id.slice(0, 8)}
+                    {r.target_email || r.target_user_id.slice(0, 8)}
                   </Link>
                 ) : (
                   <span className="text-muted-foreground">—</span>
