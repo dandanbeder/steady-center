@@ -50,6 +50,8 @@ import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authentic
 import { Route as AuthMicrosoftCallbackRouteImport } from './routes/auth/microsoft.callback'
 import { Route as AuthenticatedReportsReportIdRouteImport } from './routes/_authenticated/reports.$reportId'
 import { Route as AuthenticatedMeetingsMeetingIdRouteImport } from './routes/_authenticated/meetings.$meetingId'
+import { Route as AuthenticatedAdminTeamsRouteImport } from './routes/_authenticated/admin.teams'
+import { Route as AuthenticatedAdminSystemRouteImport } from './routes/_authenticated/admin.system'
 import { Route as AuthenticatedAdminPaymentsRouteImport } from './routes/_authenticated/admin.payments'
 import { Route as AuthenticatedAdminFinancialsRouteImport } from './routes/_authenticated/admin.financials'
 import { Route as AuthenticatedAdminBillingRouteImport } from './routes/_authenticated/admin.billing'
@@ -276,6 +278,17 @@ const AuthenticatedMeetingsMeetingIdRoute =
     path: '/$meetingId',
     getParentRoute: () => AuthenticatedMeetingsRoute,
   } as any)
+const AuthenticatedAdminTeamsRoute = AuthenticatedAdminTeamsRouteImport.update({
+  id: '/teams',
+  path: '/teams',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
+const AuthenticatedAdminSystemRoute =
+  AuthenticatedAdminSystemRouteImport.update({
+    id: '/system',
+    path: '/system',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminPaymentsRoute =
   AuthenticatedAdminPaymentsRouteImport.update({
     id: '/payments',
@@ -427,6 +440,8 @@ export interface FileRoutesByFullPath {
   '/admin/billing': typeof AuthenticatedAdminBillingRoute
   '/admin/financials': typeof AuthenticatedAdminFinancialsRoute
   '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
+  '/admin/system': typeof AuthenticatedAdminSystemRoute
+  '/admin/teams': typeof AuthenticatedAdminTeamsRoute
   '/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
   '/reports/$reportId': typeof AuthenticatedReportsReportIdRoute
   '/auth/microsoft/callback': typeof AuthMicrosoftCallbackRoute
@@ -486,6 +501,8 @@ export interface FileRoutesByTo {
   '/admin/billing': typeof AuthenticatedAdminBillingRoute
   '/admin/financials': typeof AuthenticatedAdminFinancialsRoute
   '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
+  '/admin/system': typeof AuthenticatedAdminSystemRoute
+  '/admin/teams': typeof AuthenticatedAdminTeamsRoute
   '/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
   '/reports/$reportId': typeof AuthenticatedReportsReportIdRoute
   '/auth/microsoft/callback': typeof AuthMicrosoftCallbackRoute
@@ -548,6 +565,8 @@ export interface FileRoutesById {
   '/_authenticated/admin/billing': typeof AuthenticatedAdminBillingRoute
   '/_authenticated/admin/financials': typeof AuthenticatedAdminFinancialsRoute
   '/_authenticated/admin/payments': typeof AuthenticatedAdminPaymentsRoute
+  '/_authenticated/admin/system': typeof AuthenticatedAdminSystemRoute
+  '/_authenticated/admin/teams': typeof AuthenticatedAdminTeamsRoute
   '/_authenticated/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
   '/_authenticated/reports/$reportId': typeof AuthenticatedReportsReportIdRoute
   '/auth/microsoft/callback': typeof AuthMicrosoftCallbackRoute
@@ -610,6 +629,8 @@ export interface FileRouteTypes {
     | '/admin/billing'
     | '/admin/financials'
     | '/admin/payments'
+    | '/admin/system'
+    | '/admin/teams'
     | '/meetings/$meetingId'
     | '/reports/$reportId'
     | '/auth/microsoft/callback'
@@ -669,6 +690,8 @@ export interface FileRouteTypes {
     | '/admin/billing'
     | '/admin/financials'
     | '/admin/payments'
+    | '/admin/system'
+    | '/admin/teams'
     | '/meetings/$meetingId'
     | '/reports/$reportId'
     | '/auth/microsoft/callback'
@@ -730,6 +753,8 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/billing'
     | '/_authenticated/admin/financials'
     | '/_authenticated/admin/payments'
+    | '/_authenticated/admin/system'
+    | '/_authenticated/admin/teams'
     | '/_authenticated/meetings/$meetingId'
     | '/_authenticated/reports/$reportId'
     | '/auth/microsoft/callback'
@@ -1064,6 +1089,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMeetingsMeetingIdRouteImport
       parentRoute: typeof AuthenticatedMeetingsRoute
     }
+    '/_authenticated/admin/teams': {
+      id: '/_authenticated/admin/teams'
+      path: '/teams'
+      fullPath: '/admin/teams'
+      preLoaderRoute: typeof AuthenticatedAdminTeamsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/system': {
+      id: '/_authenticated/admin/system'
+      path: '/system'
+      fullPath: '/admin/system'
+      preLoaderRoute: typeof AuthenticatedAdminSystemRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/payments': {
       id: '/_authenticated/admin/payments'
       path: '/payments'
@@ -1200,6 +1239,8 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminBillingRoute: typeof AuthenticatedAdminBillingRoute
   AuthenticatedAdminFinancialsRoute: typeof AuthenticatedAdminFinancialsRoute
   AuthenticatedAdminPaymentsRoute: typeof AuthenticatedAdminPaymentsRoute
+  AuthenticatedAdminSystemRoute: typeof AuthenticatedAdminSystemRoute
+  AuthenticatedAdminTeamsRoute: typeof AuthenticatedAdminTeamsRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedAdminUsersUserIdRoute: typeof AuthenticatedAdminUsersUserIdRoute
 }
@@ -1211,6 +1252,8 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminBillingRoute: AuthenticatedAdminBillingRoute,
   AuthenticatedAdminFinancialsRoute: AuthenticatedAdminFinancialsRoute,
   AuthenticatedAdminPaymentsRoute: AuthenticatedAdminPaymentsRoute,
+  AuthenticatedAdminSystemRoute: AuthenticatedAdminSystemRoute,
+  AuthenticatedAdminTeamsRoute: AuthenticatedAdminTeamsRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   AuthenticatedAdminUsersUserIdRoute: AuthenticatedAdminUsersUserIdRoute,
 }
@@ -1336,13 +1379,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
