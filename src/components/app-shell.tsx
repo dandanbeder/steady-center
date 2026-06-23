@@ -89,6 +89,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [assistantPrompt, setAssistantPrompt] = useState<string | undefined>(undefined);
   const [notifOpen, setNotifOpen] = useState(false);
   const [localSupportSession, setLocalSupportSession] = useState(() => getLocalSupportSession());
+  const [createAccountOpen, setCreateAccountOpen] = useState(false);
 
   // Close mobile drawer on route change
   useEffect(() => {
