@@ -2313,6 +2313,7 @@ export type Database = {
           trial_plan: string | null
           trial_used_at: string | null
           trial_used_env: string | null
+          ui_prefs: Json
           updated_at: string
           warned_by: string | null
           week_start_day: number
@@ -2380,6 +2381,7 @@ export type Database = {
           trial_plan?: string | null
           trial_used_at?: string | null
           trial_used_env?: string | null
+          ui_prefs?: Json
           updated_at?: string
           warned_by?: string | null
           week_start_day?: number
@@ -2447,6 +2449,7 @@ export type Database = {
           trial_plan?: string | null
           trial_used_at?: string | null
           trial_used_env?: string | null
+          ui_prefs?: Json
           updated_at?: string
           warned_by?: string | null
           week_start_day?: number
