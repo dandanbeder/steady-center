@@ -9,7 +9,8 @@ import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import heartbeatLogo from "@/assets/heartbeat-horizontal.svg";
 import heartbeatMono from "@/assets/heartbeat-mono.svg";
 import { useAuth } from "@/hooks/use-auth";
-import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
+import { useActiveBusiness, ALL, PERSONAL } from "@/hooks/use-active-business";
+import { CreateAccountDialog } from "@/components/shared/create-account-dialog";
 import { useIsPlatformAdmin } from "@/hooks/use-is-platform-admin";
 import { useMyRole } from "@/hooks/use-my-role";
 
@@ -154,9 +155,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   });
 
   const active =
-    activeId === ALL ? null : businesses.find((b) => b.id === activeId) ?? null;
+    activeId === ALL || activeId === PERSONAL
+      ? null
+      : businesses.find((b) => b.id === activeId) ?? null;
 
-  if (activeId !== ALL && businesses.length > 0 && !active) {
+  // If the persisted active id points at a business the user no longer has
+  // (deleted/archived/removed from), fall back to ALL. PERSONAL is always
+  // valid even with zero businesses, so don't reset on it.
+  if (activeId !== ALL && activeId !== PERSONAL && businesses.length > 0 && !active) {
     setActiveId(ALL);
   }
 
