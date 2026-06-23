@@ -95,7 +95,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
+import { useActiveBusiness, ALL, PERSONAL } from "@/hooks/use-active-business";
+import { CreateAccountDialog } from "@/components/shared/create-account-dialog";
 import { listBusinesses } from "@/lib/businesses";
 import {
   bulkDeleteTasks,
@@ -205,10 +206,18 @@ function TasksPage() {
     };
   }, [taskParam, navigate]);
 
+  // PERSONAL filter has no business rows to show in the Spaces panel — only the
+  // Uncategorised pseudo-list below. ALL shows all; a specific id narrows.
   const visibleBusinesses = useMemo(
-    () => (activeId === ALL ? businesses : businesses.filter((b) => b.id === activeId)),
+    () =>
+      activeId === ALL
+        ? businesses
+        : activeId === PERSONAL
+          ? []
+          : businesses.filter((b) => b.id === activeId),
     [businesses, activeId],
   );
+  const [createAcctOpen, setCreateAcctOpen] = useState(false);
 
   const selectedList: ListRow | null =
     selectedListId === UNCATEGORISED_LIST_ID
@@ -226,8 +235,10 @@ function TasksPage() {
       >
         <div className="p-4">
           <h2 className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Spaces</h2>
-          {/* Uncategorised, always available; hidden when filtering to a specific account */}
-          {activeId === ALL && (
+          {/* Uncategorised is the home of tasks with NULL business_id. Show
+              it under ALL and under the PERSONAL filter; hide when filtering
+              to a specific account where it's irrelevant. */}
+          {(activeId === ALL || activeId === PERSONAL) && (
             <button
               onClick={() => setSelectedListId(UNCATEGORISED_LIST_ID)}
               className={cn(
@@ -238,11 +249,20 @@ function TasksPage() {
               )}
             >
               <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/60" />
-              <span className="text-sm">Uncategorised</span>
+              <span className="text-sm">Personal / Uncategorised</span>
             </button>
           )}
-          {visibleBusinesses.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No accounts yet.</p>
+          {visibleBusinesses.length === 0 && activeId !== PERSONAL ? (
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">No accounts yet.</p>
+              <button
+                onClick={() => setCreateAcctOpen(true)}
+                className="text-sm text-primary hover:underline"
+              >
+                + Create an account
+              </button>
+              <CreateAccountDialog open={createAcctOpen} onOpenChange={setCreateAcctOpen} />
+            </div>
           ) : (
             <ul className="space-y-3">
               {visibleBusinesses.map((b) => (
