@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
+import { useActiveBusiness, ALL, PERSONAL, matchesActiveBusiness } from "@/hooks/use-active-business";
 import { listBusinesses } from "@/lib/businesses";
 import { listCalendars, listEvents } from "@/lib/calendars";
 import { useAuth } from "@/hooks/use-auth";
@@ -62,8 +62,12 @@ async function listTopOpenTasks(limit = 5, businessId: string | null = null): Pr
   end.setHours(23, 59, 59, 999);
   const mondayStr = mondayOf();
 
-  const apply = <T extends { eq: (col: string, val: string) => T }>(q: T): T =>
-    businessId ? q.eq("business_id", businessId) : q;
+  // businessId === PERSONAL → IS NULL; specific id → eq; null → no filter (ALL).
+  const apply = <T extends { eq: (col: string, val: string) => T; is: (col: string, val: null) => T }>(q: T): T => {
+    if (businessId === PERSONAL) return q.is("business_id", null);
+    if (businessId) return q.eq("business_id", businessId);
+    return q;
+  };
 
   const [committed, dueSoon] = await Promise.all([
     apply(
@@ -128,6 +132,8 @@ function TodayPage() {
     queryKey: ["events", "today", start.toISOString()],
     queryFn: () => listEvents(start, end),
   });
+  // listTopOpenTasks treats null = no filter; pass PERSONAL through so the
+  // query filters business_id IS NULL.
   const businessScope = activeId === ALL ? null : activeId;
   const topTasksQ = useQuery({
     queryKey: ["tasks", "today-top", 5, businessScope],
@@ -146,7 +152,7 @@ function TodayPage() {
   const recentNotes = recentNotesQ.data ?? [];
   const outcomeNameById = new Map((outcomesQ.data ?? []).map((o) => [o.id, o.name]));
 
-  const active = activeId === ALL ? null : businesses.find((b) => b.id === activeId);
+  const active = activeId === ALL || activeId === PERSONAL ? null : businesses.find((b) => b.id === activeId);
   const profileQ = useQuery({ queryKey: ["onboarding-profile"], queryFn: getOnboardingProfile });
   const profileName = (profileQ.data?.full_name ?? "").trim();
   const metaName = (user?.user_metadata?.full_name as string | undefined) ?? "";
@@ -160,7 +166,7 @@ function TodayPage() {
 
   const calById = new Map(calendars.map((c) => [c.id, c]));
   const todays = events
-    .filter((e) => activeId === ALL || e.business_id === activeId)
+    .filter((e) => matchesActiveBusiness(e.business_id, activeId))
     .sort((a, b) => +new Date(a.start_at) - +new Date(b.start_at));
 
   return (
@@ -223,7 +229,7 @@ function TodayPage() {
           ) : topTasks.length === 0 ? (
             <p className="text-sm text-muted-foreground">Nothing due. Nice.</p>
           ) : (() => {
-            const visible = topTasks.filter((t) => activeId === ALL || t.business_id === activeId);
+            const visible = topTasks.filter((t) => matchesActiveBusiness(t.business_id, activeId));
             const linkedOutcomes = new Set(
               visible.filter((t) => t.outcome_id).map((t) => t.outcome_id as string),
             );
@@ -262,7 +268,7 @@ function TodayPage() {
           {recentNotesQ.isLoading ? (
             <SkeletonList />
           ) : (() => {
-            const visible = recentNotes.filter((n) => activeId === ALL || n.business_id === activeId);
+            const visible = recentNotes.filter((n) => matchesActiveBusiness(n.business_id, activeId));
             if (visible.length === 0) {
               return (
                 <div className="space-y-2">

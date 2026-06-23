@@ -9,7 +9,8 @@ import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import heartbeatLogo from "@/assets/heartbeat-horizontal.svg";
 import heartbeatMono from "@/assets/heartbeat-mono.svg";
 import { useAuth } from "@/hooks/use-auth";
-import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
+import { useActiveBusiness, ALL, PERSONAL } from "@/hooks/use-active-business";
+import { CreateAccountDialog } from "@/components/shared/create-account-dialog";
 import { useIsPlatformAdmin } from "@/hooks/use-is-platform-admin";
 import { useMyRole } from "@/hooks/use-my-role";
 
@@ -88,6 +89,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [assistantPrompt, setAssistantPrompt] = useState<string | undefined>(undefined);
   const [notifOpen, setNotifOpen] = useState(false);
   const [localSupportSession, setLocalSupportSession] = useState(() => getLocalSupportSession());
+  const [createAccountOpen, setCreateAccountOpen] = useState(false);
 
   // Close mobile drawer on route change
   useEffect(() => {
@@ -154,9 +156,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   });
 
   const active =
-    activeId === ALL ? null : businesses.find((b) => b.id === activeId) ?? null;
+    activeId === ALL || activeId === PERSONAL
+      ? null
+      : businesses.find((b) => b.id === activeId) ?? null;
 
-  if (activeId !== ALL && businesses.length > 0 && !active) {
+  // If the persisted active id points at a business the user no longer has
+  // (deleted/archived/removed from), fall back to ALL. PERSONAL is always
+  // valid even with zero businesses, so don't reset on it.
+  if (activeId !== ALL && activeId !== PERSONAL && businesses.length > 0 && !active) {
     setActiveId(ALL);
   }
 
@@ -325,15 +332,23 @@ export function AppShell({ children }: { children: ReactNode }) {
                     style={{ backgroundColor: active?.color ?? "var(--muted-foreground)" }}
                   />
                   <span className="text-sm font-medium truncate">
-                    {active ? active.name : "All Accounts"}
+                    {active
+                      ? active.name
+                      : activeId === PERSONAL
+                        ? "Personal"
+                        : "All Accounts"}
                   </span>
                   <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56">
+              <DropdownMenuContent align="start" className="w-60">
                 <DropdownMenuItem onClick={() => setActiveId(ALL)}>
                   <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground mr-2" />
                   All Accounts
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setActiveId(PERSONAL)}>
+                  <span className="h-2.5 w-2.5 rounded-full border border-muted-foreground/40 mr-2" />
+                  Personal / Uncategorised
                 </DropdownMenuItem>
                 {businesses.length > 0 && <DropdownMenuSeparator />}
                 {businesses.map((b) => (
@@ -346,11 +361,19 @@ export function AppShell({ children }: { children: ReactNode }) {
                   </DropdownMenuItem>
                 ))}
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setCreateAccountOpen(true)}>
+                  + Create an account…
+                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link to="/settings">Manage Accounts…</Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            <CreateAccountDialog
+              open={createAccountOpen}
+              onOpenChange={setCreateAccountOpen}
+              onCreated={(id) => setActiveId(id)}
+            />
           </div>
           {/* Plan/Upgrade chip, hide on phone to free up header */}
           <div className="hidden sm:inline-flex shrink-0">

@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
+import { useActiveBusiness, ALL, PERSONAL } from "@/hooks/use-active-business";
 import { listBusinesses } from "@/lib/businesses";
 import { listMeetings, deleteMeeting, uploadMeetingAudio } from "@/lib/meetings";
 import { processMeeting } from "@/lib/meetings.functions";
@@ -35,6 +35,7 @@ export const Route = createFileRoute("/_authenticated/meetings")({
 
 function MeetingsPage() {
   const { activeId } = useActiveBusiness();
+  // Pass PERSONAL through to listMeetings so it can filter business_id IS NULL.
   const businessFilter = activeId === ALL ? null : activeId;
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -59,7 +60,11 @@ function MeetingsPage() {
         <div>
           <h1 className="text-2xl sm:text-3xl lg:text-4xl text-primary">Meetings</h1>
           <p className="mt-2 text-muted-foreground">
-            {activeId === ALL ? "Across all accounts" : "Filtered to active account"}
+            {activeId === ALL
+              ? "Across all accounts"
+              : activeId === PERSONAL
+                ? "Personal / Uncategorised only"
+                : "Filtered to active account"}
           </p>
         </div>
         <Button onClick={() => setOpen(true)} className="gap-2">

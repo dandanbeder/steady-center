@@ -30,7 +30,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ALL } from "@/hooks/use-active-business";
+import { ALL, PERSONAL } from "@/hooks/use-active-business";
+import { CreateAccountDialog } from "@/components/shared/create-account-dialog";
 import { cn } from "@/lib/utils";
 
 export type SmartView = "all" | "pinned" | "recent" | "unfiled" | "shared";
@@ -92,9 +93,11 @@ export function NotesTreeSidebar({
 
   const memberBizIds = useMemo(() => new Set(businesses.map((b) => b.id)), [businesses]);
 
-  // Notes within current account scope (for overview counts)
+  // Notes within current account scope (for overview counts). PERSONAL = no
+  // account; a specific id narrows to that account; ALL = everything.
   const scopedNotes = useMemo(() => {
     if (activeBusinessId === ALL) return notes;
+    if (activeBusinessId === PERSONAL) return notes.filter((n) => n.business_id == null);
     return notes.filter((n) => n.business_id === activeBusinessId);
   }, [notes, activeBusinessId]);
 
@@ -111,8 +114,17 @@ export function NotesTreeSidebar({
 
   const visibleBusinesses = useMemo(() => {
     if (activeBusinessId === ALL) return businesses;
+    if (activeBusinessId === PERSONAL) return [];
     return businesses.filter((b) => b.id === activeBusinessId);
   }, [businesses, activeBusinessId]);
+
+  // Personal section is its own block — its "notes" are NULL-business notes.
+  const personalNotesCount = useMemo(
+    () => notes.filter((n) => n.business_id == null).length,
+    [notes],
+  );
+  const showPersonalSection = activeBusinessId === ALL || activeBusinessId === PERSONAL;
+  const [createAcctOpen, setCreateAcctOpen] = useState(false);
 
   const folderCountByBusiness = (bizId: string) =>
     notes.filter((n) => n.business_id === bizId && n.folder_id).length;
@@ -289,10 +301,42 @@ export function NotesTreeSidebar({
             );
           })}
 
-          {visibleBusinesses.length === 0 && (
-            <p className="px-2 text-xs text-muted-foreground">No accounts yet.</p>
+          {/* Personal / Uncategorised — always present so the user can park a
+              note without picking an account. Header acts as a smart scope to
+              just NULL-business notes. */}
+          {showPersonalSection && (
+            <div className="rounded-lg border border-border/60 bg-card/30 overflow-hidden">
+              <button
+                onClick={() =>
+                  onScopeChange({ kind: "smart", view: "all", businessId: null })
+                }
+                className="w-full flex items-center gap-2 px-2 py-2 text-left"
+              >
+                <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground shrink-0" />
+                <span className="text-sm font-medium truncate">Personal / Uncategorised</span>
+                <span className="text-[10px] text-muted-foreground ml-auto pl-1">
+                  {personalNotesCount}
+                </span>
+              </button>
+            </div>
+          )}
+
+          {visibleBusinesses.length === 0 && activeBusinessId !== PERSONAL && (
+            <div className="px-2 py-1 space-y-1.5">
+              <p className="text-xs text-muted-foreground">
+                You don't have any accounts yet. Notes still live under Personal until
+                you add one.
+              </p>
+              <button
+                onClick={() => setCreateAcctOpen(true)}
+                className="text-xs text-primary hover:underline"
+              >
+                + Create an account
+              </button>
+            </div>
           )}
         </div>
+        <CreateAccountDialog open={createAcctOpen} onOpenChange={setCreateAcctOpen} />
       </div>
     </div>
   );
