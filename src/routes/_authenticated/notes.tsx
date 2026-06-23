@@ -113,6 +113,7 @@ function NotesPage() {
   const [mobileNav, setMobileNav] = useState(false);
   const [moveNote, setMoveNote] = useState<Note | null>(null);
   const [creatingInstant, setCreatingInstant] = useState(false);
+  const [listCollapsed, setListCollapsed] = useUiPref<boolean>("notes.listCollapsed", false);
 
   const defaultBusinessId =
     scope.kind === "folder"
