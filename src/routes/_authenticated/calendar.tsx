@@ -66,7 +66,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar as MiniCalendar } from "@/components/ui/calendar";
-import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
+import { useActiveBusiness, ALL, PERSONAL } from "@/hooks/use-active-business";
 import { useColorBy, useHiddenSet, type ColorBy } from "@/lib/calendar-prefs";
 import { EventQuickView } from "@/components/calendar/event-popover";
 import { QuickAddBar } from "@/components/calendar/quick-add-bar";
@@ -255,13 +255,27 @@ function CalendarPage() {
     enabled: ready,
   });
 
+  // PERSONAL surfaces calendars/events with NULL business_id; a concrete id
+  // narrows to that account; ALL shows everything.
   const visibleCalendars = useMemo(
-    () => calendars.filter((c) => activeId === ALL || c.business_id === activeId),
+    () =>
+      calendars.filter((c) =>
+        activeId === ALL
+          ? true
+          : activeId === PERSONAL
+            ? c.business_id == null
+            : c.business_id === activeId,
+      ),
     [calendars, activeId],
   );
 
   const visibleBusinesses = useMemo(
-    () => businesses.filter((b) => activeId === ALL || b.id === activeId),
+    () =>
+      activeId === ALL
+        ? businesses
+        : activeId === PERSONAL
+          ? []
+          : businesses.filter((b) => b.id === activeId),
     [businesses, activeId],
   );
 
@@ -291,9 +305,14 @@ function CalendarPage() {
         if (!cal || hiddenCals.has(cal.id)) return false;
         const bizId = effectiveBizId(e);
         if (bizId && hiddenBiz.has(bizId)) return false;
-        // "All Accounts" shows everything; a specific account filters to its
-        // events regardless of which calendar they live on.
-        if (activeId !== ALL && bizId !== activeId) return false;
+        // "All Accounts" shows everything; "Personal" shows events with no
+        // account; a specific account filters to its events regardless of
+        // which calendar they live on.
+        if (activeId === PERSONAL) {
+          if (bizId != null) return false;
+        } else if (activeId !== ALL && bizId !== activeId) {
+          return false;
+        }
         return true;
       }),
     [events, calById, hiddenCals, hiddenBiz, activeId, effectiveBizId],
