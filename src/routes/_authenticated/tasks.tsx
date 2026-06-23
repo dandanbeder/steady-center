@@ -254,7 +254,9 @@ function TasksPage() {
           )}
           {visibleBusinesses.length === 0 && activeId !== PERSONAL ? (
             <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">No accounts yet.</p>
+              <p className="text-sm text-muted-foreground">
+                No accounts yet — your tasks live under Personal until you add one.
+              </p>
               <button
                 onClick={() => setCreateAcctOpen(true)}
                 className="text-sm text-primary hover:underline"
