@@ -241,7 +241,9 @@ function SettingsPage() {
                 {isLoading ? (
                   <p className="text-sm text-muted-foreground">Loading…</p>
                 ) : businesses.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No accounts yet, add your first below.</p>
+                  <p className="text-sm text-muted-foreground">
+                    You don't have any accounts yet. Use the form below to create your first one — your existing notes and tasks will keep living under <strong>Personal / Uncategorised</strong> until you assign them.
+                  </p>
                 ) : (
                   <ul className="divide-y divide-border">
                     {businesses.map((b, idx) => (
