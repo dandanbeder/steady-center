@@ -264,7 +264,7 @@ function NotesPage() {
       <div
         className={cn(
           "w-full md:w-80 shrink-0 border-r border-border overflow-y-auto md:max-w-xs transition-[width] duration-200",
-          listCollapsed && "hidden md:hidden",
+          listCollapsed && "md:hidden",
         )}
       >
         <div className="p-3 sticky top-0 bg-background z-10 border-b border-border space-y-2">
