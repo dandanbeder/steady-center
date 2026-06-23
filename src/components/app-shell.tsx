@@ -332,15 +332,23 @@ export function AppShell({ children }: { children: ReactNode }) {
                     style={{ backgroundColor: active?.color ?? "var(--muted-foreground)" }}
                   />
                   <span className="text-sm font-medium truncate">
-                    {active ? active.name : "All Accounts"}
+                    {active
+                      ? active.name
+                      : activeId === PERSONAL
+                        ? "Personal"
+                        : "All Accounts"}
                   </span>
                   <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56">
+              <DropdownMenuContent align="start" className="w-60">
                 <DropdownMenuItem onClick={() => setActiveId(ALL)}>
                   <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground mr-2" />
                   All Accounts
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setActiveId(PERSONAL)}>
+                  <span className="h-2.5 w-2.5 rounded-full border border-muted-foreground/40 mr-2" />
+                  Personal / Uncategorised
                 </DropdownMenuItem>
                 {businesses.length > 0 && <DropdownMenuSeparator />}
                 {businesses.map((b) => (
@@ -353,11 +361,19 @@ export function AppShell({ children }: { children: ReactNode }) {
                   </DropdownMenuItem>
                 ))}
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setCreateAccountOpen(true)}>
+                  + Create an account…
+                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link to="/settings">Manage Accounts…</Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            <CreateAccountDialog
+              open={createAccountOpen}
+              onOpenChange={setCreateAccountOpen}
+              onCreated={(id) => setActiveId(id)}
+            />
           </div>
           {/* Plan/Upgrade chip, hide on phone to free up header */}
           <div className="hidden sm:inline-flex shrink-0">
