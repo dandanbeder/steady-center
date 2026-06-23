@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AccountSelect } from "@/components/shared/account-select";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -158,33 +159,12 @@ export function NewNoteDialog({
         {step === 0 && (
           <div className="space-y-3">
             <Label>Account</Label>
-            <Select
-              value={businessId ?? "__none"}
-              onValueChange={(v) => setBusinessId(v === "__none" ? null : v)}
-            >
-              <SelectTrigger><SelectValue placeholder="Pick an account" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none">
-                  <span className="inline-flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground" />
-                    Personal / Uncategorised (no account)
-                  </span>
-                </SelectItem>
-                {businesses.map((b) => (
-                  <SelectItem key={b.id} value={b.id}>
-                    <span className="inline-flex items-center gap-2">
-                      <span
-                        className="h-2.5 w-2.5 rounded-full"
-                        style={{ backgroundColor: b.color }}
-                      />
-                      {b.name}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* Shared AccountSelect ensures the same Personal + Create options
+                appear here as in every other picker — no dead ends, no
+                "No accounts yet". */}
+            <AccountSelect value={businessId} onChange={(v) => setBusinessId(v)} />
             <p className="text-xs text-muted-foreground">
-              Choose which account this note belongs to. It stays private to you unless you share it.
+              Choose which account this note belongs to. Leave as Personal if it doesn't fit one — you can move it later.
             </p>
           </div>
         )}
