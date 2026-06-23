@@ -125,6 +125,10 @@ function NotesPage() {
     if (creatingInstant) return;
     setCreatingInstant(true);
     try {
+      // A blank note must always be creatable — no account, no folder, no
+      // type chosen. The schema defaults business_id/folder_id to NULL
+      // (= Personal / Unfiled) and note_type to 'note', and the RLS insert
+      // policy only requires owner_id = auth.uid().
       const n = await createNote({
         business_id: defaultBusinessId,
         folder_id: defaultFolderId,
@@ -135,7 +139,11 @@ function NotesPage() {
       await qc.invalidateQueries({ queryKey: ["notes"] });
       setSelectedNoteId(n.id);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't create note");
+      // Surface the real reason — generic "Couldn't create note" hides
+      // RLS / privilege errors that we actually need to see.
+      console.error("[notes] instant create failed", e);
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error(`Couldn't create note: ${msg}`);
     } finally {
       setCreatingInstant(false);
     }
