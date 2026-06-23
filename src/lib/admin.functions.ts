@@ -377,6 +377,9 @@ export const adminSetUserStatus = createServerFn({ method: "POST" })
     if (data.user_id === context.userId && data.status === "suspended") {
       throw new Error("You cannot suspend your own account.");
     }
+    if (data.status === "suspended") {
+      await assertNotProtectedPrimary(data.user_id, "suspended");
+    }
     const { data: before } = await supabaseAdmin.from("profiles").select("status").eq("id", data.user_id).maybeSingle();
     const { error: pErr } = await supabaseAdmin.from("profiles").update({ status: data.status }).eq("id", data.user_id);
     if (pErr) throw new Error(pErr.message);
