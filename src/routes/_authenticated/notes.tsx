@@ -83,10 +83,10 @@ import {
 
 export const Route = createFileRoute("/_authenticated/notes")({
   head: () => ({ meta: [{ title: "Notes · Heartbeat" }] }),
-  loader: ({ context }) => {
-    // Warm the cache so the list renders without a spinner on first paint.
-    context.queryClient.prefetchQuery({ queryKey: ["notes"], queryFn: listNotes });
-  },
+  // No SSR loader: listNotes uses the browser Supabase client which has no
+  // session during worker SSR / static prerender. Prefetching there primed
+  // the cache with an empty/error result and broke the published page.
+  // The component's useQuery({ enabled: ready }) fetches once auth restores.
   component: NotesPage,
 });
 
