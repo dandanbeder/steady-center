@@ -106,7 +106,7 @@ function PricingPage() {
     setBusy(plan);
     try {
       await trialFn({ data: { plan, environment: env } });
-      toast.success(`Your ${TRIAL_DAYS}-day ${plan === "pro" ? "Pro" : "Team"} trial has started.`);
+      toast.success(`Your ${TRIAL_DAYS}-day ${plan === "pro" ? "Standard" : "Team"} trial has started.`);
       navigate({ to: "/today" });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Could not start trial";
