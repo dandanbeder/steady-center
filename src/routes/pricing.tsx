@@ -306,16 +306,12 @@ function PricingPage() {
                 isActive={isActive}
                 user={user}
                 loading={busy === "pro" || checkoutLoading}
-                onPrimary={() => (trialEligible ? startTrial("pro") : beginCheckout("pro"))}
-                label={
-                  trialEligible
-                    ? `Start ${TRIAL_DAYS}-day free trial`
-                    : `Get Standard · ${fmtUsd(proPrice.amount)}/${cycle === "year" ? "yr" : "mo"}`
-                }
+                onPrimary={() => beginCheckout("pro")}
+                label={`Get Standard · ${fmtUsd(proPrice.amount)}/${cycle === "year" ? "yr" : "mo"}`}
                 variant="primary"
               />
             }
-            footnote={trialEligible ? "No card required to start." : "One trial per account."}
+            footnote="Upgrade anytime, cancel anytime."
           />
 
           {/* Team */}
