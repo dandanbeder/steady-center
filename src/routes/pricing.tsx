@@ -380,7 +380,7 @@ function PricingPage() {
                 isActive={isActive}
                 user={user}
                 loading={busy === "team" || checkoutLoading}
-                onPrimary={() => (trialEligible ? startTrial("team") : beginCheckout("team"))}
+                onPrimary={() => (trialEligible ? startTrial() : beginCheckout("team"))}
                 label={
                   trialEligible
                     ? `Start ${TRIAL_DAYS}-day free trial`
