@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { getMyPlanContext } from "@/lib/plan.functions";
 
 export type PlanContextData = {
-  tier: "free" | "pro" | "team";
+  tier: "free" | "basic" | "pro" | "team";
   quantity: number;
   billingCycle: "month" | "year";
   paidSeats: number;

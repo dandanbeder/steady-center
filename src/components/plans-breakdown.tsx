@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Check } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { LIMITS, PRICING, type Tier } from "@/lib/entitlements";
+import { LIMITS, PRICING, SPACE_ACCOUNT_HELPER, type Tier } from "@/lib/entitlements";
 import { cn } from "@/lib/utils";
 
 function fmtUsd(cents: number): string {
@@ -27,22 +27,35 @@ const PLANS: PlanRow[] = [
     price: "$0",
     priceSub: "forever",
     features: [
-      `${LIMITS.free.maxBusinesses} space`,
+      `${LIMITS.free.maxBusinesses} account within your space`,
       `${LIMITS.free.aiAllowanceCreditsPerSeat} AI credits / month`,
       "Calendar, tasks, notes & journal",
-      "Just for you",
+      "Ask my notes — shown, unlocks on a paid plan",
+    ],
+  },
+  {
+    id: "basic",
+    name: "Basic",
+    tagline: "Two areas, one calm home.",
+    price: `${fmtUsd(PRICING.basic_monthly.amount)}/mo`,
+    priceSub: `or ${fmtUsd(Math.round(PRICING.basic_yearly.amount / 12))}/mo billed annually`,
+    features: [
+      `${LIMITS.basic.maxBusinesses} accounts within your space`,
+      `${LIMITS.basic.aiAllowanceCreditsPerSeat} AI credits / month`,
+      "Everything in Free, plus Reporting & Meetings",
+      "Ask my notes — shown, unlocks on Standard",
     ],
   },
   {
     id: "pro",
-    name: "Pro",
+    name: "Standard",
     tagline: "For everything you're juggling.",
-    price: fmtUsd(PRICING.pro_monthly.amount),
-    priceSub: "/mo · or save with annual",
+    price: `${fmtUsd(PRICING.pro_monthly.amount)}/mo`,
+    priceSub: `or ${fmtUsd(Math.round(PRICING.pro_yearly.amount / 12))}/mo billed annually`,
     features: [
-      "Unlimited spaces & calendars",
+      `${LIMITS.pro.maxBusinesses} accounts within your space`,
       `${LIMITS.pro.aiAllowanceCreditsPerSeat} AI credits / month`,
-      "Meetings, summaries & weekly coach",
+      "Everything in Basic, plus Ask my notes (full)",
       "Top up AI credits anytime",
     ],
   },
@@ -50,12 +63,12 @@ const PLANS: PlanRow[] = [
     id: "team",
     name: "Team",
     tagline: "For teams that collaborate.",
-    price: fmtUsd(PRICING.team_monthly.amount),
-    priceSub: "/seat/mo · 2-seat minimum",
+    price: `${fmtUsd(PRICING.team_monthly.amount)}/seat/mo`,
+    priceSub: `or ${fmtUsd(Math.round(PRICING.team_yearly.amount / 12))}/seat billed annually · 2-seat minimum`,
     features: [
-      "Everything in Pro",
+      "Multiple accounts + shared team spaces",
       `${LIMITS.team.aiAllowanceCreditsPerSeat} AI credits per seat, pooled`,
-      "Sharing, roles & team progress",
+      "Everything in Standard, plus Sharing, roles & team progress",
       "Viewers & guests free (no seat)",
     ],
   },
@@ -63,8 +76,8 @@ const PLANS: PlanRow[] = [
 
 /**
  * Plans comparison rendered inside the Billing page so users can compare
- * Free / Pro / Team without leaving Settings. Numbers are sourced from
- * the shared LIMITS / PRICING constants used by the public pricing page,
+ * Free / Basic / Standard / Team without leaving Settings. Numbers are sourced
+ * from the shared LIMITS / PRICING constants used by the public pricing page,
  * so the two stay in sync.
  */
 export function PlansBreakdown({ currentTier }: { currentTier: Tier }) {
@@ -72,12 +85,10 @@ export function PlansBreakdown({ currentTier }: { currentTier: Tier }) {
     <Card>
       <CardHeader>
         <CardTitle>Plans</CardTitle>
-        <CardDescription>
-          Compare what's included. Upgrades, downgrades, and seat changes are handled securely at checkout.
-        </CardDescription>
+        <CardDescription>{SPACE_ACCOUNT_HELPER}</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {PLANS.map((p) => {
             const isCurrent = p.id === currentTier;
             return (
@@ -99,8 +110,8 @@ export function PlansBreakdown({ currentTier }: { currentTier: Tier }) {
                 <p className="mt-1 text-xs text-muted-foreground">{p.tagline}</p>
                 <div className="mt-3">
                   <span className="text-2xl font-semibold">{p.price}</span>
-                  <span className="ml-1 text-xs text-muted-foreground">{p.priceSub}</span>
                 </div>
+                <p className="text-xs text-muted-foreground">{p.priceSub}</p>
                 <ul className="mt-3 space-y-1.5 text-sm">
                   {p.features.map((f) => (
                     <li key={f} className="flex items-start gap-2">
