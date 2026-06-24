@@ -33,7 +33,7 @@ import {
   switchBillingCycle,
   updateSeats,
 } from "@/lib/subscriptions.functions";
-import { PRICING } from "@/lib/entitlements";
+import { PRICING, tierLabel } from "@/lib/entitlements";
 import { getTrialEligibility, startFreeTrial } from "@/lib/trial.functions";
 import {
   AlertDialog,
@@ -184,7 +184,7 @@ function BillingPage() {
           <CardHeader>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <CardTitle className="capitalize text-2xl">{tier} plan</CardTitle>
+                <CardTitle className="text-2xl">{tierLabel(tier)} plan</CardTitle>
                 <CardDescription>
                   {cyclePretty} billing
                   {subscription.cancel_at_period_end && " · cancels at period end"}
@@ -460,7 +460,7 @@ function FreePlanView({
         <div className="text-center">
           <h1 className="text-3xl">You're on the Free plan</h1>
           <p className="mt-2 text-muted-foreground">
-            Try Pro or Team free for 14 days. No card required.
+            Try Standard or Team free for 14 days. No card required.
           </p>
         </div>
 
@@ -468,8 +468,8 @@ function FreePlanView({
           <div className="mt-8 grid gap-4 sm:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle>Pro</CardTitle>
-                <CardDescription>Unlimited businesses & calendars, 400 AI credits/mo.</CardDescription>
+                <CardTitle>Standard</CardTitle>
+                <CardDescription>4 accounts within your space, 400 AI credits/mo, Ask my notes (full).</CardDescription>
               </CardHeader>
               <CardContent>
                 <Button
@@ -477,14 +477,14 @@ function FreePlanView({
                   onClick={() => handleStart("pro")}
                   disabled={busy !== null}
                 >
-                  {busy === "pro" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Start 14-day Pro trial"}
+                  {busy === "pro" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Start 14-day Standard trial"}
                 </Button>
               </CardContent>
             </Card>
             <Card>
               <CardHeader>
                 <CardTitle>Team</CardTitle>
-                <CardDescription>Everything in Pro + sharing & team features (2 seats).</CardDescription>
+                <CardDescription>Everything in Standard + shared team spaces, roles & sharing (2 seats).</CardDescription>
               </CardHeader>
               <CardContent>
                 <Button
