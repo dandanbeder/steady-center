@@ -390,7 +390,7 @@ function BillingPage() {
           <CreditBalanceCard />
           <div className="flex justify-end">
             <Link to="/ai" className="text-xs text-muted-foreground hover:underline">
-              Open AI wallet & usage →
+              Open AI wallet and usage
             </Link>
           </div>
         </div>
