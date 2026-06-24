@@ -94,13 +94,15 @@ export function useSubscription() {
     (sub.status === "canceled" && !!periodEnd && periodEnd > new Date())
   );
 
-  const tier: "free" | "pro" | "team" = !isActive
+  const tier: "free" | "basic" | "pro" | "team" = !isActive
     ? "free"
     : sub?.product_id === "team_plan"
       ? "team"
       : sub?.product_id === "pro_plan"
         ? "pro"
-        : "free";
+        : sub?.product_id === "basic_plan"
+          ? "basic"
+          : "free";
 
   return {
     subscription: sub,
