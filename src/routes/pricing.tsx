@@ -15,6 +15,7 @@ import { getTrialEligibility, startFreeTrial } from "@/lib/trial.functions";
 import {
   LIMITS,
   PRICING,
+  SPACE_ACCOUNT_HELPER,
   TEAM_MIN_SEATS,
   TRIAL_DAYS,
   type Tier,
@@ -70,12 +71,20 @@ function PricingPage() {
   const trialEligible = !user || (eligibility.data?.eligible ?? true);
 
   // -- Prices come from the shared PRICING source of truth --
+  const basicPrice = cycle === "year" ? PRICING.basic_yearly : PRICING.basic_monthly;
   const proPrice = cycle === "year" ? PRICING.pro_yearly : PRICING.pro_monthly;
   const teamPrice = cycle === "year" ? PRICING.team_yearly : PRICING.team_monthly;
 
   // Monthly equivalents for display
+  const basicMonthlyEquivCents = cycle === "year" ? Math.round(PRICING.basic_yearly.amount / 12) : PRICING.basic_monthly.amount;
   const proMonthlyEquivCents = cycle === "year" ? Math.round(PRICING.pro_yearly.amount / 12) : PRICING.pro_monthly.amount;
   const teamMonthlyEquivCents = cycle === "year" ? Math.round(PRICING.team_yearly.amount / 12) : PRICING.team_monthly.amount;
+
+  const basicAnnualSavingsPct = useMemo(() => {
+    const m = PRICING.basic_monthly.amount * 12;
+    const y = PRICING.basic_yearly.amount;
+    return Math.round(((m - y) / m) * 100);
+  }, []);
 
   const proAnnualSavingsPct = useMemo(() => {
     const m = PRICING.pro_monthly.amount * 12;
@@ -112,7 +121,7 @@ function PricingPage() {
     }
   };
 
-  const beginCheckout = async (plan: "pro" | "team") => {
+  const beginCheckout = async (plan: "basic" | "pro" | "team") => {
     if (!user) {
       navigate({ to: "/login" });
       return;
@@ -120,9 +129,11 @@ function PricingPage() {
     setBusy(plan);
     try {
       const priceId =
-        plan === "pro"
-          ? cycle === "year" ? "pro_yearly" : "pro_monthly"
-          : cycle === "year" ? "team_yearly" : "team_monthly";
+        plan === "basic"
+          ? cycle === "year" ? "basic_yearly" : "basic_monthly"
+          : plan === "pro"
+            ? cycle === "year" ? "pro_yearly" : "pro_monthly"
+            : cycle === "year" ? "team_yearly" : "team_monthly";
       const quantity = plan === "team" ? Math.max(teamSeats, TEAM_MIN_SEATS) : 1;
       await openCheckout({
         priceId,
