@@ -74,7 +74,7 @@ export async function getUserPlanContext(userId: string): Promise<PlanContext> {
   if (active && sub?.product_id === "team_plan") tier = "team";
   else if (active && sub?.product_id === "pro_plan") tier = "pro";
   else if (active && sub?.product_id === "basic_plan") tier = "basic";
-  else if (trialing) tier = "pro";
+  else if (trialing) tier = "team";
 
   const quantity = (sub?.quantity as number | undefined) ?? 1;
   const billingCycle = ((sub?.billing_cycle as BillingCycle | undefined) ?? "month") as BillingCycle;
