@@ -203,7 +203,7 @@ function PricingPage() {
             Annual
             <span className="ml-2 rounded-full px-2 py-0.5 text-xs"
                   style={{ backgroundColor: "#7C9B7F", color: "#FBF8F0" }}>
-              Save up to {Math.max(proAnnualSavingsPct, teamAnnualSavingsPct)}%
+              Save up to {Math.max(basicAnnualSavingsPct, proAnnualSavingsPct, teamAnnualSavingsPct)}%
             </span>
           </CycleButton>
         </div>
@@ -211,10 +211,10 @@ function PricingPage() {
 
       {/* Plan cards */}
       <section className="px-6 pb-16">
-        <p className="mx-auto mb-6 max-w-3xl text-center text-sm" style={{ color: "#26382F", opacity: 0.72 }}>
-          A space is a separate area you keep organised — your studies, your work, a side project, your personal life.
+        <p className="mx-auto mb-6 max-w-3xl text-center text-sm" style={{ color: "#26382F", opacity: 0.78 }}>
+          {SPACE_ACCOUNT_HELPER}
         </p>
-        <div className="mx-auto grid max-w-6xl gap-6 md:grid-cols-3">
+        <div className="mx-auto grid max-w-6xl gap-6 md:grid-cols-2 xl:grid-cols-4">
           {/* Free */}
           <PlanCard
             name="Free"
@@ -222,10 +222,10 @@ function PricingPage() {
             priceMain={<span className="font-serif text-5xl">$0</span>}
             priceSub="forever"
             features={[
-              `${LIMITS.free.maxBusinesses} space`,
+              `${LIMITS.free.maxBusinesses} account within your space`,
               `${LIMITS.free.aiAllowanceCreditsPerSeat} AI credits / month`,
               "Calendar, tasks, notes & journal",
-              "Just for you",
+              "Ask my notes — shown, unlocks on a paid plan",
             ]}
             cta={
               <PlanCta
@@ -241,11 +241,46 @@ function PricingPage() {
             }
           />
 
-          {/* Pro - highlighted */}
+          {/* Basic */}
+          <PlanCard
+            name="Basic"
+            tagline="Two areas, one calm home."
+            priceMain={
+              <>
+                <span className="font-serif text-5xl">{fmtUsd(basicMonthlyEquivCents)}</span>
+                <span className="ml-1 text-sm" style={{ opacity: 0.7 }}>/mo</span>
+              </>
+            }
+            priceSub={
+              cycle === "year"
+                ? `Billed ${fmtUsd(PRICING.basic_yearly.amount)} yearly, save ${basicAnnualSavingsPct}%`
+                : "Billed monthly"
+            }
+            features={[
+              `${LIMITS.basic.maxBusinesses} accounts within your space`,
+              `${LIMITS.basic.aiAllowanceCreditsPerSeat} AI credits / month`,
+              "Everything in Free, plus Reporting & Meetings",
+              "Ask my notes — shown, unlocks on Standard",
+            ]}
+            cta={
+              <PlanCta
+                tier="basic"
+                currentTier={currentTier}
+                isActive={isActive}
+                user={user}
+                loading={busy === "basic" || checkoutLoading}
+                onPrimary={() => beginCheckout("basic")}
+                label={`Get Basic · ${fmtUsd(basicPrice.amount)}/${cycle === "year" ? "yr" : "mo"}`}
+                variant="ghost"
+              />
+            }
+          />
+
+          {/* Standard - highlighted */}
           <PlanCard
             highlighted
             badge="Most popular"
-            name="Pro"
+            name="Standard"
             tagline="For everything you're juggling."
             priceMain={
               <>
@@ -256,12 +291,12 @@ function PricingPage() {
             priceSub={
               cycle === "year"
                 ? `Billed ${fmtUsd(PRICING.pro_yearly.amount)} yearly, save ${proAnnualSavingsPct}%`
-                : `Billed monthly`
+                : "Billed monthly"
             }
             features={[
-              "Unlimited spaces & calendars",
+              `${LIMITS.pro.maxBusinesses} accounts within your space`,
               `${LIMITS.pro.aiAllowanceCreditsPerSeat} AI credits / month`,
-              "Meetings, summaries & weekly coach",
+              "Everything in Basic, plus Ask my notes (full)",
               "Top up AI credits anytime",
             ]}
             cta={
@@ -275,7 +310,7 @@ function PricingPage() {
                 label={
                   trialEligible
                     ? `Start ${TRIAL_DAYS}-day free trial`
-                    : `Get Pro · ${fmtUsd(proPrice.amount)}/${cycle === "year" ? "yr" : "mo"}`
+                    : `Get Standard · ${fmtUsd(proPrice.amount)}/${cycle === "year" ? "yr" : "mo"}`
                 }
                 variant="primary"
               />
@@ -299,9 +334,9 @@ function PricingPage() {
                 : `Billed monthly · ${TEAM_MIN_SEATS}-seat minimum`
             }
             features={[
-              "Everything in Pro",
+              "Multiple accounts + shared team spaces",
               `${LIMITS.team.aiAllowanceCreditsPerSeat} AI credits per seat, pooled`,
-              "Sharing, roles & team progress",
+              "Everything in Standard, plus Sharing, roles & team progress",
               "Viewers & guests free (no seat)",
             ]}
             extra={
@@ -361,6 +396,7 @@ function PricingPage() {
             footnote={trialEligible ? "No card required to start." : `Minimum ${TEAM_MIN_SEATS} seats.`}
           />
         </div>
+
 
         <p className="mx-auto mt-6 max-w-3xl text-center text-xs" style={{ color: "#26382F", opacity: 0.65 }}>
           Prices in USD. Local currency, taxes and VAT handled securely at checkout.
