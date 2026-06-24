@@ -317,7 +317,7 @@ function BillingPage() {
                 Adding a seat charges a prorated amount immediately. Removing a seat applies credit at your next renewal.
               </p>
 
-              {/* Transparent per-seat breakdown — display only, never auto-charges members */}
+              {/* Transparent per-seat breakdown: display only, never auto-charges members */}
               {(() => {
                 const seats = subscription.quantity ?? 2;
                 const perSeatCents =
@@ -338,8 +338,8 @@ function BillingPage() {
                       if your team splits the bill.
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      You're billed once for the full team total. Heartbeat never charges your members directly —
-                      settle among yourselves however you like.
+                      You're billed once for the full team total. Heartbeat never charges your members directly.
+                      Settle among yourselves however you like.
                     </p>
                   </div>
                 );
@@ -390,7 +390,7 @@ function BillingPage() {
           <CreditBalanceCard />
           <div className="flex justify-end">
             <Link to="/ai" className="text-xs text-muted-foreground hover:underline">
-              Open AI wallet & usage →
+              Open AI wallet and usage
             </Link>
           </div>
         </div>
@@ -436,7 +436,7 @@ function FreePlanView({
     setBusy("team");
     try {
       await startFn({ data: { plan: "team", environment: env } });
-      toast.success("Team trial started — 7 days, no card required.");
+      toast.success("Team trial started. 7 days, no card required.");
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["subscription"] }),
         qc.invalidateQueries({ queryKey: ["plan-context"] }),
@@ -466,7 +466,7 @@ function FreePlanView({
         <div className="text-center">
           <h1 className="text-3xl">You're on the Free plan</h1>
           <p className="mt-2 text-muted-foreground">
-            Free is yours for as long as you like. Want to work with a team? Try Team free for 7 days — no card required.
+            Free is yours for as long as you like. Want to work with a team? Try Team free for 7 days. No card required.
           </p>
         </div>
 
