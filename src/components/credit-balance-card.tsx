@@ -17,7 +17,7 @@ const TopUpDialog = lazy(() =>
 );
 
 function fmtDate(d: string | null | undefined): string {
-  if (!d) return "—";
+  if (!d) return "-";
   return new Date(d).toLocaleDateString(undefined, {
     year: "numeric",
     month: "short",
@@ -118,8 +118,8 @@ export function CreditBalanceCard() {
               </CardTitle>
               <CardDescription>
                 {b.pooled
-                  ? "You're on a team plan. AI draws from the shared team pool first; any credits you buy here are private to you and used only after the shared pool runs out. They roll for 12 months and stay with you if you leave the team."
-                  : "Your allowance refills on your billing date; purchased credits roll for 12 months."}
+                  ? "You're on a team plan. The shared team pool is used first. Any credits you buy here are private to you, and only used after the shared pool runs out. They roll for 12 months and stay with you if you leave the team."
+                  : "Your AI credits refresh on your billing date. Any credits you buy separately stay available for 12 months."}
               </CardDescription>
             </div>
             <div className="text-right">
@@ -175,14 +175,14 @@ export function CreditBalanceCard() {
 
           <div>
             <div className="mb-1 flex items-baseline justify-between text-sm">
-              <span className="font-medium">This cycle's allowance</span>
+              <span className="font-medium">This cycle's credits</span>
               <span className="tabular-nums text-muted-foreground">
                 {b.allowance} / {b.allowanceCap}
               </span>
             </div>
             <Progress value={allowancePct} />
             <div className="mt-1 text-xs text-muted-foreground">
-              {b.cycleEnd ? `Resets on ${fmtDate(b.cycleEnd)}` : "Resets on your next billing date"}
+              Resets on your next billing date.
             </div>
           </div>
 
@@ -193,8 +193,7 @@ export function CreditBalanceCard() {
             </div>
             {b.lots.length === 0 ? (
               <p className="text-xs text-muted-foreground">
-                No purchased credits yet. Top-ups are added here and used after your
-                allowance.
+                No purchased credits yet. Top-ups will appear here and are used after your monthly credits.
               </p>
             ) : (
               <ul className="space-y-1 text-xs text-muted-foreground">
@@ -227,7 +226,7 @@ export function CreditBalanceCard() {
                 onChange={(e) => setThresholdDraft(e.target.value)}
               />
               <span className="text-xs text-muted-foreground">
-                credits, alert me when I drop below this
+                credits, alert me when I drop below this amount.
               </span>
               <Button
                 size="sm"
@@ -239,7 +238,7 @@ export function CreditBalanceCard() {
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Current threshold: <strong>{b.lowThreshold}</strong>
+              Current alert level: <strong>{b.lowThreshold}</strong>
               {b.lowAlertedAt ? ` · alerted on ${fmtDate(b.lowAlertedAt)}` : ""}
             </p>
           </div>
