@@ -427,7 +427,18 @@ function NotesPage() {
             folders={folders}
             businesses={businesses}
             onMove={() => setMoveNote(selectedNote)}
-            onChanged={() => qc.invalidateQueries({ queryKey: ["notes"] })}
+            onChanged={(patch) => {
+              // Patch the cache in place instead of invalidating the whole
+              // notes list — invalidation triggered a full GET after every
+              // keystroke save and starved the page.
+              qc.setQueryData<Note[]>(["notes"], (prev) =>
+                (prev ?? []).map((n) =>
+                  n.id === selectedNote.id
+                    ? { ...n, ...(patch ?? {}), updated_at: new Date().toISOString() }
+                    : n,
+                ),
+              );
+            }}
             onDeleted={() => {
               qc.invalidateQueries({ queryKey: ["notes"] });
               setSelectedNoteId(null);
