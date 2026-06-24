@@ -425,18 +425,18 @@ function FreePlanView({
 }) {
   const startFn = useServerFn(startFreeTrial);
   const eligFn = useServerFn(getTrialEligibility);
-  const [busy, setBusy] = useState<"pro" | "team" | null>(null);
+  const [busy, setBusy] = useState<"team" | "basic" | "pro" | null>(null);
 
   const elig = useQuery({
     queryKey: ["trial-eligibility", env],
     queryFn: () => eligFn({ data: { environment: env } }),
   });
 
-  const handleStart = async (plan: "pro" | "team") => {
-    setBusy(plan);
+  const handleStartTeamTrial = async () => {
+    setBusy("team");
     try {
-      await startFn({ data: { plan, environment: env } });
-      toast.success(`${plan === "pro" ? "Standard" : "Team"} trial started, 14 days, no card required`);
+      await startFn({ data: { plan: "team", environment: env } });
+      toast.success("Team trial started — 7 days, no card required.");
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["subscription"] }),
         qc.invalidateQueries({ queryKey: ["plan-context"] }),
@@ -450,6 +450,12 @@ function FreePlanView({
     }
   };
 
+  const goToPricing = (plan: "basic" | "pro") => {
+    setBusy(plan);
+    // Pricing page hosts the Paddle checkout flow.
+    window.location.assign(`/pricing?upgrade=${plan}`);
+  };
+
   const eligible = elig.data?.eligible ?? false;
   const usedPlan = elig.data?.trialPlan;
 
@@ -460,46 +466,85 @@ function FreePlanView({
         <div className="text-center">
           <h1 className="text-3xl">You're on the Free plan</h1>
           <p className="mt-2 text-muted-foreground">
-            Try Standard or Team free for 14 days. No card required.
+            Free is yours for as long as you like. Want to work with a team? Try Team free for 7 days — no card required.
           </p>
         </div>
 
-        {elig.isLoading ? null : eligible ? (
-          <div className="mt-8 grid gap-4 sm:grid-cols-2">
-            <Card>
+        {elig.isLoading ? null : (
+          <div className="mt-8 grid gap-4 sm:grid-cols-3">
+            <Card className="overflow-hidden">
+              <CardHeader>
+                <CardTitle>Basic</CardTitle>
+                <CardDescription className="break-words">
+                  2 accounts within your space, 300 AI credits/mo, meetings &amp; reports.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => goToPricing("basic")}
+                  disabled={busy !== null}
+                >
+                  {busy === "basic" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Upgrade to Basic"}
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="overflow-hidden">
               <CardHeader>
                 <CardTitle>Standard</CardTitle>
-                <CardDescription>4 accounts within your space, 400 AI credits/mo, Ask my notes (full).</CardDescription>
+                <CardDescription className="break-words">
+                  4 accounts within your space, 400 AI credits/mo, Ask my notes (full).
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <Button
+                  variant="outline"
                   className="w-full"
-                  onClick={() => handleStart("pro")}
+                  onClick={() => goToPricing("pro")}
                   disabled={busy !== null}
                 >
-                  {busy === "pro" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Start 14-day Standard trial"}
+                  {busy === "pro" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Upgrade to Standard"}
                 </Button>
               </CardContent>
             </Card>
-            <Card>
+
+            <Card className="overflow-hidden border-primary/40">
               <CardHeader>
                 <CardTitle>Team</CardTitle>
-                <CardDescription>Everything in Standard + shared team spaces, roles & sharing (2 seats).</CardDescription>
+                <CardDescription className="break-words">
+                  Multiple accounts + shared team spaces, roles &amp; sharing (2 seats).
+                </CardDescription>
               </CardHeader>
-              <CardContent>
-                <Button
-                  className="w-full"
-                  onClick={() => handleStart("team")}
-                  disabled={busy !== null}
-                >
-                  {busy === "team" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Start 14-day Team trial"}
-                </Button>
+              <CardContent className="space-y-2">
+                {eligible ? (
+                  <>
+                    <Button
+                      className="w-full"
+                      onClick={handleStartTeamTrial}
+                      disabled={busy !== null}
+                    >
+                      {busy === "team" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Start 7-day Team trial"}
+                    </Button>
+                    <p className="text-xs text-muted-foreground text-center">No card required.</p>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      className="w-full"
+                      onClick={() => (window.location.href = "/pricing?upgrade=team")}
+                      disabled={busy !== null}
+                    >
+                      Upgrade to Team
+                    </Button>
+                    <p className="text-xs text-muted-foreground text-center">
+                      Trial already used{usedPlan ? ` (${usedPlan})` : ""}.
+                    </p>
+                  </>
+                )}
               </CardContent>
             </Card>
-          </div>
-        ) : (
-          <div className="mt-8 rounded-lg border bg-muted/30 p-6 text-center text-sm text-muted-foreground">
-            You've already used your free trial{usedPlan ? ` (${usedPlan})` : ""}. Contact support to upgrade.
           </div>
         )}
 
