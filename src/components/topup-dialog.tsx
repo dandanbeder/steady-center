@@ -34,7 +34,7 @@ type Props = {
    * "shared" = owner buying into the team kitty (everyone on the team uses).
    * "personal" = anyone buying credits into their own private space.
    * The webhook keys credits on the buyer's userId, so this prop only
-   * controls copy and the post-checkout redirect — the routing is implicit:
+   * controls copy and the post-checkout redirect. The routing is implicit:
    * owner buy → kitty; member buy → that member's personal account.
    */
   mode?: TopUpMode;
@@ -89,8 +89,8 @@ export function TopUpDialog({
           </DialogTitle>
           <DialogDescription>
             {isShared
-              ? "Credits go into the shared team kitty — available to everyone on the team. They roll for 12 months and stay with the team."
-              : "Credits go into your own private space — used only by you, after the shared team pool runs out. They roll for 12 months and stay with you if you leave the team."}
+              ? "Credits go into the shared team kitty, available to everyone on the team. They roll for 12 months and stay with the team."
+              : "Credits go into your own private space, used only by you after the shared team pool runs out. They roll for 12 months and stay with you if you leave the team."}
           </DialogDescription>
         </DialogHeader>
 
