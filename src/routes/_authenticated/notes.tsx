@@ -509,7 +509,7 @@ function NoteEditor({
   folders: Folder[];
   businesses: Business[];
   onMove: () => void;
-  onChanged: () => void;
+  onChanged: (patch?: Partial<Note>) => void;
   onDeleted: () => void;
 }) {
   const [title, setTitle] = useState(note.title);
@@ -539,7 +539,13 @@ function NoteEditor({
         folder_id: v.folderId,
         business_id: v.businessId,
       });
-      onChanged();
+      onChanged({
+        title: v.title,
+        body: v.body,
+        note_type: v.type,
+        folder_id: v.folderId,
+        business_id: v.businessId,
+      });
     },
   );
 
