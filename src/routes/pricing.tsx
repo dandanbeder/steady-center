@@ -98,21 +98,21 @@ function PricingPage() {
     return Math.round(((m - y) / m) * 100);
   }, []);
 
-  const startTrial = async (plan: "pro" | "team") => {
+  const startTrial = async () => {
     if (!user) {
       navigate({ to: "/login" });
       return;
     }
-    setBusy(plan);
+    setBusy("team");
     try {
-      await trialFn({ data: { plan, environment: env } });
-      toast.success(`Your ${TRIAL_DAYS}-day ${plan === "pro" ? "Standard" : "Team"} trial has started.`);
+      await trialFn({ data: { plan: "team", environment: env } });
+      toast.success(`Your ${TRIAL_DAYS}-day Team trial has started.`);
       navigate({ to: "/today" });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Could not start trial";
       // If user is no longer eligible, fall through to checkout
       if (/TRIAL_ALREADY_USED|already used/i.test(msg)) {
-        await beginCheckout(plan);
+        await beginCheckout("team");
         return;
       }
       toast.error(msg);
