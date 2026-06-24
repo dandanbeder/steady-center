@@ -83,10 +83,10 @@ import {
 
 export const Route = createFileRoute("/_authenticated/notes")({
   head: () => ({ meta: [{ title: "Notes · Heartbeat" }] }),
-  loader: ({ context }) => {
-    // Warm the cache so the list renders without a spinner on first paint.
-    context.queryClient.prefetchQuery({ queryKey: ["notes"], queryFn: listNotes });
-  },
+  // No SSR loader: listNotes uses the browser Supabase client which has no
+  // session during worker SSR / static prerender. Prefetching there primed
+  // the cache with an empty/error result and broke the published page.
+  // The component's useQuery({ enabled: ready }) fetches once auth restores.
   component: NotesPage,
 });
 
@@ -427,7 +427,18 @@ function NotesPage() {
             folders={folders}
             businesses={businesses}
             onMove={() => setMoveNote(selectedNote)}
-            onChanged={() => qc.invalidateQueries({ queryKey: ["notes"] })}
+            onChanged={(patch) => {
+              // Patch the cache in place instead of invalidating the whole
+              // notes list — invalidation triggered a full GET after every
+              // keystroke save and starved the page.
+              qc.setQueryData<Note[]>(["notes"], (prev) =>
+                (prev ?? []).map((n) =>
+                  n.id === selectedNote.id
+                    ? { ...n, ...(patch ?? {}), updated_at: new Date().toISOString() }
+                    : n,
+                ),
+              );
+            }}
             onDeleted={() => {
               qc.invalidateQueries({ queryKey: ["notes"] });
               setSelectedNoteId(null);
@@ -498,7 +509,7 @@ function NoteEditor({
   folders: Folder[];
   businesses: Business[];
   onMove: () => void;
-  onChanged: () => void;
+  onChanged: (patch?: Partial<Note>) => void;
   onDeleted: () => void;
 }) {
   const [title, setTitle] = useState(note.title);
@@ -528,7 +539,13 @@ function NoteEditor({
         folder_id: v.folderId,
         business_id: v.businessId,
       });
-      onChanged();
+      onChanged({
+        title: v.title,
+        body: v.body,
+        note_type: v.type,
+        folder_id: v.folderId,
+        business_id: v.businessId,
+      });
     },
   );
 

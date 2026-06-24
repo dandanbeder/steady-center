@@ -162,7 +162,11 @@ function Sep() {
   return <div className="w-px h-5 bg-border mx-1" />;
 }
 
-// Hook: autosave with relative-time label
+// Hook: autosave with relative-time label.
+// Skips saves when the serialised value is identical to the last save —
+// without this guard, a parent re-render (e.g. after a list refetch) hands
+// us a new object reference with identical contents and the debounced
+// effect re-fires forever, hammering the DB every ~1s.
 export function useAutosave<T>(
   value: T,
   onSave: (v: T) => Promise<void>,
@@ -170,19 +174,19 @@ export function useAutosave<T>(
 ) {
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [saving, setSaving] = useState(false);
-  const firstRun = useRef(true);
   const latest = useRef(value);
   latest.current = value;
+  const lastSavedKey = useRef<string>(JSON.stringify(value));
+  const serialised = JSON.stringify(value);
 
   useEffect(() => {
-    if (firstRun.current) {
-      firstRun.current = false;
-      return;
-    }
+    if (serialised === lastSavedKey.current) return;
     const t = setTimeout(async () => {
+      if (JSON.stringify(latest.current) === lastSavedKey.current) return;
       try {
         setSaving(true);
         await onSave(latest.current);
+        lastSavedKey.current = JSON.stringify(latest.current);
         setSavedAt(new Date());
       } finally {
         setSaving(false);
@@ -190,7 +194,7 @@ export function useAutosave<T>(
     }, delayMs);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value]);
+  }, [serialised]);
 
   return { savedAt, saving };
 }
