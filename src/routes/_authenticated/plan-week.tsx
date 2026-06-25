@@ -219,6 +219,61 @@ function PlanWeekPage() {
     },
   });
 
+  // Realistic plan review (invoked AI, editable preview)
+  const realisticFn = useServerFn(realisticPlanReview);
+  type Suggestion = { task_id: string; action: "keep" | "defer"; reason: string };
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [reviewSummary, setReviewSummary] = useState<string>("");
+  const [reviewRealisticHours, setReviewRealisticHours] = useState<number>(0);
+  const [reviewSuggestions, setReviewSuggestions] = useState<Suggestion[]>([]);
+  const [acceptedDefers, setAcceptedDefers] = useState<Set<string>>(new Set());
+
+  const review = useMutation({
+    mutationFn: () =>
+      realisticFn({
+        data: {
+          week_start: thisMonday,
+          business_id: activeId === ALL ? null : activeId,
+          capacity_hours: Math.round(effectiveCapacity * 10) / 10,
+          committed_hours: Math.round(totalLoad * 10) / 10,
+          hours_per_task: velocity?.hours_per_task ?? 0,
+        },
+      }),
+    onSuccess: (res) => {
+      setReviewSummary(res.summary);
+      setReviewRealisticHours(res.realistic_hours);
+      setReviewSuggestions(res.suggestions);
+      setAcceptedDefers(new Set(res.suggestions.map((s) => s.task_id)));
+      setReviewOpen(true);
+    },
+    onError: (e) => {
+      const msg = e instanceof Error ? e.message : "Couldn't generate a read — try again in a moment.";
+      if (msg.includes("UPGRADE_REQUIRED")) {
+        toast.error("Pro plan required for AI suggestions");
+      } else if (msg.toLowerCase().includes("credit")) {
+        toast.error("Out of AI credits — your plan still stands as it is.");
+      } else {
+        toast.error("Couldn't generate a read — try again in a moment.");
+      }
+    },
+  });
+
+  const confirmReview = useMutation({
+    mutationFn: async () => {
+      const ids = [...acceptedDefers];
+      if (ids.length > 0) await uncommitTasks(ids);
+      return ids.length;
+    },
+    onSuccess: (n) => {
+      setReviewOpen(false);
+      setReviewSuggestions([]);
+      setAcceptedDefers(new Set());
+      invalidateAll();
+      if (n > 0) toast.success(`Moved ${n} task${n === 1 ? "" : "s"} back to the backlog`);
+      else toast.success("Plan kept as is");
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+
   const deferOne = useMutation({
     mutationFn: (id: string) => uncommitTasks([id]),
     onSuccess: (_d, id) => {
