@@ -311,7 +311,7 @@ export const realisticPlanReview = createServerFn({ method: "POST" })
       const suggestions: PlanSuggestion[] = Array.isArray(parsed.suggestions)
         ? parsed.suggestions
             .filter((s) => s && typeof s.task_id === "string" && validIds.has(s.task_id))
-            .map((s) => ({
+            .map((s): PlanSuggestion => ({
               task_id: s.task_id as string,
               action: s.action === "defer" ? "defer" : "keep",
               reason: typeof s.reason === "string" ? s.reason.slice(0, 160) : "",
