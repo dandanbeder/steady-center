@@ -470,13 +470,16 @@ function AiDescribeDialog({
   open,
   onOpenChange,
   listId,
+  onApply,
   onSaved,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   listId: string;
+  onApply: (draft: ViewDraft) => void;
   onSaved: (v: TaskView) => void;
 }) {
+
   const [text, setText] = useState("");
   const [draft, setDraft] = useState<ViewDraft | null>(null);
   const [shared, setShared] = useState(false);
