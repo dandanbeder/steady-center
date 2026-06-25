@@ -30,10 +30,6 @@ export const Route = createFileRoute("/_authenticated/today")({
       queryKey: ["events", "today", start.toISOString()],
       queryFn: () => listEvents(start, end),
     });
-    context.queryClient.prefetchQuery({
-      queryKey: ["notes", "recent", 5],
-      queryFn: () => listRecentNotes(5),
-    });
   },
   component: TodayPage,
 });
