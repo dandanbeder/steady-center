@@ -1026,7 +1026,7 @@ function ListWorkspace({
                groupBy === "assignee" ? "Assignee" :
                groupBy === "due" ? "Due date" :
                groupBy === "outcome" ? "Outcome" :
-               groupBy === "business" ? "Business" : "None"}
+               groupBy === "business" ? "Account" : "None"}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
@@ -1036,7 +1036,7 @@ function ListWorkspace({
               ["assignee", "Assignee"],
               ["due", "Due date"],
               ["outcome", "Outcome"],
-              ["business", "Business"],
+              ["business", "Account"],
               ["none", "None"],
             ] as const).map(([k, label]) => (
               <DropdownMenuItem
