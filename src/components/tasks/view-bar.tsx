@@ -85,28 +85,29 @@ export const VIEW_PRESETS: Preset[] = [
     },
   },
   {
-    id: "preset:by-outcome",
-    label: "By Outcome",
-    icon: Target,
+    id: "preset:by-due",
+    label: "By Due Date",
+    icon: CalendarDays,
     state: {
       view: "list",
-      group_by: "outcome",
+      group_by: "due",
+      filters: { priority: "all", status: "all", due: "all", assigned: "all", outcome: "all" },
+      sort: { key: "due" },
+    },
+  },
+  {
+    id: "preset:by-priority",
+    label: "By Priority",
+    icon: FocusIcon,
+    state: {
+      view: "list",
+      group_by: "priority",
       filters: { priority: "all", status: "all", due: "all", assigned: "all", outcome: "all" },
       sort: { key: "priority" },
     },
   },
-  {
-    id: "preset:this-week",
-    label: "This Week",
-    icon: FocusIcon,
-    state: {
-      view: "board",
-      group_by: "stage",
-      filters: { priority: "all", status: "all", due: "week", assigned: "all", outcome: "all" },
-      sort: { key: "due" },
-    },
-  },
 ];
+
 
 const VIEW_ICON: Record<ViewKind, typeof LayoutList> = {
   list: LayoutList,
@@ -330,6 +331,12 @@ export function ViewBar({
         open={aiOpen}
         onOpenChange={setAiOpen}
         listId={listId}
+        onApply={(draft) => {
+          onApply(
+            { view: draft.view, group_by: draft.group_by, filters: draft.filters, sort: draft.sort },
+            null,
+          );
+        }}
         onSaved={(v) => {
           refresh();
           onApply(
@@ -338,6 +345,7 @@ export function ViewBar({
           );
         }}
       />
+
 
       <ManageViewsDialog
         open={manageOpen}
@@ -462,13 +470,16 @@ function AiDescribeDialog({
   open,
   onOpenChange,
   listId,
+  onApply,
   onSaved,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   listId: string;
+  onApply: (draft: ViewDraft) => void;
   onSaved: (v: TaskView) => void;
 }) {
+
   const [text, setText] = useState("");
   const [draft, setDraft] = useState<ViewDraft | null>(null);
   const [shared, setShared] = useState(false);
@@ -563,11 +574,26 @@ function AiDescribeDialog({
             Cancel
           </Button>
           {draft && (
-            <Button disabled={save.isPending} onClick={() => save.mutate()}>
-              Save view
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  onApply(draft);
+                  onOpenChange(false);
+                  setText("");
+                  setDraft(null);
+                  setShared(false);
+                }}
+              >
+                Apply once
+              </Button>
+              <Button disabled={save.isPending} onClick={() => save.mutate()}>
+                Save view
+              </Button>
+            </>
           )}
         </DialogFooter>
+
       </DialogContent>
     </Dialog>
   );
