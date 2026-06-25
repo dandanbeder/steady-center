@@ -538,12 +538,85 @@ function OutcomeDetailDialog({
               )}
 
               <div>
-                <h4 className="text-sm font-medium mb-2">Linked tasks</h4>
+                <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
+                  <h4 className="text-sm font-medium">
+                    Linked tasks
+                    {tasks.length > 0 && (
+                      <span className="ml-1.5 text-xs text-muted-foreground">
+                        ({outcome.done_tasks}/{outcome.total_tasks} done)
+                      </span>
+                    )}
+                  </h4>
+                  <Popover open={linkOpen} onOpenChange={setLinkOpen}>
+                    <PopoverTrigger asChild>
+                      <Button size="sm" variant="outline" className="h-7 text-xs">
+                        <Plus className="h-3.5 w-3.5" /> Link existing
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent align="end" className="w-80 p-2">
+                      <Input
+                        autoFocus
+                        placeholder="Search your tasks…"
+                        value={linkSearch}
+                        onChange={(e) => setLinkSearch(e.target.value)}
+                        className="h-8 mb-2"
+                      />
+                      <div className="max-h-60 overflow-y-auto -mx-1">
+                        {linkable.isLoading ? (
+                          <p className="px-2 py-3 text-xs text-muted-foreground">Loading…</p>
+                        ) : filteredLinkable.length === 0 ? (
+                          <p className="px-2 py-3 text-xs text-muted-foreground">
+                            No unlinked tasks in this account.
+                          </p>
+                        ) : (
+                          <ul>
+                            {filteredLinkable.map((t) => (
+                              <li key={t.id}>
+                                <button
+                                  type="button"
+                                  className="w-full text-left text-sm px-2 py-1.5 rounded hover:bg-muted truncate"
+                                  disabled={linkTask.isPending}
+                                  onClick={() => linkTask.mutate(t.id)}
+                                >
+                                  {t.title}
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <form
+                  className="flex items-center gap-2 mb-3"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (newTitle.trim()) addTask.mutate();
+                  }}
+                >
+                  <Input
+                    placeholder="Add a task that drives this outcome…"
+                    value={newTitle}
+                    onChange={(e) => setNewTitle(e.target.value)}
+                    className="h-8 text-sm"
+                  />
+                  <Button
+                    type="submit"
+                    size="sm"
+                    className="h-8"
+                    disabled={!newTitle.trim() || addTask.isPending}
+                  >
+                    Add
+                  </Button>
+                </form>
+
                 {tasksLoading ? (
                   <p className="text-sm text-muted-foreground">Loading…</p>
                 ) : tasks.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    No tasks linked yet. Open a task and set its Outcome to this one.
+                    No tasks yet. Add one above, or link existing tasks.
                   </p>
                 ) : (
                   <div className="space-y-4">
@@ -561,13 +634,16 @@ function OutcomeDetailDialog({
                           </p>
                           <ul className="space-y-1">
                             {grouped[k].map((t) => (
-                              <li key={t.id}>
+                              <li
+                                key={t.id}
+                                className="group flex items-center gap-1 rounded hover:bg-muted"
+                              >
                                 <Link
                                   to="/tasks"
                                   search={{ task: t.id }}
-                                  className="flex items-center justify-between gap-2 px-2 py-1.5 rounded hover:bg-muted text-sm"
+                                  className="flex-1 flex items-center justify-between gap-2 px-2 py-1.5 text-sm min-w-0"
                                 >
-                                  <span className={k === "done" ? "line-through text-muted-foreground" : ""}>
+                                  <span className={`truncate ${k === "done" ? "line-through text-muted-foreground" : ""}`}>
                                     {t.title}
                                   </span>
                                   {t.due_at && (
@@ -579,6 +655,17 @@ function OutcomeDetailDialog({
                                     </span>
                                   )}
                                 </Link>
+                                <Button
+                                  type="button"
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-7 w-7 opacity-0 group-hover:opacity-100 mr-1"
+                                  title="Unlink from this outcome"
+                                  disabled={unlinkTask.isPending}
+                                  onClick={() => unlinkTask.mutate(t.id)}
+                                >
+                                  <Link2Off className="h-3.5 w-3.5" />
+                                </Button>
                               </li>
                             ))}
                           </ul>
@@ -588,6 +675,7 @@ function OutcomeDetailDialog({
                   </div>
                 )}
               </div>
+
             </div>
 
             <DialogFooter className="gap-2 flex-wrap">
