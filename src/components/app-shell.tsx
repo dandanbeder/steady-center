@@ -71,7 +71,7 @@ const STORAGE_KEY = "heartbeat:sidebar-collapsed";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { signOut, user } = useAuth();
-  const navigate = useRouterState({ select: () => null }) as never; void navigate;
+  
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const { activeId, setActiveId } = useActiveBusiness();
   const { isAdmin } = useIsPlatformAdmin();
