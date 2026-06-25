@@ -576,10 +576,25 @@ function CalendarPage() {
                 <Maximize2 className="h-4 w-4" />
               )}
             </Button>
-            <Button size="sm" onClick={() => openNewOn(cursor)}>
-              <Plus className="h-4 w-4 sm:mr-1" />
-              <span className="hidden sm:inline">New event</span>
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm">
+                  <Plus className="h-4 w-4 sm:mr-1" />
+                  <span className="hidden sm:inline">New</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuItem onClick={() => openNewOn(cursor)}>
+                  <CalendarDays className="h-4 w-4 mr-2" /> Event
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate({ to: "/meetings", search: { new: "1" } })}>
+                  <Users className="h-4 w-4 mr-2" /> Meeting
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setNewTaskOpen(true)}>
+                  <ListChecks className="h-4 w-4 mr-2" /> Task
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
         </div>
