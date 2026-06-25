@@ -197,6 +197,41 @@ export async function listTasksForOutcome(outcomeId: string) {
   return data ?? [];
 }
 
+
+/**
+ * Tasks that could be linked to this outcome — same account scope, not done,
+ * not deleted, and not already linked to another outcome. RLS already
+ * restricts results to tasks the user can see (owned or shared).
+ */
+export async function listLinkableTasksForOutcome(args: {
+  outcomeId: string;
+  businessId: string | null;
+}) {
+  let q = supabase
+    .from("tasks")
+    .select("id, title, status, business_id, outcome_id, due_at")
+    .is("deleted_at", null)
+    .is("outcome_id", null)
+    .neq("status", "done")
+    .order("created_at", { ascending: false })
+    .limit(100);
+  // Match scope: an outcome belongs to a business (or Personal = null) and
+  // its tasks should sit in the same scope.
+  if (args.businessId) q = q.eq("business_id", args.businessId);
+  else q = q.is("business_id", null);
+  const { data, error } = await q;
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function linkTaskToOutcome(taskId: string, outcomeId: string | null) {
+  const { error } = await supabase
+    .from("tasks")
+    .update({ outcome_id: outcomeId })
+    .eq("id", taskId);
+  if (error) throw error;
+}
+
 export function daysRemaining(target: string | null): number | null {
   if (!target) return null;
   const t = new Date(`${target}T23:59:59`).getTime();
