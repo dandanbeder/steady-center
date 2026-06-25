@@ -500,6 +500,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
 
 
+        <SupportDialog open={supportOpen} onOpenChange={setSupportOpen} />
+
         <PaymentTestModeBanner />
         <PastDueBanner />
         <SupportSessionBanner />
