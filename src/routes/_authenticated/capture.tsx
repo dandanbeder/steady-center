@@ -84,15 +84,47 @@ function CapturePage() {
   const { data: folders = [] } = useQuery({ queryKey: ["folders"], queryFn: listFolders });
   const { data: lists = [] } = useQuery({ queryKey: ["lists"], queryFn: listLists });
 
+  // Items whose AI suggestion errored/timed out — fall back to manual filing
+  // so the user is never stuck on a perpetual "Suggesting…" spinner.
+  const [aiFailed, setAiFailed] = useState<Set<string>>(new Set());
+  const markAiFailed = (id: string) =>
+    setAiFailed((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  const clearAiFailed = (id: string) =>
+    setAiFailed((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+
   const captureMut = useMutation({
     mutationFn: async (text: string) => {
       const item = await captureToInbox({ raw_text: text, source: "quick_add" });
-      // Only call the AI when the user opted in — otherwise no credits are
-      // spent and the item stays as a plain entry the user files manually.
       if (aiEnabled) {
-        suggest({ data: { inbox_id: item.id, now: new Date().toISOString() } })
+        // 30s ceiling — if the gateway hangs, drop to manual mode.
+        const timeout = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("timeout")), 30_000),
+        );
+        Promise.race([
+          suggest({ data: { inbox_id: item.id, now: new Date().toISOString() } }),
+          timeout,
+        ])
           .then(() => qc.invalidateQueries({ queryKey: ["inbox"] }))
-          .catch(() => {});
+          .catch((e) => {
+            markAiFailed(item.id);
+            const msg = e instanceof Error ? e.message : "";
+            if (/402|credit/i.test(msg)) {
+              toast.message("Out of AI credits — file this draft manually.");
+            } else if (/429|rate/i.test(msg)) {
+              toast.message("AI is busy — file this draft manually or retry.");
+            } else {
+              toast.message("Couldn't suggest — file this draft manually.");
+            }
+          });
       }
       return item;
     },
@@ -103,6 +135,7 @@ function CapturePage() {
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Capture failed"),
   });
+
 
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 py-6 space-y-6">
@@ -168,14 +201,14 @@ function CapturePage() {
         hasEverCaptured ? (
           <div className="rounded-lg border border-dashed py-16 text-center text-muted-foreground">
             <InboxIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p>All caught up.</p>
+            <p>Nothing in drafts — capture a thought above.</p>
           </div>
         ) : (
           <div className="rounded-lg border border-dashed py-12 px-6 text-center space-y-3">
             <InboxIcon className="h-8 w-8 mx-auto opacity-60" />
             <h2 className="text-lg font-semibold text-foreground">One place to capture anything</h2>
             <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
-              When a thought hits, a task, an idea, a reminder, drop it here in a second, instead of stopping to decide where it belongs. Later, file each item where it goes: a task, a note, or an outcome. We'll suggest where.
+              When a thought hits, a task, an idea, a reminder, drop it here in a second, instead of stopping to decide where it belongs. Drafts wait here until you accept them into the right place.
             </p>
             <p className="text-xs text-muted-foreground/80 italic pt-1">
               Try it: type "call the accountant" above and press enter.
@@ -183,7 +216,13 @@ function CapturePage() {
           </div>
         )
       ) : (
-        <div className="space-y-3">
+        <section className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-medium text-muted-foreground">
+              Drafts <span className="text-muted-foreground/70">· {items.length}</span>
+            </h2>
+            <p className="text-xs text-muted-foreground">Nothing is filed until you accept it.</p>
+          </div>
           {items.map((it) => (
             <InboxCard
               key={it.id}
@@ -192,29 +231,37 @@ function CapturePage() {
               folders={folders}
               lists={lists}
               aiEnabled={aiEnabled}
+              aiFailed={aiFailed.has(it.id)}
+              onAiFailed={() => markAiFailed(it.id)}
+              onAiCleared={() => clearAiFailed(it.id)}
             />
           ))}
-        </div>
+        </section>
       )}
+
     </div>
   );
 }
 
 function InboxCard({
-  item, businesses, folders, lists, aiEnabled,
+  item, businesses, folders, lists, aiEnabled, aiFailed, onAiFailed, onAiCleared,
 }: {
   item: InboxItem;
   businesses: { id: string; name: string }[];
   folders: { id: string; name: string; business_id: string }[];
   lists: { id: string; name: string; folder_id: string }[];
   aiEnabled: boolean;
+  aiFailed: boolean;
+  onAiFailed: () => void;
+  onAiCleared: () => void;
 }) {
   const qc = useQueryClient();
   const suggest = useServerFn(suggestInboxItem);
   const processed = !!item.ai_processed_at;
-  // When AI is off and the item never got a suggestion, skip the
-  // "Suggesting…" state entirely and let the user file it manually.
-  const manualMode = !processed && !aiEnabled;
+  // Manual mode when the user opted out OR when the AI attempt failed/timed
+  // out — either way the user gets the manual filer instead of a spinner.
+  const manualMode = !processed && (!aiEnabled || aiFailed);
+
 
   const [type, setType] = useState<InboxType>((item.suggested_type as InboxType) || "task");
   const [title, setTitle] = useState(item.suggested_title || "");
@@ -248,14 +295,26 @@ function InboxCard({
   const reSuggest = async () => {
     setBusy(true);
     try {
-      await suggest({ data: { inbox_id: item.id, now: new Date().toISOString() } });
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("timeout")), 30_000),
+      );
+      await Promise.race([
+        suggest({ data: { inbox_id: item.id, now: new Date().toISOString() } }),
+        timeout,
+      ]);
+      onAiCleared();
       qc.invalidateQueries({ queryKey: ["inbox"] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "AI failed");
+      onAiFailed();
+      const msg = e instanceof Error ? e.message : "";
+      if (/402|credit/i.test(msg)) toast.message("Out of AI credits — file manually.");
+      else if (/429|rate/i.test(msg)) toast.message("AI is busy — file manually or retry.");
+      else toast.message("AI couldn't suggest — file manually.");
     } finally {
       setBusy(false);
     }
   };
+
 
   const accept = async () => {
     setBusy(true);
@@ -397,8 +456,16 @@ function InboxCard({
       {manualMode ? (
         <div className="rounded-md border border-dashed bg-muted/30 p-3 text-xs text-muted-foreground flex items-center gap-2">
           <SparklesIcon className="h-3.5 w-3.5 opacity-50" />
-          AI suggestions are off. File this one yourself below.
+          {aiFailed && aiEnabled
+            ? "AI couldn't suggest a destination — pick a type and account below."
+            : "AI suggestions are off. File this one yourself below."}
+          {aiEnabled && aiFailed && (
+            <Button variant="ghost" size="sm" onClick={reSuggest} disabled={busy} className="ml-auto h-6 px-2">
+              <RefreshCw className="h-3 w-3 mr-1" /> Retry
+            </Button>
+          )}
         </div>
+
       ) : !processed ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-3.5 w-3.5 animate-spin" /> Suggesting…
