@@ -324,30 +324,30 @@ function PulseStrip({
               style={{ color: COLOR_VAR[hovered.status] }}
             >
               {hovered.status === "sage"
-                ? "Calm"
+                ? "Light"
                 : hovered.status === "gold"
                   ? "Full"
-                  : "Over"}
+                  : "Very full"}
             </span>
           </div>
           <div className="mt-0.5 text-muted-foreground">
-            {hovered.loadH.toFixed(1)}h of {hovered.capacity.toFixed(0)}h capacity
+            {hovered.loadH.toFixed(1)}h scheduled
           </div>
-          {(hovered.events.length > 0 || hovered.tasks.length > 0) && (
+          {(hovered.events.length > 0 || hovered.meetings.length > 0) && (
             <ul className="mt-2 space-y-0.5">
               {hovered.events.slice(0, 3).map((e) => (
                 <li key={`e-${e.id}`} className="truncate">
                   · {e.title}
                 </li>
               ))}
-              {hovered.tasks.slice(0, 3).map((t) => (
-                <li key={`t-${t.id}`} className="truncate text-muted-foreground">
-                  · {t.title}
+              {hovered.meetings.slice(0, 3).map((m) => (
+                <li key={`m-${m.id}`} className="truncate text-muted-foreground">
+                  · {m.title}
                 </li>
               ))}
-              {hovered.events.length + hovered.tasks.length > 6 && (
+              {hovered.events.length + hovered.meetings.length > 6 && (
                 <li className="text-muted-foreground/70">
-                  +{hovered.events.length + hovered.tasks.length - 6} more
+                  +{hovered.events.length + hovered.meetings.length - 6} more
                 </li>
               )}
             </ul>
