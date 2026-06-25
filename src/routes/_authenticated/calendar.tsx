@@ -188,7 +188,7 @@ function isAllDayLike(e: EventRow) {
 
 function CalendarPage() {
   const qc = useQueryClient();
-  const { activeId } = useActiveBusiness();
+  const { activeId, setActiveId } = useActiveBusiness();
   const search = Route.useSearch();
   const [view, setView] = useState<ViewMode>(search.view ?? "month");
   const [cursor, setCursor] = useState<Date>(() => {
@@ -199,8 +199,20 @@ function CalendarPage() {
     return startOfDay(new Date());
   });
   const { hidden: hiddenCals, toggle: toggleHiddenCal } = useHiddenSet("cal");
-  const { hidden: hiddenBiz, toggle: toggleHiddenBiz } = useHiddenSet("biz");
+  const {
+    hidden: hiddenBiz,
+    toggle: toggleHiddenBiz,
+    setHidden: setHiddenBiz,
+  } = useHiddenSet("biz");
   const { colorBy, setColorBy } = useColorBy();
+  // "All Accounts" = all layers on. When the top account filter is reset to ALL,
+  // clear any per-layer hidden state so the two stay in sync.
+  useEffect(() => {
+    if (activeId === ALL && hiddenBiz.size > 0) {
+      setHiddenBiz(new Set());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeId]);
   const [dayOpen, setDayOpen] = useState<Date | null>(null);
   const [editing, setEditing] = useState<EventRow | null>(null);
   const [previewing, setPreviewing] = useState<EventRow | null>(null);
@@ -334,7 +346,10 @@ function CalendarPage() {
         const cal = calById.get(e.calendar_id);
         if (!cal || hiddenCals.has(cal.id)) return false;
         const bizId = effectiveBizId(e);
-        if (bizId && hiddenBiz.has(bizId)) return false;
+        // Layer key: real business id, or the PERSONAL sentinel for
+        // uncategorised events. Hiding the Personal layer hides null-biz events.
+        const layerKey = bizId ?? PERSONAL;
+        if (hiddenBiz.has(layerKey)) return false;
         // "All Accounts" shows everything; "Personal" shows events with no
         // account; a specific account filters to its events regardless of
         // which calendar they live on.
@@ -706,11 +721,26 @@ function CalendarPage() {
           </p>
         </div>
 
-        {visibleBusinesses.length > 0 && (
+        {(visibleBusinesses.length > 0 || activeId === ALL || activeId === PERSONAL) && (
           <div>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-              Accounts
-            </h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                Account layers
+              </h3>
+              {(hiddenBiz.size > 0 || activeId !== ALL) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHiddenBiz(new Set());
+                    setActiveId(ALL);
+                  }}
+                  className="text-[11px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                  title="Show events from all accounts"
+                >
+                  Show all
+                </button>
+              )}
+            </div>
             <ul className="space-y-1.5">
               {visibleBusinesses.map((b) => (
                 <AccountRow
@@ -718,6 +748,12 @@ function CalendarPage() {
                   biz={b}
                   on={!hiddenBiz.has(b.id)}
                   onToggle={() => toggleHiddenBiz(b.id)}
+                  onOnly={() => {
+                    // "Only" isolates this account: drives the same top filter so
+                    // the layer panel and the global account switcher stay in sync.
+                    setActiveId(b.id);
+                    setHiddenBiz(new Set());
+                  }}
                   onColorChange={async (color) => {
                     try {
                       await updateBusiness(b.id, { color });
@@ -728,6 +764,16 @@ function CalendarPage() {
                   }}
                 />
               ))}
+              {(activeId === ALL || activeId === PERSONAL) && (
+                <PersonalLayerRow
+                  on={!hiddenBiz.has(PERSONAL)}
+                  onToggle={() => toggleHiddenBiz(PERSONAL)}
+                  onOnly={() => {
+                    setActiveId(PERSONAL);
+                    setHiddenBiz(new Set());
+                  }}
+                />
+              )}
             </ul>
           </div>
         )}
@@ -1122,16 +1168,18 @@ function AccountRow({
   biz,
   on,
   onToggle,
+  onOnly,
   onColorChange,
 }: {
   biz: Business;
   on: boolean;
   onToggle: () => void;
+  onOnly: () => void;
   onColorChange: (color: string) => void;
 }) {
   const [picking, setPicking] = useState(false);
   return (
-    <li className="rounded-md hover:bg-muted/60">
+    <li className="group rounded-md hover:bg-muted/60">
       <div className="flex items-center gap-2 px-2 py-1.5">
         <button
           onClick={() => setPicking((p) => !p)}
@@ -1146,6 +1194,13 @@ function AccountRow({
           <div className={cn("text-sm truncate", !on && "text-muted-foreground line-through")}>
             {biz.name}
           </div>
+        </button>
+        <button
+          onClick={onOnly}
+          className="text-[10px] uppercase tracking-wide text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+          title="Show only this account"
+        >
+          Only
         </button>
         <button
           onClick={onToggle}
@@ -1188,6 +1243,62 @@ function AccountRow({
           </label>
         </div>
       )}
+    </li>
+  );
+}
+
+/**
+ * Personal / Uncategorised pseudo-layer. Events with no account fall under this
+ * layer; toggling it hides them without removing the account filter. "Only"
+ * narrows the global account filter to PERSONAL.
+ */
+function PersonalLayerRow({
+  on,
+  onToggle,
+  onOnly,
+}: {
+  on: boolean;
+  onToggle: () => void;
+  onOnly: () => void;
+}) {
+  const color = "#9CA3AF"; // muted grey — distinct from any account palette colour
+  return (
+    <li className="group rounded-md hover:bg-muted/60">
+      <div className="flex items-center gap-2 px-2 py-1.5">
+        <span
+          className="h-4 w-4 rounded-full border shrink-0"
+          style={{
+            backgroundColor: on ? color : "transparent",
+            borderColor: color,
+          }}
+          aria-hidden
+        />
+        <button onClick={onToggle} className="flex-1 text-left min-w-0">
+          <div
+            className={cn(
+              "text-sm truncate",
+              !on && "text-muted-foreground line-through",
+            )}
+          >
+            Personal / Uncategorised
+          </div>
+        </button>
+        <button
+          onClick={onOnly}
+          className="text-[10px] uppercase tracking-wide text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+          title="Show only personal events"
+        >
+          Only
+        </button>
+        <button
+          onClick={onToggle}
+          className="text-muted-foreground hover:text-foreground"
+          title={on ? "Hide" : "Show"}
+          aria-label={on ? "Hide personal layer" : "Show personal layer"}
+        >
+          {on ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+        </button>
+      </div>
     </li>
   );
 }
