@@ -445,7 +445,7 @@ function FolderNode({
     mutationFn: () => deleteFolder(folder.id),
     onSuccess: () => {
       invalidate();
-      showUndoToast(`Folder "${folder.name}" deleted`, async () => {
+      showUndoToast(`Folder "${folder.name}" moved to Trash`, async () => {
         await restoreFolder(folder.id);
         invalidate();
       });
@@ -485,9 +485,15 @@ function FolderNode({
             <DropdownMenuItem onClick={() => setAdding(true)}>Add list</DropdownMenuItem>
             <DropdownMenuItem onClick={() => { setEditName(folder.name); setRenaming(true); }}>Rename</DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() => { if (confirm(`Delete "${folder.name}" and its lists?`)) del.mutate(); }}
+              onClick={() => {
+                if (
+                  confirm(
+                    `Move "${folder.name}" to Trash?\n\nIts lists and tasks go with it and can be restored together from Trash within 30 days. Nothing is permanently deleted.`,
+                  )
+                ) del.mutate();
+              }}
               className="text-destructive"
-            >Delete</DropdownMenuItem>
+            >Move to Trash</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -604,7 +610,10 @@ function ListNode({
 // ---------- workspace ----------
 
 type SortKey = "priority" | "due" | "created" | "title";
-type DueFilter = "all" | "overdue" | "today" | "week" | "none";
+// Due filter. The string form supports a custom date range encoded as
+// "custom:YYYY-MM-DD:YYYY-MM-DD" (either side may be empty to leave that
+// bound open) so we can persist it through the existing string field.
+type DueFilter = "all" | "overdue" | "today" | "week" | "none" | string;
 type AssignedFilter = "all" | "me" | "by_me" | "unassigned";
 type Filters = {
   priority: TaskPriority | "all";
@@ -614,6 +623,15 @@ type Filters = {
   outcome: string; // "all" | "none" | outcome id
 };
 const DEFAULT_FILTERS: Filters = { priority: "all", status: "all", due: "all", assigned: "all", outcome: "all" };
+
+function parseCustomDue(v: string): { from: Date | null; to: Date | null } | null {
+  if (!v.startsWith("custom:")) return null;
+  const [, from, to] = v.split(":");
+  const fromD = from ? new Date(`${from}T00:00:00`) : null;
+  const toD = to ? new Date(`${to}T23:59:59.999`) : null;
+  if ((fromD && Number.isNaN(+fromD)) || (toD && Number.isNaN(+toD))) return null;
+  return { from: fromD, to: toD };
+}
 
 function matchesFilters(t: Task, f: Filters, myId: string | null): boolean {
   if (f.priority !== "all" && t.priority !== f.priority) return false;
@@ -641,6 +659,12 @@ function matchesFilters(t: Task, f: Filters, myId: string | null): boolean {
     if (f.due === "week") {
       const end = new Date(); end.setDate(end.getDate() + 7);
       return d <= end;
+    }
+    const range = parseCustomDue(f.due);
+    if (range) {
+      if (range.from && d < range.from) return false;
+      if (range.to && d > range.to) return false;
+      return true;
     }
   }
   return true;
@@ -707,6 +731,10 @@ function ListWorkspace({
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [stageMgrOpen, setStageMgrOpen] = useState(false);
+  // Custom due-date range picker (opened from the Due filter menu).
+  const [customDueOpen, setCustomDueOpen] = useState(false);
+  const [customDueFrom, setCustomDueFrom] = useState("");
+  const [customDueTo, setCustomDueTo] = useState("");
 
   const [activeViewId, setActiveViewId] = useState<string | null>(null);
 
@@ -974,6 +1002,16 @@ function ListWorkspace({
                 {filters.due === k && <span className="ml-auto">✓</span>}
               </DropdownMenuItem>
             ))}
+            <DropdownMenuItem
+              onSelect={(e) => {
+                // Keep the menu closed and open the range picker.
+                e.preventDefault();
+                setCustomDueOpen(true);
+              }}
+            >
+              Custom range…
+              {filters.due.startsWith("custom:") && <span className="ml-auto">✓</span>}
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-xs">Assignment</DropdownMenuLabel>
             {([
@@ -1026,7 +1064,7 @@ function ListWorkspace({
                groupBy === "assignee" ? "Assignee" :
                groupBy === "due" ? "Due date" :
                groupBy === "outcome" ? "Outcome" :
-               groupBy === "business" ? "Business" : "None"}
+               groupBy === "business" ? "Account" : "None"}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
@@ -1036,7 +1074,7 @@ function ListWorkspace({
               ["assignee", "Assignee"],
               ["due", "Due date"],
               ["outcome", "Outcome"],
-              ["business", "Business"],
+              ["business", "Account"],
               ["none", "None"],
             ] as const).map(([k, label]) => (
               <DropdownMenuItem
@@ -1183,6 +1221,81 @@ function ListWorkspace({
         open={stageMgrOpen}
         onOpenChange={setStageMgrOpen}
       />
+
+      {/* Custom due-date range picker. Encodes the chosen range into
+          filters.due as "custom:YYYY-MM-DD:YYYY-MM-DD" so it lives in the
+          existing string filter field and persists through saved views. */}
+      <Dialog open={customDueOpen} onOpenChange={(o) => {
+        setCustomDueOpen(o);
+        if (o) {
+          const r = parseCustomDue(filters.due);
+          setCustomDueFrom(r?.from ? r.from.toISOString().slice(0, 10) : "");
+          setCustomDueTo(r?.to ? r.to.toISOString().slice(0, 10) : "");
+        }
+      }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Custom date range</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="grid gap-1.5">
+              <Label htmlFor="due-from">From</Label>
+              <Input
+                id="due-from"
+                type="date"
+                value={customDueFrom}
+                onChange={(e) => setCustomDueFrom(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="due-to">To</Label>
+              <Input
+                id="due-to"
+                type="date"
+                value={customDueTo}
+                onChange={(e) => setCustomDueTo(e.target.value)}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Leave either field blank to leave that side open-ended.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setFilters((f) => ({ ...f, due: "all" }));
+                setCustomDueOpen(false);
+              }}
+            >
+              Clear
+            </Button>
+            <Button
+              onClick={() => {
+                if (!customDueFrom && !customDueTo) {
+                  setFilters((f) => ({ ...f, due: "all" }));
+                } else if (
+                  customDueFrom &&
+                  customDueTo &&
+                  customDueFrom > customDueTo
+                ) {
+                  toast.error("Start date must be on or before end date");
+                  return;
+                } else {
+                  setFilters((f) => ({
+                    ...f,
+                    due: `custom:${customDueFrom}:${customDueTo}`,
+                  }));
+                }
+                setCustomDueOpen(false);
+              }}
+            >
+              Apply
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
 
       {openTask && (

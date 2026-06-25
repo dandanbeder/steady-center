@@ -75,7 +75,7 @@ export type Preset = {
 export const VIEW_PRESETS: Preset[] = [
   {
     id: "preset:by-business",
-    label: "By Business",
+    label: "By Account",
     icon: Building2,
     state: {
       view: "list",
