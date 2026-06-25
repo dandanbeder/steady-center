@@ -1168,16 +1168,18 @@ function AccountRow({
   biz,
   on,
   onToggle,
+  onOnly,
   onColorChange,
 }: {
   biz: Business;
   on: boolean;
   onToggle: () => void;
+  onOnly: () => void;
   onColorChange: (color: string) => void;
 }) {
   const [picking, setPicking] = useState(false);
   return (
-    <li className="rounded-md hover:bg-muted/60">
+    <li className="group rounded-md hover:bg-muted/60">
       <div className="flex items-center gap-2 px-2 py-1.5">
         <button
           onClick={() => setPicking((p) => !p)}
@@ -1192,6 +1194,13 @@ function AccountRow({
           <div className={cn("text-sm truncate", !on && "text-muted-foreground line-through")}>
             {biz.name}
           </div>
+        </button>
+        <button
+          onClick={onOnly}
+          className="text-[10px] uppercase tracking-wide text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+          title="Show only this account"
+        >
+          Only
         </button>
         <button
           onClick={onToggle}
@@ -1234,6 +1243,62 @@ function AccountRow({
           </label>
         </div>
       )}
+    </li>
+  );
+}
+
+/**
+ * Personal / Uncategorised pseudo-layer. Events with no account fall under this
+ * layer; toggling it hides them without removing the account filter. "Only"
+ * narrows the global account filter to PERSONAL.
+ */
+function PersonalLayerRow({
+  on,
+  onToggle,
+  onOnly,
+}: {
+  on: boolean;
+  onToggle: () => void;
+  onOnly: () => void;
+}) {
+  const color = "#9CA3AF"; // muted grey — distinct from any account palette colour
+  return (
+    <li className="group rounded-md hover:bg-muted/60">
+      <div className="flex items-center gap-2 px-2 py-1.5">
+        <span
+          className="h-4 w-4 rounded-full border shrink-0"
+          style={{
+            backgroundColor: on ? color : "transparent",
+            borderColor: color,
+          }}
+          aria-hidden
+        />
+        <button onClick={onToggle} className="flex-1 text-left min-w-0">
+          <div
+            className={cn(
+              "text-sm truncate",
+              !on && "text-muted-foreground line-through",
+            )}
+          >
+            Personal / Uncategorised
+          </div>
+        </button>
+        <button
+          onClick={onOnly}
+          className="text-[10px] uppercase tracking-wide text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+          title="Show only personal events"
+        >
+          Only
+        </button>
+        <button
+          onClick={onToggle}
+          className="text-muted-foreground hover:text-foreground"
+          title={on ? "Hide" : "Show"}
+          aria-label={on ? "Hide personal layer" : "Show personal layer"}
+        >
+          {on ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+        </button>
+      </div>
     </li>
   );
 }
