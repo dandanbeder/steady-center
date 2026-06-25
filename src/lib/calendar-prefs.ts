@@ -7,6 +7,7 @@ export type ColorBy = "account" | "calendar";
 const KEY_COLOR_BY = "heartbeat.cal.colorBy";
 const KEY_HIDDEN_BIZ = "heartbeat.cal.hiddenBusinesses";
 const KEY_HIDDEN_CAL = "heartbeat.cal.hiddenCalendars";
+const KEY_HIDDEN_TEAM_MEMBER = "heartbeat.cal.hiddenTeamMembers";
 
 function readJSON<T>(k: string, fb: T): T {
   if (typeof window === "undefined") return fb;
