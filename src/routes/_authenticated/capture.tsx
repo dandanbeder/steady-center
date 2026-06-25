@@ -84,15 +84,47 @@ function CapturePage() {
   const { data: folders = [] } = useQuery({ queryKey: ["folders"], queryFn: listFolders });
   const { data: lists = [] } = useQuery({ queryKey: ["lists"], queryFn: listLists });
 
+  // Items whose AI suggestion errored/timed out — fall back to manual filing
+  // so the user is never stuck on a perpetual "Suggesting…" spinner.
+  const [aiFailed, setAiFailed] = useState<Set<string>>(new Set());
+  const markAiFailed = (id: string) =>
+    setAiFailed((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  const clearAiFailed = (id: string) =>
+    setAiFailed((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+
   const captureMut = useMutation({
     mutationFn: async (text: string) => {
       const item = await captureToInbox({ raw_text: text, source: "quick_add" });
-      // Only call the AI when the user opted in — otherwise no credits are
-      // spent and the item stays as a plain entry the user files manually.
       if (aiEnabled) {
-        suggest({ data: { inbox_id: item.id, now: new Date().toISOString() } })
+        // 30s ceiling — if the gateway hangs, drop to manual mode.
+        const timeout = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("timeout")), 30_000),
+        );
+        Promise.race([
+          suggest({ data: { inbox_id: item.id, now: new Date().toISOString() } }),
+          timeout,
+        ])
           .then(() => qc.invalidateQueries({ queryKey: ["inbox"] }))
-          .catch(() => {});
+          .catch((e) => {
+            markAiFailed(item.id);
+            const msg = e instanceof Error ? e.message : "";
+            if (/402|credit/i.test(msg)) {
+              toast.message("Out of AI credits — file this draft manually.");
+            } else if (/429|rate/i.test(msg)) {
+              toast.message("AI is busy — file this draft manually or retry.");
+            } else {
+              toast.message("Couldn't suggest — file this draft manually.");
+            }
+          });
       }
       return item;
     },
@@ -103,6 +135,7 @@ function CapturePage() {
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Capture failed"),
   });
+
 
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 py-6 space-y-6">
