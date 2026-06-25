@@ -998,6 +998,16 @@ function ListWorkspace({
                 {filters.due === k && <span className="ml-auto">✓</span>}
               </DropdownMenuItem>
             ))}
+            <DropdownMenuItem
+              onSelect={(e) => {
+                // Keep the menu closed and open the range picker.
+                e.preventDefault();
+                setCustomDueOpen(true);
+              }}
+            >
+              Custom range…
+              {filters.due.startsWith("custom:") && <span className="ml-auto">✓</span>}
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-xs">Assignment</DropdownMenuLabel>
             {([
