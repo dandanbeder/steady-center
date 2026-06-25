@@ -165,14 +165,34 @@ export function WeeklyGoalsPanel({ compact = false }: { compact?: boolean }) {
             {new Date(weekEnd.getTime() - 1).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
           </p>
         </div>
-        <Button
-          size="sm"
-          onClick={() => setAdding(true)}
-          disabled={goals.length >= MAX_GOALS}
-          title={goals.length >= MAX_GOALS ? "Up to 5 goals per week" : "Add goal"}
-        >
-          <Plus className="h-3.5 w-3.5" /> Add goal
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={runSuggest}
+            disabled={suggesting || goals.length >= MAX_GOALS}
+            title={
+              goals.length >= MAX_GOALS
+                ? "Up to 5 goals per week"
+                : "Suggest goals for this week with AI"
+            }
+          >
+            {suggesting ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="h-3.5 w-3.5" />
+            )}
+            Generate
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => setAdding(true)}
+            disabled={goals.length >= MAX_GOALS}
+            title={goals.length >= MAX_GOALS ? "Up to 5 goals per week" : "Add goal"}
+          >
+            <Plus className="h-3.5 w-3.5" /> Add goal
+          </Button>
+        </div>
       </header>
 
       {coach?.enabled && coach.note && (
