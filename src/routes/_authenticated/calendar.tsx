@@ -346,7 +346,10 @@ function CalendarPage() {
         const cal = calById.get(e.calendar_id);
         if (!cal || hiddenCals.has(cal.id)) return false;
         const bizId = effectiveBizId(e);
-        if (bizId && hiddenBiz.has(bizId)) return false;
+        // Layer key: real business id, or the PERSONAL sentinel for
+        // uncategorised events. Hiding the Personal layer hides null-biz events.
+        const layerKey = bizId ?? PERSONAL;
+        if (hiddenBiz.has(layerKey)) return false;
         // "All Accounts" shows everything; "Personal" shows events with no
         // account; a specific account filters to its events regardless of
         // which calendar they live on.
