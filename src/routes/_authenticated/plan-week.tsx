@@ -36,7 +36,15 @@ import {
   eventHours,
   DEFAULT_TASK_HOURS,
 } from "@/lib/weekly-plan";
-import { suggestDeferrals } from "@/lib/weekly-plan.functions";
+import { suggestDeferrals, realisticPlanReview } from "@/lib/weekly-plan.functions";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/plan-week")({
@@ -210,6 +218,64 @@ function PlanWeekPage() {
       }
     },
   });
+
+  // Realistic plan review (invoked AI, editable preview)
+  const realisticFn = useServerFn(realisticPlanReview);
+  type Suggestion = { task_id: string; action: "keep" | "defer"; reason: string };
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [reviewSummary, setReviewSummary] = useState<string>("");
+  const [reviewRealisticHours, setReviewRealisticHours] = useState<number>(0);
+  const [reviewSuggestions, setReviewSuggestions] = useState<Suggestion[]>([]);
+  const [acceptedDefers, setAcceptedDefers] = useState<Set<string>>(new Set());
+
+  const review = useMutation({
+    mutationFn: () =>
+      realisticFn({
+        data: {
+          week_start: thisMonday,
+          business_id: activeId === ALL ? null : activeId,
+          capacity_hours: Math.round(effectiveCapacity * 10) / 10,
+          committed_hours: Math.round(totalLoad * 10) / 10,
+          hours_per_task: velocity?.hours_per_task ?? 0,
+        },
+      }),
+    onSuccess: (res) => {
+      setReviewSummary(res.summary);
+      setReviewRealisticHours(res.realistic_hours);
+      setReviewSuggestions(res.suggestions);
+      setAcceptedDefers(new Set(res.suggestions.map((s) => s.task_id)));
+      setReviewOpen(true);
+    },
+    onError: (e) => {
+      const msg = e instanceof Error ? e.message : "Couldn't generate a read — try again in a moment.";
+      if (msg.includes("UPGRADE_REQUIRED")) {
+        toast.error("Pro plan required for AI suggestions");
+      } else if (msg.toLowerCase().includes("credit")) {
+        toast.error("Out of AI credits — your plan still stands as it is.");
+      } else {
+        toast.error("Couldn't generate a read — try again in a moment.");
+      }
+    },
+  });
+
+  const confirmReview = useMutation({
+    mutationFn: async () => {
+      const ids = [...acceptedDefers];
+      if (ids.length > 0) await uncommitTasks(ids);
+      return ids.length;
+    },
+    onSuccess: (n) => {
+      setReviewOpen(false);
+      setReviewSuggestions([]);
+      setAcceptedDefers(new Set());
+      invalidateAll();
+      if (n > 0) toast.success(`Moved ${n} task${n === 1 ? "" : "s"} back to the backlog`);
+      else toast.success("Plan kept as is");
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
+
 
   const deferOne = useMutation({
     mutationFn: (id: string) => uncommitTasks([id]),
@@ -415,10 +481,17 @@ function PlanWeekPage() {
           </Card>
 
           <Card className="p-4 space-y-3">
-            <h3 className="text-sm font-medium">Your pace</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium">Your pace</h3>
+              {velocity && velocity.hours_per_task > 0 && (
+                <span className="text-[11px] tabular-nums text-muted-foreground" title="Typical hours per completed task (4-week trailing)">
+                  ~{velocity.hours_per_task}h / task
+                </span>
+              )}
+            </div>
             {velocity && velocity.tasks_per_week === 0 && velocity.hours_per_week === 0 ? (
               <p className="text-xs text-muted-foreground">
-                Not enough history yet, finish a few tasks and your trailing 4-week pace will show here.
+                Not enough history yet — a passive signal of your pace will appear as you complete tasks. No timer, no score.
               </p>
             ) : (
               <p className="text-xs text-muted-foreground">
@@ -426,27 +499,114 @@ function PlanWeekPage() {
                 and track <strong className="text-foreground">{velocity?.hours_per_week ?? 0}h</strong> a week (4-week average).
               </p>
             )}
-            {overPace && (
-              <div className="rounded-md bg-amber-50/60 dark:bg-amber-950/30 p-3 text-xs space-y-2">
-                <p>
-                  You've committed <strong>{committedCount}</strong> tasks, that's above your typical pace. Want to trim?
+
+            {/* Pace-aware tightness signal (passive, not a score) */}
+            {(() => {
+              const perTask = velocity?.hours_per_task ?? 0;
+              if (perTask <= 0 || committedCount === 0 || effectiveCapacity <= 0) return null;
+              const paceLoad = committedCount * perTask + eventLoad;
+              const tight = paceLoad > effectiveCapacity;
+              if (!tight) return null;
+              return (
+                <p className="text-xs text-muted-foreground rounded-md bg-muted/40 p-2.5">
+                  At your usual pace, this week's tasks would take about{" "}
+                  <strong className="text-foreground">{(committedCount * perTask).toFixed(1)}h</strong> —
+                  this plan may be tight against your {effectiveCapacity.toFixed(0)}h capacity.
                 </p>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => suggest.mutate()}
-                  disabled={suggest.isPending}
-                  title={isPro ? "Get a gentle AI suggestion" : "Pro plan required"}
-                >
-                  <Sparkles className="h-3.5 w-3.5 mr-2" />
-                  {suggest.isPending ? "Thinking…" : isPro ? "Suggest tasks to defer" : "Suggest (Pro)"}
-                </Button>
-              </div>
+              );
+            })()}
+
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full"
+              onClick={() => review.mutate()}
+              disabled={review.isPending || !isPro}
+              title={isPro ? "Get a realistic read of this week's plan" : "Pro plan required"}
+            >
+              <Sparkles className="h-3.5 w-3.5 mr-2" />
+              {review.isPending ? "Reading your week…" : isPro ? "Generate realistic read" : "Generate (Pro)"}
+            </Button>
+
+            {overPace && (
+              <p className="text-[11px] text-muted-foreground">
+                You've committed {committedCount} tasks — above your typical pace.
+              </p>
             )}
           </Card>
         </aside>
       </div>
+
+      {/* Realistic plan preview — user confirms before anything changes */}
+      <Dialog open={reviewOpen} onOpenChange={setReviewOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>A realistic read of your week</DialogTitle>
+            <DialogDescription className="text-xs">
+              Nothing is changed until you confirm. Untick anything you'd rather keep.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">{reviewSummary}</p>
+            {reviewRealisticHours > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Estimated at your pace: <strong className="text-foreground">{reviewRealisticHours}h</strong> across{" "}
+                {committedCount} tasks vs <strong className="text-foreground">{effectiveCapacity.toFixed(0)}h</strong> capacity.
+              </p>
+            )}
+            {reviewSuggestions.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic">
+                No tasks suggested to move — your plan looks well-shaped.
+              </p>
+            ) : (
+              <div className="border rounded-md divide-y max-h-72 overflow-auto">
+                {reviewSuggestions.map((s) => {
+                  const t = committedFiltered.find((x) => x.id === s.task_id);
+                  if (!t) return null;
+                  const checked = acceptedDefers.has(s.task_id);
+                  return (
+                    <label key={s.task_id} className="flex items-start gap-3 p-3 text-sm cursor-pointer hover:bg-muted/40">
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={() =>
+                          setAcceptedDefers((prev) => {
+                            const n = new Set(prev);
+                            if (n.has(s.task_id)) n.delete(s.task_id);
+                            else n.add(s.task_id);
+                            return n;
+                          })
+                        }
+                        className="mt-0.5"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="truncate">{t.title}</div>
+                        <div className="text-[11px] text-muted-foreground mt-0.5">
+                          {PRIORITY_LABEL[t.priority]} · move back to backlog
+                        </div>
+                        {s.reason && (
+                          <div className="text-[11px] text-muted-foreground mt-1 italic">{s.reason}</div>
+                        )}
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setReviewOpen(false)} disabled={confirmReview.isPending}>
+              Keep as is
+            </Button>
+            <Button onClick={() => confirmReview.mutate()} disabled={confirmReview.isPending}>
+              {confirmReview.isPending
+                ? "Applying…"
+                : acceptedDefers.size > 0
+                  ? `Confirm — defer ${acceptedDefers.size}`
+                  : "Confirm"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
