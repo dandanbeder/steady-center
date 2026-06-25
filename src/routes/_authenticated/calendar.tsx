@@ -94,6 +94,8 @@ import { cn } from "@/lib/utils";
 import { getWorkingHours } from "@/lib/user-prefs";
 import { TagPeople } from "@/components/tag-people";
 import { ActivityAndComments } from "@/components/comments/activity-and-comments";
+import { listTeamOverlay, type TeamOverlayItem, type TeamMember } from "@/lib/team-calendar.functions";
+import { supabase } from "@/integrations/supabase/client";
 
 
 
