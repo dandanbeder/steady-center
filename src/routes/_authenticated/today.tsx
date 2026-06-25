@@ -336,42 +336,18 @@ function Section({ label, children }: { label: string; children: React.ReactNode
   );
 }
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
+function Card({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div
       className="rounded-2xl border border-border bg-card p-6"
       style={{ boxShadow: "var(--shadow-soft)" }}
     >
-      <h3 className="text-lg mb-3">{title}</h3>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-lg">{title}</h3>
+        {action}
+      </div>
       {children}
     </div>
   );
 }
 
-/** Like Card, but the whole surface is a link with hover affordance. */
-function LinkCard({
-  title,
-  to,
-  search,
-  ariaLabel,
-  children,
-}: {
-  title: string;
-  to: string;
-  search?: Record<string, string>;
-  ariaLabel?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <Link
-      to={to}
-      search={search as never}
-      aria-label={ariaLabel}
-      className="block rounded-2xl border border-border bg-card p-6 hover:border-accent/40 hover:bg-card/80 transition-colors"
-      style={{ boxShadow: "var(--shadow-soft)" }}
-    >
-      <h3 className="text-lg mb-3">{title}</h3>
-      {children}
-    </Link>
-  );
-}
