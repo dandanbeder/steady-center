@@ -26,6 +26,9 @@ import { UpcomingMeetings } from "@/components/upcoming-meetings";
 import { UpgradeGate } from "@/components/upgrade-gate";
 
 export const Route = createFileRoute("/_authenticated/meetings")({
+  validateSearch: (s: Record<string, unknown>) => ({
+    new: s.new === "1" || s.new === 1 || s.new === true ? ("1" as const) : undefined,
+  }),
   component: () => (
     <UpgradeGate feature="meetings">
       <MeetingsPage />
