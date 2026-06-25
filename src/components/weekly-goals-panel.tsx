@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Plus, Trash2, Target, Check, X, Heart } from "lucide-react";
+import { Plus, Trash2, Target, Check, X, Heart, Info } from "lucide-react";
 import { coachWeekCheck } from "@/lib/coach.functions";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { listBusinesses } from "@/lib/businesses";
 import {
   carryForwardUnmet,
