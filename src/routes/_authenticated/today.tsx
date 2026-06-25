@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { CheckSquare, Video, Share2 } from "lucide-react";
+import { CheckSquare, Video, Share2, FileText } from "lucide-react";
 import { useActiveBusiness, ALL, PERSONAL, matchesActiveBusiness } from "@/hooks/use-active-business";
 import { listBusinesses } from "@/lib/businesses";
 import { listCalendars, listEvents, type EventRow } from "@/lib/calendars";
@@ -17,6 +17,7 @@ import { OutcomeMark } from "@/components/outcomes/outcome-mark";
 import { listOutcomes } from "@/lib/outcomes";
 import { listSharedWithMeResources, type SharedItemRow } from "@/lib/shares.functions";
 import type { Task } from "@/lib/tasks";
+import { listNotes } from "@/lib/notes";
 
 function startOfDay(d: Date) {
   const x = new Date(d);
@@ -111,6 +112,22 @@ function TodayPage() {
     retry: false,
   });
   const sharedItems = (sharedQ.data ?? []).slice(0, 3);
+
+  // Account-scoped Notes preview — only when the user has filtered to a specific
+  // account (a real business or Personal/Uncategorised). RLS on `notes` already
+  // restricts to owner/shared; we additionally filter by the active account.
+  const notesEnabled = activeId !== ALL;
+  const notesQ = useQuery({
+    queryKey: ["notes", "today-card", activeId],
+    queryFn: () => listNotes(),
+    enabled: notesEnabled,
+  });
+  const accountNotes = notesEnabled
+    ? (notesQ.data ?? [])
+        .filter((n) => matchesActiveBusiness(n.business_id, activeId))
+        .slice(0, 4)
+    : [];
+
 
   const businesses = businessesQ.data ?? [];
   const calendars = calendarsQ.data ?? [];
@@ -309,6 +326,58 @@ function TodayPage() {
           )}
         </Card>
       </div>
+
+      {notesEnabled && (
+        <div className="mt-4">
+          <Card
+            title={
+              activeId === PERSONAL
+                ? "Recent notes · Personal"
+                : `Recent notes${active ? ` · ${active.name}` : ""}`
+            }
+            action={
+              <Link
+                to="/notes"
+                className="text-xs text-muted-foreground hover:text-accent transition-colors"
+              >
+                Open notes →
+              </Link>
+            }
+          >
+            {notesQ.isLoading ? (
+              <SkeletonList />
+            ) : accountNotes.length === 0 ? (
+              <EmptyState
+                text={
+                  activeId === PERSONAL
+                    ? "No personal notes yet."
+                    : "No notes in this account yet."
+                }
+              />
+            ) : (
+              <ul className="space-y-2">
+                {accountNotes.map((n) => (
+                  <li key={n.id}>
+                    <Link
+                      to="/notes"
+                      search={{ noteId: n.id } as never}
+                      className="block text-sm rounded hover:bg-muted/40 transition-colors py-1 px-1 -mx-1"
+                    >
+                      <div className="font-medium truncate flex items-center gap-1.5">
+                        <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        <span className="truncate">{n.title || "Untitled"}</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground pl-5">
+                        {new Date(n.updated_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
