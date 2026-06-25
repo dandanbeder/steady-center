@@ -172,3 +172,165 @@ function fallbackPick(tasks: TaskLite[], max: number): SuggestResult {
         : "Nothing obvious to defer, your week looks well-shaped.",
   };
 }
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * Realistic plan review (invoked AI). Reads only the user's own committed
+ * tasks (RLS) plus pace/capacity numbers the client already shows. Returns
+ * a calm read and per-task suggestions — the UI confirms before any change.
+ * The Journal is never read.
+ * ──────────────────────────────────────────────────────────────────────── */
+
+const ReviewInput = z.object({
+  week_start: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  business_id: z.string().uuid().nullable().optional(),
+  capacity_hours: z.number().min(0).max(168),
+  committed_hours: z.number().min(0).max(500),
+  hours_per_task: z.number().min(0).max(40), // user's typical pace, 0 if unknown
+});
+
+type PlanSuggestion = {
+  task_id: string;
+  action: "keep" | "defer";
+  reason: string;
+};
+
+type ReviewResult = {
+  summary: string;
+  realistic_hours: number;
+  suggestions: PlanSuggestion[];
+};
+
+export const realisticPlanReview = createServerFn({ method: "POST" })
+  .middleware([requireActiveUser])
+  .inputValidator((data) => ReviewInput.parse(data))
+  .handler(async ({ data, context }): Promise<ReviewResult> => {
+    const { supabase, userId } = context;
+    await requireFeature(supabase, userId, "ai_assistant");
+
+    let q = supabase
+      .from("tasks")
+      .select("id, title, priority, due_at")
+      .is("deleted_at", null)
+      .neq("status", "done")
+      .eq("committed_week", data.week_start);
+    if (data.business_id) q = q.eq("business_id", data.business_id);
+    const { data: rows, error } = await q;
+    if (error) throw new Error(error.message);
+    const committed = (rows ?? []) as TaskLite[];
+
+    // Realistic hours estimate using the user's pace; never below committed_hours.
+    const perTask = data.hours_per_task > 0 ? data.hours_per_task : 1;
+    const realistic = Math.round(committed.length * perTask * 10) / 10;
+
+    const deterministicSummary = (() => {
+      if (committed.length === 0) return "Nothing committed yet, plenty of room to shape the week.";
+      if (data.capacity_hours <= 0) return "Set a weekly budget on your accounts to get a tighter read.";
+      const over = realistic > data.capacity_hours;
+      if (over) {
+        return `Your ${committed.length} tasks would take about ${realistic}h at your usual pace — that's tight against ${data.capacity_hours}h of capacity. Trimming a few keeps the week realistic.`;
+      }
+      return `Your ${committed.length} tasks should fit at your usual pace — about ${realistic}h against ${data.capacity_hours}h of capacity.`;
+    })();
+
+    const deterministic: ReviewResult = {
+      summary: deterministicSummary,
+      realistic_hours: realistic,
+      suggestions:
+        realistic > data.capacity_hours
+          ? fallbackPick(committed, Math.max(1, committed.length - Math.floor(data.capacity_hours / perTask)))
+              .defer_task_ids.map((id) => ({
+                task_id: id,
+                action: "defer" as const,
+                reason: "Lower priority or later due date — safe to move back.",
+              }))
+          : [],
+    };
+
+    const key = process.env.ANTHROPIC_API_KEY;
+    if (!key) return deterministic;
+
+    try {
+      const { assertAiBudget, recordAiUsage } = await import("./ai-budget.server");
+      const { assertAiCredits } = await import("./credits.server");
+      await assertAiBudget(userId);
+      await assertAiCredits(userId, 1);
+
+      const res = await fetch(ANTHROPIC_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": key,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: MODEL,
+          max_tokens: 700,
+          system:
+            "You are a calm planning coach. Give a realistic read of this week's plan vs the user's pace and capacity. " +
+            "Return ONLY JSON: { \"summary\": string, \"suggestions\": Array<{ \"task_id\": string, \"action\": \"keep\" | \"defer\", \"reason\": string }> }. " +
+            "Summary: ONE warm sentence under 200 chars — descriptive, no guilt, no hustle. " +
+            "Suggestions: only include tasks worth deferring (never 'urgent'); short reason under 100 chars. " +
+            "Prefer fewer, well-chosen defers over many. If the plan fits, return an empty suggestions array.",
+          messages: [
+            {
+              role: "user",
+              content:
+                `Week of ${data.week_start}. Capacity ${data.capacity_hours}h. ` +
+                `Already committed ${data.committed_hours}h of events+tasks. ` +
+                `User's typical pace: ${data.hours_per_task || "unknown"} hours per task. ` +
+                `Realistic estimate at that pace: ${realistic}h. ` +
+                `Committed tasks (open):\n${JSON.stringify(committed, null, 2)}`,
+            },
+          ],
+        }),
+      });
+      if (!res.ok) return deterministic;
+      const json = (await res.json()) as {
+        content?: Array<{ type: string; text?: string }>;
+        usage?: { input_tokens?: number; output_tokens?: number };
+      };
+      const text = json.content?.find((c) => c.type === "text")?.text?.trim() ?? "";
+      try {
+        await recordAiUsage(
+          userId,
+          MODEL,
+          json.usage?.input_tokens ?? 0,
+          json.usage?.output_tokens ?? 0,
+          { actionType: "weekly_plan" },
+        );
+      } catch {
+        /* metering best-effort */
+      }
+      const cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
+      const parsed = JSON.parse(cleaned) as Partial<{
+        summary: string;
+        suggestions: Array<{ task_id?: string; action?: string; reason?: string }>;
+      }>;
+
+      const validIds = new Set(committed.filter((t) => t.priority !== "urgent").map((t) => t.id));
+      const suggestions: PlanSuggestion[] = Array.isArray(parsed.suggestions)
+        ? parsed.suggestions
+            .filter((s) => s && typeof s.task_id === "string" && validIds.has(s.task_id))
+            .map((s) => ({
+              task_id: s.task_id as string,
+              action: s.action === "defer" ? "defer" : "keep",
+              reason: typeof s.reason === "string" ? s.reason.slice(0, 160) : "",
+            }))
+            .filter((s) => s.action === "defer")
+            .slice(0, 8)
+        : [];
+
+      return {
+        summary:
+          typeof parsed.summary === "string" && parsed.summary.trim().length > 0
+            ? parsed.summary.trim().slice(0, 240)
+            : deterministic.summary,
+        realistic_hours: realistic,
+        suggestions,
+      };
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "";
+      if (msg.startsWith("UPGRADE_REQUIRED")) throw e;
+      return deterministic;
+    }
+  });
