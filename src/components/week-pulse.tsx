@@ -1,14 +1,15 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { listTasksInRange, type Task } from "@/lib/tasks";
 import { listEvents, type EventRow } from "@/lib/calendars";
+import { listMeetings, type Meeting } from "@/lib/meetings";
 import { getWorkingHours } from "@/lib/user-prefs";
 import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
 import { cn } from "@/lib/utils";
 
 const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const DEFAULT_TASK_HOURS = 1;
+const FULL_DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const DEFAULT_MEETING_HOURS = 1;
 
 function mondayOf(date: Date): Date {
   const d = new Date(date);
