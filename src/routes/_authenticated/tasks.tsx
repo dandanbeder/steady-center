@@ -731,6 +731,10 @@ function ListWorkspace({
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [stageMgrOpen, setStageMgrOpen] = useState(false);
+  // Custom due-date range picker (opened from the Due filter menu).
+  const [customDueOpen, setCustomDueOpen] = useState(false);
+  const [customDueFrom, setCustomDueFrom] = useState("");
+  const [customDueTo, setCustomDueTo] = useState("");
 
   const [activeViewId, setActiveViewId] = useState<string | null>(null);
 
