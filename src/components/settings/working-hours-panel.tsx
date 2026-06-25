@@ -142,6 +142,7 @@ export function WorkingHoursPanel() {
         />
         <p className="text-xs text-muted-foreground mt-1">
           Soft target used by the Today "load" meter and "Plan my day".
+        </p>
       </div>
 
       <div>
