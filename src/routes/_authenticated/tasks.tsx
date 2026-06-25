@@ -445,7 +445,7 @@ function FolderNode({
     mutationFn: () => deleteFolder(folder.id),
     onSuccess: () => {
       invalidate();
-      showUndoToast(`Folder "${folder.name}" deleted`, async () => {
+      showUndoToast(`Folder "${folder.name}" moved to Trash`, async () => {
         await restoreFolder(folder.id);
         invalidate();
       });
