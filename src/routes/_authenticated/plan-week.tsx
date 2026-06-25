@@ -35,6 +35,7 @@ import {
   uncommitTasks,
   getVelocity,
   eventHours,
+  taskHours,
   DEFAULT_TASK_HOURS,
 } from "@/lib/weekly-plan";
 import { suggestDeferrals, realisticPlanReview } from "@/lib/weekly-plan.functions";
