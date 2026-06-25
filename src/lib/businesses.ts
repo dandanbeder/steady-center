@@ -8,6 +8,7 @@ export type Business = {
   created_at: string;
   sort_order: number;
   archived_at: string | null;
+  weekly_hours: number | null;
 };
 
 export async function listBusinesses(): Promise<Business[]> {
