@@ -99,8 +99,16 @@ import { ActivityAndComments } from "@/components/comments/activity-and-comments
 
 export const Route = createFileRoute("/_authenticated/calendar")({
   head: () => ({ meta: [{ title: "Calendar · Heartbeat" }] }),
+  validateSearch: (search: Record<string, unknown>) => {
+    const view = search.view;
+    const date = typeof search.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(search.date) ? search.date : undefined;
+    const eventId = typeof search.eventId === "string" && search.eventId.length > 0 ? search.eventId : undefined;
+    const okView = view === "month" || view === "week" || view === "day" || view === "agenda" ? view : undefined;
+    return { date, eventId, view: okView } as { date?: string; eventId?: string; view?: "month" | "week" | "day" | "agenda" };
+  },
   component: CalendarPage,
 });
+
 
 type ViewMode = "month" | "week" | "day" | "agenda";
 
