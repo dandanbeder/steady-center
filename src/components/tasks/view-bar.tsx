@@ -574,11 +574,26 @@ function AiDescribeDialog({
             Cancel
           </Button>
           {draft && (
-            <Button disabled={save.isPending} onClick={() => save.mutate()}>
-              Save view
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  onApply(draft);
+                  onOpenChange(false);
+                  setText("");
+                  setDraft(null);
+                  setShared(false);
+                }}
+              >
+                Apply once
+              </Button>
+              <Button disabled={save.isPending} onClick={() => save.mutate()}>
+                Save view
+              </Button>
+            </>
           )}
         </DialogFooter>
+
       </DialogContent>
     </Dialog>
   );
