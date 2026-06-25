@@ -125,17 +125,12 @@ function TodayPage() {
     queryKey: ["tasks", "today-top", 5, businessScope],
     queryFn: () => listTopOpenTasks(5, businessScope),
   });
-  const recentNotesQ = useQuery({
-    queryKey: ["notes", "recent", 5],
-    queryFn: () => listRecentNotes(5),
-  });
   const outcomesQ = useQuery({ queryKey: ["outcomes", "all-names"], queryFn: () => listOutcomes() });
 
   const businesses = businessesQ.data ?? [];
   const calendars = calendarsQ.data ?? [];
   const events = eventsQ.data ?? [];
   const topTasks = topTasksQ.data ?? [];
-  const recentNotes = recentNotesQ.data ?? [];
   const outcomeNameById = new Map((outcomesQ.data ?? []).map((o) => [o.id, o.name]));
 
   const active = activeId === ALL || activeId === PERSONAL ? null : businesses.find((b) => b.id === activeId);
