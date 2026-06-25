@@ -141,7 +141,7 @@ Return ONLY via the provided tool.`;
         "google/gemini-3-flash-preview",
         json.usage?.prompt_tokens ?? 0,
         json.usage?.completion_tokens ?? 0,
-        { actionType: "calendar_quick_add" },
+        { actionType: "other" },
       );
     } catch {
       /* never break the user-facing call */
