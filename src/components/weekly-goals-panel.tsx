@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Plus, Trash2, Target, Check, X, Heart, Info } from "lucide-react";
+import { Plus, Trash2, Target, Check, X, Heart, Info, Sparkles, Loader2 } from "lucide-react";
 import { coachWeekCheck } from "@/lib/coach.functions";
+import { suggestWeeklyGoals, type SuggestedGoal } from "@/lib/weekly-goals-ai.functions";
+import { isCreditsExhaustedError } from "@/lib/credits";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
