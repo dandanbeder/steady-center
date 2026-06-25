@@ -118,15 +118,10 @@ export function AppShell({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // First-login: send brand-new users to Learn once. Skippable from there.
-  useEffect(() => {
-    if (typeof window === "undefined" || !user?.id) return;
-    const key = welcomedStorageKey(user.id);
-    if (window.localStorage.getItem(key)) return;
-    const skipOn = ["/learn", "/auth", "/accept-terms", "/onboarding"];
-    if (skipOn.some((p) => pathname === p || pathname.startsWith(p + "/"))) return;
-    navigate({ to: "/learn" });
-  }, [user?.id, pathname, navigate]);
+  // First-open routing for brand-new users is handled server-side at "/"
+  // via the per-user `profiles.has_seen_tutorial` flag — see src/routes/index.tsx.
+  // Deep links (shared items, meetings, notifications) bypass that redirect
+  // and resolve directly to their target.
 
   const toggleCollapsed = () => {
     setCollapsed((c) => {
