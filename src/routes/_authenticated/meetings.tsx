@@ -41,7 +41,17 @@ function MeetingsPage() {
   // Pass PERSONAL through to listMeetings so it can filter business_id IS NULL.
   const businessFilter = activeId === ALL ? null : activeId;
   const qc = useQueryClient();
+  const search = Route.useSearch();
+  const navigate = Route.useNavigate();
   const [open, setOpen] = useState(false);
+
+  // Deep link: /meetings?new=1 opens the new meeting dialog.
+  useEffect(() => {
+    if (search.new === "1") {
+      setOpen(true);
+      navigate({ search: {}, replace: true });
+    }
+  }, [search.new, navigate]);
 
   const { data: businesses = [] } = useQuery({ queryKey: ["businesses"], queryFn: listBusinesses });
   const { data: meetings = [], isLoading } = useQuery({
