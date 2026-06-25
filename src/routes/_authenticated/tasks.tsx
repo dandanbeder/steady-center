@@ -1222,6 +1222,81 @@ function ListWorkspace({
         onOpenChange={setStageMgrOpen}
       />
 
+      {/* Custom due-date range picker. Encodes the chosen range into
+          filters.due as "custom:YYYY-MM-DD:YYYY-MM-DD" so it lives in the
+          existing string filter field and persists through saved views. */}
+      <Dialog open={customDueOpen} onOpenChange={(o) => {
+        setCustomDueOpen(o);
+        if (o) {
+          const r = parseCustomDue(filters.due);
+          setCustomDueFrom(r?.from ? r.from.toISOString().slice(0, 10) : "");
+          setCustomDueTo(r?.to ? r.to.toISOString().slice(0, 10) : "");
+        }
+      }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Custom date range</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="grid gap-1.5">
+              <Label htmlFor="due-from">From</Label>
+              <Input
+                id="due-from"
+                type="date"
+                value={customDueFrom}
+                onChange={(e) => setCustomDueFrom(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="due-to">To</Label>
+              <Input
+                id="due-to"
+                type="date"
+                value={customDueTo}
+                onChange={(e) => setCustomDueTo(e.target.value)}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Leave either field blank to leave that side open-ended.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setFilters((f) => ({ ...f, due: "all" }));
+                setCustomDueOpen(false);
+              }}
+            >
+              Clear
+            </Button>
+            <Button
+              onClick={() => {
+                if (!customDueFrom && !customDueTo) {
+                  setFilters((f) => ({ ...f, due: "all" }));
+                } else if (
+                  customDueFrom &&
+                  customDueTo &&
+                  customDueFrom > customDueTo
+                ) {
+                  toast.error("Start date must be on or before end date");
+                  return;
+                } else {
+                  setFilters((f) => ({
+                    ...f,
+                    due: `custom:${customDueFrom}:${customDueTo}`,
+                  }));
+                }
+                setCustomDueOpen(false);
+              }}
+            >
+              Apply
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
 
       {openTask && (
         <TaskDialog
