@@ -485,9 +485,15 @@ function FolderNode({
             <DropdownMenuItem onClick={() => setAdding(true)}>Add list</DropdownMenuItem>
             <DropdownMenuItem onClick={() => { setEditName(folder.name); setRenaming(true); }}>Rename</DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() => { if (confirm(`Delete "${folder.name}" and its lists?`)) del.mutate(); }}
+              onClick={() => {
+                if (
+                  confirm(
+                    `Move "${folder.name}" to Trash?\n\nIts lists and tasks go with it and can be restored together from Trash within 30 days. Nothing is permanently deleted.`,
+                  )
+                ) del.mutate();
+              }}
               className="text-destructive"
-            >Delete</DropdownMenuItem>
+            >Move to Trash</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
