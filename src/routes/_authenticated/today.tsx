@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { CheckSquare, Video, Share2 } from "lucide-react";
+import { CheckSquare, Video, Share2, FileText } from "lucide-react";
 import { useActiveBusiness, ALL, PERSONAL, matchesActiveBusiness } from "@/hooks/use-active-business";
 import { listBusinesses } from "@/lib/businesses";
 import { listCalendars, listEvents, type EventRow } from "@/lib/calendars";
