@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -26,6 +26,9 @@ import { UpcomingMeetings } from "@/components/upcoming-meetings";
 import { UpgradeGate } from "@/components/upgrade-gate";
 
 export const Route = createFileRoute("/_authenticated/meetings")({
+  validateSearch: (s: Record<string, unknown>) => ({
+    new: s.new === "1" || s.new === 1 || s.new === true ? ("1" as const) : undefined,
+  }),
   component: () => (
     <UpgradeGate feature="meetings">
       <MeetingsPage />
@@ -38,7 +41,17 @@ function MeetingsPage() {
   // Pass PERSONAL through to listMeetings so it can filter business_id IS NULL.
   const businessFilter = activeId === ALL ? null : activeId;
   const qc = useQueryClient();
+  const search = Route.useSearch();
+  const navigate = Route.useNavigate();
   const [open, setOpen] = useState(false);
+
+  // Deep link: /meetings?new=1 opens the new meeting dialog.
+  useEffect(() => {
+    if (search.new === "1") {
+      setOpen(true);
+      navigate({ search: {}, replace: true });
+    }
+  }, [search.new, navigate]);
 
   const { data: businesses = [] } = useQuery({ queryKey: ["businesses"], queryFn: listBusinesses });
   const { data: meetings = [], isLoading } = useQuery({
