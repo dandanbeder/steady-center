@@ -429,28 +429,62 @@ function CalendarPage() {
   const visibleEvents = useMemo(
     () =>
       events.filter((e) => {
-        const cal = calById.get(e.calendar_id);
-        if (!cal || hiddenCals.has(cal.id)) return false;
+        // Team synthetic items (meetings/tasks) bypass the calendar list —
+        // they don't belong to any of the user's calendars. Member-level
+        // visibility is already applied in `teamSyntheticEvents`.
+        const isTeam = e.source === "team";
+        if (!isTeam) {
+          const cal = calById.get(e.calendar_id);
+          if (!cal || hiddenCals.has(cal.id)) return false;
+        }
         const bizId = effectiveBizId(e);
-        // Layer key: real business id, or the PERSONAL sentinel for
-        // uncategorised events. Hiding the Personal layer hides null-biz events.
         const layerKey = bizId ?? PERSONAL;
         if (hiddenBiz.has(layerKey)) return false;
-        // "All Accounts" shows everything; "Personal" shows events with no
-        // account; a specific account filters to its events regardless of
-        // which calendar they live on.
         if (activeId === PERSONAL) {
           if (bizId != null) return false;
         } else if (activeId !== ALL && bizId !== activeId) {
           return false;
         }
+        // Hide teammate-owned events too when their member toggle is off.
+        if (
+          !isTeam &&
+          teamBizId &&
+          bizId === teamBizId &&
+          currentUserId &&
+          e.owner_id !== currentUserId &&
+          (!teamLayerOn || hiddenMembers.has(e.owner_id))
+        ) {
+          return false;
+        }
         return true;
       }),
-    [events, calById, hiddenCals, hiddenBiz, activeId, effectiveBizId],
+    [
+      events,
+      calById,
+      hiddenCals,
+      hiddenBiz,
+      activeId,
+      effectiveBizId,
+      teamBizId,
+      currentUserId,
+      teamLayerOn,
+      hiddenMembers,
+    ],
   );
 
   const colorFor = useMemo(() => {
     return (e: EventRow): string => {
+      // Team-shared items (synthetic OR teammate-owned real events in the
+      // active team space) take the owner's member colour.
+      if (
+        teamBizId &&
+        currentUserId &&
+        e.owner_id !== currentUserId &&
+        (e.business_id ?? calById.get(e.calendar_id)?.business_id ?? null) === teamBizId
+      ) {
+        const c = teamColorByOwner.get(e.owner_id);
+        if (c) return c;
+      }
       const cal = calById.get(e.calendar_id);
       if (colorBy === "account") {
         const bizId = effectiveBizId(e);
@@ -459,7 +493,7 @@ function CalendarPage() {
       }
       return cal?.color ?? "#7A8471";
     };
-  }, [colorBy, calById, bizById, effectiveBizId]);
+  }, [colorBy, calById, bizById, effectiveBizId, teamBizId, currentUserId, teamColorByOwner]);
 
   const bizForEvent = useMemo(() => {
     return (e: EventRow) => {
