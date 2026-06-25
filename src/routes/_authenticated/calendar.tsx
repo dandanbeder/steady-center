@@ -94,6 +94,8 @@ import { cn } from "@/lib/utils";
 import { getWorkingHours } from "@/lib/user-prefs";
 import { TagPeople } from "@/components/tag-people";
 import { ActivityAndComments } from "@/components/comments/activity-and-comments";
+import { listTeamOverlay, type TeamOverlayItem, type TeamMember } from "@/lib/team-calendar.functions";
+import { supabase } from "@/integrations/supabase/client";
 
 
 
@@ -278,11 +280,95 @@ function CalendarPage() {
     return { start, end: addDays(start, 60) };
   }, [view, cursor]);
 
-  const { data: events = [] } = useQuery({
+  const { data: rawEvents = [] } = useQuery({
     queryKey: ["events", range.start.toISOString(), range.end.toISOString()],
     queryFn: () => listEvents(range.start, range.end),
     enabled: ready,
   });
+
+  // Current user id — used to colour team members' items distinctly from
+  // the user's own. RLS already restricts what we can read; this is purely
+  // a UI cue for the team-shared layer.
+  const { data: currentUserId = null } = useQuery({
+    queryKey: ["me", "id"],
+    queryFn: async () => (await supabase.auth.getUser()).data.user?.id ?? null,
+    enabled: ready,
+    staleTime: 5 * 60_000,
+  });
+
+  // Team layer: when the active account is a real team space, overlay the
+  // events / meetings / tasks teammates have SHARED into that space
+  // (same access path as "Shared with me"). Private items are not returned.
+  const teamLayerOn = !hiddenBiz.has("__team__");
+  const teamBizId =
+    activeId !== ALL && activeId !== PERSONAL ? (activeId as string) : null;
+  const { data: teamOverlay } = useQuery({
+    queryKey: [
+      "team-overlay",
+      teamBizId,
+      range.start.toISOString(),
+      range.end.toISOString(),
+    ],
+    queryFn: () =>
+      listTeamOverlay({
+        data: {
+          businessId: teamBizId as string,
+          rangeStart: range.start.toISOString(),
+          rangeEnd: range.end.toISOString(),
+        },
+      }),
+    enabled: ready && !!teamBizId && teamLayerOn,
+    staleTime: 30_000,
+  });
+  const teamMembers: TeamMember[] = teamOverlay?.members ?? [];
+  const teamItems: TeamOverlayItem[] = teamOverlay?.items ?? [];
+  const { hidden: hiddenMembers, toggle: toggleHiddenMember } = useHiddenSet("teamMember");
+
+  // Map team meetings / tasks into synthetic EventRow shapes so the existing
+  // day / week / month renderers can lay them out. Events are already in the
+  // `events` query (RLS returns teammates' events via business membership),
+  // so we skip those here to avoid duplication.
+  const teamSyntheticEvents = useMemo<EventRow[]>(() => {
+    if (!teamBizId || !teamLayerOn) return [];
+    const out: EventRow[] = [];
+    for (const it of teamItems) {
+      if (it.source === "event") continue;
+      if (hiddenMembers.has(it.team_owner_id)) continue;
+      out.push({
+        id: it.id,
+        owner_id: it.team_owner_id,
+        calendar_id: "__team__",
+        business_id: it.business_id,
+        title:
+          it.source === "meeting"
+            ? `📞 ${it.title}`
+            : it.source === "task"
+              ? `✓ ${it.title}`
+              : it.title,
+        description: null,
+        location: null,
+        start_at: it.start_at,
+        end_at: it.end_at,
+        all_day: it.all_day,
+        is_meeting: it.source === "meeting",
+        source: "team",
+        external_id: null,
+        created_at: new Date().toISOString(),
+      } as EventRow);
+    }
+    return out;
+  }, [teamItems, teamBizId, teamLayerOn, hiddenMembers]);
+
+  const teamColorByOwner = useMemo(
+    () => new Map(teamMembers.map((m) => [m.user_id, m.color])),
+    [teamMembers],
+  );
+
+  // Merged event list — own/synced events plus synthetic team meetings/tasks.
+  const events = useMemo<EventRow[]>(
+    () => [...rawEvents, ...teamSyntheticEvents],
+    [rawEvents, teamSyntheticEvents],
+  );
 
   // Deep-link: open a specific event's quick view once events for the range are loaded.
   const openedDeepLink = useRef(false);
@@ -343,28 +429,62 @@ function CalendarPage() {
   const visibleEvents = useMemo(
     () =>
       events.filter((e) => {
-        const cal = calById.get(e.calendar_id);
-        if (!cal || hiddenCals.has(cal.id)) return false;
+        // Team synthetic items (meetings/tasks) bypass the calendar list —
+        // they don't belong to any of the user's calendars. Member-level
+        // visibility is already applied in `teamSyntheticEvents`.
+        const isTeam = e.source === "team";
+        if (!isTeam) {
+          const cal = calById.get(e.calendar_id);
+          if (!cal || hiddenCals.has(cal.id)) return false;
+        }
         const bizId = effectiveBizId(e);
-        // Layer key: real business id, or the PERSONAL sentinel for
-        // uncategorised events. Hiding the Personal layer hides null-biz events.
         const layerKey = bizId ?? PERSONAL;
         if (hiddenBiz.has(layerKey)) return false;
-        // "All Accounts" shows everything; "Personal" shows events with no
-        // account; a specific account filters to its events regardless of
-        // which calendar they live on.
         if (activeId === PERSONAL) {
           if (bizId != null) return false;
         } else if (activeId !== ALL && bizId !== activeId) {
           return false;
         }
+        // Hide teammate-owned events too when their member toggle is off.
+        if (
+          !isTeam &&
+          teamBizId &&
+          bizId === teamBizId &&
+          currentUserId &&
+          e.owner_id !== currentUserId &&
+          (!teamLayerOn || hiddenMembers.has(e.owner_id))
+        ) {
+          return false;
+        }
         return true;
       }),
-    [events, calById, hiddenCals, hiddenBiz, activeId, effectiveBizId],
+    [
+      events,
+      calById,
+      hiddenCals,
+      hiddenBiz,
+      activeId,
+      effectiveBizId,
+      teamBizId,
+      currentUserId,
+      teamLayerOn,
+      hiddenMembers,
+    ],
   );
 
   const colorFor = useMemo(() => {
     return (e: EventRow): string => {
+      // Team-shared items (synthetic OR teammate-owned real events in the
+      // active team space) take the owner's member colour.
+      if (
+        teamBizId &&
+        currentUserId &&
+        e.owner_id !== currentUserId &&
+        (e.business_id ?? calById.get(e.calendar_id)?.business_id ?? null) === teamBizId
+      ) {
+        const c = teamColorByOwner.get(e.owner_id);
+        if (c) return c;
+      }
       const cal = calById.get(e.calendar_id);
       if (colorBy === "account") {
         const bizId = effectiveBizId(e);
@@ -373,7 +493,7 @@ function CalendarPage() {
       }
       return cal?.color ?? "#7A8471";
     };
-  }, [colorBy, calById, bizById, effectiveBizId]);
+  }, [colorBy, calById, bizById, effectiveBizId, teamBizId, currentUserId, teamColorByOwner]);
 
   const bizForEvent = useMemo(() => {
     return (e: EventRow) => {
@@ -777,6 +897,69 @@ function CalendarPage() {
             </ul>
           </div>
         )}
+
+        {teamBizId && (
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                Team layer
+              </h3>
+              <button
+                type="button"
+                onClick={() => toggleHiddenBiz("__team__")}
+                className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+                title={teamLayerOn ? "Hide team-shared items" : "Show team-shared items"}
+              >
+                {teamLayerOn ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                {teamLayerOn ? "On" : "Off"}
+              </button>
+            </div>
+            {teamLayerOn && teamMembers.length === 0 && (
+              <p className="text-[11px] text-muted-foreground">
+                Nothing shared by teammates in this window.
+              </p>
+            )}
+            {teamLayerOn && teamMembers.length > 0 && (
+              <ul className="space-y-1.5">
+                {teamMembers.map((m) => {
+                  const on = !hiddenMembers.has(m.user_id);
+                  return (
+                    <li
+                      key={m.user_id}
+                      className="flex items-center gap-2 text-xs px-2 py-1.5 rounded-md hover:bg-muted/40"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => toggleHiddenMember(m.user_id)}
+                        className="inline-flex items-center gap-2 flex-1 min-w-0 text-left"
+                        title={on ? "Hide this member's shared items" : "Show this member's shared items"}
+                      >
+                        <span
+                          className="h-2.5 w-2.5 rounded-full shrink-0"
+                          style={{ backgroundColor: m.color, opacity: on ? 1 : 0.25 }}
+                        />
+                        <span className={cn("truncate", !on && "opacity-50 line-through")}>
+                          {m.full_name || "Teammate"}
+                        </span>
+                      </button>
+                      {on ? (
+                        <Eye className="h-3 w-3 text-muted-foreground/70" />
+                      ) : (
+                        <EyeOff className="h-3 w-3 text-muted-foreground/70" />
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            <p className="text-[10px] text-muted-foreground mt-2 leading-snug">
+              Only items teammates have shared into this space. Private
+              calendars never appear.
+            </p>
+          </div>
+        )}
+
+
 
         <div>
           <div className="flex items-center justify-between mb-3">
