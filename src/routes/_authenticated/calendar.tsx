@@ -213,6 +213,8 @@ function CalendarPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [createCalOpen, setCreateCalOpen] = useState(false);
+  const [newTaskOpen, setNewTaskOpen] = useState(false);
+  const navigate = useNavigate();
 
 
   // Lock body scroll while in fullscreen so the expanded calendar owns the viewport.
