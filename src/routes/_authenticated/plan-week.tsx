@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { BacklogPanel } from "@/components/backlog-panel";
+import { PlanWeekBoard } from "@/components/plan-week-board";
 import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
 import { useSubscription } from "@/hooks/use-subscription";
 import { listBusinesses } from "@/lib/businesses";
