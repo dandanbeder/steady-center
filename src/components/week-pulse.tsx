@@ -49,13 +49,15 @@ const COLOR_VAR: Record<Status, string> = {
   clay: "var(--pulse-clay)",
 };
 
+type StandaloneMeeting = { id: string; title: string; scheduled_at: string };
+
 type DayPulse = {
   date: Date;
   loadH: number;
   capacity: number;
   status: Status;
   events: EventRow[];
-  tasks: Task[];
+  meetings: StandaloneMeeting[];
 };
 
 export function WeekPulse({
@@ -80,13 +82,13 @@ export function WeekPulse({
 
   const weekKey = weekStart.toISOString();
 
-  const { data: tasks = [] } = useQuery({
-    queryKey: ["week-pulse-tasks", weekKey],
-    queryFn: () => listTasksInRange(weekStart, weekEnd),
-  });
   const { data: events = [] } = useQuery({
     queryKey: ["week-pulse-events", weekKey],
     queryFn: () => listEvents(weekStart, weekEnd),
+  });
+  const { data: allMeetings = [] } = useQuery({
+    queryKey: ["week-pulse-meetings"],
+    queryFn: () => listMeetings(),
   });
   const { data: hours } = useQuery({
     queryKey: ["working-hours"],
@@ -96,8 +98,13 @@ export function WeekPulse({
   const dailyCap = hours?.daily_capacity_hours ?? 6;
   const workDays = hours?.work_days ?? [1, 2, 3, 4, 5];
 
-  const visibleTasks = activeId === ALL ? tasks : tasks.filter((t) => t.business_id === activeId);
   const visibleEvents = activeId === ALL ? events : events.filter((e) => e.business_id === activeId);
+  // Use meetings as a signal only when they aren't already represented by a calendar event
+  // (avoids double-counting). Account filter respected the same way.
+  const standaloneMeetings: StandaloneMeeting[] = (allMeetings as Meeting[])
+    .filter((m) => !m.event_id && m.scheduled_at)
+    .filter((m) => activeId === ALL || m.business_id === activeId)
+    .map((m) => ({ id: m.id, title: m.title, scheduled_at: m.scheduled_at as string }));
 
   const today = new Date();
 
@@ -105,13 +112,11 @@ export function WeekPulse({
     return Array.from({ length: 7 }, (_, i) => {
       const d = new Date(weekStart);
       d.setDate(d.getDate() + i);
-      const dayTasks = visibleTasks.filter(
-        (t) => t.due_at && sameDay(new Date(t.due_at), d) && t.status !== "done",
-      );
       const dayEvents = visibleEvents.filter((e) => sameDay(new Date(e.start_at), d));
+      const dayMeetings = standaloneMeetings.filter((m) => sameDay(new Date(m.scheduled_at), d));
       const loadH =
         dayEvents.reduce((s, e) => s + eventHours(e), 0) +
-        dayTasks.length * DEFAULT_TASK_HOURS;
+        dayMeetings.length * DEFAULT_MEETING_HOURS;
       const isWorkDay = workDays.includes(d.getDay());
       const capacity = isWorkDay ? dailyCap : Math.max(dailyCap * 0.25, 1);
       return {
@@ -120,10 +125,11 @@ export function WeekPulse({
         capacity,
         status: statusFor(loadH, capacity),
         events: dayEvents,
-        tasks: dayTasks,
+        meetings: dayMeetings,
       };
     });
-  }, [weekStart, visibleTasks, visibleEvents, dailyCap, workDays]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weekStart, visibleEvents, JSON.stringify(standaloneMeetings.map((m) => m.id)), dailyCap, workDays]);
 
   return (
     <PulseStrip
