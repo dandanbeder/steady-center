@@ -49,6 +49,8 @@ import {
   daysRemaining,
   deleteOutcome,
   getOutcomeWithProgress,
+  linkTaskToOutcome,
+  listLinkableTasksForOutcome,
   listOutcomesWithProgress,
   listTasksForOutcome,
   normaliseOutcomeStatus,
@@ -59,7 +61,15 @@ import {
   type OutcomeStatus,
   type OutcomeWithProgress,
 } from "@/lib/outcomes";
+import { createTask } from "@/lib/tasks";
 import { OutcomeWizard } from "@/components/outcomes/outcome-wizard";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Link2Off, Plus as PlusIcon, Search } from "lucide-react";
+
 
 export const Route = createFileRoute("/_authenticated/outcomes")({
   head: () => ({
