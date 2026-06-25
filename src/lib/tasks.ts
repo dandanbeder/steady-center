@@ -211,18 +211,49 @@ export async function updateFolder(
   if (error) throw error;
 }
 export async function deleteFolder(id: string) {
+  // Soft-delete: folder moves to Trash and is recoverable.
+  // Lists inside cascade-soft-delete with the SAME timestamp so they
+  // travel together to/from Trash. Tasks stay attached to their lists
+  // (no orphaning) and are restored intact when the folder is restored.
+  const ts = new Date().toISOString();
   const { error } = await supabase
     .from("folders")
-    .update({ deleted_at: new Date().toISOString() } as never)
+    .update({ deleted_at: ts } as never)
     .eq("id", id);
   if (error) throw error;
+  // Cascade to child lists that aren't already trashed. RLS still
+  // applies per-row, so only lists the caller can manage are touched.
+  const { error: e2 } = await supabase
+    .from("lists")
+    .update({ deleted_at: ts } as never)
+    .eq("folder_id", id)
+    .is("deleted_at", null);
+  if (e2) throw e2;
 }
 export async function restoreFolder(id: string) {
+  // Fetch the folder's prior deleted_at to identify lists that were
+  // cascade-trashed in the same operation; we restore only those,
+  // preserving any list the user trashed independently earlier.
+  const { data: folder, error: readErr } = await supabase
+    .from("folders")
+    .select("deleted_at")
+    .eq("id", id)
+    .maybeSingle();
+  if (readErr) throw readErr;
+  const cascadeTs = folder?.deleted_at as string | null | undefined;
   const { error } = await supabase
     .from("folders")
     .update({ deleted_at: null } as never)
     .eq("id", id);
   if (error) throw error;
+  if (cascadeTs) {
+    const { error: e2 } = await supabase
+      .from("lists")
+      .update({ deleted_at: null } as never)
+      .eq("folder_id", id)
+      .eq("deleted_at", cascadeTs);
+    if (e2) throw e2;
+  }
 }
 
 // ---- lists
