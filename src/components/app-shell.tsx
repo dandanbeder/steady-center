@@ -435,8 +435,11 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link to="/ai" className="gap-2">
-                    <Sparkles className="h-4 w-4" /> AI &amp; credits
+                    <Sparkles className="h-4 w-4" /> AI Usage &amp; Credits
                   </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSupportOpen(true)} className="gap-2">
+                  <LifeBuoy className="h-4 w-4" /> Support
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
