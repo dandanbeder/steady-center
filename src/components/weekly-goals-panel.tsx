@@ -250,6 +250,22 @@ export function WeeklyGoalsPanel({ compact = false }: { compact?: boolean }) {
           }}
         />
       )}
+
+      {suggestions && (
+        <SuggestionsDialog
+          weekStart={weekStart}
+          weekEnd={weekEnd}
+          businesses={businesses}
+          initial={suggestions}
+          existingCount={goals.length}
+          maxGoals={MAX_GOALS}
+          onClose={() => setSuggestions(null)}
+          onSaved={() => {
+            invalidate();
+            setSuggestions(null);
+          }}
+        />
+      )}
     </section>
   );
 }
