@@ -106,16 +106,6 @@ async function listTopOpenTasks(limit = 5, businessId: string | null = null): Pr
   return merged;
 }
 
-async function listRecentNotes(limit = 5): Promise<Note[]> {
-  const { data, error } = await supabase
-    .from("notes")
-    .select("id, title, updated_at, business_id, pinned")
-    .is("deleted_at", null)
-    .order("updated_at", { ascending: false })
-    .limit(limit);
-  if (error) throw error;
-  return (data ?? []) as unknown as Note[];
-}
 
 function TodayPage() {
   const { user } = useAuth();
