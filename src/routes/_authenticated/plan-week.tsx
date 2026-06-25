@@ -36,7 +36,15 @@ import {
   eventHours,
   DEFAULT_TASK_HOURS,
 } from "@/lib/weekly-plan";
-import { suggestDeferrals } from "@/lib/weekly-plan.functions";
+import { suggestDeferrals, realisticPlanReview } from "@/lib/weekly-plan.functions";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/plan-week")({
