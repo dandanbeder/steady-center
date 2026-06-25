@@ -144,7 +144,7 @@ function PlanWeekPage() {
     for (const t of committedFiltered) {
       if (t.status === "done") continue;
       const r = byId.get(t.business_id);
-      if (r) r.committed += DEFAULT_TASK_HOURS;
+      if (r) r.committed += taskHours(t);
     }
     return rows;
   }, [businesses, eventsFiltered, committedFiltered, activeId, generalBudget]);
@@ -152,8 +152,12 @@ function PlanWeekPage() {
   const budgetedRows = acctRows.filter((r) => r.budget != null && r.budget > 0);
   const weeklyCapacity = budgetedRows.reduce((s, r) => s + (r.budget ?? 0), 0);
   const eventLoad = eventsFiltered.reduce((s, e) => s + eventHours(e), 0);
-  const taskLoad =
-    committedFiltered.filter((t) => t.status !== "done").length * DEFAULT_TASK_HOURS;
+  const taskLoad = committedFiltered
+    .filter((t) => t.status !== "done")
+    .reduce((s, t) => s + taskHours(t), 0);
+  const unestimatedCount = committedFiltered.filter(
+    (t) => t.status !== "done" && (t.estimated_minutes == null || t.estimated_minutes <= 0),
+  ).length;
   const totalLoad = eventLoad + taskLoad;
   // Fallback to working-hours-derived capacity only when no per-account budgets are set.
   const fallbackCapacity = workDays.length * dailyCap;
