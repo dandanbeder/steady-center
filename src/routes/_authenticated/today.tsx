@@ -1,35 +1,50 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { CheckSquare, Video, Share2 } from "lucide-react";
 import { useActiveBusiness, ALL, PERSONAL, matchesActiveBusiness } from "@/hooks/use-active-business";
 import { listBusinesses } from "@/lib/businesses";
-import { listCalendars, listEvents } from "@/lib/calendars";
+import { listCalendars, listEvents, type EventRow } from "@/lib/calendars";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { mondayOf } from "@/lib/weekly-plan";
 import { getOnboardingProfile } from "@/lib/onboarding";
 import { MyInvitationsBanner } from "@/components/my-invitations-banner";
 import { TodayAnnouncements } from "@/components/today-announcements";
-import { UpcomingMeetings } from "@/components/upcoming-meetings";
 import { DailyPulseCard } from "@/components/daily-pulse-card";
 import { WeekPulse } from "@/components/week-pulse";
 import { Skeleton } from "@/components/ui/skeleton";
 import { OutcomeMark } from "@/components/outcomes/outcome-mark";
 import { listOutcomes } from "@/lib/outcomes";
+import { listSharedWithMeResources, type SharedItemRow } from "@/lib/shares.functions";
 import type { Task } from "@/lib/tasks";
 
+function startOfDay(d: Date) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
 
+function todayKey(d = new Date()) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+const todayEventsQueryOptions = () => {
+  const start = startOfDay(new Date());
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+  return {
+    queryKey: ["events", "today", start.toISOString()] as const,
+    queryFn: () => listEvents(start, end),
+  };
+};
 
 export const Route = createFileRoute("/_authenticated/today")({
   head: () => ({ meta: [{ title: "Today · Heartbeat" }] }),
   loader: ({ context }) => {
-    // Warm today's events and recent notes so the dashboard paints without a spinner.
-    const start = startOfDay(new Date());
-    const end = new Date(start);
-    end.setDate(end.getDate() + 1);
-    context.queryClient.prefetchQuery({
-      queryKey: ["events", "today", start.toISOString()],
-      queryFn: () => listEvents(start, end),
-    });
+    context.queryClient.prefetchQuery(todayEventsQueryOptions());
   },
   component: TodayPage,
 });
@@ -42,95 +57,65 @@ function greeting() {
   return "Good evening";
 }
 
-function startOfDay(d: Date) {
-  const x = new Date(d);
-  x.setHours(0, 0, 0, 0);
-  return x;
-}
-
-/**
- * Top open tasks. Prefers tasks committed to this week, then falls back to
- * anything else due today or overdue, so committed work always surfaces first.
- * Optionally scoped to a single business (account).
- */
-async function listTopOpenTasks(limit = 5, businessId: string | null = null): Promise<Task[]> {
+/** Today's open tasks: anything due today or earlier (overdue counts), plus committed-week items. */
+async function listTodaysOpenTasks(businessId: string | null = null): Promise<Task[]> {
   const end = new Date();
   end.setHours(23, 59, 59, 999);
   const mondayStr = mondayOf();
-
-  // businessId === PERSONAL → IS NULL; specific id → eq; null → no filter (ALL).
   const apply = <T extends { eq: (col: string, val: string) => T; is: (col: string, val: null) => T }>(q: T): T => {
     if (businessId === PERSONAL) return q.is("business_id", null);
     if (businessId) return q.eq("business_id", businessId);
     return q;
   };
-
   const [committed, dueSoon] = await Promise.all([
     apply(
-      supabase
-        .from("tasks")
-        .select("*")
-        .is("deleted_at", null)
-        .neq("status", "done")
-        .eq("committed_week", mondayStr),
-    )
-      .order("priority", { ascending: true })
-      .order("due_at", { ascending: true, nullsFirst: false })
-      .limit(limit),
+      supabase.from("tasks").select("*").is("deleted_at", null).neq("status", "done").eq("committed_week", mondayStr),
+    ).order("priority", { ascending: true }).order("due_at", { ascending: true, nullsFirst: false }).limit(10),
     apply(
-      supabase
-        .from("tasks")
-        .select("*")
-        .is("deleted_at", null)
-        .neq("status", "done")
-        .or(`due_at.is.null,due_at.lte.${end.toISOString()}`),
-    )
-      .order("due_at", { ascending: true, nullsFirst: false })
-      .limit(limit),
+      supabase.from("tasks").select("*").is("deleted_at", null).neq("status", "done").not("due_at", "is", null).lte("due_at", end.toISOString()),
+    ).order("due_at", { ascending: true }).limit(10),
   ]);
   if (committed.error) throw committed.error;
   if (dueSoon.error) throw dueSoon.error;
-
   const seen = new Set<string>();
   const merged: Task[] = [];
   for (const t of [...(committed.data ?? []), ...(dueSoon.data ?? [])] as Task[]) {
     if (seen.has(t.id)) continue;
     seen.add(t.id);
     merged.push(t);
-    if (merged.length >= limit) break;
   }
   return merged;
 }
-
 
 function TodayPage() {
   const { user } = useAuth();
   const { activeId } = useActiveBusiness();
 
-  const start = startOfDay(new Date());
-  const end = new Date(start);
-  end.setDate(end.getDate() + 1);
-
-  // All queries fire in parallel, react-query handles dedupe and SWR caching.
   const businessesQ = useQuery({ queryKey: ["businesses"], queryFn: listBusinesses });
   const calendarsQ = useQuery({ queryKey: ["calendars"], queryFn: listCalendars });
-  const eventsQ = useQuery({
-    queryKey: ["events", "today", start.toISOString()],
-    queryFn: () => listEvents(start, end),
-  });
-  // listTopOpenTasks treats null = no filter; pass PERSONAL through so the
-  // query filters business_id IS NULL.
+
+  // ONE shared events query for today, used by BOTH cards so they never disagree.
+  const eventsQ = useQuery(todayEventsQueryOptions());
+
   const businessScope = activeId === ALL ? null : activeId;
-  const topTasksQ = useQuery({
-    queryKey: ["tasks", "today-top", 5, businessScope],
-    queryFn: () => listTopOpenTasks(5, businessScope),
+  const tasksQ = useQuery({
+    queryKey: ["tasks", "today-open", businessScope],
+    queryFn: () => listTodaysOpenTasks(businessScope),
   });
   const outcomesQ = useQuery({ queryKey: ["outcomes", "all-names"], queryFn: () => listOutcomes() });
+
+  // Shared with me — gracefully empty if the system isn't available.
+  const sharedQ = useQuery<SharedItemRow[]>({
+    queryKey: ["shared-with-me", "today-card"],
+    queryFn: () => listSharedWithMeResources(),
+    retry: false,
+  });
+  const sharedItems = (sharedQ.data ?? []).slice(0, 3);
 
   const businesses = businessesQ.data ?? [];
   const calendars = calendarsQ.data ?? [];
   const events = eventsQ.data ?? [];
-  const topTasks = topTasksQ.data ?? [];
+  const tasks = tasksQ.data ?? [];
   const outcomeNameById = new Map((outcomesQ.data ?? []).map((o) => [o.id, o.name]));
 
   const active = activeId === ALL || activeId === PERSONAL ? null : businesses.find((b) => b.id === activeId);
@@ -146,9 +131,18 @@ function TodayPage() {
   });
 
   const calById = new Map(calendars.map((c) => [c.id, c]));
-  const todays = events
+  const todays: EventRow[] = events
     .filter((e) => matchesActiveBusiness(e.business_id, activeId))
     .sort((a, b) => +new Date(a.start_at) - +new Date(b.start_at));
+
+  // Derived "today" subsets from the shared events list.
+  const now = new Date();
+  const upcomingMeetings = todays
+    .filter((e) => e.is_meeting && +new Date(e.start_at) >= now.getTime())
+    .slice(0, 3);
+  const visibleTasks = tasks.filter((t) => matchesActiveBusiness(t.business_id, activeId)).slice(0, 5);
+
+  const dateKey = todayKey();
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
@@ -160,11 +154,11 @@ function TodayPage() {
         {greeting()}{name ? `, ${name}` : ""}.
       </h1>
       <p className="mt-3 sm:mt-4 text-base sm:text-lg text-muted-foreground">
-
         {active
           ? <>You're focused on <span className="text-accent">{active.name}</span> today.</>
           : "Looking across everything today."}
       </p>
+
       <div className="mt-10" data-tour="daily-pulse"><DailyPulseCard /></div>
 
       <section data-tour="week-pulse" className="mt-8 rounded-xl border border-border bg-card/40 px-4 pt-3 pb-2" style={{ boxShadow: "var(--shadow-soft)" }}>
@@ -176,77 +170,138 @@ function TodayPage() {
       </section>
 
       <div className="mt-12 grid gap-4 sm:grid-cols-2">
-        <Card title="Today's events">
+        {/* TODAY'S EVENTS — entire card links to calendar on today; each row links to its event */}
+        <LinkCard
+          title="Today's events"
+          to="/calendar"
+          search={{ date: dateKey, view: "day" }}
+          ariaLabel="Open today in the calendar"
+        >
           {eventsQ.isLoading ? (
             <SkeletonList />
           ) : todays.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nothing scheduled.</p>
+            <EmptyState text="Nothing scheduled." />
           ) : (
             <ul className="space-y-2">
               {todays.map((e) => {
                 const c = calById.get(e.calendar_id);
                 return (
-                  <li
-                    key={e.id}
-                    className="text-sm pl-3"
-                    style={{ borderLeft: `3px solid ${c?.color ?? "#888"}` }}
-                  >
-                    <div className="font-medium">{e.title}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {e.all_day
-                        ? "All day"
-                        : new Date(e.start_at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
-                      {c && <> · {c.name}</>}
-                    </div>
+                  <li key={e.id}>
+                    <Link
+                      to="/calendar"
+                      search={{ date: dateKey, view: "day", eventId: e.id }}
+                      className="block text-sm pl-3 rounded hover:bg-muted/40 transition-colors py-1"
+                      style={{ borderLeft: `3px solid ${c?.color ?? "#888"}` }}
+                      onClick={(ev) => ev.stopPropagation()}
+                    >
+                      <div className="font-medium truncate">{e.title}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {e.all_day
+                          ? "All day"
+                          : new Date(e.start_at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
+                        {c && <> · {c.name}</>}
+                      </div>
+                    </Link>
                   </li>
                 );
               })}
             </ul>
           )}
-        </Card>
-        <Card title="On your plate">
-          {topTasksQ.isLoading ? (
-            <SkeletonList />
-          ) : topTasks.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nothing due. Nice.</p>
-          ) : (() => {
-            const visible = topTasks.filter((t) => matchesActiveBusiness(t.business_id, activeId));
-            const linkedOutcomes = new Set(
-              visible.filter((t) => t.outcome_id).map((t) => t.outcome_id as string),
-            );
-            return (
-              <>
-                <ul className="space-y-2">
-                  {visible.map((t) => (
-                    <li key={t.id} className="text-sm">
-                      <div className="font-medium truncate flex items-center gap-1.5">
-                        <span className="truncate">{t.title}</span>
-                        {t.outcome_id && (
-                          <OutcomeMark
-                            outcomeId={t.outcome_id}
-                            outcomeName={outcomeNameById.get(t.outcome_id)}
-                          />
-                        )}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {t.due_at
-                          ? new Date(t.due_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })
-                          : "No due date"}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-                {linkedOutcomes.size > 0 && (
-                  <p className="mt-3 text-[11px] text-muted-foreground/80 italic">
-                    Moving {linkedOutcomes.size} outcome{linkedOutcomes.size === 1 ? "" : "s"} forward today.
-                  </p>
-                )}
-              </>
-            );
-          })()}
-        </Card>
-        <Card title="Upcoming meetings"><UpcomingMeetings horizonDays={7} limit={5} /></Card>
+        </LinkCard>
 
+        {/* ON YOUR PLATE — tasks + today's upcoming meetings (same source) + shared with me */}
+        <Card title="On your plate">
+          {(tasksQ.isLoading || eventsQ.isLoading) ? (
+            <SkeletonList />
+          ) : (visibleTasks.length === 0 && upcomingMeetings.length === 0 && sharedItems.length === 0) ? (
+            <EmptyState text="Nothing on your plate. Enjoy the quiet." />
+          ) : (
+            <div className="space-y-4">
+              {visibleTasks.length > 0 && (
+                <Section label="Tasks">
+                  <ul className="space-y-2">
+                    {visibleTasks.map((t) => (
+                      <li key={t.id}>
+                        <Link
+                          to="/tasks"
+                          className="block text-sm rounded hover:bg-muted/40 transition-colors py-1 px-1 -mx-1"
+                        >
+                          <div className="font-medium truncate flex items-center gap-1.5">
+                            <CheckSquare className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            <span className="truncate">{t.title}</span>
+                            {t.outcome_id && (
+                              <OutcomeMark
+                                outcomeId={t.outcome_id}
+                                outcomeName={outcomeNameById.get(t.outcome_id)}
+                              />
+                            )}
+                          </div>
+                          <div className="text-xs text-muted-foreground pl-5">
+                            {t.due_at
+                              ? new Date(t.due_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })
+                              : "No due date"}
+                          </div>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </Section>
+              )}
+
+              {upcomingMeetings.length > 0 && (
+                <Section label="Upcoming meetings today">
+                  <ul className="space-y-2">
+                    {upcomingMeetings.map((e) => {
+                      const c = calById.get(e.calendar_id);
+                      return (
+                        <li key={e.id}>
+                          <Link
+                            to="/calendar"
+                            search={{ date: dateKey, view: "day", eventId: e.id }}
+                            className="block text-sm rounded hover:bg-muted/40 transition-colors py-1 px-1 -mx-1"
+                          >
+                            <div className="font-medium truncate flex items-center gap-1.5">
+                              <Video className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                              <span className="truncate">{e.title}</span>
+                            </div>
+                            <div className="text-xs text-muted-foreground pl-5">
+                              {new Date(e.start_at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
+                              {c && <> · {c.name}</>}
+                            </div>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </Section>
+              )}
+
+              {sharedItems.length > 0 && (
+                <Section label="Shared with me">
+                  <ul className="space-y-2">
+                    {sharedItems.map((s) => (
+                      <li key={s.share_id}>
+                        <Link
+                          to="/shared"
+                          className="block text-sm rounded hover:bg-muted/40 transition-colors py-1 px-1 -mx-1"
+                        >
+                          <div className="font-medium truncate flex items-center gap-1.5">
+                            <Share2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            <span className="truncate">{s.title || "Untitled"}</span>
+                          </div>
+                          <div className="text-xs text-muted-foreground pl-5 truncate">
+                            {s.subtitle ?? s.resource_type}
+                            {s.owner_name ? ` · from ${s.owner_name}` : ""}
+                          </div>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </Section>
+              )}
+            </div>
+          )}
+        </Card>
       </div>
     </div>
   );
@@ -262,6 +317,19 @@ function SkeletonList() {
   );
 }
 
+function EmptyState({ text }: { text: string }) {
+  return <p className="text-sm text-muted-foreground">{text}</p>;
+}
+
+function Section({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="text-[11px] uppercase tracking-wider text-muted-foreground/80 mb-1.5">{label}</p>
+      {children}
+    </div>
+  );
+}
+
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div
@@ -271,5 +339,33 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
       <h3 className="text-lg mb-3">{title}</h3>
       {children}
     </div>
+  );
+}
+
+/** Like Card, but the whole surface is a link with hover affordance. */
+function LinkCard({
+  title,
+  to,
+  search,
+  ariaLabel,
+  children,
+}: {
+  title: string;
+  to: string;
+  search?: Record<string, string>;
+  ariaLabel?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      to={to}
+      search={search as never}
+      aria-label={ariaLabel}
+      className="block rounded-2xl border border-border bg-card p-6 hover:border-accent/40 hover:bg-card/80 transition-colors"
+      style={{ boxShadow: "var(--shadow-soft)" }}
+    >
+      <h3 className="text-lg mb-3">{title}</h3>
+      {children}
+    </Link>
   );
 }
