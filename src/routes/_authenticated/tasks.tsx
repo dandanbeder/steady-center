@@ -156,6 +156,8 @@ import { listOutcomes, updateOutcome } from "@/lib/outcomes";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { TaskTimerInline, TaskTimePanel } from "@/components/task-timer";
+import { TaskAttachments } from "@/components/tasks/task-attachments";
+
 // Lazy: Focus Mode is a heavy full-screen panel; only ship its chunk on demand.
 const FocusMode = lazy(() =>
   import("@/components/focus-mode").then((m) => ({ default: m.FocusMode })),
@@ -2610,9 +2612,12 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
 
             <TaskTimePanel taskId={task.id} businessId={task.business_id} />
 
+            <TaskAttachments taskId={task.id} />
+
             <div className="pt-2 border-t border-border">
               <TagPeople itemType="task" itemId={task.id} businessId={task.business_id} />
             </div>
+
 
             {/* Linked notes/meetings/events */}
             <div className="pt-2 border-t border-border">
