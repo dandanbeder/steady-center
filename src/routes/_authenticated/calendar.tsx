@@ -721,11 +721,26 @@ function CalendarPage() {
           </p>
         </div>
 
-        {visibleBusinesses.length > 0 && (
+        {(visibleBusinesses.length > 0 || activeId === ALL || activeId === PERSONAL) && (
           <div>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-              Accounts
-            </h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                Account layers
+              </h3>
+              {(hiddenBiz.size > 0 || activeId !== ALL) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHiddenBiz(new Set());
+                    setActiveId(ALL);
+                  }}
+                  className="text-[11px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                  title="Show events from all accounts"
+                >
+                  Show all
+                </button>
+              )}
+            </div>
             <ul className="space-y-1.5">
               {visibleBusinesses.map((b) => (
                 <AccountRow
@@ -733,6 +748,12 @@ function CalendarPage() {
                   biz={b}
                   on={!hiddenBiz.has(b.id)}
                   onToggle={() => toggleHiddenBiz(b.id)}
+                  onOnly={() => {
+                    // "Only" isolates this account: drives the same top filter so
+                    // the layer panel and the global account switcher stay in sync.
+                    setActiveId(b.id);
+                    setHiddenBiz(new Set());
+                  }}
                   onColorChange={async (color) => {
                     try {
                       await updateBusiness(b.id, { color });
@@ -743,6 +764,16 @@ function CalendarPage() {
                   }}
                 />
               ))}
+              {(activeId === ALL || activeId === PERSONAL) && (
+                <PersonalLayerRow
+                  on={!hiddenBiz.has(PERSONAL)}
+                  onToggle={() => toggleHiddenBiz(PERSONAL)}
+                  onOnly={() => {
+                    setActiveId(PERSONAL);
+                    setHiddenBiz(new Set());
+                  }}
+                />
+              )}
             </ul>
           </div>
         )}
