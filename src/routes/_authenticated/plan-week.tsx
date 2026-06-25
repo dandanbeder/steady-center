@@ -423,6 +423,11 @@ function PlanWeekPage() {
             <div className="text-xs text-muted-foreground space-y-0.5">
               <div>Calendar events: {eventLoad.toFixed(1)}h</div>
               <div>Committed tasks ({committedCount}): {taskLoad.toFixed(1)}h</div>
+              {unestimatedCount > 0 && (
+                <div className="text-amber-600 dark:text-amber-500">
+                  {unestimatedCount} task{unestimatedCount === 1 ? "" : "s"} without an estimate (counted at 1h each)
+                </div>
+              )}
               {weeklyCapacity > 0 ? (
                 <div>Free this week: {Math.max(0, effectiveCapacity - totalLoad).toFixed(1)}h of {effectiveCapacity.toFixed(0)}h budgeted</div>
               ) : (
