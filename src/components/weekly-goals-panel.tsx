@@ -472,3 +472,187 @@ function GoalDialog({
     </TooltipProvider>
   );
 }
+
+function SuggestionsDialog({
+  weekStart,
+  weekEnd,
+  businesses,
+  initial,
+  existingCount,
+  maxGoals,
+  onClose,
+  onSaved,
+}: {
+  weekStart: Date;
+  weekEnd: Date;
+  businesses: { id: string; name: string }[];
+  initial: SuggestedGoal[];
+  existingCount: number;
+  maxGoals: number;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  type Row = SuggestedGoal & { _accept: boolean };
+  const [rows, setRows] = useState<Row[]>(() =>
+    initial.map((s) => ({ ...s, _accept: true })),
+  );
+  const [saving, setSaving] = useState(false);
+
+  const slotsLeft = Math.max(0, maxGoals - existingCount);
+  const acceptedCount = rows.filter((r) => r._accept).length;
+  const overLimit = acceptedCount > slotsLeft;
+
+  function update(idx: number, patch: Partial<Row>) {
+    setRows((rs) => rs.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
+  }
+
+  async function confirm() {
+    if (saving || overLimit) return;
+    const toCreate = rows.filter((r) => r._accept && r.title.trim().length > 0);
+    if (toCreate.length === 0) {
+      onClose();
+      return;
+    }
+    setSaving(true);
+    let ok = 0;
+    let failed = 0;
+    for (const r of toCreate) {
+      try {
+        await createGoal({
+          title: r.title,
+          description: r.description,
+          metric_type: r.metric_type,
+          target_value: r.metric_type === "custom" ? null : r.target_value,
+          business_id: r.business_id,
+          week_start: weekStart,
+          week_end: weekEnd,
+          carried_from: r.carry_from_id,
+        });
+        ok++;
+      } catch {
+        failed++;
+      }
+    }
+    setSaving(false);
+    if (ok > 0) toast.success(`Added ${ok} goal${ok === 1 ? "" : "s"}`);
+    if (failed > 0) toast.error(`${failed} failed to save`);
+    onSaved();
+  }
+
+  return (
+    <TooltipProvider delayDuration={200}>
+      <Dialog open onOpenChange={(o) => !o && onClose()}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-accent" />
+              Suggested goals
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-xs text-muted-foreground -mt-2">
+            Edit, deselect, or accept. Nothing is saved until you confirm.
+          </p>
+          <div className="space-y-3 max-h-[55vh] overflow-y-auto pr-1">
+            {rows.map((r, i) => (
+              <div
+                key={i}
+                className={cn(
+                  "rounded-lg border p-3 space-y-2",
+                  r._accept ? "border-border bg-background" : "border-dashed border-border/60 bg-muted/30 opacity-70",
+                )}
+              >
+                <div className="flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    className="mt-1.5 h-4 w-4 accent-[var(--accent)]"
+                    checked={r._accept}
+                    onChange={(e) => update(i, { _accept: e.target.checked })}
+                    aria-label="Accept this suggestion"
+                  />
+                  <div className="flex-1 min-w-0 space-y-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Input
+                        value={r.title}
+                        onChange={(e) => update(i, { title: e.target.value })}
+                        className="flex-1 min-w-[200px]"
+                      />
+                      {r.carry_from_id && (
+                        <Badge variant="outline" className="text-[10px]">carried over</Badge>
+                      )}
+                    </div>
+                    {r.description && (
+                      <Textarea
+                        rows={2}
+                        value={r.description ?? ""}
+                        onChange={(e) => update(i, { description: e.target.value || null })}
+                      />
+                    )}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <Select
+                        value={r.metric_type}
+                        onValueChange={(v) =>
+                          update(i, {
+                            metric_type: v as GoalMetricType,
+                            target_value: v === "custom" ? null : r.target_value,
+                          })
+                        }
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="custom">Custom</SelectItem>
+                          <SelectItem value="tasks_completed">Tasks</SelectItem>
+                          <SelectItem value="hours">Hours</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        type="number"
+                        min={0}
+                        step={r.metric_type === "hours" ? 0.5 : 1}
+                        value={r.target_value ?? ""}
+                        disabled={r.metric_type === "custom"}
+                        onChange={(e) =>
+                          update(i, {
+                            target_value: e.target.value === "" ? null : parseFloat(e.target.value),
+                          })
+                        }
+                        placeholder="Target"
+                      />
+                      <Select
+                        value={r.business_id ?? "__none"}
+                        onValueChange={(v) =>
+                          update(i, { business_id: v === "__none" ? null : v })
+                        }
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none">Personal</SelectItem>
+                          {businesses.map((b) => (
+                            <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          {overLimit && (
+            <p className="text-xs text-destructive">
+              Only {slotsLeft} slot{slotsLeft === 1 ? "" : "s"} left this week. Deselect a few.
+            </p>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={onClose} disabled={saving}>
+              Cancel
+            </Button>
+            <Button onClick={confirm} disabled={saving || overLimit || acceptedCount === 0}>
+              {saving ? "Adding…" : `Add ${acceptedCount} goal${acceptedCount === 1 ? "" : "s"}`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </TooltipProvider>
+  );
+}
+
