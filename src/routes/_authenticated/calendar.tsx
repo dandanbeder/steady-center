@@ -199,8 +199,20 @@ function CalendarPage() {
     return startOfDay(new Date());
   });
   const { hidden: hiddenCals, toggle: toggleHiddenCal } = useHiddenSet("cal");
-  const { hidden: hiddenBiz, toggle: toggleHiddenBiz } = useHiddenSet("biz");
+  const {
+    hidden: hiddenBiz,
+    toggle: toggleHiddenBiz,
+    setHidden: setHiddenBiz,
+  } = useHiddenSet("biz");
   const { colorBy, setColorBy } = useColorBy();
+  // "All Accounts" = all layers on. When the top account filter is reset to ALL,
+  // clear any per-layer hidden state so the two stay in sync.
+  useEffect(() => {
+    if (activeId === ALL && hiddenBiz.size > 0) {
+      setHiddenBiz(new Set());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeId]);
   const [dayOpen, setDayOpen] = useState<Date | null>(null);
   const [editing, setEditing] = useState<EventRow | null>(null);
   const [previewing, setPreviewing] = useState<EventRow | null>(null);
