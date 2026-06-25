@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { Calendar, CalendarRange, CheckSquare, FileText, Home, Settings, Users, LogOut, ChevronDown, BarChart3, PanelLeftClose, PanelLeftOpen, Shield, Menu, AtSign, BookOpen, Sparkles, Search, Inbox, Bell, Trash2, BrainCircuit, Target, ShieldCheck, HelpCircle, GraduationCap } from "lucide-react";
 import { PaymentTestModeBanner } from "@/components/payment-test-mode-banner";
 import { PastDueBanner } from "@/components/past-due-banner";
@@ -42,7 +42,7 @@ const AssistantPanel = lazy(() =>
   import("@/components/assistant-panel").then((m) => ({ default: m.AssistantPanel })),
 );
 import { PlanIndicator } from "@/components/plan-indicator";
-import { welcomedStorageKey } from "@/routes/_authenticated/learn";
+
 import { TourProvider } from "@/components/tour/tour-engine";
 
 const NAV: { to: string; label: string; icon: typeof Home }[] = [
@@ -71,7 +71,7 @@ const STORAGE_KEY = "heartbeat:sidebar-collapsed";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { signOut, user } = useAuth();
-  const navigate = useNavigate();
+  const navigate = useRouterState({ select: () => null }) as never; void navigate;
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const { activeId, setActiveId } = useActiveBusiness();
   const { isAdmin } = useIsPlatformAdmin();
