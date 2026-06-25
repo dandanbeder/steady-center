@@ -2202,6 +2202,14 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
     queryFn: () => listTaskActivity(task.id),
   });
 
+  // Unified per-task audit log. RLS scopes this to viewers of the task —
+  // private/unshared tasks expose no history to anyone but the owner.
+  const { data: audit = [] } = useQuery({
+    queryKey: ["task-audit", task.id],
+    queryFn: () => listTaskAudit(task.id),
+  });
+
+
   const { data: backlinks = [] } = useQuery({
     queryKey: ["task-backlinks", task.id],
     queryFn: async () => {
