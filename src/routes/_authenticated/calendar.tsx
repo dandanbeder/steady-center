@@ -189,8 +189,15 @@ function isAllDayLike(e: EventRow) {
 function CalendarPage() {
   const qc = useQueryClient();
   const { activeId } = useActiveBusiness();
-  const [view, setView] = useState<ViewMode>("month");
-  const [cursor, setCursor] = useState<Date>(startOfDay(new Date()));
+  const search = Route.useSearch();
+  const [view, setView] = useState<ViewMode>(search.view ?? "month");
+  const [cursor, setCursor] = useState<Date>(() => {
+    if (search.date) {
+      const [y, m, d] = search.date.split("-").map(Number);
+      return startOfDay(new Date(y, m - 1, d));
+    }
+    return startOfDay(new Date());
+  });
   const { hidden: hiddenCals, toggle: toggleHiddenCal } = useHiddenSet("cal");
   const { hidden: hiddenBiz, toggle: toggleHiddenBiz } = useHiddenSet("biz");
   const { colorBy, setColorBy } = useColorBy();
