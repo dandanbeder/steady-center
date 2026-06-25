@@ -280,7 +280,7 @@ function CalendarPage() {
     return { start, end: addDays(start, 60) };
   }, [view, cursor]);
 
-  const { data: events = [] } = useQuery({
+  const { data: rawEvents = [] } = useQuery({
     queryKey: ["events", range.start.toISOString(), range.end.toISOString()],
     queryFn: () => listEvents(range.start, range.end),
     enabled: ready,
