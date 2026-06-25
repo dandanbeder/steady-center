@@ -85,28 +85,29 @@ export const VIEW_PRESETS: Preset[] = [
     },
   },
   {
-    id: "preset:by-outcome",
-    label: "By Outcome",
-    icon: Target,
+    id: "preset:by-due",
+    label: "By Due Date",
+    icon: CalendarDays,
     state: {
       view: "list",
-      group_by: "outcome",
+      group_by: "due",
+      filters: { priority: "all", status: "all", due: "all", assigned: "all", outcome: "all" },
+      sort: { key: "due" },
+    },
+  },
+  {
+    id: "preset:by-priority",
+    label: "By Priority",
+    icon: FocusIcon,
+    state: {
+      view: "list",
+      group_by: "priority",
       filters: { priority: "all", status: "all", due: "all", assigned: "all", outcome: "all" },
       sort: { key: "priority" },
     },
   },
-  {
-    id: "preset:this-week",
-    label: "This Week",
-    icon: FocusIcon,
-    state: {
-      view: "board",
-      group_by: "stage",
-      filters: { priority: "all", status: "all", due: "week", assigned: "all", outcome: "all" },
-      sort: { key: "due" },
-    },
-  },
 ];
+
 
 const VIEW_ICON: Record<ViewKind, typeof LayoutList> = {
   list: LayoutList,
