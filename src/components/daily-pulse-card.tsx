@@ -1,14 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { Sunrise, Moon, Sparkles, Check, ArrowRight, Loader2, Wind } from "lucide-react";
+import { Sunrise, Moon, Sparkles, Loader2, AlertCircle, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import {
-  completeTask, confirmFocus3, getTodaysPulses, rollForwardTask, type DailyPulse, type FocusItem,
+  getTodaysPulses, type DailyPulse,
 } from "@/lib/daily-pulse";
 import { generateMyPulse } from "@/lib/daily-pulse.functions";
-import { getQuoteOfTheDay } from "@/lib/daily-quotes";
+import { getQuoteOfTheDay, DAILY_QUOTES, type DailyQuote } from "@/lib/daily-quotes";
+import { supabase } from "@/integrations/supabase/client";
+import type { Task } from "@/lib/tasks";
+
 
 function DailyQuote() {
   const q = getQuoteOfTheDay();
