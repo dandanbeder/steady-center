@@ -131,16 +131,31 @@ export function WeekPulse({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weekStart, visibleEvents, JSON.stringify(standaloneMeetings.map((m) => m.id)), dailyCap, workDays]);
 
+  // Calm summary: name the fullest day, neutrally. Only show when there's real signal.
+  const totalLoad = days.reduce((s, d) => s + d.loadH, 0);
+  let summary: string | null = null;
+  if (totalLoad >= 1) {
+    const fullest = days.reduce((a, b) => (b.loadH > a.loadH ? b : a));
+    if (fullest.loadH > 0) {
+      const idx = (fullest.date.getDay() + 6) % 7;
+      summary = `${FULL_DAY_NAMES[idx]} looks like your fullest day.`;
+    }
+  }
+
   return (
-    <PulseStrip
-      days={days}
-      today={today}
-      className={className}
-      onDayClick={(d) => {
-        if (onDayClick) onDayClick(d);
-        else navigate({ to: "/my-week" });
-      }}
-    />
+    <div className={className}>
+      <PulseStrip
+        days={days}
+        today={today}
+        onDayClick={(d) => {
+          if (onDayClick) onDayClick(d);
+          else navigate({ to: "/my-week" });
+        }}
+      />
+      {summary && (
+        <p className="mt-2 text-xs text-muted-foreground text-center">{summary}</p>
+      )}
+    </div>
   );
 }
 
