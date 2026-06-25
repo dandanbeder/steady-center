@@ -509,7 +509,11 @@ function CalendarPage() {
                 <MiniCalendar
                   mode="single"
                   selected={cursor}
-                  onSelect={(d) => d && setCursor(startOfDay(d))}
+                  onSelect={(d) => {
+                    if (!d) return;
+                    setCursor(startOfDay(d));
+                    setView("day");
+                  }}
                   className="pointer-events-auto"
                   captionLayout="dropdown"
                 />
