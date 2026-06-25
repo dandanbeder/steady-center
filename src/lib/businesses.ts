@@ -62,9 +62,9 @@ export async function createBusiness(name: string, color: string): Promise<{ id:
 
 export async function updateBusiness(
   id: string,
-  patch: Partial<Pick<Business, "name" | "color">>,
+  patch: Partial<Pick<Business, "name" | "color" | "weekly_hours">>,
 ) {
-  const { error } = await supabase.from("businesses").update(patch).eq("id", id);
+  const { error } = await supabase.from("businesses").update(patch as never).eq("id", id);
   if (error) throw error;
 }
 
