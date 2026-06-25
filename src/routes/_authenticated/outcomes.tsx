@@ -386,6 +386,7 @@ function OutcomeDetailDialog({
   onClose: () => void;
   onEdit: (o: OutcomeWithProgress) => void;
 }) {
+  const qc = useQueryClient();
   const { data: outcome, isLoading } = useQuery({
     queryKey: ["outcome-detail", outcomeId],
     queryFn: () => getOutcomeWithProgress(outcomeId),
@@ -394,6 +395,73 @@ function OutcomeDetailDialog({
     queryKey: ["outcome-tasks", outcomeId],
     queryFn: () => listTasksForOutcome(outcomeId),
   });
+
+  const [newTitle, setNewTitle] = useState("");
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [linkSearch, setLinkSearch] = useState("");
+
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ["outcome-tasks", outcomeId] });
+    qc.invalidateQueries({ queryKey: ["outcome-detail", outcomeId] });
+    qc.invalidateQueries({ queryKey: ["outcomes"] });
+    qc.invalidateQueries({ queryKey: ["tasks"] });
+  };
+
+  const addTask = useMutation({
+    mutationFn: async () => {
+      const title = newTitle.trim();
+      if (!title || !outcome) throw new Error("Title required");
+      await createTask({
+        list_id: null,
+        business_id: outcome.business_id ?? null,
+        title,
+        outcome_id: outcome.id,
+      });
+    },
+    onSuccess: () => {
+      setNewTitle("");
+      toast.success("Task added");
+      refresh();
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Couldn't add task"),
+  });
+
+  const linkable = useQuery({
+    queryKey: ["outcome-linkable", outcomeId, outcome?.business_id ?? null],
+    queryFn: () =>
+      listLinkableTasksForOutcome({
+        outcomeId,
+        businessId: outcome?.business_id ?? null,
+      }),
+    enabled: linkOpen && !!outcome,
+  });
+
+  const linkTask = useMutation({
+    mutationFn: (taskId: string) => linkTaskToOutcome(taskId, outcomeId),
+    onSuccess: () => {
+      toast.success("Linked");
+      refresh();
+      qc.invalidateQueries({ queryKey: ["outcome-linkable", outcomeId] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Couldn't link"),
+  });
+
+  const unlinkTask = useMutation({
+    mutationFn: (taskId: string) => linkTaskToOutcome(taskId, null),
+    onSuccess: () => {
+      toast.success("Unlinked");
+      refresh();
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Couldn't unlink"),
+  });
+
+  const filteredLinkable = useMemo(() => {
+    const list = linkable.data ?? [];
+    const q = linkSearch.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter((t) => t.title.toLowerCase().includes(q));
+  }, [linkable.data, linkSearch]);
+
 
   const grouped = useMemo(() => {
     const byStatus: Record<string, typeof tasks> = { todo: [], in_progress: [], done: [] };
