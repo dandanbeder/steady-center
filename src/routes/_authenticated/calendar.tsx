@@ -3084,3 +3084,153 @@ function CreateCalendarDialog({
     </Dialog>
   );
 }
+
+function NewTaskDialog({
+  defaultDate,
+  businesses,
+  activeBizId,
+  onClose,
+  onCreated,
+}: {
+  defaultDate: Date;
+  businesses: Business[];
+  activeBizId: string;
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const initialBiz =
+    activeBizId === ALL || activeBizId === PERSONAL ? null : activeBizId;
+  const [title, setTitle] = useState("");
+  const [businessId, setBusinessId] = useState<string | null>(initialBiz);
+  const [listId, setListId] = useState<string | null>(null);
+  const [due, setDue] = useState<string>(() => {
+    const y = defaultDate.getFullYear();
+    const m = String(defaultDate.getMonth() + 1).padStart(2, "0");
+    const d = String(defaultDate.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  });
+
+  const { data: lists = [] } = useQuery({
+    queryKey: ["lists"],
+    queryFn: listLists,
+  });
+
+  // Default list = first list matching the chosen account (or any).
+  useEffect(() => {
+    if (listId) return;
+    const match = lists.find((l) =>
+      businessId == null ? l.business_id == null : l.business_id === businessId,
+    );
+    setListId((match ?? lists[0])?.id ?? null);
+  }, [lists, businessId, listId]);
+
+  const mut = useMutation({
+    mutationFn: async () => {
+      if (!title.trim()) throw new Error("Add a title");
+      const [y, m, d] = due.split("-").map(Number);
+      const dueIso = new Date(y, m - 1, d, 9, 0, 0, 0).toISOString();
+      await createTask({
+        list_id: listId,
+        business_id: businessId,
+        title: title.trim(),
+        due_at: dueIso,
+      });
+    },
+    onSuccess: () => {
+      toast.success("Task added");
+      onCreated();
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
+  return (
+    <Dialog open onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>New task</DialogTitle>
+        </DialogHeader>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            mut.mutate();
+          }}
+          className="space-y-4"
+        >
+          <div>
+            <Label>Title</Label>
+            <Input
+              autoFocus
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="What needs doing?"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Date</Label>
+              <Input type="date" value={due} onChange={(e) => setDue(e.target.value)} />
+            </div>
+            <div>
+              <Label>Account</Label>
+              <Select
+                value={businessId ?? "_personal"}
+                onValueChange={(v) => {
+                  const next = v === "_personal" ? null : v;
+                  setBusinessId(next);
+                  setListId(null);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_personal">Personal</SelectItem>
+                  {businesses.map((b) => (
+                    <SelectItem key={b.id} value={b.id}>
+                      {b.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          {lists.length > 0 && (
+            <div>
+              <Label>List</Label>
+              <Select
+                value={listId ?? "_none"}
+                onValueChange={(v) => setListId(v === "_none" ? null : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Pick a list" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_none">No list</SelectItem>
+                  {lists
+                    .filter((l) =>
+                      businessId == null
+                        ? l.business_id == null
+                        : l.business_id === businessId,
+                    )
+                    .map((l) => (
+                      <SelectItem key={l.id} value={l.id}>
+                        {l.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={mut.isPending || !title.trim()}>
+              {mut.isPending ? "Adding…" : "Add task"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
