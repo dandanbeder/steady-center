@@ -52,7 +52,7 @@ function LabelWithTooltip({ label, tooltip }: { label: React.ReactNode; tooltip:
           <button
             type="button"
             className="inline-flex items-center justify-center rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            aria-label={`${tooltip}`}
+            aria-label={tooltip}
           >
             <Info className="h-3.5 w-3.5" aria-hidden="true" />
           </button>
