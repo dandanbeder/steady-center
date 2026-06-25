@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Calendar, CalendarRange, CheckSquare, FileText, Home, Settings, Users, LogOut, ChevronDown, BarChart3, PanelLeftClose, PanelLeftOpen, Shield, Menu, AtSign, BookOpen, Sparkles, Search, Inbox, Bell, Trash2, BrainCircuit, Target, ShieldCheck, HelpCircle, GraduationCap } from "lucide-react";
+import { Calendar, CalendarRange, CheckSquare, FileText, Home, Settings, Users, LogOut, ChevronDown, BarChart3, PanelLeftClose, PanelLeftOpen, Shield, Menu, AtSign, BookOpen, Sparkles, Search, Inbox, Bell, Trash2, BrainCircuit, Target, ShieldCheck, HelpCircle, GraduationCap, LifeBuoy } from "lucide-react";
+import { SupportDialog } from "@/components/support-dialog";
 import { PaymentTestModeBanner } from "@/components/payment-test-mode-banner";
 import { PastDueBanner } from "@/components/past-due-banner";
 import { countPendingInbox } from "@/lib/inbox";
@@ -90,6 +91,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [localSupportSession, setLocalSupportSession] = useState(() => getLocalSupportSession());
   const [createAccountOpen, setCreateAccountOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
 
   // Close mobile drawer on route change
   useEffect(() => {
@@ -433,8 +435,11 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link to="/ai" className="gap-2">
-                    <Sparkles className="h-4 w-4" /> AI &amp; credits
+                    <Sparkles className="h-4 w-4" /> AI Usage &amp; Credits
                   </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSupportOpen(true)} className="gap-2">
+                  <LifeBuoy className="h-4 w-4" /> Support
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
@@ -494,6 +499,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
 
 
+
+        <SupportDialog open={supportOpen} onOpenChange={setSupportOpen} />
 
         <PaymentTestModeBanner />
         <PastDueBanner />
