@@ -331,6 +331,12 @@ export function ViewBar({
         open={aiOpen}
         onOpenChange={setAiOpen}
         listId={listId}
+        onApply={(draft) => {
+          onApply(
+            { view: draft.view, group_by: draft.group_by, filters: draft.filters, sort: draft.sort },
+            null,
+          );
+        }}
         onSaved={(v) => {
           refresh();
           onApply(
@@ -339,6 +345,7 @@ export function ViewBar({
           );
         }}
       />
+
 
       <ManageViewsDialog
         open={manageOpen}
