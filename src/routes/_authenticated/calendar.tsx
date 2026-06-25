@@ -509,7 +509,11 @@ function CalendarPage() {
                 <MiniCalendar
                   mode="single"
                   selected={cursor}
-                  onSelect={(d) => d && setCursor(startOfDay(d))}
+                  onSelect={(d) => {
+                    if (!d) return;
+                    setCursor(startOfDay(d));
+                    setView("day");
+                  }}
                   className="pointer-events-auto"
                   captionLayout="dropdown"
                 />
@@ -595,7 +599,7 @@ function CalendarPage() {
             events={visibleEvents}
             calById={calById}
             colorFor={colorFor}
-            onDayClick={(d) => setDayOpen(d)}
+            onDayClick={(d) => { setCursor(startOfDay(d)); setView("day"); }}
             onEventClick={(e) => setPreviewing(e)}
             workDays={workDaysSet}
             dailyCap={dailyCap}
@@ -611,6 +615,7 @@ function CalendarPage() {
             colorFor={colorFor}
             onSlotClick={(d) => openNewOn(d)}
             onEventClick={(e) => setPreviewing(e)}
+            onDayHeaderClick={(d) => { setCursor(startOfDay(d)); setView("day"); }}
             onEventChange={(ev, start, end) =>
               moveMut.mutate({ id: ev.id, start, end })
             }
@@ -1374,6 +1379,7 @@ function TimeGrid({
   onSlotClick,
   onEventClick,
   onEventChange,
+  onDayHeaderClick,
   workStart = 9,
   workEnd = 17,
   workDays = [1, 2, 3, 4, 5],
@@ -1385,6 +1391,7 @@ function TimeGrid({
   onSlotClick: (d: Date) => void;
   onEventClick: (e: EventRow) => void;
   onEventChange?: (ev: EventRow, start: Date, end: Date) => void;
+  onDayHeaderClick?: (d: Date) => void;
   workStart?: number;
   workEnd?: number;
   workDays?: number[];
@@ -1438,13 +1445,19 @@ function TimeGrid({
             <div />
             {days.map((d) => {
               const isToday = sameDay(d, today);
+              const clickable = !!onDayHeaderClick;
               return (
-                <div
+                <button
+                  type="button"
                   key={d.toISOString()}
+                  onClick={clickable ? () => onDayHeaderClick!(d) : undefined}
+                  disabled={!clickable}
                   className={cn(
                     "px-2 py-2 text-center border-l border-border",
                     isToday && "bg-accent/10",
+                    clickable && "hover:bg-accent/20 cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent",
                   )}
+                  aria-label={clickable ? `Open ${d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}` : undefined}
                 >
                   <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
                     {d.toLocaleDateString(undefined, { weekday: "short" })}
@@ -1457,7 +1470,7 @@ function TimeGrid({
                   >
                     {d.getDate()}
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
