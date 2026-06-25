@@ -1,14 +1,15 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { listTasksInRange, type Task } from "@/lib/tasks";
 import { listEvents, type EventRow } from "@/lib/calendars";
+import { listMeetings, type Meeting } from "@/lib/meetings";
 import { getWorkingHours } from "@/lib/user-prefs";
 import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
 import { cn } from "@/lib/utils";
 
 const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const DEFAULT_TASK_HOURS = 1;
+const FULL_DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const DEFAULT_MEETING_HOURS = 1;
 
 function mondayOf(date: Date): Date {
   const d = new Date(date);
@@ -48,13 +49,15 @@ const COLOR_VAR: Record<Status, string> = {
   clay: "var(--pulse-clay)",
 };
 
+type StandaloneMeeting = { id: string; title: string; scheduled_at: string };
+
 type DayPulse = {
   date: Date;
   loadH: number;
   capacity: number;
   status: Status;
   events: EventRow[];
-  tasks: Task[];
+  meetings: StandaloneMeeting[];
 };
 
 export function WeekPulse({
@@ -79,13 +82,13 @@ export function WeekPulse({
 
   const weekKey = weekStart.toISOString();
 
-  const { data: tasks = [] } = useQuery({
-    queryKey: ["week-pulse-tasks", weekKey],
-    queryFn: () => listTasksInRange(weekStart, weekEnd),
-  });
   const { data: events = [] } = useQuery({
     queryKey: ["week-pulse-events", weekKey],
     queryFn: () => listEvents(weekStart, weekEnd),
+  });
+  const { data: allMeetings = [] } = useQuery({
+    queryKey: ["week-pulse-meetings"],
+    queryFn: () => listMeetings(),
   });
   const { data: hours } = useQuery({
     queryKey: ["working-hours"],
@@ -95,8 +98,13 @@ export function WeekPulse({
   const dailyCap = hours?.daily_capacity_hours ?? 6;
   const workDays = hours?.work_days ?? [1, 2, 3, 4, 5];
 
-  const visibleTasks = activeId === ALL ? tasks : tasks.filter((t) => t.business_id === activeId);
   const visibleEvents = activeId === ALL ? events : events.filter((e) => e.business_id === activeId);
+  // Use meetings as a signal only when they aren't already represented by a calendar event
+  // (avoids double-counting). Account filter respected the same way.
+  const standaloneMeetings: StandaloneMeeting[] = (allMeetings as Meeting[])
+    .filter((m) => !m.event_id && m.scheduled_at)
+    .filter((m) => activeId === ALL || m.business_id === activeId)
+    .map((m) => ({ id: m.id, title: m.title, scheduled_at: m.scheduled_at as string }));
 
   const today = new Date();
 
@@ -104,13 +112,11 @@ export function WeekPulse({
     return Array.from({ length: 7 }, (_, i) => {
       const d = new Date(weekStart);
       d.setDate(d.getDate() + i);
-      const dayTasks = visibleTasks.filter(
-        (t) => t.due_at && sameDay(new Date(t.due_at), d) && t.status !== "done",
-      );
       const dayEvents = visibleEvents.filter((e) => sameDay(new Date(e.start_at), d));
+      const dayMeetings = standaloneMeetings.filter((m) => sameDay(new Date(m.scheduled_at), d));
       const loadH =
         dayEvents.reduce((s, e) => s + eventHours(e), 0) +
-        dayTasks.length * DEFAULT_TASK_HOURS;
+        dayMeetings.length * DEFAULT_MEETING_HOURS;
       const isWorkDay = workDays.includes(d.getDay());
       const capacity = isWorkDay ? dailyCap : Math.max(dailyCap * 0.25, 1);
       return {
@@ -119,21 +125,37 @@ export function WeekPulse({
         capacity,
         status: statusFor(loadH, capacity),
         events: dayEvents,
-        tasks: dayTasks,
+        meetings: dayMeetings,
       };
     });
-  }, [weekStart, visibleTasks, visibleEvents, dailyCap, workDays]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weekStart, visibleEvents, JSON.stringify(standaloneMeetings.map((m) => m.id)), dailyCap, workDays]);
+
+  // Calm summary: name the fullest day, neutrally. Only show when there's real signal.
+  const totalLoad = days.reduce((s, d) => s + d.loadH, 0);
+  let summary: string | null = null;
+  if (totalLoad >= 1) {
+    const fullest = days.reduce((a, b) => (b.loadH > a.loadH ? b : a));
+    if (fullest.loadH > 0) {
+      const idx = (fullest.date.getDay() + 6) % 7;
+      summary = `${FULL_DAY_NAMES[idx]} looks like your fullest day.`;
+    }
+  }
 
   return (
-    <PulseStrip
-      days={days}
-      today={today}
-      className={className}
-      onDayClick={(d) => {
-        if (onDayClick) onDayClick(d);
-        else navigate({ to: "/my-week" });
-      }}
-    />
+    <div className={className}>
+      <PulseStrip
+        days={days}
+        today={today}
+        onDayClick={(d) => {
+          if (onDayClick) onDayClick(d);
+          else navigate({ to: "/my-week" });
+        }}
+      />
+      {summary && (
+        <p className="mt-2 text-xs text-muted-foreground text-center">{summary}</p>
+      )}
+    </div>
   );
 }
 
@@ -317,30 +339,30 @@ function PulseStrip({
               style={{ color: COLOR_VAR[hovered.status] }}
             >
               {hovered.status === "sage"
-                ? "Calm"
+                ? "Light"
                 : hovered.status === "gold"
                   ? "Full"
-                  : "Over"}
+                  : "Very full"}
             </span>
           </div>
           <div className="mt-0.5 text-muted-foreground">
-            {hovered.loadH.toFixed(1)}h of {hovered.capacity.toFixed(0)}h capacity
+            {hovered.loadH.toFixed(1)}h scheduled
           </div>
-          {(hovered.events.length > 0 || hovered.tasks.length > 0) && (
+          {(hovered.events.length > 0 || hovered.meetings.length > 0) && (
             <ul className="mt-2 space-y-0.5">
               {hovered.events.slice(0, 3).map((e) => (
                 <li key={`e-${e.id}`} className="truncate">
                   · {e.title}
                 </li>
               ))}
-              {hovered.tasks.slice(0, 3).map((t) => (
-                <li key={`t-${t.id}`} className="truncate text-muted-foreground">
-                  · {t.title}
+              {hovered.meetings.slice(0, 3).map((m) => (
+                <li key={`m-${m.id}`} className="truncate text-muted-foreground">
+                  · {m.title}
                 </li>
               ))}
-              {hovered.events.length + hovered.tasks.length > 6 && (
+              {hovered.events.length + hovered.meetings.length > 6 && (
                 <li className="text-muted-foreground/70">
-                  +{hovered.events.length + hovered.tasks.length - 6} more
+                  +{hovered.events.length + hovered.meetings.length - 6} more
                 </li>
               )}
             </ul>
