@@ -2802,6 +2802,7 @@ export type Database = {
           deleted_at: string | null
           description: string | null
           due_at: string | null
+          estimated_minutes: number | null
           id: string
           list_id: string | null
           outcome_id: string | null
@@ -2831,6 +2832,7 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           due_at?: string | null
+          estimated_minutes?: number | null
           id?: string
           list_id?: string | null
           outcome_id?: string | null
@@ -2860,6 +2862,7 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           due_at?: string | null
+          estimated_minutes?: number | null
           id?: string
           list_id?: string | null
           outcome_id?: string | null

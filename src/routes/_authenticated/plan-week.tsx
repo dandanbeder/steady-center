@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { BacklogPanel } from "@/components/backlog-panel";
+import { PlanWeekBoard } from "@/components/plan-week-board";
 import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
 import { useSubscription } from "@/hooks/use-subscription";
 import { listBusinesses } from "@/lib/businesses";
@@ -34,7 +35,7 @@ import {
   uncommitTasks,
   getVelocity,
   eventHours,
-  DEFAULT_TASK_HOURS,
+  taskHours,
 } from "@/lib/weekly-plan";
 import { suggestDeferrals, realisticPlanReview } from "@/lib/weekly-plan.functions";
 import {
@@ -142,7 +143,7 @@ function PlanWeekPage() {
     for (const t of committedFiltered) {
       if (t.status === "done") continue;
       const r = byId.get(t.business_id);
-      if (r) r.committed += DEFAULT_TASK_HOURS;
+      if (r) r.committed += taskHours(t);
     }
     return rows;
   }, [businesses, eventsFiltered, committedFiltered, activeId, generalBudget]);
@@ -150,8 +151,12 @@ function PlanWeekPage() {
   const budgetedRows = acctRows.filter((r) => r.budget != null && r.budget > 0);
   const weeklyCapacity = budgetedRows.reduce((s, r) => s + (r.budget ?? 0), 0);
   const eventLoad = eventsFiltered.reduce((s, e) => s + eventHours(e), 0);
-  const taskLoad =
-    committedFiltered.filter((t) => t.status !== "done").length * DEFAULT_TASK_HOURS;
+  const taskLoad = committedFiltered
+    .filter((t) => t.status !== "done")
+    .reduce((s, t) => s + taskHours(t), 0);
+  const unestimatedCount = committedFiltered.filter(
+    (t) => t.status !== "done" && (t.estimated_minutes == null || t.estimated_minutes <= 0),
+  ).length;
   const totalLoad = eventLoad + taskLoad;
   // Fallback to working-hours-derived capacity only when no per-account budgets are set.
   const fallbackCapacity = workDays.length * dailyCap;
@@ -355,21 +360,13 @@ function PlanWeekPage() {
             </section>
           )}
 
-          {/* Backlog */}
-          <section className="space-y-3">
-            <h2 className="text-sm font-medium">Backlog</h2>
-            <BacklogPanel scoped weekStart={thisMonday} />
-          </section>
-
-          {/* Committed */}
+          {/* Drag-and-drop board: Backlog ↔ This week */}
           <section className="space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-medium">This week's commitment ({committedFiltered.length})</h2>
-              {suggestedIds.length > 0 && (
-                <Button variant="ghost" size="sm" onClick={() => { setSuggestedIds([]); setSuggestReason(""); }}>
-                  Clear suggestions
-                </Button>
-              )}
+              <h2 className="text-sm font-medium">Plan board</h2>
+              <p className="text-[11px] text-muted-foreground">
+                Drag between columns · keyboard: Space to pick up, arrows to move, Space to drop
+              </p>
             </div>
             {suggestReason && (
               <Card className="p-3 border-amber-500/30 bg-amber-50/40 dark:bg-amber-950/20">
@@ -377,24 +374,28 @@ function PlanWeekPage() {
                   <Sparkles className="h-4 w-4 shrink-0 mt-0.5 text-amber-600" />
                   <span>{suggestReason}</span>
                 </p>
+                <div className="mt-2 flex justify-end">
+                  <Button variant="ghost" size="sm" onClick={() => { setSuggestedIds([]); setSuggestReason(""); }}>
+                    Clear suggestions
+                  </Button>
+                </div>
               </Card>
             )}
-            {committedFiltered.length === 0 ? (
-              <Card className="p-6 text-center text-sm text-muted-foreground">
-                Nothing committed yet. Pick from the backlog above.
-              </Card>
-            ) : (
-              <ul className="divide-y border rounded-xl bg-card overflow-hidden">
-                {committedFiltered.map((t) => (
-                  <CommittedRow
-                    key={t.id}
-                    task={t}
-                    businessName={t.business_id ? businessName.get(t.business_id) ?? null : null}
-                    suggested={suggestedIds.includes(t.id)}
-                    onRemove={() => removeFromWeek.mutate(t.id)}
-                    onDefer={() => deferOne.mutate(t.id)}
-                  />
-                ))}
+            <PlanWeekBoard weekStart={thisMonday} onMutated={invalidateAll} />
+            {suggestedIds.length > 0 && (
+              <ul className="divide-y border rounded-xl bg-amber-50/40 dark:bg-amber-950/20 overflow-hidden">
+                {committedFiltered
+                  .filter((t) => suggestedIds.includes(t.id))
+                  .map((t) => (
+                    <CommittedRow
+                      key={t.id}
+                      task={t}
+                      businessName={t.business_id ? businessName.get(t.business_id) ?? null : null}
+                      suggested
+                      onRemove={() => removeFromWeek.mutate(t.id)}
+                      onDefer={() => deferOne.mutate(t.id)}
+                    />
+                  ))}
               </ul>
             )}
           </section>
@@ -422,6 +423,11 @@ function PlanWeekPage() {
             <div className="text-xs text-muted-foreground space-y-0.5">
               <div>Calendar events: {eventLoad.toFixed(1)}h</div>
               <div>Committed tasks ({committedCount}): {taskLoad.toFixed(1)}h</div>
+              {unestimatedCount > 0 && (
+                <div className="text-amber-600 dark:text-amber-500">
+                  {unestimatedCount} task{unestimatedCount === 1 ? "" : "s"} without an estimate (counted at 1h each)
+                </div>
+              )}
               {weeklyCapacity > 0 ? (
                 <div>Free this week: {Math.max(0, effectiveCapacity - totalLoad).toFixed(1)}h of {effectiveCapacity.toFixed(0)}h budgeted</div>
               ) : (

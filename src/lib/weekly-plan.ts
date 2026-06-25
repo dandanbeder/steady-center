@@ -172,3 +172,17 @@ export function eventHours(e: { start_at: string; end_at: string; all_day: boole
 
 /** Default hours assumed for a committed task with no time-block. */
 export const DEFAULT_TASK_HOURS = 1;
+
+/** Whether a task has a user-supplied duration estimate. */
+export function hasEstimate(t: { estimated_minutes: number | null }): boolean {
+  return t.estimated_minutes != null && t.estimated_minutes > 0;
+}
+
+/**
+ * Hours used for capacity maths. Uses the task's estimate when present;
+ * otherwise falls back to DEFAULT_TASK_HOURS and the UI flags the missing estimate.
+ */
+export function taskHours(t: { estimated_minutes: number | null }): number {
+  if (hasEstimate(t)) return (t.estimated_minutes as number) / 60;
+  return DEFAULT_TASK_HOURS;
+}
