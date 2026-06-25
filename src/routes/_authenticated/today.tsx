@@ -113,6 +113,22 @@ function TodayPage() {
   });
   const sharedItems = (sharedQ.data ?? []).slice(0, 3);
 
+  // Account-scoped Notes preview — only when the user has filtered to a specific
+  // account (a real business or Personal/Uncategorised). RLS on `notes` already
+  // restricts to owner/shared; we additionally filter by the active account.
+  const notesEnabled = activeId !== ALL;
+  const notesQ = useQuery({
+    queryKey: ["notes", "today-card", activeId],
+    queryFn: () => listNotes(),
+    enabled: notesEnabled,
+  });
+  const accountNotes = notesEnabled
+    ? (notesQ.data ?? [])
+        .filter((n) => matchesActiveBusiness(n.business_id, activeId))
+        .slice(0, 4)
+    : [];
+
+
   const businesses = businessesQ.data ?? [];
   const calendars = calendarsQ.data ?? [];
   const events = eventsQ.data ?? [];
