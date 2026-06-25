@@ -273,6 +273,9 @@ function PlanWeekPage() {
       else toast.success("Plan kept as is");
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
+
 
   const deferOne = useMutation({
     mutationFn: (id: string) => uncommitTasks([id]),
