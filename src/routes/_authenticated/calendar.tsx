@@ -286,6 +286,90 @@ function CalendarPage() {
     enabled: ready,
   });
 
+  // Current user id — used to colour team members' items distinctly from
+  // the user's own. RLS already restricts what we can read; this is purely
+  // a UI cue for the team-shared layer.
+  const { data: currentUserId = null } = useQuery({
+    queryKey: ["me", "id"],
+    queryFn: async () => (await supabase.auth.getUser()).data.user?.id ?? null,
+    enabled: ready,
+    staleTime: 5 * 60_000,
+  });
+
+  // Team layer: when the active account is a real team space, overlay the
+  // events / meetings / tasks teammates have SHARED into that space
+  // (same access path as "Shared with me"). Private items are not returned.
+  const teamLayerOn = !hiddenBiz.has("__team__");
+  const teamBizId =
+    activeId !== ALL && activeId !== PERSONAL ? (activeId as string) : null;
+  const { data: teamOverlay } = useQuery({
+    queryKey: [
+      "team-overlay",
+      teamBizId,
+      range.start.toISOString(),
+      range.end.toISOString(),
+    ],
+    queryFn: () =>
+      listTeamOverlay({
+        data: {
+          businessId: teamBizId as string,
+          rangeStart: range.start.toISOString(),
+          rangeEnd: range.end.toISOString(),
+        },
+      }),
+    enabled: ready && !!teamBizId && teamLayerOn,
+    staleTime: 30_000,
+  });
+  const teamMembers: TeamMember[] = teamOverlay?.members ?? [];
+  const teamItems: TeamOverlayItem[] = teamOverlay?.items ?? [];
+  const { hidden: hiddenMembers, toggle: toggleHiddenMember } = useHiddenSet("teamMember");
+
+  // Map team meetings / tasks into synthetic EventRow shapes so the existing
+  // day / week / month renderers can lay them out. Events are already in the
+  // `events` query (RLS returns teammates' events via business membership),
+  // so we skip those here to avoid duplication.
+  const teamSyntheticEvents = useMemo<EventRow[]>(() => {
+    if (!teamBizId || !teamLayerOn) return [];
+    const out: EventRow[] = [];
+    for (const it of teamItems) {
+      if (it.source === "event") continue;
+      if (hiddenMembers.has(it.team_owner_id)) continue;
+      out.push({
+        id: it.id,
+        owner_id: it.team_owner_id,
+        calendar_id: "__team__",
+        business_id: it.business_id,
+        title:
+          it.source === "meeting"
+            ? `📞 ${it.title}`
+            : it.source === "task"
+              ? `✓ ${it.title}`
+              : it.title,
+        description: null,
+        location: null,
+        start_at: it.start_at,
+        end_at: it.end_at,
+        all_day: it.all_day,
+        is_meeting: it.source === "meeting",
+        source: "team",
+        external_id: null,
+        created_at: new Date().toISOString(),
+      } as EventRow);
+    }
+    return out;
+  }, [teamItems, teamBizId, teamLayerOn, hiddenMembers]);
+
+  const teamColorByOwner = useMemo(
+    () => new Map(teamMembers.map((m) => [m.user_id, m.color])),
+    [teamMembers],
+  );
+
+  // Merged event list — own/synced events plus synthetic team meetings/tasks.
+  const events = useMemo<EventRow[]>(
+    () => [...rawEvents, ...teamSyntheticEvents],
+    [rawEvents, teamSyntheticEvents],
+  );
+
   // Deep-link: open a specific event's quick view once events for the range are loaded.
   const openedDeepLink = useRef(false);
   useEffect(() => {
