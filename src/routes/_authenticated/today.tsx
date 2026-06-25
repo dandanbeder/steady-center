@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { OutcomeMark } from "@/components/outcomes/outcome-mark";
 import { listOutcomes } from "@/lib/outcomes";
 import type { Task } from "@/lib/tasks";
-import type { Note } from "@/lib/notes";
+
 
 
 export const Route = createFileRoute("/_authenticated/today")({
@@ -30,10 +30,6 @@ export const Route = createFileRoute("/_authenticated/today")({
       queryKey: ["events", "today", start.toISOString()],
       queryFn: () => listEvents(start, end),
     });
-    context.queryClient.prefetchQuery({
-      queryKey: ["notes", "recent", 5],
-      queryFn: () => listRecentNotes(5),
-    });
   },
   component: TodayPage,
 });
@@ -42,7 +38,7 @@ function greeting() {
   const h = new Date().getHours();
   if (h < 5) return "Still up";
   if (h < 12) return "Good morning";
-  if (h < 18) return "Good afternoon";
+  if (h < 17) return "Good afternoon";
   return "Good evening";
 }
 
@@ -106,16 +102,6 @@ async function listTopOpenTasks(limit = 5, businessId: string | null = null): Pr
   return merged;
 }
 
-async function listRecentNotes(limit = 5): Promise<Note[]> {
-  const { data, error } = await supabase
-    .from("notes")
-    .select("id, title, updated_at, business_id, pinned")
-    .is("deleted_at", null)
-    .order("updated_at", { ascending: false })
-    .limit(limit);
-  if (error) throw error;
-  return (data ?? []) as unknown as Note[];
-}
 
 function TodayPage() {
   const { user } = useAuth();
@@ -139,17 +125,12 @@ function TodayPage() {
     queryKey: ["tasks", "today-top", 5, businessScope],
     queryFn: () => listTopOpenTasks(5, businessScope),
   });
-  const recentNotesQ = useQuery({
-    queryKey: ["notes", "recent", 5],
-    queryFn: () => listRecentNotes(5),
-  });
   const outcomesQ = useQuery({ queryKey: ["outcomes", "all-names"], queryFn: () => listOutcomes() });
 
   const businesses = businessesQ.data ?? [];
   const calendars = calendarsQ.data ?? [];
   const events = eventsQ.data ?? [];
   const topTasks = topTasksQ.data ?? [];
-  const recentNotes = recentNotesQ.data ?? [];
   const outcomeNameById = new Map((outcomesQ.data ?? []).map((o) => [o.id, o.name]));
 
   const active = activeId === ALL || activeId === PERSONAL ? null : businesses.find((b) => b.id === activeId);
@@ -264,36 +245,8 @@ function TodayPage() {
             );
           })()}
         </Card>
-        <Card title="Recent notes">
-          {recentNotesQ.isLoading ? (
-            <SkeletonList />
-          ) : (() => {
-            const visible = recentNotes.filter((n) => matchesActiveBusiness(n.business_id, activeId));
-            if (visible.length === 0) {
-              return (
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">No notes yet.</p>
-                  <Link to="/notes" className="text-sm text-accent hover:underline">Create your first note →</Link>
-                </div>
-              );
-            }
-            return (
-              <ul className="space-y-2">
-                {visible.map((n) => (
-                  <li key={n.id} className="text-sm">
-                    <Link to="/notes" className="font-medium truncate block hover:text-accent">
-                      {n.title || "Untitled"}
-                    </Link>
-                    <div className="text-xs text-muted-foreground">
-                      {new Date(n.updated_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            );
-          })()}
-        </Card>
         <Card title="Upcoming meetings"><UpcomingMeetings horizonDays={7} limit={5} /></Card>
+
       </div>
     </div>
   );

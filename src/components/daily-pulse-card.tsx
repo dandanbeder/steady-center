@@ -37,7 +37,7 @@ export function DailyPulseCard() {
   const morning = data?.morning;
   const evening = data?.evening;
   const localHour = new Date().getHours();
-  const showEvening = localHour >= 15 || !!evening;
+  const showEvening = localHour >= 17;
 
   const genMut = useMutation({
     mutationFn: (kind: "morning" | "evening") => generate({ data: { kind } }),
