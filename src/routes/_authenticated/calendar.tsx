@@ -1444,13 +1444,19 @@ function TimeGrid({
             <div />
             {days.map((d) => {
               const isToday = sameDay(d, today);
+              const clickable = !!onDayHeaderClick;
               return (
-                <div
+                <button
+                  type="button"
                   key={d.toISOString()}
+                  onClick={clickable ? () => onDayHeaderClick!(d) : undefined}
+                  disabled={!clickable}
                   className={cn(
                     "px-2 py-2 text-center border-l border-border",
                     isToday && "bg-accent/10",
+                    clickable && "hover:bg-accent/20 cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent",
                   )}
+                  aria-label={clickable ? `Open ${d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}` : undefined}
                 >
                   <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
                     {d.toLocaleDateString(undefined, { weekday: "short" })}
@@ -1463,7 +1469,7 @@ function TimeGrid({
                   >
                     {d.getDate()}
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
