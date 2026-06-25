@@ -101,13 +101,23 @@ export async function uncommitTasks(ids: string[]): Promise<void> {
 export type Velocity = {
   tasks_per_week: number; // mean, integer-rounded
   hours_per_week: number; // mean, one decimal
+  /** Typical hours per completed task (passive pace signal). 0 if unknown. */
+  hours_per_task: number;
   sample_weeks: number; // 1..4
+  sample_tasks: number; // completed tasks in window
 };
 
-/** Trailing 4-week averages for the signed-in user. */
+/** Trailing 4-week averages for the signed-in user. RLS scopes both reads to the user. */
 export async function getVelocity(): Promise<Velocity> {
   const { data: u } = await supabase.auth.getUser();
-  if (!u.user) return { tasks_per_week: 0, hours_per_week: 0, sample_weeks: 0 };
+  if (!u.user)
+    return {
+      tasks_per_week: 0,
+      hours_per_week: 0,
+      hours_per_task: 0,
+      sample_weeks: 0,
+      sample_tasks: 0,
+    };
 
   const fourWeeksAgo = mondayDate(addWeeks(mondayOf(), -4));
   const thisMondayDate = mondayDate(mondayOf());
@@ -138,8 +148,19 @@ export async function getVelocity(): Promise<Velocity> {
   // Always divide by 4 so the average reflects "a typical week" (a quiet week counts).
   const tasksAvg = Math.round(taskCount / 4);
   const hoursAvg = Math.round((totalMinutes / 60 / 4) * 10) / 10;
+  // Hours per task — only meaningful when we have both signals; rounded to 1dp.
+  const hoursPerTask =
+    taskCount > 0 && totalMinutes > 0
+      ? Math.round((totalMinutes / 60 / taskCount) * 10) / 10
+      : 0;
 
-  return { tasks_per_week: tasksAvg, hours_per_week: hoursAvg, sample_weeks: 4 };
+  return {
+    tasks_per_week: tasksAvg,
+    hours_per_week: hoursAvg,
+    hours_per_task: hoursPerTask,
+    sample_weeks: 4,
+    sample_tasks: taskCount,
+  };
 }
 
 /** Approximate hours of an event (0 for all-day). */
