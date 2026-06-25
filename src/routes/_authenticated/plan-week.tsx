@@ -93,15 +93,62 @@ function PlanWeekPage() {
   const rolledFiltered = useMemo(() => filterByActive(rolled), [rolled, activeId]);
   const eventsFiltered = useMemo(() => filterByActive(events), [events, activeId]);
 
-  // Capacity
+  // Capacity — per-account weekly budgets are the source of truth.
   const dailyCap = hours?.daily_capacity_hours ?? 6;
   const workDays = hours?.work_days ?? [1, 2, 3, 4, 5];
-  const weeklyCapacity = workDays.length * dailyCap;
+  const generalBudget = hours?.general_weekly_hours ?? null;
+
+  // Per-account breakdown: { id, name, color, budget, committed }
+  type AcctRow = {
+    id: string | null;
+    name: string;
+    color: string | null;
+    budget: number | null;
+    committed: number;
+  };
+  const acctRows: AcctRow[] = useMemo(() => {
+    const rows: AcctRow[] = businesses
+      .filter((b) => activeId === ALL || b.id === activeId)
+      .map((b) => ({
+        id: b.id,
+        name: b.name,
+        color: b.color,
+        budget: b.weekly_hours == null ? null : Number(b.weekly_hours),
+        committed: 0,
+      }));
+    // Personal / unassigned bucket — included when viewing All or filter is null.
+    if (activeId === ALL || activeId === null) {
+      rows.push({
+        id: null,
+        name: "Personal / Uncategorised",
+        color: null,
+        budget: generalBudget,
+        committed: 0,
+      });
+    }
+    const byId = new Map<string | null, AcctRow>(rows.map((r) => [r.id, r]));
+    for (const e of eventsFiltered) {
+      const r = byId.get(e.business_id);
+      if (r) r.committed += eventHours(e);
+    }
+    for (const t of committedFiltered) {
+      if (t.status === "done") continue;
+      const r = byId.get(t.business_id);
+      if (r) r.committed += DEFAULT_TASK_HOURS;
+    }
+    return rows;
+  }, [businesses, eventsFiltered, committedFiltered, activeId, generalBudget]);
+
+  const budgetedRows = acctRows.filter((r) => r.budget != null && r.budget > 0);
+  const weeklyCapacity = budgetedRows.reduce((s, r) => s + (r.budget ?? 0), 0);
   const eventLoad = eventsFiltered.reduce((s, e) => s + eventHours(e), 0);
   const taskLoad =
     committedFiltered.filter((t) => t.status !== "done").length * DEFAULT_TASK_HOURS;
   const totalLoad = eventLoad + taskLoad;
-  const loadPct = weeklyCapacity > 0 ? Math.round((totalLoad / weeklyCapacity) * 100) : 0;
+  // Fallback to working-hours-derived capacity only when no per-account budgets are set.
+  const fallbackCapacity = workDays.length * dailyCap;
+  const effectiveCapacity = weeklyCapacity > 0 ? weeklyCapacity : fallbackCapacity;
+  const loadPct = effectiveCapacity > 0 ? Math.round((totalLoad / effectiveCapacity) * 100) : 0;
   const loadColor =
     loadPct > 100 ? "text-destructive" : loadPct >= 80 ? "text-amber-600" : "text-muted-foreground";
 
@@ -294,90 +341,76 @@ function PlanWeekPage() {
               <h3 className="text-sm font-medium">Capacity</h3>
               <span className={cn("text-xs tabular-nums flex items-center gap-1", loadColor)}>
                 <Clock className="h-3 w-3" />
-                {totalLoad.toFixed(1)} / {weeklyCapacity.toFixed(0)}h
+                {totalLoad.toFixed(1)} / {effectiveCapacity.toFixed(0)}h
               </span>
             </div>
             <Progress
               value={Math.min(100, loadPct)}
               className={cn(loadPct > 100 && "[&>div]:bg-destructive", loadPct >= 80 && loadPct <= 100 && "[&>div]:bg-amber-500")}
             />
+            {loadPct > 100 && (
+              <p className="text-[11px] text-muted-foreground">
+                You've planned more than your hours this week — gently flagged, nothing blocked.
+              </p>
+            )}
             <div className="text-xs text-muted-foreground space-y-0.5">
               <div>Calendar events: {eventLoad.toFixed(1)}h</div>
               <div>Committed tasks ({committedCount}): {taskLoad.toFixed(1)}h</div>
-              <div>Working capacity: {workDays.length} days × {dailyCap}h</div>
+              {weeklyCapacity > 0 ? (
+                <div>Free this week: {Math.max(0, effectiveCapacity - totalLoad).toFixed(1)}h of {effectiveCapacity.toFixed(0)}h budgeted</div>
+              ) : (
+                <div>Working capacity (fallback): {workDays.length} days × {dailyCap}h. Set a weekly budget per account in Settings → Accounts.</div>
+              )}
             </div>
 
-            {/* Per-day load strip, work days only, drives placement */}
-            <div className="pt-2 border-t border-border/60">
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
-                Per-day load
-              </div>
-              <div className="grid grid-cols-7 gap-1">
-                {Array.from({ length: 7 }, (_, i) => {
-                  const d = new Date(weekStartDate);
-                  d.setUTCDate(d.getUTCDate() + i);
-                  const dow = d.getUTCDay();
-                  const isWork = workDays.includes(dow);
-                  const evH = eventsFiltered
-                    .filter((e) => {
-                      const ed = new Date(e.start_at);
-                      return ed.getUTCFullYear() === d.getUTCFullYear()
-                        && ed.getUTCMonth() === d.getUTCMonth()
-                        && ed.getUTCDate() === d.getUTCDate();
-                    })
-                    .reduce((s, e) => s + eventHours(e), 0);
-                  const tH = committedFiltered
-                    .filter((t) => {
-                      if (t.status === "done" || !t.due_at) return false;
-                      const td = new Date(t.due_at);
-                      return td.getUTCFullYear() === d.getUTCFullYear()
-                        && td.getUTCMonth() === d.getUTCMonth()
-                        && td.getUTCDate() === d.getUTCDate();
-                    }).length * DEFAULT_TASK_HOURS;
-                  const load = evH + tH;
-                  const cap = isWork ? dailyCap : 0;
-                  const pct = cap > 0 ? Math.min(100, Math.round((load / cap) * 100)) : 0;
-                  const over = isWork && load > cap;
+            {/* Per-account breakdown */}
+            {acctRows.length > 0 && (
+              <div className="pt-2 border-t border-border/60 space-y-1.5">
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                  By account
+                </div>
+                {acctRows.map((r) => {
+                  const budget = r.budget ?? 0;
+                  const hasBudget = r.budget != null && r.budget > 0;
+                  const committed = Math.round(r.committed * 10) / 10;
+                  const left = Math.max(0, budget - committed);
+                  const pct = hasBudget ? Math.min(100, Math.round((committed / budget) * 100)) : 0;
+                  const over = hasBudget && committed > budget;
                   return (
-                    <div
-                      key={i}
-                      title={isWork
-                        ? `${["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][dow]} · ${load.toFixed(1)}h of ${cap}h`
-                        : `${["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][dow]} · non-work day`}
-                      className="flex flex-col items-center gap-1"
-                    >
-                      <div className={cn(
-                        "text-[10px]",
-                        isWork ? "text-muted-foreground" : "text-muted-foreground/40",
-                      )}>
-                        {["S","M","T","W","T","F","S"][dow]}
-                      </div>
-                      <div className={cn(
-                        "h-8 w-full rounded-sm overflow-hidden",
-                        isWork ? "bg-muted" : "bg-muted/30",
-                      )}>
-                        {isWork && (
-                          <div
-                            className={cn(
-                              "w-full transition-all",
-                              over ? "bg-destructive" : pct >= 80 ? "bg-amber-500" : "bg-primary",
-                            )}
-                            style={{ height: `${pct}%`, marginTop: `${100 - pct}%` }}
-                          />
+                    <div key={r.id ?? "personal"} className="space-y-0.5">
+                      <div className="flex items-center gap-2 text-xs">
+                        {r.color ? (
+                          <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: r.color }} />
+                        ) : (
+                          <span className="h-2 w-2 rounded-full shrink-0 bg-muted-foreground/40" />
                         )}
+                        <span className="flex-1 truncate">{r.name}</span>
+                        <span className={cn("tabular-nums", over ? "text-destructive" : "text-muted-foreground")}>
+                          {hasBudget
+                            ? `${committed.toFixed(1)}/${budget}h · ${left.toFixed(1)} left`
+                            : `${committed.toFixed(1)}h · no budget set`}
+                        </span>
                       </div>
+                      {hasBudget && (
+                        <div className="h-1 rounded-sm bg-muted overflow-hidden">
+                          <div
+                            className={cn("h-full transition-all", over ? "bg-destructive" : pct >= 80 ? "bg-amber-500" : "bg-primary")}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      )}
                     </div>
                   );
                 })}
               </div>
-            </div>
+            )}
 
             <Link
               to="/settings"
-              hash="working-hours"
+              hash="accounts"
               className="block text-[11px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline pt-1"
             >
-              Based on your working hours · edit
+              Set weekly budgets per account · edit
             </Link>
           </Card>
 

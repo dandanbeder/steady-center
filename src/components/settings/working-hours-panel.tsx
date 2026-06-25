@@ -145,6 +145,31 @@ export function WorkingHoursPanel() {
         </p>
       </div>
 
+      <div>
+        <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
+          Personal / unassigned weekly budget (hours)
+        </p>
+        <Input
+          type="number"
+          min={0}
+          max={168}
+          step={0.5}
+          value={draft.general_weekly_hours ?? ""}
+          placeholder="—"
+          onChange={(e) => {
+            const raw = e.target.value;
+            setDraft({
+              ...draft,
+              general_weekly_hours: raw === "" ? null : Math.max(0, Math.min(168, Number(raw))),
+            });
+          }}
+          className="w-32"
+        />
+        <p className="text-xs text-muted-foreground mt-1">
+          Weekly hours for work not tied to any account. Plan my week adds this to your per-account budgets to get your total capacity. Leave blank to skip.
+        </p>
+      </div>
+
       <Button onClick={() => save.mutate()} disabled={save.isPending}>
         {save.isPending ? "Saving…" : "Save working hours"}
       </Button>

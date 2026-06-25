@@ -229,6 +229,7 @@ export type WorkingHours = {
   work_end_minute: number;
   work_days: number[]; // 0=Sun..6=Sat
   daily_capacity_hours: number;
+  general_weekly_hours: number | null;
 };
 
 export async function getWorkingHours(): Promise<WorkingHours> {
@@ -236,7 +237,7 @@ export async function getWorkingHours(): Promise<WorkingHours> {
   if (!u.user) throw new Error("Not signed in");
   const { data, error } = await supabase
     .from("profiles")
-    .select("work_start_hour, work_start_minute, work_end_hour, work_end_minute, work_days, daily_capacity_hours")
+    .select("work_start_hour, work_start_minute, work_end_hour, work_end_minute, work_days, daily_capacity_hours, general_weekly_hours")
     .eq("id", u.user.id)
     .maybeSingle();
   if (error) throw error;
@@ -248,6 +249,8 @@ export async function getWorkingHours(): Promise<WorkingHours> {
     work_end_minute: (row.work_end_minute as number) ?? 0,
     work_days: (row.work_days as number[]) ?? [1, 2, 3, 4, 5],
     daily_capacity_hours: Number(row.daily_capacity_hours ?? 6),
+    general_weekly_hours:
+      row.general_weekly_hours == null ? null : Number(row.general_weekly_hours),
   };
 }
 

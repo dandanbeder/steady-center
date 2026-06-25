@@ -553,6 +553,10 @@ function BusinessRow({
       />
 
       {canEdit && (
+        <WeeklyHoursInput business={business} onChange={onChange} />
+      )}
+
+      {canEdit && (
         <div className="mt-4 pt-4 border-t border-border">
           <h4 className="text-sm font-medium mb-3">Branding, statuses & priorities</h4>
           <CustomizationPanel businessId={business.id} />
@@ -685,6 +689,45 @@ function CalendarsForBusiness({
           </Button>
         </form>
       )}
+    </div>
+  );
+}
+
+function WeeklyHoursInput({ business, onChange }: { business: Business; onChange: () => void }) {
+  const [value, setValue] = useState<string>(
+    business.weekly_hours == null ? "" : String(business.weekly_hours),
+  );
+  const save = useMutation({
+    mutationFn: (hours: number | null) => updateBusiness(business.id, { weekly_hours: hours }),
+    onSuccess: () => { onChange(); toast.success("Weekly budget saved"); },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
+  const commit = () => {
+    const trimmed = value.trim();
+    const next = trimmed === "" ? null : Math.max(0, Math.min(168, Number(trimmed)));
+    const cur = business.weekly_hours ?? null;
+    if (next === cur) return;
+    if (next !== null && Number.isNaN(next)) return;
+    save.mutate(next);
+  };
+
+  return (
+    <div className="pl-6 flex items-center gap-2">
+      <p className="text-xs uppercase tracking-wider text-muted-foreground">Weekly budget</p>
+      <Input
+        type="number"
+        min={0}
+        max={168}
+        step={0.5}
+        value={value}
+        placeholder="—"
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+        className="h-8 w-24"
+      />
+      <span className="text-xs text-muted-foreground">hrs / week (used by Plan my week capacity)</span>
     </div>
   );
 }
