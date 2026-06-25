@@ -610,7 +610,10 @@ function ListNode({
 // ---------- workspace ----------
 
 type SortKey = "priority" | "due" | "created" | "title";
-type DueFilter = "all" | "overdue" | "today" | "week" | "none";
+// Due filter. The string form supports a custom date range encoded as
+// "custom:YYYY-MM-DD:YYYY-MM-DD" (either side may be empty to leave that
+// bound open) so we can persist it through the existing string field.
+type DueFilter = "all" | "overdue" | "today" | "week" | "none" | string;
 type AssignedFilter = "all" | "me" | "by_me" | "unassigned";
 type Filters = {
   priority: TaskPriority | "all";
@@ -620,6 +623,15 @@ type Filters = {
   outcome: string; // "all" | "none" | outcome id
 };
 const DEFAULT_FILTERS: Filters = { priority: "all", status: "all", due: "all", assigned: "all", outcome: "all" };
+
+function parseCustomDue(v: string): { from: Date | null; to: Date | null } | null {
+  if (!v.startsWith("custom:")) return null;
+  const [, from, to] = v.split(":");
+  const fromD = from ? new Date(`${from}T00:00:00`) : null;
+  const toD = to ? new Date(`${to}T23:59:59.999`) : null;
+  if ((fromD && Number.isNaN(+fromD)) || (toD && Number.isNaN(+toD))) return null;
+  return { from: fromD, to: toD };
+}
 
 function matchesFilters(t: Task, f: Filters, myId: string | null): boolean {
   if (f.priority !== "all" && t.priority !== f.priority) return false;
@@ -647,6 +659,12 @@ function matchesFilters(t: Task, f: Filters, myId: string | null): boolean {
     if (f.due === "week") {
       const end = new Date(); end.setDate(end.getDate() + 7);
       return d <= end;
+    }
+    const range = parseCustomDue(f.due);
+    if (range) {
+      if (range.from && d < range.from) return false;
+      if (range.to && d > range.to) return false;
+      return true;
     }
   }
   return true;
