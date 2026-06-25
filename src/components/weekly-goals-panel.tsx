@@ -43,6 +43,28 @@ import {
 } from "@/lib/weekly-goals";
 import { cn } from "@/lib/utils";
 
+function LabelWithTooltip({ label, tooltip }: { label: React.ReactNode; tooltip: string }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <Label>{label}</Label>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            className="inline-flex items-center justify-center rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            aria-label={`${tooltip}`}
+          >
+            <Info className="h-3.5 w-3.5" aria-hidden="true" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs">
+          <p>{tooltip}</p>
+        </TooltipContent>
+      </Tooltip>
+    </div>
+  );
+}
+
 const MAX_GOALS = 5;
 
 export function WeeklyGoalsPanel({ compact = false }: { compact?: boolean }) {
