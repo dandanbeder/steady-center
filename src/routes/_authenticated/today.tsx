@@ -17,6 +17,7 @@ import { OutcomeMark } from "@/components/outcomes/outcome-mark";
 import { listOutcomes } from "@/lib/outcomes";
 import { listSharedWithMeResources, type SharedItemRow } from "@/lib/shares.functions";
 import type { Task } from "@/lib/tasks";
+import { listNotes } from "@/lib/notes";
 
 function startOfDay(d: Date) {
   const x = new Date(d);
