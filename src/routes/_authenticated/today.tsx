@@ -264,36 +264,8 @@ function TodayPage() {
             );
           })()}
         </Card>
-        <Card title="Recent notes">
-          {recentNotesQ.isLoading ? (
-            <SkeletonList />
-          ) : (() => {
-            const visible = recentNotes.filter((n) => matchesActiveBusiness(n.business_id, activeId));
-            if (visible.length === 0) {
-              return (
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">No notes yet.</p>
-                  <Link to="/notes" className="text-sm text-accent hover:underline">Create your first note →</Link>
-                </div>
-              );
-            }
-            return (
-              <ul className="space-y-2">
-                {visible.map((n) => (
-                  <li key={n.id} className="text-sm">
-                    <Link to="/notes" className="font-medium truncate block hover:text-accent">
-                      {n.title || "Untitled"}
-                    </Link>
-                    <div className="text-xs text-muted-foreground">
-                      {new Date(n.updated_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            );
-          })()}
-        </Card>
         <Card title="Upcoming meetings"><UpcomingMeetings horizonDays={7} limit={5} /></Card>
+
       </div>
     </div>
   );
