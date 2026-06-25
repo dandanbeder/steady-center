@@ -324,68 +324,76 @@ function GoalDialog({
   });
 
   return (
-    <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>New weekly goal</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-3">
-          <div>
-            <Label>Title</Label>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Ship onboarding flow" />
-          </div>
-          <div>
-            <Label>Description (optional)</Label>
-            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+    <TooltipProvider delayDuration={200}>
+      <Dialog open onOpenChange={(o) => !o && onClose()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New weekly goal</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
             <div>
-              <Label>Measure</Label>
-              <Select value={metric} onValueChange={(v) => setMetric(v as GoalMetricType)}>
+              <Label>Title</Label>
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Ship onboarding flow" />
+            </div>
+            <div>
+              <Label>Description (optional)</Label>
+              <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <LabelWithTooltip
+                  label="Measure"
+                  tooltip="How you'll know you're making progress - the number or outcome you're tracking"
+                />
+                <Select value={metric} onValueChange={(v) => setMetric(v as GoalMetricType)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="custom">Custom (mark by hand)</SelectItem>
+                    <SelectItem value="tasks_completed">Tasks completed</SelectItem>
+                    <SelectItem value="hours">Hours logged</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Target {metric === "hours" ? "(h)" : metric === "tasks_completed" ? "(tasks)" : ""}</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  step={metric === "hours" ? 0.5 : 1}
+                  value={target}
+                  onChange={(e) => setTarget(e.target.value)}
+                  disabled={metric === "custom"}
+                  placeholder={metric === "custom" ? "," : "e.g. 10"}
+                />
+              </div>
+            </div>
+            <div>
+              <LabelWithTooltip
+                label="Account (optional)"
+                tooltip="Which of your businesses or areas this goal belongs to"
+              />
+              <Select value={businessId} onValueChange={setBusinessId}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="custom">Custom (mark by hand)</SelectItem>
-                  <SelectItem value="tasks_completed">Tasks completed</SelectItem>
-                  <SelectItem value="hours">Hours logged</SelectItem>
+                  <SelectItem value="__none">All Accounts</SelectItem>
+                  {businesses.map((b) => (
+                    <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label>Target {metric === "hours" ? "(h)" : metric === "tasks_completed" ? "(tasks)" : ""}</Label>
-              <Input
-                type="number"
-                min={0}
-                step={metric === "hours" ? 0.5 : 1}
-                value={target}
-                onChange={(e) => setTarget(e.target.value)}
-                disabled={metric === "custom"}
-                placeholder={metric === "custom" ? "," : "e.g. 10"}
-              />
-            </div>
           </div>
-          <div>
-            <Label>Account (optional)</Label>
-            <Select value={businessId} onValueChange={setBusinessId}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none">All Accounts</SelectItem>
-                {businesses.map((b) => (
-                  <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button
-            onClick={() => save.mutate()}
-            disabled={!title.trim() || save.isPending}
-          >
-            Add goal
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <DialogFooter>
+            <Button variant="outline" onClick={onClose}>Cancel</Button>
+            <Button
+              onClick={() => save.mutate()}
+              disabled={!title.trim() || save.isPending}
+            >
+              Add goal
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </TooltipProvider>
   );
 }
