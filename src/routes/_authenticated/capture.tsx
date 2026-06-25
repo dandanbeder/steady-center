@@ -456,8 +456,16 @@ function InboxCard({
       {manualMode ? (
         <div className="rounded-md border border-dashed bg-muted/30 p-3 text-xs text-muted-foreground flex items-center gap-2">
           <SparklesIcon className="h-3.5 w-3.5 opacity-50" />
-          AI suggestions are off. File this one yourself below.
+          {aiFailed && aiEnabled
+            ? "AI couldn't suggest a destination — pick a type and account below."
+            : "AI suggestions are off. File this one yourself below."}
+          {aiEnabled && aiFailed && (
+            <Button variant="ghost" size="sm" onClick={reSuggest} disabled={busy} className="ml-auto h-6 px-2">
+              <RefreshCw className="h-3 w-3 mr-1" /> Retry
+            </Button>
+          )}
         </div>
+
       ) : !processed ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-3.5 w-3.5 animate-spin" /> Suggesting…
