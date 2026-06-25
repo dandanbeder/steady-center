@@ -898,6 +898,69 @@ function CalendarPage() {
           </div>
         )}
 
+        {teamBizId && (
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                Team layer
+              </h3>
+              <button
+                type="button"
+                onClick={() => toggleHiddenBiz("__team__")}
+                className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+                title={teamLayerOn ? "Hide team-shared items" : "Show team-shared items"}
+              >
+                {teamLayerOn ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                {teamLayerOn ? "On" : "Off"}
+              </button>
+            </div>
+            {teamLayerOn && teamMembers.length === 0 && (
+              <p className="text-[11px] text-muted-foreground">
+                Nothing shared by teammates in this window.
+              </p>
+            )}
+            {teamLayerOn && teamMembers.length > 0 && (
+              <ul className="space-y-1.5">
+                {teamMembers.map((m) => {
+                  const on = !hiddenMembers.has(m.user_id);
+                  return (
+                    <li
+                      key={m.user_id}
+                      className="flex items-center gap-2 text-xs px-2 py-1.5 rounded-md hover:bg-muted/40"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => toggleHiddenMember(m.user_id)}
+                        className="inline-flex items-center gap-2 flex-1 min-w-0 text-left"
+                        title={on ? "Hide this member's shared items" : "Show this member's shared items"}
+                      >
+                        <span
+                          className="h-2.5 w-2.5 rounded-full shrink-0"
+                          style={{ backgroundColor: m.color, opacity: on ? 1 : 0.25 }}
+                        />
+                        <span className={cn("truncate", !on && "opacity-50 line-through")}>
+                          {m.full_name || "Teammate"}
+                        </span>
+                      </button>
+                      {on ? (
+                        <Eye className="h-3 w-3 text-muted-foreground/70" />
+                      ) : (
+                        <EyeOff className="h-3 w-3 text-muted-foreground/70" />
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            <p className="text-[10px] text-muted-foreground mt-2 leading-snug">
+              Only items teammates have shared into this space. Private
+              calendars never appear.
+            </p>
+          </div>
+        )}
+
+
+
         <div>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
