@@ -360,21 +360,13 @@ function PlanWeekPage() {
             </section>
           )}
 
-          {/* Backlog */}
-          <section className="space-y-3">
-            <h2 className="text-sm font-medium">Backlog</h2>
-            <BacklogPanel scoped weekStart={thisMonday} />
-          </section>
-
-          {/* Committed */}
+          {/* Drag-and-drop board: Backlog ↔ This week */}
           <section className="space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-medium">This week's commitment ({committedFiltered.length})</h2>
-              {suggestedIds.length > 0 && (
-                <Button variant="ghost" size="sm" onClick={() => { setSuggestedIds([]); setSuggestReason(""); }}>
-                  Clear suggestions
-                </Button>
-              )}
+              <h2 className="text-sm font-medium">Plan board</h2>
+              <p className="text-[11px] text-muted-foreground">
+                Drag between columns · keyboard: Space to pick up, arrows to move, Space to drop
+              </p>
             </div>
             {suggestReason && (
               <Card className="p-3 border-amber-500/30 bg-amber-50/40 dark:bg-amber-950/20">
@@ -382,24 +374,28 @@ function PlanWeekPage() {
                   <Sparkles className="h-4 w-4 shrink-0 mt-0.5 text-amber-600" />
                   <span>{suggestReason}</span>
                 </p>
+                <div className="mt-2 flex justify-end">
+                  <Button variant="ghost" size="sm" onClick={() => { setSuggestedIds([]); setSuggestReason(""); }}>
+                    Clear suggestions
+                  </Button>
+                </div>
               </Card>
             )}
-            {committedFiltered.length === 0 ? (
-              <Card className="p-6 text-center text-sm text-muted-foreground">
-                Nothing committed yet. Pick from the backlog above.
-              </Card>
-            ) : (
-              <ul className="divide-y border rounded-xl bg-card overflow-hidden">
-                {committedFiltered.map((t) => (
-                  <CommittedRow
-                    key={t.id}
-                    task={t}
-                    businessName={t.business_id ? businessName.get(t.business_id) ?? null : null}
-                    suggested={suggestedIds.includes(t.id)}
-                    onRemove={() => removeFromWeek.mutate(t.id)}
-                    onDefer={() => deferOne.mutate(t.id)}
-                  />
-                ))}
+            <PlanWeekBoard weekStart={thisMonday} onMutated={invalidateAll} />
+            {suggestedIds.length > 0 && (
+              <ul className="divide-y border rounded-xl bg-amber-50/40 dark:bg-amber-950/20 overflow-hidden">
+                {committedFiltered
+                  .filter((t) => suggestedIds.includes(t.id))
+                  .map((t) => (
+                    <CommittedRow
+                      key={t.id}
+                      task={t}
+                      businessName={t.business_id ? businessName.get(t.business_id) ?? null : null}
+                      suggested
+                      onRemove={() => removeFromWeek.mutate(t.id)}
+                      onDefer={() => deferOne.mutate(t.id)}
+                    />
+                  ))}
               </ul>
             )}
           </section>
