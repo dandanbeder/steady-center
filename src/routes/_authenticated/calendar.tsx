@@ -599,7 +599,7 @@ function CalendarPage() {
             events={visibleEvents}
             calById={calById}
             colorFor={colorFor}
-            onDayClick={(d) => setDayOpen(d)}
+            onDayClick={(d) => { setCursor(startOfDay(d)); setView("day"); }}
             onEventClick={(e) => setPreviewing(e)}
             workDays={workDaysSet}
             dailyCap={dailyCap}
