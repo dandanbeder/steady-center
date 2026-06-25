@@ -114,6 +114,43 @@ export async function listAssignmentHistory(taskId: string): Promise<TaskAssignm
   return (data ?? []) as TaskAssignment[];
 }
 
+// Per-task audit log. RLS on `task_audit_log` mirrors `tasks`: only viewers
+// of the task can read its entries, so this query is naturally private.
+export type TaskAuditEvent = {
+  id: string;
+  task_id: string;
+  business_id: string | null;
+  event_type:
+    | "created"
+    | "status"
+    | "priority"
+    | "due"
+    | "assignee"
+    | "business"
+    | "title"
+    | "outcome"
+    | "completed"
+    | "deleted"
+    | "restored"
+    | string;
+  from_value: unknown;
+  to_value: unknown;
+  actor_id: string | null;
+  created_at: string;
+};
+
+export async function listTaskAudit(taskId: string): Promise<TaskAuditEvent[]> {
+  const { data, error } = await supabase
+    .from("task_audit_log" as never)
+    .select("id, task_id, business_id, event_type, from_value, to_value, actor_id, created_at")
+    .eq("task_id", taskId)
+    .order("created_at", { ascending: false })
+    .limit(200);
+  if (error) throw error;
+  return (data ?? []) as TaskAuditEvent[];
+}
+
+
 export async function listAssignedToMe(): Promise<Task[]> {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) return [];

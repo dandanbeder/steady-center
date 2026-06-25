@@ -147,7 +147,7 @@ const UNCATEGORISED_LIST: ListRow = {
 function isUncategorised(list: { id: string }) {
   return list.id === UNCATEGORISED_LIST_ID;
 }
-import { listAssignedToMe, listAssignedByMe, listAssignmentHistory, assignTask } from "@/lib/tasks";
+import { listAssignedToMe, listAssignedByMe, listAssignmentHistory, assignTask, listTaskAudit, type TaskAuditEvent } from "@/lib/tasks";
 import { AssigneePicker, useAssignableMembers, memberLabel, type AssignableMember } from "@/components/assignee-picker";
 import { useAuth } from "@/hooks/use-auth";
 import { listBacklinks, resolveLinks } from "@/lib/note-links";
@@ -2107,6 +2107,163 @@ function TaskCalendarView({ tasks, onOpen }: { tasks: Task[]; onOpen: (t: Task) 
 
 // ---------- Task detail dialog ----------
 
+// Build the per-task history timeline. Merges the new unified
+// `task_audit_log` (created/title/priority/due/account/outcome/completion/
+// delete/restore + status & assignee from now on) with the legacy
+// status & assignment history tables so older tasks still show changes
+// that pre-date the audit log. Dedupes status & assignee entries by
+// (type, second-precision timestamp) so a recent change isn't doubled.
+function buildTaskTimeline(args: {
+  audit: TaskAuditEvent[];
+  statusHistory: Array<{
+    id: string;
+    changed_at: string;
+    from_status: TaskStatus | null;
+    to_status: TaskStatus;
+  }>;
+  assignHistory: Array<{
+    id: string;
+    changed_at: string;
+    from_assignee: string | null;
+    to_assignee: string | null;
+    changed_by: string | null;
+  }>;
+  members: AssignableMember[];
+  businesses: Array<{ id: string; name: string }>;
+  outcomes: Array<{ id: string; name: string }>;
+}): Array<{ id: string; at: string; label: string }> {
+  const { audit, statusHistory, assignHistory, members, businesses, outcomes } = args;
+  const fmtDate = (v: unknown) => {
+    if (!v || typeof v !== "string") return "no date";
+    const d = new Date(v);
+    return Number.isNaN(+d) ? "no date" : d.toLocaleDateString();
+  };
+  const byId = <T extends { id: string; name: string }>(arr: T[], id: unknown) =>
+    typeof id === "string" ? arr.find((x) => x.id === id)?.name ?? null : null;
+  const accountName = (id: unknown) =>
+    id == null ? "Personal" : byId(businesses, id) ?? "an account";
+  const outcomeName = (id: unknown) =>
+    id == null ? "no outcome" : byId(outcomes, id) ?? "an outcome";
+  const actor = (id: string | null) =>
+    id ? ` by ${memberLabel(members, id)}` : "";
+  const bucket = (iso: string) => iso.slice(0, 19); // second-precision dedupe key
+
+  type Row = { id: string; at: string; label: string; key?: string };
+  const rows: Row[] = [];
+
+  for (const e of audit) {
+    const who = actor(e.actor_id);
+    switch (e.event_type) {
+      case "created":
+        rows.push({ id: e.id, at: e.created_at, label: `Created${who}` });
+        break;
+      case "status": {
+        const from = e.from_value as TaskStatus | null;
+        const to = e.to_value as TaskStatus;
+        rows.push({
+          id: e.id,
+          at: e.created_at,
+          label: `${from ? `${STATUS_LABEL[from]} → ` : ""}${STATUS_LABEL[to]}${who}`,
+          key: `status:${bucket(e.created_at)}`,
+        });
+        break;
+      }
+      case "completed":
+        rows.push({ id: e.id, at: e.created_at, label: `Completed${who}` });
+        break;
+      case "priority": {
+        const from = e.from_value as TaskPriority | null;
+        const to = e.to_value as TaskPriority;
+        rows.push({
+          id: e.id,
+          at: e.created_at,
+          label: `Priority ${from ? `${PRIORITY_LABEL[from]} → ` : ""}${PRIORITY_LABEL[to]}${who}`,
+        });
+        break;
+      }
+      case "due":
+        rows.push({
+          id: e.id,
+          at: e.created_at,
+          label: `Due ${fmtDate(e.from_value)} → ${fmtDate(e.to_value)}${who}`,
+        });
+        break;
+      case "assignee": {
+        const to = e.to_value as string | null;
+        rows.push({
+          id: e.id,
+          at: e.created_at,
+          label: to
+            ? `Assigned to ${memberLabel(members, to)}${who}`
+            : `Unassigned${who}`,
+          key: `assignee:${bucket(e.created_at)}`,
+        });
+        break;
+      }
+      case "business":
+        rows.push({
+          id: e.id,
+          at: e.created_at,
+          label: `Moved ${accountName(e.from_value)} → ${accountName(e.to_value)}${who}`,
+        });
+        break;
+      case "title":
+        rows.push({
+          id: e.id,
+          at: e.created_at,
+          label: `Renamed${who}`,
+        });
+        break;
+      case "outcome":
+        rows.push({
+          id: e.id,
+          at: e.created_at,
+          label: `Outcome ${outcomeName(e.from_value)} → ${outcomeName(e.to_value)}${who}`,
+        });
+        break;
+      case "deleted":
+        rows.push({ id: e.id, at: e.created_at, label: `Moved to Trash${who}` });
+        break;
+      case "restored":
+        rows.push({ id: e.id, at: e.created_at, label: `Restored${who}` });
+        break;
+      default:
+        break;
+    }
+  }
+
+  // Track keys we've already seen from the audit log so legacy rows for the
+  // same change don't duplicate the timeline.
+  const seen = new Set<string>(rows.map((r) => r.key).filter((k): k is string => !!k));
+
+  for (const a of statusHistory) {
+    const key = `status:${bucket(a.changed_at)}`;
+    if (seen.has(key)) continue;
+    rows.push({
+      id: `legacy-status-${a.id}`,
+      at: a.changed_at,
+      label: `${a.from_status ? `${STATUS_LABEL[a.from_status]} → ` : ""}${STATUS_LABEL[a.to_status]}`,
+    });
+  }
+  for (const h of assignHistory) {
+    const key = `assignee:${bucket(h.changed_at)}`;
+    if (seen.has(key)) continue;
+    rows.push({
+      id: `legacy-assign-${h.id}`,
+      at: h.changed_at,
+      label: h.to_assignee
+        ? `Assigned to ${memberLabel(members, h.to_assignee)}${actor(h.changed_by)}`
+        : `Unassigned${actor(h.changed_by)}`,
+    });
+  }
+
+  return rows
+    .sort((a, b) => +new Date(b.at) - +new Date(a.at))
+    .map(({ id, at, label }) => ({ id, at, label }));
+}
+
+
+
 function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => void; onChange: () => void }) {
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description ?? "");
@@ -2201,6 +2358,14 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
     queryKey: ["task-activity", task.id],
     queryFn: () => listTaskActivity(task.id),
   });
+
+  // Unified per-task audit log. RLS scopes this to viewers of the task —
+  // private/unshared tasks expose no history to anyone but the owner.
+  const { data: audit = [] } = useQuery({
+    queryKey: ["task-audit", task.id],
+    queryFn: () => listTaskAudit(task.id),
+  });
+
 
   const { data: backlinks = [] } = useQuery({
     queryKey: ["task-backlinks", task.id],
@@ -2474,22 +2639,18 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
                 parentType="task"
                 parentId={task.id}
                 businessId={task.business_id}
-                activity={[
-                  ...activity.map((a) => ({
-                    id: a.id,
-                    at: a.changed_at,
-                    label: `${a.from_status ? `${STATUS_LABEL[a.from_status]} → ` : ""}${STATUS_LABEL[a.to_status]}`,
-                  })),
-                  ...assignHistory.map((h) => ({
-                    id: `assign-${h.id}`,
-                    at: h.changed_at,
-                    label: h.to_assignee
-                      ? `Assigned to ${memberLabel(memberList, h.to_assignee)}${h.changed_by ? ` by ${memberLabel(memberList, h.changed_by)}` : ""}`
-                      : `Unassigned${h.changed_by ? ` by ${memberLabel(memberList, h.changed_by)}` : ""}`,
-                  })),
-                ]}
+                activity={buildTaskTimeline({
+                  audit,
+                  statusHistory: activity,
+                  assignHistory,
+                  members: memberList,
+                  businesses: allBusinesses,
+                  outcomes,
+                })}
               />
             </div>
+
+
 
           </div>
           <DialogFooter className="gap-2 sm:gap-2">

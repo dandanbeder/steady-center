@@ -2650,6 +2650,47 @@ export type Database = {
           },
         ]
       }
+      task_audit_log: {
+        Row: {
+          actor_id: string | null
+          business_id: string | null
+          created_at: string
+          event_type: string
+          from_value: Json | null
+          id: string
+          task_id: string
+          to_value: Json | null
+        }
+        Insert: {
+          actor_id?: string | null
+          business_id?: string | null
+          created_at?: string
+          event_type: string
+          from_value?: Json | null
+          id?: string
+          task_id: string
+          to_value?: Json | null
+        }
+        Update: {
+          actor_id?: string | null
+          business_id?: string | null
+          created_at?: string
+          event_type?: string
+          from_value?: Json | null
+          id?: string
+          task_id?: string
+          to_value?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_audit_log_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_stages: {
         Row: {
           color: string
