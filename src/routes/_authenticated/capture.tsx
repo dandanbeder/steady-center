@@ -201,14 +201,14 @@ function CapturePage() {
         hasEverCaptured ? (
           <div className="rounded-lg border border-dashed py-16 text-center text-muted-foreground">
             <InboxIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p>All caught up.</p>
+            <p>Nothing in drafts — capture a thought above.</p>
           </div>
         ) : (
           <div className="rounded-lg border border-dashed py-12 px-6 text-center space-y-3">
             <InboxIcon className="h-8 w-8 mx-auto opacity-60" />
             <h2 className="text-lg font-semibold text-foreground">One place to capture anything</h2>
             <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
-              When a thought hits, a task, an idea, a reminder, drop it here in a second, instead of stopping to decide where it belongs. Later, file each item where it goes: a task, a note, or an outcome. We'll suggest where.
+              When a thought hits, a task, an idea, a reminder, drop it here in a second, instead of stopping to decide where it belongs. Drafts wait here until you accept them into the right place.
             </p>
             <p className="text-xs text-muted-foreground/80 italic pt-1">
               Try it: type "call the accountant" above and press enter.
@@ -216,7 +216,13 @@ function CapturePage() {
           </div>
         )
       ) : (
-        <div className="space-y-3">
+        <section className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-medium text-muted-foreground">
+              Drafts <span className="text-muted-foreground/70">· {items.length}</span>
+            </h2>
+            <p className="text-xs text-muted-foreground">Nothing is filed until you accept it.</p>
+          </div>
           {items.map((it) => (
             <InboxCard
               key={it.id}
@@ -225,10 +231,14 @@ function CapturePage() {
               folders={folders}
               lists={lists}
               aiEnabled={aiEnabled}
+              aiFailed={aiFailed.has(it.id)}
+              onAiFailed={() => markAiFailed(it.id)}
+              onAiCleared={() => clearAiFailed(it.id)}
             />
           ))}
-        </div>
+        </section>
       )}
+
     </div>
   );
 }
