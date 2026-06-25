@@ -170,12 +170,18 @@ function TodayPage() {
       </section>
 
       <div className="mt-12 grid gap-4 sm:grid-cols-2">
-        {/* TODAY'S EVENTS — entire card links to calendar on today; each row links to its event */}
-        <LinkCard
+        {/* TODAY'S EVENTS — header links to today in the calendar; each row links to its event */}
+        <Card
           title="Today's events"
-          to="/calendar"
-          search={{ date: dateKey, view: "day" }}
-          ariaLabel="Open today in the calendar"
+          action={
+            <Link
+              to="/calendar"
+              search={{ date: dateKey, view: "day" } as never}
+              className="text-xs text-muted-foreground hover:text-accent transition-colors"
+            >
+              Open day →
+            </Link>
+          }
         >
           {eventsQ.isLoading ? (
             <SkeletonList />
@@ -189,10 +195,9 @@ function TodayPage() {
                   <li key={e.id}>
                     <Link
                       to="/calendar"
-                      search={{ date: dateKey, view: "day", eventId: e.id }}
+                      search={{ date: dateKey, view: "day", eventId: e.id } as never}
                       className="block text-sm pl-3 rounded hover:bg-muted/40 transition-colors py-1"
                       style={{ borderLeft: `3px solid ${c?.color ?? "#888"}` }}
-                      onClick={(ev) => ev.stopPropagation()}
                     >
                       <div className="font-medium truncate">{e.title}</div>
                       <div className="text-xs text-muted-foreground">
@@ -207,7 +212,8 @@ function TodayPage() {
               })}
             </ul>
           )}
-        </LinkCard>
+        </Card>
+
 
         {/* ON YOUR PLATE — tasks + today's upcoming meetings (same source) + shared with me */}
         <Card title="On your plate">
