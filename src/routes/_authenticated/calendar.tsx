@@ -188,7 +188,7 @@ function isAllDayLike(e: EventRow) {
 
 function CalendarPage() {
   const qc = useQueryClient();
-  const { activeId } = useActiveBusiness();
+  const { activeId, setActiveId } = useActiveBusiness();
   const search = Route.useSearch();
   const [view, setView] = useState<ViewMode>(search.view ?? "month");
   const [cursor, setCursor] = useState<Date>(() => {
