@@ -326,6 +326,58 @@ function TodayPage() {
           )}
         </Card>
       </div>
+
+      {notesEnabled && (
+        <div className="mt-4">
+          <Card
+            title={
+              activeId === PERSONAL
+                ? "Recent notes · Personal"
+                : `Recent notes${active ? ` · ${active.name}` : ""}`
+            }
+            action={
+              <Link
+                to="/notes"
+                className="text-xs text-muted-foreground hover:text-accent transition-colors"
+              >
+                Open notes →
+              </Link>
+            }
+          >
+            {notesQ.isLoading ? (
+              <SkeletonList />
+            ) : accountNotes.length === 0 ? (
+              <EmptyState
+                text={
+                  activeId === PERSONAL
+                    ? "No personal notes yet."
+                    : "No notes in this account yet."
+                }
+              />
+            ) : (
+              <ul className="space-y-2">
+                {accountNotes.map((n) => (
+                  <li key={n.id}>
+                    <Link
+                      to="/notes"
+                      search={{ noteId: n.id } as never}
+                      className="block text-sm rounded hover:bg-muted/40 transition-colors py-1 px-1 -mx-1"
+                    >
+                      <div className="font-medium truncate flex items-center gap-1.5">
+                        <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        <span className="truncate">{n.title || "Untitled"}</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground pl-5">
+                        {new Date(n.updated_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
