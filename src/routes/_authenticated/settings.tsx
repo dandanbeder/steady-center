@@ -553,6 +553,10 @@ function BusinessRow({
       />
 
       {canEdit && (
+        <WeeklyHoursInput business={business} onChange={onChange} />
+      )}
+
+      {canEdit && (
         <div className="mt-4 pt-4 border-t border-border">
           <h4 className="text-sm font-medium mb-3">Branding, statuses & priorities</h4>
           <CustomizationPanel businessId={business.id} />
