@@ -881,6 +881,7 @@ export type Database = {
           read_only: boolean
           sort_order: number
           task_statuses: Json
+          weekly_hours: number | null
         }
         Insert: {
           archived_at?: string | null
@@ -895,6 +896,7 @@ export type Database = {
           read_only?: boolean
           sort_order?: number
           task_statuses?: Json
+          weekly_hours?: number | null
         }
         Update: {
           archived_at?: string | null
@@ -909,6 +911,7 @@ export type Database = {
           read_only?: boolean
           sort_order?: number
           task_statuses?: Json
+          weekly_hours?: number | null
         }
         Relationships: []
       }
@@ -2275,6 +2278,7 @@ export type Database = {
           event_color_by: string
           font_size: string
           full_name: string | null
+          general_weekly_hours: number | null
           has_seen_tutorial: boolean
           hear_about_us: string | null
           high_contrast: boolean
@@ -2344,6 +2348,7 @@ export type Database = {
           event_color_by?: string
           font_size?: string
           full_name?: string | null
+          general_weekly_hours?: number | null
           has_seen_tutorial?: boolean
           hear_about_us?: string | null
           high_contrast?: boolean
@@ -2413,6 +2418,7 @@ export type Database = {
           event_color_by?: string
           font_size?: string
           full_name?: string | null
+          general_weekly_hours?: number | null
           has_seen_tutorial?: boolean
           hear_about_us?: string | null
           high_contrast?: boolean
@@ -3479,6 +3485,7 @@ export type Database = {
           read_only: boolean
           sort_order: number
           task_statuses: Json
+          weekly_hours: number | null
         }
         SetofOptions: {
           from: "*"
