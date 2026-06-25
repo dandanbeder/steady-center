@@ -18,22 +18,29 @@ export const Route = createFileRoute("/")({
 function IndexRedirect() {
   const { user, loading } = useAuth();
 
-  const landing = useQuery({
-    queryKey: ["default-landing", user?.id],
+  // Per-user, server-side tutorial flag. Lives on profiles (RLS: each user
+  // can only read/write their own row), so a returning user on a new
+  // device/browser still goes straight to Today.
+  const firstOpen = useQuery({
+    queryKey: ["first-open-routing", user?.id],
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("default_landing")
+        .select("has_seen_tutorial")
         .eq("id", user!.id)
         .maybeSingle();
-      return (data?.default_landing as "today" | "calendar") ?? "today";
+      return { hasSeenTutorial: !!data?.has_seen_tutorial };
     },
   });
 
   if (loading) return null;
   if (!user) return <Navigate to="/login" />;
-  if (landing.isLoading) return null;
-  return <Navigate to={landing.data === "calendar" ? "/calendar" : "/today"} />;
+  if (firstOpen.isLoading) return null;
+
+  // First genuine launch for this account → Tutorial. Every other plain
+  // open of Heartbeat (web or installed PWA) → Today. Deep links bypass
+  // this route entirely and resolve to their target.
+  return <Navigate to={firstOpen.data?.hasSeenTutorial ? "/today" : "/learn"} />;
 }

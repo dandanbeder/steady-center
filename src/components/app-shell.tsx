@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { Calendar, CalendarRange, CheckSquare, FileText, Home, Settings, Users, LogOut, ChevronDown, BarChart3, PanelLeftClose, PanelLeftOpen, Shield, Menu, AtSign, BookOpen, Sparkles, Search, Inbox, Bell, Trash2, BrainCircuit, Target, ShieldCheck, HelpCircle, GraduationCap } from "lucide-react";
 import { PaymentTestModeBanner } from "@/components/payment-test-mode-banner";
 import { PastDueBanner } from "@/components/past-due-banner";
@@ -42,7 +42,7 @@ const AssistantPanel = lazy(() =>
   import("@/components/assistant-panel").then((m) => ({ default: m.AssistantPanel })),
 );
 import { PlanIndicator } from "@/components/plan-indicator";
-import { welcomedStorageKey } from "@/routes/_authenticated/learn";
+
 import { TourProvider } from "@/components/tour/tour-engine";
 
 const NAV: { to: string; label: string; icon: typeof Home }[] = [
@@ -71,7 +71,7 @@ const STORAGE_KEY = "heartbeat:sidebar-collapsed";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { signOut, user } = useAuth();
-  const navigate = useNavigate();
+  
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const { activeId, setActiveId } = useActiveBusiness();
   const { isAdmin } = useIsPlatformAdmin();
@@ -118,15 +118,10 @@ export function AppShell({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // First-login: send brand-new users to Learn once. Skippable from there.
-  useEffect(() => {
-    if (typeof window === "undefined" || !user?.id) return;
-    const key = welcomedStorageKey(user.id);
-    if (window.localStorage.getItem(key)) return;
-    const skipOn = ["/learn", "/auth", "/accept-terms", "/onboarding"];
-    if (skipOn.some((p) => pathname === p || pathname.startsWith(p + "/"))) return;
-    navigate({ to: "/learn" });
-  }, [user?.id, pathname, navigate]);
+  // First-open routing for brand-new users is handled server-side at "/"
+  // via the per-user `profiles.has_seen_tutorial` flag — see src/routes/index.tsx.
+  // Deep links (shared items, meetings, notifications) bypass that redirect
+  // and resolve directly to their target.
 
   const toggleCollapsed = () => {
     setCollapsed((c) => {

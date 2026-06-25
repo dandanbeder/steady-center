@@ -2275,6 +2275,7 @@ export type Database = {
           event_color_by: string
           font_size: string
           full_name: string | null
+          has_seen_tutorial: boolean
           hear_about_us: string | null
           high_contrast: boolean
           hour_format: string
@@ -2343,6 +2344,7 @@ export type Database = {
           event_color_by?: string
           font_size?: string
           full_name?: string | null
+          has_seen_tutorial?: boolean
           hear_about_us?: string | null
           high_contrast?: boolean
           hour_format?: string
@@ -2411,6 +2413,7 @@ export type Database = {
           event_color_by?: string
           font_size?: string
           full_name?: string | null
+          has_seen_tutorial?: boolean
           hear_about_us?: string | null
           high_contrast?: boolean
           hour_format?: string

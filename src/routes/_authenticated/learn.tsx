@@ -56,6 +56,24 @@ function LearnPage() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [playing, setPlaying] = useState(false);
 
+  // Mark the per-user tutorial flag once they've actually landed on Learn.
+  // From then on, plain opens of Heartbeat go straight to Today everywhere.
+  useEffect(() => {
+    if (!user?.id) return;
+    void (async () => {
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        await supabase
+          .from("profiles")
+          .update({ has_seen_tutorial: true })
+          .eq("id", user.id)
+          .is("has_seen_tutorial", false);
+      } catch {
+        // Non-fatal: next visit will retry. Don't disrupt the page.
+      }
+    })();
+  }, [user?.id]);
+
   const businessesQ = useQuery({ queryKey: ["businesses"], queryFn: listBusinesses });
   const calendarsQ = useQuery({ queryKey: ["calendars"], queryFn: listCalendars });
   const outcomesQ = useQuery({ queryKey: ["outcomes", "learn"], queryFn: () => listOutcomes() });
