@@ -2610,9 +2610,12 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
 
             <TaskTimePanel taskId={task.id} businessId={task.business_id} />
 
+            <TaskAttachments taskId={task.id} />
+
             <div className="pt-2 border-t border-border">
               <TagPeople itemType="task" itemId={task.id} businessId={task.business_id} />
             </div>
+
 
             {/* Linked notes/meetings/events */}
             <div className="pt-2 border-t border-border">
