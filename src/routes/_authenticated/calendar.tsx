@@ -270,6 +270,19 @@ function CalendarPage() {
     enabled: ready,
   });
 
+  // Deep-link: open a specific event's quick view once events for the range are loaded.
+  const openedDeepLink = useRef(false);
+  useEffect(() => {
+    if (openedDeepLink.current) return;
+    if (!search.eventId) return;
+    const hit = events.find((e) => e.id === search.eventId);
+    if (hit) {
+      setPreviewing(hit);
+      openedDeepLink.current = true;
+    }
+  }, [search.eventId, events]);
+
+
   // PERSONAL surfaces calendars/events with NULL business_id; a concrete id
   // narrows to that account; ALL shows everything.
   const visibleCalendars = useMemo(
