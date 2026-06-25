@@ -89,6 +89,8 @@ export type Task = {
   stage_position: number;
   /** The note this task was created from (null if not note-sourced). FK ON DELETE SET NULL. */
   source_note_id: string | null;
+  /** Optional user estimate in minutes; null = no estimate. Used for weekly capacity maths. */
+  estimated_minutes: number | null;
 };
 
 export type TaskAssignment = {
