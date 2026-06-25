@@ -295,14 +295,26 @@ function InboxCard({
   const reSuggest = async () => {
     setBusy(true);
     try {
-      await suggest({ data: { inbox_id: item.id, now: new Date().toISOString() } });
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("timeout")), 30_000),
+      );
+      await Promise.race([
+        suggest({ data: { inbox_id: item.id, now: new Date().toISOString() } }),
+        timeout,
+      ]);
+      onAiCleared();
       qc.invalidateQueries({ queryKey: ["inbox"] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "AI failed");
+      onAiFailed();
+      const msg = e instanceof Error ? e.message : "";
+      if (/402|credit/i.test(msg)) toast.message("Out of AI credits — file manually.");
+      else if (/429|rate/i.test(msg)) toast.message("AI is busy — file manually or retry.");
+      else toast.message("AI couldn't suggest — file manually.");
     } finally {
       setBusy(false);
     }
   };
+
 
   const accept = async () => {
     setBusy(true);
