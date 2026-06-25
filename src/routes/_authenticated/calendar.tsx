@@ -615,6 +615,7 @@ function CalendarPage() {
             colorFor={colorFor}
             onSlotClick={(d) => openNewOn(d)}
             onEventClick={(e) => setPreviewing(e)}
+            onDayHeaderClick={(d) => { setCursor(startOfDay(d)); setView("day"); }}
             onEventChange={(ev, start, end) =>
               moveMut.mutate({ id: ev.id, start, end })
             }
