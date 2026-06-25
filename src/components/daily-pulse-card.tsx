@@ -40,13 +40,34 @@ export function DailyPulseCard() {
   const showEvening = localHour >= 17;
 
   const genMut = useMutation({
-    mutationFn: (kind: "morning" | "evening") => generate({ data: { kind } }),
+    mutationFn: async (kind: "morning" | "evening") => {
+      // Calm safety net: never let the spinner hang. If the server takes longer
+      // than ~30s (AI timeout, network stall), we bail out gracefully.
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("timeout")), 30_000),
+      );
+      return (await Promise.race([generate({ data: { kind } }), timeout])) as Awaited<
+        ReturnType<typeof generate>
+      >;
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["daily-pulses", "today"] });
       toast.success("Pulse refreshed");
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+    onError: (e) => {
+      const msg = e instanceof Error ? e.message.toLowerCase() : "";
+      if (msg.includes("402") || msg.includes("credit")) {
+        toast.error("Out of AI credits — your pulse will be ready once credits are topped up.");
+      } else if (msg.includes("429") || msg.includes("rate")) {
+        toast.error("AI is busy right now. Try again in a moment.");
+      } else if (msg === "timeout") {
+        toast.error("Couldn't reach the AI in time. Try again in a moment.");
+      } else {
+        toast.error("Couldn't generate your pulse just now. Try again.");
+      }
+    },
   });
+
 
   if (isLoading) {
     return (
