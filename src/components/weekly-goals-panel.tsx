@@ -91,6 +91,43 @@ export function WeeklyGoalsPanel({ compact = false }: { compact?: boolean }) {
   const invalidate = () => qc.invalidateQueries({ queryKey: ["weekly-goals", weekKey] });
 
   const [adding, setAdding] = useState(false);
+  const [suggesting, setSuggesting] = useState(false);
+  const [suggestions, setSuggestions] = useState<SuggestedGoal[] | null>(null);
+
+  const suggestFn = useServerFn(suggestWeeklyGoals);
+  const weekStartDate = weekStart.toISOString().slice(0, 10);
+
+  async function runSuggest() {
+    if (suggesting) return;
+    setSuggesting(true);
+    const timeout = new Promise<never>((_, rej) =>
+      setTimeout(() => rej(new Error("TIMEOUT")), 30_000),
+    );
+    try {
+      const res = await Promise.race([
+        suggestFn({ data: { week_start: weekStartDate } }),
+        timeout,
+      ]);
+      if (!res.suggestions.length) {
+        toast.message("No suggestions this time — try again or add one manually.");
+        return;
+      }
+      setSuggestions(res.suggestions);
+    } catch (e) {
+      if (isCreditsExhaustedError(e)) {
+        toast.error("You're out of AI credits. Top up or wait for your next cycle.");
+      } else if (e instanceof Error && e.message === "TIMEOUT") {
+        toast.error("AI took too long. Try again in a moment.");
+      } else {
+        toast.error(
+          e instanceof Error ? e.message : "Couldn't generate suggestions — try again.",
+        );
+      }
+    } finally {
+      setSuggesting(false);
+    }
+  }
+
 
   // Forward-looking gentle coach check, reflects back the week and flags overload.
   const coachFn = useServerFn(coachWeekCheck);
