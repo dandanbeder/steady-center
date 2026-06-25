@@ -608,9 +608,6 @@ function PlanWeekPage() {
         </DialogContent>
       </Dialog>
     </div>
-        </aside>
-      </div>
-    </div>
   );
 }
 
