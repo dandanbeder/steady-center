@@ -915,6 +915,19 @@ function CalendarPage() {
         />
       )}
 
+      {newTaskOpen && (
+        <NewTaskDialog
+          defaultDate={cursor}
+          businesses={businesses}
+          activeBizId={activeId}
+          onClose={() => setNewTaskOpen(false)}
+          onCreated={() => {
+            setNewTaskOpen(false);
+            qc.invalidateQueries({ queryKey: ["tasks"] });
+          }}
+        />
+      )}
+
       {editing && (
         <EditEventDialog
           event={editing}
