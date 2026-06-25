@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import { ReminderControls } from "@/components/reminder-controls";
 import { createNote } from "@/lib/notes";
-import { createTask, listLists } from "@/lib/tasks";
+import { createTask, listFolders, listLists } from "@/lib/tasks";
 import { listBacklinks, resolveLinks, type ResolvedLink } from "@/lib/note-links";
 
 import { toast } from "sonner";
@@ -3114,15 +3114,27 @@ function NewTaskDialog({
     queryKey: ["lists"],
     queryFn: listLists,
   });
+  const { data: folders = [] } = useQuery({
+    queryKey: ["folders"],
+    queryFn: listFolders,
+  });
+  const folderBiz = useMemo(() => {
+    const m = new Map<string, string | null>();
+    for (const f of folders) m.set(f.id, f.business_id ?? null);
+    return m;
+  }, [folders]);
+  const listBiz = (l: { folder_id: string }) =>
+    folderBiz.get(l.folder_id) ?? null;
 
   // Default list = first list matching the chosen account (or any).
   useEffect(() => {
     if (listId) return;
     const match = lists.find((l) =>
-      businessId == null ? l.business_id == null : l.business_id === businessId,
+      businessId == null ? listBiz(l) == null : listBiz(l) === businessId,
     );
     setListId((match ?? lists[0])?.id ?? null);
-  }, [lists, businessId, listId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lists, folders, businessId, listId]);
 
   const mut = useMutation({
     mutationFn: async () => {
@@ -3209,8 +3221,8 @@ function NewTaskDialog({
                   {lists
                     .filter((l) =>
                       businessId == null
-                        ? l.business_id == null
-                        : l.business_id === businessId,
+                        ? listBiz(l) == null
+                        : listBiz(l) === businessId,
                     )
                     .map((l) => (
                       <SelectItem key={l.id} value={l.id}>
