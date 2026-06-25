@@ -93,15 +93,62 @@ function PlanWeekPage() {
   const rolledFiltered = useMemo(() => filterByActive(rolled), [rolled, activeId]);
   const eventsFiltered = useMemo(() => filterByActive(events), [events, activeId]);
 
-  // Capacity
+  // Capacity — per-account weekly budgets are the source of truth.
   const dailyCap = hours?.daily_capacity_hours ?? 6;
   const workDays = hours?.work_days ?? [1, 2, 3, 4, 5];
-  const weeklyCapacity = workDays.length * dailyCap;
+  const generalBudget = hours?.general_weekly_hours ?? null;
+
+  // Per-account breakdown: { id, name, color, budget, committed }
+  type AcctRow = {
+    id: string | null;
+    name: string;
+    color: string | null;
+    budget: number | null;
+    committed: number;
+  };
+  const acctRows: AcctRow[] = useMemo(() => {
+    const rows: AcctRow[] = businesses
+      .filter((b) => activeId === ALL || b.id === activeId)
+      .map((b) => ({
+        id: b.id,
+        name: b.name,
+        color: b.color,
+        budget: b.weekly_hours == null ? null : Number(b.weekly_hours),
+        committed: 0,
+      }));
+    // Personal / unassigned bucket — included when viewing All or filter is null.
+    if (activeId === ALL || activeId === null) {
+      rows.push({
+        id: null,
+        name: "Personal / Uncategorised",
+        color: null,
+        budget: generalBudget,
+        committed: 0,
+      });
+    }
+    const byId = new Map<string | null, AcctRow>(rows.map((r) => [r.id, r]));
+    for (const e of eventsFiltered) {
+      const r = byId.get(e.business_id);
+      if (r) r.committed += eventHours(e);
+    }
+    for (const t of committedFiltered) {
+      if (t.status === "done") continue;
+      const r = byId.get(t.business_id);
+      if (r) r.committed += DEFAULT_TASK_HOURS;
+    }
+    return rows;
+  }, [businesses, eventsFiltered, committedFiltered, activeId, generalBudget]);
+
+  const budgetedRows = acctRows.filter((r) => r.budget != null && r.budget > 0);
+  const weeklyCapacity = budgetedRows.reduce((s, r) => s + (r.budget ?? 0), 0);
   const eventLoad = eventsFiltered.reduce((s, e) => s + eventHours(e), 0);
   const taskLoad =
     committedFiltered.filter((t) => t.status !== "done").length * DEFAULT_TASK_HOURS;
   const totalLoad = eventLoad + taskLoad;
-  const loadPct = weeklyCapacity > 0 ? Math.round((totalLoad / weeklyCapacity) * 100) : 0;
+  // Fallback to working-hours-derived capacity only when no per-account budgets are set.
+  const fallbackCapacity = workDays.length * dailyCap;
+  const effectiveCapacity = weeklyCapacity > 0 ? weeklyCapacity : fallbackCapacity;
+  const loadPct = effectiveCapacity > 0 ? Math.round((totalLoad / effectiveCapacity) * 100) : 0;
   const loadColor =
     loadPct > 100 ? "text-destructive" : loadPct >= 80 ? "text-amber-600" : "text-muted-foreground";
 
