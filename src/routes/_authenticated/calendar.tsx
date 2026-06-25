@@ -1378,6 +1378,7 @@ function TimeGrid({
   onSlotClick,
   onEventClick,
   onEventChange,
+  onDayHeaderClick,
   workStart = 9,
   workEnd = 17,
   workDays = [1, 2, 3, 4, 5],
@@ -1389,6 +1390,7 @@ function TimeGrid({
   onSlotClick: (d: Date) => void;
   onEventClick: (e: EventRow) => void;
   onEventChange?: (ev: EventRow, start: Date, end: Date) => void;
+  onDayHeaderClick?: (d: Date) => void;
   workStart?: number;
   workEnd?: number;
   workDays?: number[];
