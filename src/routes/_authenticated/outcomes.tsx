@@ -68,7 +68,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Link2Off, Plus as PlusIcon, Search } from "lucide-react";
+import { Link2Off } from "lucide-react";
+
 
 
 export const Route = createFileRoute("/_authenticated/outcomes")({
