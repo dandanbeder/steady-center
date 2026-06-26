@@ -89,6 +89,7 @@ export async function resolveLinks(links: NoteLink[]): Promise<ResolvedLink[]> {
     const { data } = await supabase.from("notes").select("id,title").is("deleted_at", null).in("id", byType.note);
     for (const n of (data ?? []) as Array<{ id: string; title: string }>) {
       labels.set(`note:${n.id}`, { label: n.title || "Untitled", href: `/notes` });
+    }
   }
   if (byType.outcome.length) {
     const { data } = await supabase.from("outcomes").select("id,name").in("id", byType.outcome);
