@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Link2, Plus, X, CheckSquare, Users, Calendar, FileText } from "lucide-react";
+import { Link2, Plus, X, CheckSquare, Users, Calendar, FileText, Target } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
