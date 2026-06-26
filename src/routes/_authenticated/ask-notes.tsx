@@ -1,19 +1,35 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Sparkles, Send, Loader2, Mic, Square } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Sparkles, Send, Loader2, Mic, Square, Coins, AlertTriangle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
 import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
 import { askNotes } from "@/lib/notes-journal.functions";
 import { transcribeAudio } from "@/lib/transcribe.functions";
+import { getCreditBalance } from "@/lib/credits.functions";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { UpgradeGate } from "@/components/upgrade-gate";
 import { Separator } from "@/components/ui/separator";
 import { TeamProgressPanel } from "@/components/team-progress-panel";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+
+const ASK_CREDIT_COST = 2;
+const ASK_TIMEOUT_MS = 32_000;
+const SKIP_WARN_KEY = "heartbeat:ask-skip-warn";
 
 export const Route = createFileRoute("/_authenticated/ask-notes")({
   component: () => (
