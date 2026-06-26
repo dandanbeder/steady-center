@@ -17,6 +17,8 @@ async function fetchOwner(type: ResourceType, id: string): Promise<string | null
     type === "task" ? "tasks" :
     type === "note" ? "notes" :
     type === "business" ? "businesses" :
+    type === "meeting" ? "meetings" :
+    type === "outcome" ? "outcomes" :
     "calendars";
   const { data } = await supabaseAdmin.from(table).select("owner_id").eq("id", id).maybeSingle();
   return (data as ResourceOwnerResp | null)?.owner_id ?? null;
