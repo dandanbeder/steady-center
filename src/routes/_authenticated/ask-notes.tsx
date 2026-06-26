@@ -59,15 +59,27 @@ function AskNotesPage() {
   const { activeId } = useActiveBusiness();
   const ask = useServerFn(askNotes);
   const transcribe = useServerFn(transcribeAudio);
+  const fetchBalance = useServerFn(getCreditBalance);
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);
   const [answer, setAnswer] = useState<string>("");
   const [matches, setMatches] = useState<Match[]>([]);
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
+  const [warnOpen, setWarnOpen] = useState(false);
+  const [dontWarnAgain, setDontWarnAgain] = useState(false);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
+
+  // Credit balance for the heads-up. Refetched after each Ask.
+  const balance = useQuery({
+    queryKey: ["credit-balance"],
+    queryFn: () => fetchBalance(),
+  });
+  const totalCredits = balance.data?.total ?? 0;
+  const creditsPaused = balance.data?.paused ?? false;
+  const insufficient = !balance.isLoading && (creditsPaused || totalCredits < ASK_CREDIT_COST);
 
   const runQuery = async (question: string) => {
     if (question.trim().length < 2) return;
@@ -75,22 +87,52 @@ function AskNotesPage() {
     setAnswer("");
     setMatches([]);
     try {
-      const res = await ask({
-        data: {
-          question: question.trim(),
-          businessId: activeId === ALL ? null : activeId,
-        },
-      });
+      // Race the call against a hard timeout so the UI never hangs.
+      const res = await Promise.race([
+        ask({
+          data: {
+            question: question.trim(),
+            businessId: activeId === ALL ? null : activeId,
+          },
+        }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Ask timed out, please try again.")), ASK_TIMEOUT_MS),
+        ),
+      ]);
       setAnswer(res.answer);
       setMatches(res.matches as Match[]);
+      void balance.refetch();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed");
+      const msg = e instanceof Error ? e.message : "Couldn't run that question.";
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
   };
 
-  const run = () => runQuery(q);
+  const run = () => {
+    if (q.trim().length < 2) return;
+    if (insufficient) {
+      setWarnOpen(true);
+      return;
+    }
+    const skip = typeof window !== "undefined" && window.localStorage.getItem(SKIP_WARN_KEY) === "1";
+    if (skip) {
+      void runQuery(q);
+      return;
+    }
+    setWarnOpen(true);
+  };
+
+  const confirmRun = () => {
+    if (insufficient) return;
+    if (dontWarnAgain && typeof window !== "undefined") {
+      window.localStorage.setItem(SKIP_WARN_KEY, "1");
+    }
+    setWarnOpen(false);
+    void runQuery(q);
+  };
+
 
   const stopMicTracks = () => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
