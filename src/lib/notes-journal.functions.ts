@@ -303,20 +303,34 @@ async function callClaudeFullLocal(opts: {
 }): Promise<{ text: string; input_tokens: number; output_tokens: number }> {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error("AI is not configured.");
-  const res = await fetch(ANTHROPIC_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": key,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: opts.maxTokens ?? 1200,
-      system: opts.system,
-      messages: [{ role: "user", content: opts.user }],
-    }),
-  });
+  // Hard timeout so the UI never hangs on a slow or stuck upstream.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 30_000);
+  let res: Response;
+  try {
+    res = await fetch(ANTHROPIC_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": key,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: opts.maxTokens ?? 1200,
+        system: opts.system,
+        messages: [{ role: "user", content: opts.user }],
+      }),
+      signal: controller.signal,
+    });
+  } catch (e) {
+    clearTimeout(timer);
+    if ((e as { name?: string })?.name === "AbortError") {
+      throw new Error("AI timed out, please try again.");
+    }
+    throw e;
+  }
+  clearTimeout(timer);
   if (!res.ok) {
     const t = await res.text();
     console.error("Anthropic", res.status, t.slice(0, 300));
