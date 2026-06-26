@@ -230,7 +230,7 @@ function ReportDetail() {
       {flow && flow.oldest_open.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-xs uppercase tracking-wider text-muted-foreground">
-            Oldest open tasks (aging)
+            Been on the list a while
           </h2>
           <Card className="p-5">
             <ul className="divide-y divide-border text-sm">
@@ -242,7 +242,7 @@ function ReportDetail() {
                   <div className="min-w-0">
                     <div className="truncate">{t.title}</div>
                     <div className="text-xs text-muted-foreground">
-                      {t.business_name} · {t.status}
+                      {t.business_name}, {t.status}
                     </div>
                   </div>
                   <div className="text-xs text-muted-foreground shrink-0">
