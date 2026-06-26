@@ -600,6 +600,7 @@ function OutcomeDetailDialog({
                       </div>
                     </PopoverContent>
                   </Popover>
+                  </div>
                 </div>
 
                 <form
