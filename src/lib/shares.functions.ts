@@ -242,18 +242,35 @@ export const listSharedWithMeResources = createServerFn({ method: "GET" })
     const byType = {
       folder: [] as string[], list: [] as string[], task: [] as string[],
       note: [] as string[], calendar: [] as string[], business: [] as string[],
-      meeting: [] as string[],
+      meeting: [] as string[], outcome: [] as string[],
     };
     for (const r of rows) byType[r.resource_type as ResourceType].push(r.resource_id as string);
 
-    const [folders, lists, tasks, notes, cals, bizes, meetings] = await Promise.all([
+    // Outcomes are not directly shareable today — they're surfaced via the
+    // user's active business memberships (and any business-scope shares,
+    // which already grant team access). Fetch outcomes from those accounts
+    // (excluding ones the viewer owns themselves) so the Outcomes filter is
+    // meaningful on "Shared with me".
+    const { data: mems } = await supabaseAdmin
+      .from("memberships")
+      .select("business_id")
+      .eq("user_id", userId)
+      .eq("status", "active");
+    const memberBizIds = new Set((mems ?? []).map((m) => m.business_id as string));
+    for (const bid of byType.business) memberBizIds.add(bid);
+    const accessibleBizIds = [...memberBizIds];
+
+    const [folders, lists, tasks, notes, cals, bizes, meetings, outcomesRes] = await Promise.all([
       byType.folder.length ? supabaseAdmin.from("folders").select("id, name, owner_id").in("id", byType.folder) : Promise.resolve({ data: [] }),
       byType.list.length ? supabaseAdmin.from("lists").select("id, name, owner_id").in("id", byType.list) : Promise.resolve({ data: [] }),
       byType.task.length ? supabaseAdmin.from("tasks").select("id, title, owner_id, due_at, status").in("id", byType.task) : Promise.resolve({ data: [] }),
-      byType.note.length ? supabaseAdmin.from("notes").select("id, title, owner_id").in("id", byType.note) : Promise.resolve({ data: [] }),
+      byType.note.length ? supabaseAdmin.from("notes").select("id, title, owner_id, note_type").in("id", byType.note) : Promise.resolve({ data: [] }),
       byType.calendar.length ? supabaseAdmin.from("calendars").select("id, name, owner_id, color").in("id", byType.calendar) : Promise.resolve({ data: [] }),
       byType.business.length ? supabaseAdmin.from("businesses").select("id, name, owner_id").in("id", byType.business) : Promise.resolve({ data: [] }),
       byType.meeting.length ? supabaseAdmin.from("meetings").select("id, title, owner_id, scheduled_at").in("id", byType.meeting) : Promise.resolve({ data: [] }),
+      accessibleBizIds.length
+        ? supabaseAdmin.from("outcomes").select("id, name, owner_id, business_id, target_date, created_at").in("business_id", accessibleBizIds).neq("owner_id", userId)
+        : Promise.resolve({ data: [] as Array<{ id: string; name: string; owner_id: string; business_id: string | null; target_date: string | null; created_at: string }> }),
     ]);
 
     type Item = { id: string; title: string; subtitle: string | null; owner_id: string };
@@ -261,10 +278,15 @@ export const listSharedWithMeResources = createServerFn({ method: "GET" })
       folder: new Map((folders.data ?? []).map((x: any) => [x.id, { id: x.id, title: x.name, subtitle: "Folder", owner_id: x.owner_id }])),
       list: new Map((lists.data ?? []).map((x: any) => [x.id, { id: x.id, title: x.name, subtitle: "List", owner_id: x.owner_id }])),
       task: new Map((tasks.data ?? []).map((x: any) => [x.id, { id: x.id, title: x.title, subtitle: x.due_at ? `Due ${new Date(x.due_at).toLocaleDateString()}` : x.status, owner_id: x.owner_id }])),
-      note: new Map((notes.data ?? []).map((x: any) => [x.id, { id: x.id, title: x.title || "Untitled", subtitle: "Note", owner_id: x.owner_id }])),
+      note: new Map(
+        (notes.data ?? [])
+          .filter((x: any) => x.note_type !== "journal") // Journal is never shared
+          .map((x: any) => [x.id, { id: x.id, title: x.title || "Untitled", subtitle: "Note", owner_id: x.owner_id }]),
+      ),
       calendar: new Map((cals.data ?? []).map((x: any) => [x.id, { id: x.id, title: x.name, subtitle: "Calendar", owner_id: x.owner_id }])),
       business: new Map((bizes.data ?? []).map((x: any) => [x.id, { id: x.id, title: x.name, subtitle: "Account", owner_id: x.owner_id }])),
       meeting: new Map((meetings.data ?? []).map((x: any) => [x.id, { id: x.id, title: x.title || "Meeting", subtitle: x.scheduled_at ? `Meeting · ${new Date(x.scheduled_at).toLocaleDateString()}` : "Meeting", owner_id: x.owner_id }])),
+      outcome: new Map((outcomesRes.data ?? []).map((x: any) => [x.id, { id: x.id, title: x.name || "Outcome", subtitle: x.target_date ? `Outcome · target ${new Date(x.target_date).toLocaleDateString()}` : "Outcome", owner_id: x.owner_id }])),
     };
 
 
@@ -276,7 +298,7 @@ export const listSharedWithMeResources = createServerFn({ method: "GET" })
     const { data: profs } = await supabaseAdmin.from("profiles").select("id, full_name").in("id", ownerIds);
     const ownerName = new Map((profs ?? []).map((p) => [p.id, p.full_name as string | null]));
 
-    return rows
+    const out: SharedItemRow[] = rows
       .map((r): SharedItemRow | null => {
         const item = lookup[r.resource_type as ResourceType].get(r.resource_id as string);
         if (!item) return null;
@@ -293,6 +315,24 @@ export const listSharedWithMeResources = createServerFn({ method: "GET" })
         };
       })
       .filter((x): x is SharedItemRow => x !== null);
+
+    // Append outcomes (not in `rows`)
+    for (const o of (outcomesRes.data ?? []) as Array<{ id: string; name: string; owner_id: string; business_id: string | null; target_date: string | null; created_at: string }>) {
+      const item = lookup.outcome.get(o.id);
+      if (!item) continue;
+      out.push({
+        share_id: `outcome:${o.id}`,
+        resource_type: "outcome",
+        resource_id: o.id,
+        role: "viewer",
+        owner_id: o.owner_id,
+        owner_name: ownerName.get(o.owner_id) ?? null,
+        title: item.title,
+        subtitle: item.subtitle,
+        created_at: o.created_at,
+      });
+    }
+    return out.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   });
 
 /**
