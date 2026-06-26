@@ -34,6 +34,7 @@ const TYPE_ICON: Record<NoteLinkType, typeof CheckSquare> = {
   meeting: Users,
   event: Calendar,
   note: FileText,
+  outcome: Target,
 };
 
 export function ConnectionsPanel({
