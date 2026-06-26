@@ -17,7 +17,7 @@ export type Appearance = {
 };
 
 export const DEFAULT_APPEARANCE: Appearance = {
-  theme: "system",
+  theme: "light",
   density: "comfortable",
   default_calendar_view: "week",
   reduced_motion: false,
@@ -47,11 +47,8 @@ export function writeLocalAppearance(a: Appearance) {
 export function applyAppearance(a: Appearance) {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
-  // Theme
-  const prefersDark =
-    typeof window !== "undefined" &&
-    window.matchMedia("(prefers-color-scheme: dark)").matches;
-  const dark = a.theme === "dark" || (a.theme === "system" && prefersDark);
+  // Theme — default is always light (paper). Only an explicit "dark" choice flips it.
+  const dark = a.theme === "dark";
   root.classList.toggle("dark", dark);
   // Density
   root.dataset.density = a.density;
@@ -79,8 +76,10 @@ export async function getAppearance(): Promise<Appearance> {
     .eq("id", u.user.id)
     .maybeSingle();
   if (!data) return readLocalAppearance();
+  const rawTheme = (data.theme as string | null) ?? "light";
+  const theme: Theme = rawTheme === "dark" ? "dark" : "light";
   return {
-    theme: (data.theme as Theme) ?? "system",
+    theme,
     density: (data.density as Density) ?? "comfortable",
     default_calendar_view: (data.default_calendar_view as CalendarView) ?? "week",
     reduced_motion: !!data.reduced_motion,
