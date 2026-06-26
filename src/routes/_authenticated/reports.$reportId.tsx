@@ -102,10 +102,10 @@ function ReportDetail() {
 
       <header className="space-y-2">
         <p className="text-xs uppercase tracking-wider text-muted-foreground">
-          {start.toLocaleDateString()} – {end.toLocaleDateString()}
+          {start.toLocaleDateString()} to {end.toLocaleDateString()}
         </p>
         <h1 className="text-2xl sm:text-3xl text-primary leading-tight">
-          {n.headline || "Weekly review"}
+          {n.headline || "A kind look back at your week"}
         </h1>
       </header>
 
