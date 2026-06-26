@@ -824,14 +824,14 @@ function fallbackNarrative(m: ReportMetrics): ReportNarrative {
   const n: ReportNarrative = {
     headline:
       o.tasks_completed === 0 && o.tasks_created === 0 && hours === 0
-        ? "A quiet week, that's okay too."
-        : `${o.tasks_completed} done · ${hours}h tracked, solid work.`,
+        ? "A lighter week, and that's okay."
+        : `A solid week, ${o.tasks_completed} closed and ${hours}h tracked.`,
     strengths,
     growth_areas: growth,
     goal_review: goalReview,
     next_week: [
       "Protect one focus block in your calendar early in the week.",
-      "Look at the oldest open task and decide gently: do, delegate, or drop.",
+      "Look at one item that's been waiting and decide kindly, do it, hand it off, or let it go.",
     ],
   };
   return withLegacyFields(n, m);
