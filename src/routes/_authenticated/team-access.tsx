@@ -43,7 +43,7 @@ export const Route = createFileRoute("/_authenticated/team-access")({
 const ROLES: ShareRole[] = ["viewer", "commenter", "member", "admin"];
 const TYPE_ICON: Record<ResourceType, typeof Folder> = {
   folder: Folder, list: ListTodo, task: CheckSquare, note: FileText,
-  calendar: CalendarIcon, business: Building2, meeting: Video,
+  calendar: CalendarIcon, business: Building2, meeting: Video, outcome: Target,
 };
 
 function TeamAccessPage() {
