@@ -75,7 +75,7 @@ function ReportRow({ report }: { report: WeeklyReport }) {
     <Link to="/reports/$reportId" params={{ reportId: report.id }} className="block">
       <Card className="p-5 flex items-center gap-5 hover:bg-accent/30 transition-colors">
         <span
-          aria-label={status === "green" ? "On track" : "Needs attention"}
+          aria-label={status === "green" ? "Steady week" : "A few things to look at gently"}
           className="inline-block size-3 rounded-full shrink-0"
           style={{
             backgroundColor: status === "green" ? "oklch(0.72 0.16 150)" : "oklch(0.78 0.14 85)",
@@ -83,11 +83,11 @@ function ReportRow({ report }: { report: WeeklyReport }) {
         />
         <div className="flex-1 min-w-0">
           <p className="font-medium">
-            {new Date(report.week_start).toLocaleDateString()} –{" "}
+            {new Date(report.week_start).toLocaleDateString()} to{" "}
             {new Date(report.week_end).toLocaleDateString()}
           </p>
           <p className="text-xs text-muted-foreground truncate">
-            {report.narrative?.headline || "Weekly review"}
+            {report.narrative?.headline || "A kind look back"}
           </p>
         </div>
         <div className="flex gap-6 text-sm shrink-0">
