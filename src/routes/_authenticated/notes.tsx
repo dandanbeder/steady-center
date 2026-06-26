@@ -582,7 +582,7 @@ function NoteEditor({
   };
 
   const remove = async () => {
-    if (!confirm("Delete this note?")) return;
+    if (!confirm("Move this note to Trash?")) return;
     try {
       await deleteNote(note.id);
       const noteId = note.id;
