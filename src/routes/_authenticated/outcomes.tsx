@@ -63,6 +63,8 @@ import {
 } from "@/lib/outcomes";
 import { createTask } from "@/lib/tasks";
 import { OutcomeWizard } from "@/components/outcomes/outcome-wizard";
+import { OutcomeAIBreakdownDialog } from "@/components/outcomes/outcome-ai-breakdown-dialog";
+import { Sparkles } from "lucide-react";
 import {
   Popover,
   PopoverContent,
