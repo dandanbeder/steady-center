@@ -320,6 +320,63 @@ function AskNotesPage() {
 
       <Separator className="my-2" />
       <TeamProgressPanel businessId={activeId === ALL ? null : activeId} />
+
+      <Dialog open={warnOpen} onOpenChange={setWarnOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Coins className="h-5 w-5 text-primary" />
+              Heads up — this uses about {ASK_CREDIT_COST} credits
+            </DialogTitle>
+            <DialogDescription>
+              Ask searches your notes, meetings, tasks, and outcomes and asks AI to
+              answer with sources. It's a heavier action, so we wanted to flag the cost
+              before running.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="text-sm">
+            {balance.isLoading ? (
+              <p className="text-muted-foreground">Checking your balance…</p>
+            ) : creditsPaused ? (
+              <p className="inline-flex items-center gap-1.5 text-amber-700 dark:text-amber-300">
+                <AlertTriangle className="h-4 w-4" />
+                AI is paused — you're out of credits this cycle.
+              </p>
+            ) : insufficient ? (
+              <p className="inline-flex items-center gap-1.5 text-amber-700 dark:text-amber-300">
+                <AlertTriangle className="h-4 w-4" />
+                You have {totalCredits} credit{totalCredits === 1 ? "" : "s"} — not
+                enough to run Ask.
+              </p>
+            ) : (
+              <p className="text-muted-foreground">
+                You have {totalCredits} credit{totalCredits === 1 ? "" : "s"} available.
+              </p>
+            )}
+          </div>
+          {!insufficient && (
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="ask-skip-warn"
+                checked={dontWarnAgain}
+                onCheckedChange={(v) => setDontWarnAgain(v === true)}
+              />
+              <Label htmlFor="ask-skip-warn" className="text-xs text-muted-foreground font-normal">
+                Don't show this again on this device
+              </Label>
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setWarnOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={confirmRun} disabled={insufficient} className="gap-1.5">
+              <Send className="h-4 w-4" />
+              Ask anyway
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
