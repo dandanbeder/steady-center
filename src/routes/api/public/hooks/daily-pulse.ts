@@ -11,11 +11,16 @@ import { generatePulseForUser } from "@/lib/daily-pulse-generator.server";
 
 function localParts(d: Date, tz: string) {
   const fmt = new Intl.DateTimeFormat("en-US", {
-    timeZone: tz, hour: "2-digit", minute: "2-digit", hour12: false,
+    timeZone: tz, hour: "2-digit", minute: "2-digit", weekday: "short", hour12: false,
   });
   const parts = fmt.formatToParts(d);
   const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "0";
-  return { hour: parseInt(get("hour"), 10) % 24, minute: parseInt(get("minute"), 10) };
+  const wdMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  return {
+    hour: parseInt(get("hour"), 10) % 24,
+    minute: parseInt(get("minute"), 10),
+    weekday: wdMap[get("weekday")] ?? 0,
+  };
 }
 
 function matchesSlot(localH: number, localM: number, targetH: number, targetM: number) {
@@ -23,6 +28,12 @@ function matchesSlot(localH: number, localM: number, targetH: number, targetM: n
   if (localH !== targetH) return false;
   return Math.floor(localM / 5) === Math.floor(targetM / 5);
 }
+
+const JOURNAL_REMINDER_LINES = [
+  "A quiet moment, take a minute to reflect or write, whenever you're ready.",
+  "Your Journal is here when you'd like a pause to put words to the day.",
+  "A small, private space to think. Open it when it feels right.",
+];
 
 export const Route = createFileRoute("/api/public/hooks/daily-pulse")({
   server: {
