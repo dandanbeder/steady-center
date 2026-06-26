@@ -17,6 +17,8 @@ export type TrashRow = {
   deleted_at: string;
   parent_id: string | null;
   meta: Record<string, unknown>;
+  deleted_by: string | null;
+  deleted_by_name: string | null;
 };
 
 export async function listTrash(): Promise<TrashRow[]> {
