@@ -690,6 +690,7 @@ function OutcomeDetailDialog({
                 )}
               </div>
 
+              <OutcomeLinkedNotes outcomeId={outcome.id} />
             </div>
 
             <DialogFooter className="gap-2 flex-wrap">
