@@ -63,6 +63,8 @@ import {
 } from "@/lib/outcomes";
 import { createTask } from "@/lib/tasks";
 import { OutcomeWizard } from "@/components/outcomes/outcome-wizard";
+import { OutcomeAIBreakdownDialog } from "@/components/outcomes/outcome-ai-breakdown-dialog";
+import { Sparkles } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -399,6 +401,7 @@ function OutcomeDetailDialog({
   const [newTitle, setNewTitle] = useState("");
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkSearch, setLinkSearch] = useState("");
+  const [aiOpen, setAiOpen] = useState(false);
 
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["outcome-tasks", outcomeId] });
@@ -547,7 +550,17 @@ function OutcomeDetailDialog({
                       </span>
                     )}
                   </h4>
-                  <Popover open={linkOpen} onOpenChange={setLinkOpen}>
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs gap-1"
+                      onClick={() => setAiOpen(true)}
+                      title="AI breakdown into next steps"
+                    >
+                      <Sparkles className="h-3.5 w-3.5" /> Generate
+                    </Button>
+                    <Popover open={linkOpen} onOpenChange={setLinkOpen}>
                     <PopoverTrigger asChild>
                       <Button size="sm" variant="outline" className="h-7 text-xs">
                         <Plus className="h-3.5 w-3.5" /> Link existing
@@ -587,6 +600,7 @@ function OutcomeDetailDialog({
                       </div>
                     </PopoverContent>
                   </Popover>
+                  </div>
                 </div>
 
                 <form
@@ -687,6 +701,14 @@ function OutcomeDetailDialog({
           </>
         )}
       </DialogContent>
+      {outcome && (
+        <OutcomeAIBreakdownDialog
+          outcome={outcome}
+          open={aiOpen}
+          onOpenChange={setAiOpen}
+          onCreated={refresh}
+        />
+      )}
     </Dialog>
   );
 }
