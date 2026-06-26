@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Link as RouterLink } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -13,8 +13,10 @@ import {
   Loader2,
   CheckCircle2,
   ChevronRight,
+  FileText,
 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -690,6 +692,7 @@ function OutcomeDetailDialog({
                 )}
               </div>
 
+              <OutcomeLinkedNotes outcomeId={outcome.id} />
             </div>
 
             <DialogFooter className="gap-2 flex-wrap">
@@ -931,3 +934,64 @@ function OutcomeDialog({
     </Dialog>
   );
 }
+
+function OutcomeLinkedNotes({ outcomeId }: { outcomeId: string }) {
+  // Notes linked to this outcome via note_links (created from the note side).
+  // RLS on notes scopes results to notes the user can access (own + shared);
+  // notes the user can't see simply don't appear.
+  const { data: notes = [] } = useQuery({
+    queryKey: ["outcome-linked-notes", outcomeId],
+    queryFn: async () => {
+      const { data: links, error } = await supabase
+        .from("note_links")
+        .select("from_note_id")
+        .eq("to_type", "outcome")
+        .eq("to_id", outcomeId);
+      if (error) throw error;
+      const ids = (links ?? []).map((l: any) => l.from_note_id as string);
+      if (!ids.length) return [];
+      const { data: notesData, error: notesErr } = await supabase
+        .from("notes")
+        .select("id,title")
+        .in("id", ids)
+        .is("deleted_at", null);
+      if (notesErr) throw notesErr;
+      return (notesData ?? []) as Array<{ id: string; title: string }>;
+    },
+  });
+
+  if (notes.length === 0) {
+    return (
+      <div className="pt-2">
+        <h4 className="text-sm font-medium mb-1.5 flex items-center gap-1.5">
+          <FileText className="h-3.5 w-3.5 text-muted-foreground" /> Linked notes
+        </h4>
+        <p className="text-xs text-muted-foreground">
+          Link a note to this outcome from the note's Connections panel.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="pt-2">
+      <h4 className="text-sm font-medium mb-1.5 flex items-center gap-1.5">
+        <FileText className="h-3.5 w-3.5 text-muted-foreground" /> Linked notes
+        <span className="text-xs text-muted-foreground">({notes.length})</span>
+      </h4>
+      <ul className="space-y-1">
+        {notes.map((n) => (
+          <li key={n.id}>
+            <RouterLink
+              to="/notes"
+              className="text-sm text-primary hover:underline truncate block"
+            >
+              {n.title || "Untitled"}
+            </RouterLink>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+

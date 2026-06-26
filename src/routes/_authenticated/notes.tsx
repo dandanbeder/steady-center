@@ -55,6 +55,7 @@ import { LinkedTasksPanel } from "@/components/notes/linked-tasks-panel";
 import { CreateTaskFromNoteDialog } from "@/components/notes/create-task-from-note-dialog";
 import { ConnectionsPanel } from "@/components/notes/connections-panel";
 import { NoteContextLinks } from "@/components/notes/note-context-links";
+import { LinkedOverviewPanel } from "@/components/notes/linked-overview-panel";
 import {
   NotesTreeSidebar,
   folderPath,
@@ -743,6 +744,7 @@ function NoteEditor({
       />
 
       <div className="pt-4 border-t border-border space-y-6">
+        <LinkedOverviewPanel note={note} />
         <AIPanel note={note} onChanged={onChanged} />
         <LinkedTasksPanel note={note} />
         <NoteContextLinks note={note} onChanged={onChanged} />

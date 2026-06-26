@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type NoteLinkType = "task" | "meeting" | "event" | "note";
+export type NoteLinkType = "task" | "meeting" | "event" | "note" | "outcome";
 
 export type NoteLink = {
   id: string;
@@ -62,7 +62,7 @@ export async function deleteLink(id: string) {
 
 /** Resolve link targets to a readable label, batched per type. */
 export async function resolveLinks(links: NoteLink[]): Promise<ResolvedLink[]> {
-  const byType: Record<NoteLinkType, string[]> = { task: [], meeting: [], event: [], note: [] };
+  const byType: Record<NoteLinkType, string[]> = { task: [], meeting: [], event: [], note: [], outcome: [] };
   for (const l of links) byType[l.to_type].push(l.to_id);
 
   const labels = new Map<string, { label: string; href?: string }>();
@@ -91,6 +91,13 @@ export async function resolveLinks(links: NoteLink[]): Promise<ResolvedLink[]> {
       labels.set(`note:${n.id}`, { label: n.title || "Untitled", href: `/notes` });
     }
   }
+  if (byType.outcome.length) {
+    const { data } = await supabase.from("outcomes").select("id,name").in("id", byType.outcome);
+    for (const o of (data ?? []) as Array<{ id: string; name: string }>) {
+      labels.set(`outcome:${o.id}`, { label: o.name || "Untitled outcome", href: `/outcomes` });
+    }
+  }
+
 
   return links.map((l) => {
     const meta = labels.get(`${l.to_type}:${l.to_id}`);

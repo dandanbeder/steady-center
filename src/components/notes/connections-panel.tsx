@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Link2, Plus, X, CheckSquare, Users, Calendar, FileText } from "lucide-react";
+import { Link2, Plus, X, CheckSquare, Users, Calendar, FileText, Target } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -34,6 +34,7 @@ const TYPE_ICON: Record<NoteLinkType, typeof CheckSquare> = {
   meeting: Users,
   event: Calendar,
   note: FileText,
+  outcome: Target,
 };
 
 export function ConnectionsPanel({
@@ -182,18 +183,19 @@ function AddConnectionDialog({
     queryFn: async () => {
       if (!businessId) return [];
       const term = q.trim();
-      const tbl = type === "task" ? "tasks" : type === "meeting" ? "meetings" : type === "event" ? "events" : "notes";
+      const tbl = type === "task" ? "tasks" : type === "meeting" ? "meetings" : type === "event" ? "events" : type === "outcome" ? "outcomes" : "notes";
+      const titleCol = type === "outcome" ? "name" : "title";
       let query = supabase
         .from(tbl)
-        .select("id, title")
+        .select(`id, ${titleCol}`)
         .eq("business_id", businessId)
         .order("created_at", { ascending: false })
         .limit(20);
-      if (term) query = query.ilike("title", `%${term}%`);
+      if (term) query = query.ilike(titleCol, `%${term}%`);
       if (type === "note") query = query.neq("id", noteId);
       const { data, error } = await query;
       if (error) throw error;
-      return (data ?? []) as Array<{ id: string; title: string }>;
+      return (data ?? []).map((r: any) => ({ id: r.id, title: r[titleCol] })) as Array<{ id: string; title: string }>;
     },
   });
 
@@ -220,6 +222,7 @@ function AddConnectionDialog({
               <SelectItem value="task">Task</SelectItem>
               <SelectItem value="meeting">Meeting</SelectItem>
               <SelectItem value="event">Event</SelectItem>
+              <SelectItem value="outcome">Outcome</SelectItem>
               <SelectItem value="note">Note</SelectItem>
             </SelectContent>
           </Select>
