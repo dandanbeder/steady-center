@@ -286,11 +286,11 @@ function ReportDetail() {
                         (g.status === "met"
                           ? "text-primary"
                           : g.status === "missed"
-                            ? "text-destructive"
+                            ? "text-muted-foreground"
                             : "text-muted-foreground")
                       }
                     >
-                      {g.status}
+                      {g.status === "met" ? "met" : g.status === "missed" ? "still in flight" : "in progress"}
                     </span>
                   </div>
                 </div>
