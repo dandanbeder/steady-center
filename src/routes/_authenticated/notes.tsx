@@ -396,6 +396,25 @@ function NotesPage() {
                         <DropdownMenuItem onClick={() => setMoveNote(n)}>
                           <ArrowRightLeft className="h-3.5 w-3.5 mr-2" /> Move to…
                         </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={async () => {
+                            if (!confirm(`Move "${n.title || "Untitled"}" to Trash?`)) return;
+                            try {
+                              await deleteNote(n.id);
+                              if (selectedNoteId === n.id) setSelectedNoteId(null);
+                              qc.invalidateQueries({ queryKey: ["notes"] });
+                              showUndoToast(`"${n.title || "Note"}" moved to Trash`, async () => {
+                                await restoreNote(n.id);
+                                qc.invalidateQueries({ queryKey: ["notes"] });
+                              });
+                            } catch (e) {
+                              toast.error(e instanceof Error ? e.message : "Failed to delete");
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5 mr-2" /> Move to Trash
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -563,7 +582,7 @@ function NoteEditor({
   };
 
   const remove = async () => {
-    if (!confirm("Delete this note?")) return;
+    if (!confirm("Move this note to Trash?")) return;
     try {
       await deleteNote(note.id);
       const noteId = note.id;
@@ -676,9 +695,21 @@ function NoteEditor({
           <Button size="sm" variant="ghost" onClick={togglePin} title={note.pinned ? "Unpin" : "Pin"}>
             {note.pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
           </Button>
-          <Button size="sm" variant="ghost" onClick={remove}>
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="ghost" title="More">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={remove}
+              >
+                <Trash2 className="h-3.5 w-3.5 mr-2" /> Move to Trash
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
