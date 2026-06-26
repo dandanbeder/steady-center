@@ -701,6 +701,14 @@ function OutcomeDetailDialog({
           </>
         )}
       </DialogContent>
+      {outcome && (
+        <OutcomeAIBreakdownDialog
+          outcome={outcome}
+          open={aiOpen}
+          onOpenChange={setAiOpen}
+          onCreated={refresh}
+        />
+      )}
     </Dialog>
   );
 }
