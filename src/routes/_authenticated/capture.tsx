@@ -201,7 +201,7 @@ function CapturePage() {
         hasEverCaptured ? (
           <div className="rounded-lg border border-dashed py-16 text-center text-muted-foreground">
             <InboxIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p>Nothing in drafts — capture a thought above.</p>
+            <p>Nothing in drafts, capture a thought above.</p>
           </div>
         ) : (
           <div className="rounded-lg border border-dashed py-12 px-6 text-center space-y-3">
