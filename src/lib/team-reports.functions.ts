@@ -27,7 +27,7 @@ type Counts = {
   total: number;
   todo: number;
   in_progress: number;
-  blocked: number;
+  review: number;
   done: number;
   overdue: number;
   completed_in_period: number;
@@ -53,7 +53,7 @@ export type TeamReportResult = {
     team_commitments: number;
     team_commitments_met: number;
   };
-  by_status: { todo: number; in_progress: number; blocked: number; done: number; overdue: number };
+  by_status: { todo: number; in_progress: number; review: number; done: number; overdue: number };
   by_account: Array<{
     business_id: string;
     name: string;
@@ -91,7 +91,7 @@ function newCounts(): Counts {
     total: 0,
     todo: 0,
     in_progress: 0,
-    blocked: 0,
+    review: 0,
     done: 0,
     overdue: 0,
     completed_in_period: 0,
@@ -137,7 +137,7 @@ export const getTeamReport = createServerFn({ method: "POST" })
         periodStart: z.string(), // ISO date or datetime
         periodEnd: z.string(),
         granularity: z.enum(["week", "month"]).default("week"),
-        status: z.enum(["todo", "in_progress", "blocked", "done", "overdue"]).nullable().optional(),
+        status: z.enum(["todo", "in_progress", "review", "done", "overdue"]).nullable().optional(),
         outcomeId: z.string().uuid().nullable().optional(),
       })
       .parse(i),
@@ -220,7 +220,7 @@ export const getTeamReport = createServerFn({ method: "POST" })
         team_commitments: 0,
         team_commitments_met: 0,
       },
-      by_status: { todo: 0, in_progress: 0, blocked: 0, done: 0, overdue: 0 },
+      by_status: { todo: 0, in_progress: 0, review: 0, done: 0, overdue: 0 },
       by_account: [],
       by_member: [],
       by_outcome: [],
@@ -279,7 +279,7 @@ export const getTeamReport = createServerFn({ method: "POST" })
 
     const now = Date.now();
     const totals = newCounts();
-    const byStatus = { todo: 0, in_progress: 0, blocked: 0, done: 0, overdue: 0 };
+    const byStatus = { todo: 0, in_progress: 0, review: 0, done: 0, overdue: 0 };
     const byBiz = new Map<string, Counts>();
     const byMember = new Map<string, Counts>();
     const byOutcomeTasks = new Map<string, { total: number; completed: number }>();
@@ -347,7 +347,7 @@ export const getTeamReport = createServerFn({ method: "POST" })
 
     totals.completed_in_period = totals.completed_in_period;
     const openCount =
-      (byStatus.todo ?? 0) + (byStatus.in_progress ?? 0) + (byStatus.blocked ?? 0);
+      (byStatus.todo ?? 0) + (byStatus.in_progress ?? 0) + (byStatus.review ?? 0);
     const completionRate =
       totals.total === 0 ? 0 : (byStatus.done ?? 0) / totals.total;
 
@@ -421,7 +421,7 @@ export const getTeamReport = createServerFn({ method: "POST" })
       by_status: byStatus,
       by_account: bizRows.map((b) => {
         const c = byBiz.get(b.id) ?? newCounts();
-        const open = (c.todo ?? 0) + (c.in_progress ?? 0) + (c.blocked ?? 0);
+        const open = (c.todo ?? 0) + (c.in_progress ?? 0) + (c.review ?? 0);
         return {
           business_id: b.id,
           name: b.name,
