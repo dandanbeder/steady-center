@@ -144,11 +144,12 @@ export const Route = createFileRoute("/api/public/hooks/daily-pulse")({
                   try {
                     const { sendEmail, brandedEmail, getAppOrigin } = await import("@/lib/email.server");
                     const html = brandedEmail({
-                      previewText: body,
+                      preheader: body,
                       heading: "A quiet moment for your Journal",
-                      bodyHtml: `<p style="margin:0 0 12px 0">${body}</p>
-                        <p style="margin:0 0 16px 0;color:#666;font-size:13px">No streaks, no missed days. Open it whenever you're ready.</p>
-                        <p style="margin:0"><a href="${getAppOrigin()}/journal" style="display:inline-block;padding:10px 16px;background:#111;color:#fff;border-radius:6px;text-decoration:none">Open Journal</a></p>`,
+                      intro: body,
+                      ctaLabel: "Open Journal",
+                      ctaUrl: `${getAppOrigin()}/journal`,
+                      ctaNoteHtml: "No streaks, no missed days. Open it whenever you're ready.",
                     });
                     await sendEmail({
                       to: userEmail,
