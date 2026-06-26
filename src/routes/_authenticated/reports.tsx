@@ -38,16 +38,24 @@ function ReportsPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 space-y-10">
-      <header className="flex items-end justify-between gap-4">
+      <header className="flex items-end justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl sm:text-3xl lg:text-4xl text-primary">Weekly reflections</h1>
           <p className="mt-2 text-muted-foreground">
             A kind look back at the week, plus a gentle nudge as you plan the next one.
           </p>
         </div>
-        <Button onClick={() => gen.mutate()} disabled={gen.isPending}>
-          {gen.isPending ? "Reflecting…" : "Reflect on this week"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Link
+            to="/reports/team"
+            className="text-sm px-3 py-2 rounded-md border border-border hover:bg-accent/40 transition-colors"
+          >
+            Team report →
+          </Link>
+          <Button onClick={() => gen.mutate()} disabled={gen.isPending}>
+            {gen.isPending ? "Reflecting…" : "Reflect on this week"}
+          </Button>
+        </div>
       </header>
       <WeeklyGoalsPanel />
 

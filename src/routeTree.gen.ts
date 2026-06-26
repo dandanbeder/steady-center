@@ -48,6 +48,7 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedAcceptTermsRouteImport } from './routes/_authenticated/accept-terms'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthMicrosoftCallbackRouteImport } from './routes/auth/microsoft.callback'
+import { Route as AuthenticatedReportsTeamRouteImport } from './routes/_authenticated/reports.team'
 import { Route as AuthenticatedReportsReportIdRouteImport } from './routes/_authenticated/reports.$reportId'
 import { Route as AuthenticatedMeetingsMeetingIdRouteImport } from './routes/_authenticated/meetings.$meetingId'
 import { Route as AuthenticatedAdminTeamsRouteImport } from './routes/_authenticated/admin.teams'
@@ -266,6 +267,12 @@ const AuthMicrosoftCallbackRoute = AuthMicrosoftCallbackRouteImport.update({
   path: '/auth/microsoft/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedReportsTeamRoute =
+  AuthenticatedReportsTeamRouteImport.update({
+    id: '/team',
+    path: '/team',
+    getParentRoute: () => AuthenticatedReportsRoute,
+  } as any)
 const AuthenticatedReportsReportIdRoute =
   AuthenticatedReportsReportIdRouteImport.update({
     id: '/$reportId',
@@ -444,6 +451,7 @@ export interface FileRoutesByFullPath {
   '/admin/teams': typeof AuthenticatedAdminTeamsRoute
   '/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
   '/reports/$reportId': typeof AuthenticatedReportsReportIdRoute
+  '/reports/team': typeof AuthenticatedReportsTeamRoute
   '/auth/microsoft/callback': typeof AuthMicrosoftCallbackRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/admin/users/$userId': typeof AuthenticatedAdminUsersUserIdRoute
@@ -505,6 +513,7 @@ export interface FileRoutesByTo {
   '/admin/teams': typeof AuthenticatedAdminTeamsRoute
   '/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
   '/reports/$reportId': typeof AuthenticatedReportsReportIdRoute
+  '/reports/team': typeof AuthenticatedReportsTeamRoute
   '/auth/microsoft/callback': typeof AuthMicrosoftCallbackRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/admin/users/$userId': typeof AuthenticatedAdminUsersUserIdRoute
@@ -569,6 +578,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/teams': typeof AuthenticatedAdminTeamsRoute
   '/_authenticated/meetings/$meetingId': typeof AuthenticatedMeetingsMeetingIdRoute
   '/_authenticated/reports/$reportId': typeof AuthenticatedReportsReportIdRoute
+  '/_authenticated/reports/team': typeof AuthenticatedReportsTeamRoute
   '/auth/microsoft/callback': typeof AuthMicrosoftCallbackRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/admin/users/$userId': typeof AuthenticatedAdminUsersUserIdRoute
@@ -633,6 +643,7 @@ export interface FileRouteTypes {
     | '/admin/teams'
     | '/meetings/$meetingId'
     | '/reports/$reportId'
+    | '/reports/team'
     | '/auth/microsoft/callback'
     | '/admin/'
     | '/admin/users/$userId'
@@ -694,6 +705,7 @@ export interface FileRouteTypes {
     | '/admin/teams'
     | '/meetings/$meetingId'
     | '/reports/$reportId'
+    | '/reports/team'
     | '/auth/microsoft/callback'
     | '/admin'
     | '/admin/users/$userId'
@@ -757,6 +769,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/teams'
     | '/_authenticated/meetings/$meetingId'
     | '/_authenticated/reports/$reportId'
+    | '/_authenticated/reports/team'
     | '/auth/microsoft/callback'
     | '/_authenticated/admin/'
     | '/_authenticated/admin/users/$userId'
@@ -1075,6 +1088,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthMicrosoftCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/reports/team': {
+      id: '/_authenticated/reports/team'
+      path: '/team'
+      fullPath: '/reports/team'
+      preLoaderRoute: typeof AuthenticatedReportsTeamRouteImport
+      parentRoute: typeof AuthenticatedReportsRoute
+    }
     '/_authenticated/reports/$reportId': {
       id: '/_authenticated/reports/$reportId'
       path: '/$reportId'
@@ -1276,10 +1296,12 @@ const AuthenticatedMeetingsRouteWithChildren =
 
 interface AuthenticatedReportsRouteChildren {
   AuthenticatedReportsReportIdRoute: typeof AuthenticatedReportsReportIdRoute
+  AuthenticatedReportsTeamRoute: typeof AuthenticatedReportsTeamRoute
 }
 
 const AuthenticatedReportsRouteChildren: AuthenticatedReportsRouteChildren = {
   AuthenticatedReportsReportIdRoute: AuthenticatedReportsReportIdRoute,
+  AuthenticatedReportsTeamRoute: AuthenticatedReportsTeamRoute,
 }
 
 const AuthenticatedReportsRouteWithChildren =
