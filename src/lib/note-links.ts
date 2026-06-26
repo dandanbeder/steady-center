@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type NoteLinkType = "task" | "meeting" | "event" | "note";
+export type NoteLinkType = "task" | "meeting" | "event" | "note" | "outcome";
 
 export type NoteLink = {
   id: string;
