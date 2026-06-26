@@ -97,10 +97,12 @@ export const askNotes = createServerFn({ method: "POST" })
     const { requireFeature } = await import("./entitlements.server");
     await requireFeature(supabase, context.userId, "ai_assistant");
     // Server-side cap: counts against the AI allowance and $ budget.
+    // Ask is a heavier action (multi-source retrieval + synthesis), so it
+    // meters 2 credits rather than 1.
     const { assertAiBudget, recordAiUsage } = await import("./ai-budget.server");
     const { assertAiCredits } = await import("./credits.server");
     await assertAiBudget(context.userId);
-    await assertAiCredits(context.userId, 1);
+    await assertAiCredits(context.userId, 2);
 
     const q = data.question.trim();
     const biz = data.businessId ?? null;
