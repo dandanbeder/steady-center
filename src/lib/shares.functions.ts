@@ -4,7 +4,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { auditTeamAction } from "@/lib/team-admin.functions";
 
 
-export type ResourceType = "folder" | "list" | "task" | "note" | "calendar" | "business" | "meeting";
+export type ResourceType = "folder" | "list" | "task" | "note" | "calendar" | "business" | "meeting" | "outcome";
 export type ShareRole = "viewer" | "commenter" | "member" | "admin";
 
 type ResourceOwnerResp = { owner_id: string | null };
