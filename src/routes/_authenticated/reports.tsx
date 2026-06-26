@@ -40,13 +40,13 @@ function ReportsPage() {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 space-y-10">
       <header className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl text-primary">Weekly reports</h1>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl text-primary">Weekly reflections</h1>
           <p className="mt-2 text-muted-foreground">
-            A kind look back at your week, plus a gentle check-in when you plan the next one.
+            A kind look back at the week, plus a gentle nudge as you plan the next one.
           </p>
         </div>
         <Button onClick={() => gen.mutate()} disabled={gen.isPending}>
-          {gen.isPending ? "Generating…" : "Generate now"}
+          {gen.isPending ? "Reflecting…" : "Reflect on this week"}
         </Button>
       </header>
       <WeeklyGoalsPanel />
@@ -56,7 +56,7 @@ function ReportsPage() {
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : reports.length === 0 ? (
         <Card className="p-10 text-center text-muted-foreground">
-          No reports yet. Hit "Generate now" to build one for the past 7 days.
+          No reflections yet. When you're ready, "Reflect on this week" puts together a calm look at the last 7 days.
         </Card>
       ) : (
         <div className="space-y-3">
@@ -75,7 +75,7 @@ function ReportRow({ report }: { report: WeeklyReport }) {
     <Link to="/reports/$reportId" params={{ reportId: report.id }} className="block">
       <Card className="p-5 flex items-center gap-5 hover:bg-accent/30 transition-colors">
         <span
-          aria-label={status === "green" ? "On track" : "Needs attention"}
+          aria-label={status === "green" ? "Steady week" : "A few things to look at gently"}
           className="inline-block size-3 rounded-full shrink-0"
           style={{
             backgroundColor: status === "green" ? "oklch(0.72 0.16 150)" : "oklch(0.78 0.14 85)",
@@ -83,11 +83,11 @@ function ReportRow({ report }: { report: WeeklyReport }) {
         />
         <div className="flex-1 min-w-0">
           <p className="font-medium">
-            {new Date(report.week_start).toLocaleDateString()} –{" "}
+            {new Date(report.week_start).toLocaleDateString()} to{" "}
             {new Date(report.week_end).toLocaleDateString()}
           </p>
           <p className="text-xs text-muted-foreground truncate">
-            {report.narrative?.headline || "Weekly review"}
+            {report.narrative?.headline || "A kind look back"}
           </p>
         </div>
         <div className="flex gap-6 text-sm shrink-0">

@@ -102,10 +102,10 @@ function ReportDetail() {
 
       <header className="space-y-2">
         <p className="text-xs uppercase tracking-wider text-muted-foreground">
-          {start.toLocaleDateString()} – {end.toLocaleDateString()}
+          {start.toLocaleDateString()} to {end.toLocaleDateString()}
         </p>
         <h1 className="text-2xl sm:text-3xl text-primary leading-tight">
-          {n.headline || "Weekly review"}
+          {n.headline || "A kind look back at your week"}
         </h1>
       </header>
 
@@ -178,13 +178,13 @@ function ReportDetail() {
       {flow && (
         <section className="space-y-3">
           <h2 className="text-xs uppercase tracking-wider text-muted-foreground">
-            Completed vs waiting
+            Done and still in flight
           </h2>
           <Card className="p-5 space-y-4">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <Stat label="Completed (all-time)" value={doneTotal} small />
-              <Stat label="Open / in progress" value={openCount} small />
-              <Stat label="This week done" value={flow.throughput_this_week} small />
+              <Stat label="Still in flight" value={openCount} small />
+              <Stat label="Closed this week" value={flow.throughput_this_week} small />
               <Stat
                 label="vs last week"
                 value={
@@ -198,7 +198,7 @@ function ReportDetail() {
             {flow.stuck.length > 0 && (
               <div>
                 <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
-                  Stuck / waiting &gt; 7 days
+                  Still waiting (open more than 7 days)
                 </p>
                 <ul className="divide-y divide-border text-sm">
                   {flow.stuck.map((t) => (
@@ -209,8 +209,8 @@ function ReportDetail() {
                       <div className="min-w-0">
                         <div className="truncate">{t.title}</div>
                         <div className="text-xs text-muted-foreground">
-                          {t.business_name} · {t.status}
-                          {t.priority !== "normal" ? ` · ${t.priority}` : ""}
+                          {t.business_name}, {t.status}
+                          {t.priority !== "normal" ? `, ${t.priority}` : ""}
                         </div>
                       </div>
                       <div className="text-xs text-muted-foreground shrink-0 text-right">
@@ -230,7 +230,7 @@ function ReportDetail() {
       {flow && flow.oldest_open.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-xs uppercase tracking-wider text-muted-foreground">
-            Oldest open tasks (aging)
+            Been on the list a while
           </h2>
           <Card className="p-5">
             <ul className="divide-y divide-border text-sm">
@@ -242,7 +242,7 @@ function ReportDetail() {
                   <div className="min-w-0">
                     <div className="truncate">{t.title}</div>
                     <div className="text-xs text-muted-foreground">
-                      {t.business_name} · {t.status}
+                      {t.business_name}, {t.status}
                     </div>
                   </div>
                   <div className="text-xs text-muted-foreground shrink-0">
@@ -286,11 +286,11 @@ function ReportDetail() {
                         (g.status === "met"
                           ? "text-primary"
                           : g.status === "missed"
-                            ? "text-destructive"
+                            ? "text-muted-foreground"
                             : "text-muted-foreground")
                       }
                     >
-                      {g.status}
+                      {g.status === "met" ? "met" : g.status === "missed" ? "still in flight" : "in progress"}
                     </span>
                   </div>
                 </div>
@@ -313,12 +313,12 @@ function ReportDetail() {
               .map((o) => {
                 const daysLabel =
                   o.days_remaining === null
-                    ? "no target"
+                    ? "no target date"
                     : o.days_remaining < 0
-                      ? `${Math.abs(o.days_remaining)}d overdue`
+                      ? `${Math.abs(o.days_remaining)}d past target, no rush`
                       : o.days_remaining === 0
-                        ? "due today"
-                        : `${o.days_remaining}d left`;
+                        ? "target today"
+                        : `${o.days_remaining}d to target`;
                 return (
                   <div key={o.id} className="space-y-1">
                     <div className="flex justify-between items-baseline gap-3">
@@ -367,18 +367,18 @@ function ReportDetail() {
       {/* Narrative: strengths / growth areas */}
       {legacyMode ? (
         <>
-          <PlainSection title="Wins" items={n.wins ?? []} empty="No standout wins this week." />
-          <PlainSection title="What slipped" items={n.slipped ?? []} empty="Nothing major slipped." />
-          <PlainSection title="At risk" items={n.at_risk ?? []} empty="Nothing flagged for the week ahead." />
-          <PlainSection title="Suggestions" items={n.suggestions ?? []} empty="No suggestions, keep going." />
+          <PlainSection title="What went well" items={n.wins ?? []} empty="A quieter week, that's okay too." />
+          <PlainSection title="Gentle opportunities" items={n.slipped ?? []} empty="Nothing to flag, keep going." />
+          <PlainSection title="To keep an eye on" items={n.at_risk ?? []} empty="Nothing on the horizon to watch." />
+          <PlainSection title="Ideas for next week" items={n.suggestions ?? []} empty="No suggestions, trust your pace." />
         </>
       ) : (
         <>
           <section className="space-y-3">
-            <h2 className="text-sm font-medium">Strengths</h2>
+            <h2 className="text-sm font-medium">What went well</h2>
             {strengths.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                Not much to celebrate yet, light week.
+                A lighter week, and that's okay. Rest counts too.
               </p>
             ) : (
               <ul className="space-y-3 text-sm">
@@ -394,11 +394,18 @@ function ReportDetail() {
             )}
           </section>
 
+          {n.goal_review && (
+            <section className="space-y-2">
+              <h2 className="text-sm font-medium">A look at your goals</h2>
+              <p className="text-sm text-muted-foreground">{n.goal_review}</p>
+            </section>
+          )}
+
           <section className="space-y-3">
-            <h2 className="text-sm font-medium">Growth areas</h2>
+            <h2 className="text-sm font-medium">Gentle opportunities</h2>
             {growthAreas.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                Nothing obvious to improve this week.
+                Nothing pressing, you're moving along just fine.
               </p>
             ) : (
               <ul className="space-y-3 text-sm">
@@ -417,16 +424,9 @@ function ReportDetail() {
             )}
           </section>
 
-          {n.goal_review && (
-            <section className="space-y-2">
-              <h2 className="text-sm font-medium">Goal review</h2>
-              <p className="text-sm text-muted-foreground">{n.goal_review}</p>
-            </section>
-          )}
-
           {nextWeek.length > 0 && (
             <section className="space-y-2">
-              <h2 className="text-sm font-medium">Focus for next week</h2>
+              <h2 className="text-sm font-medium">A soft focus for next week</h2>
               <ul className="space-y-1.5 text-sm">
                 {nextWeek.map((x, i) => (
                   <li key={i} className="flex gap-2">
