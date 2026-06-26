@@ -90,7 +90,13 @@ export async function resolveLinks(links: NoteLink[]): Promise<ResolvedLink[]> {
     for (const n of (data ?? []) as Array<{ id: string; title: string }>) {
       labels.set(`note:${n.id}`, { label: n.title || "Untitled", href: `/notes` });
     }
+  if (byType.outcome.length) {
+    const { data } = await supabase.from("outcomes").select("id,name").in("id", byType.outcome);
+    for (const o of (data ?? []) as Array<{ id: string; name: string }>) {
+      labels.set(`outcome:${o.id}`, { label: o.name || "Untitled outcome", href: `/outcomes` });
+    }
   }
+
 
   return links.map((l) => {
     const meta = labels.get(`${l.to_type}:${l.to_id}`);
