@@ -183,18 +183,19 @@ function AddConnectionDialog({
     queryFn: async () => {
       if (!businessId) return [];
       const term = q.trim();
-      const tbl = type === "task" ? "tasks" : type === "meeting" ? "meetings" : type === "event" ? "events" : "notes";
+      const tbl = type === "task" ? "tasks" : type === "meeting" ? "meetings" : type === "event" ? "events" : type === "outcome" ? "outcomes" : "notes";
+      const titleCol = type === "outcome" ? "name" : "title";
       let query = supabase
         .from(tbl)
-        .select("id, title")
+        .select(`id, ${titleCol}`)
         .eq("business_id", businessId)
         .order("created_at", { ascending: false })
         .limit(20);
-      if (term) query = query.ilike("title", `%${term}%`);
+      if (term) query = query.ilike(titleCol, `%${term}%`);
       if (type === "note") query = query.neq("id", noteId);
       const { data, error } = await query;
       if (error) throw error;
-      return (data ?? []) as Array<{ id: string; title: string }>;
+      return (data ?? []).map((r: any) => ({ id: r.id, title: r[titleCol] })) as Array<{ id: string; title: string }>;
     },
   });
 
