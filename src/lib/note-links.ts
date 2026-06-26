@@ -62,7 +62,7 @@ export async function deleteLink(id: string) {
 
 /** Resolve link targets to a readable label, batched per type. */
 export async function resolveLinks(links: NoteLink[]): Promise<ResolvedLink[]> {
-  const byType: Record<NoteLinkType, string[]> = { task: [], meeting: [], event: [], note: [] };
+  const byType: Record<NoteLinkType, string[]> = { task: [], meeting: [], event: [], note: [], outcome: [] };
   for (const l of links) byType[l.to_type].push(l.to_id);
 
   const labels = new Map<string, { label: string; href?: string }>();
