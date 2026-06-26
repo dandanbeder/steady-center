@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Offline · Heartbeat</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#F5F0E8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <style>
+      :root { color-scheme: light; }
+      html, body { margin: 0; height: 100%; }
+      body {
+        font-family: "Hanken Grotesk", ui-sans-serif, system-ui, -apple-system, sans-serif;
+        background: #F5F0E8;
+        color: #26382F;
+        display: grid;
+        place-items: center;
+        padding: 1.5rem;
+        -webkit-font-smoothing: antialiased;
+      }
+      .card { max-width: 28rem; width: 100%; text-align: center; }
+      h1 {
+        font-family: "Fraunces", Georgia, serif;
+        font-weight: 500;
+        font-size: clamp(1.5rem, 1.2rem + 1.5vw, 2rem);
+        letter-spacing: -0.015em;
+        margin: 0 0 0.5rem;
+      }
+      p { color: #4a5a52; margin: 0 0 1.5rem; line-height: 1.55; }
+      button {
+        font: inherit;
+        padding: 0.625rem 1.25rem;
+        border-radius: 0.875rem;
+        background: #26382F;
+        color: #F5F0E8;
+        border: 0;
+        cursor: pointer;
+      }
+      .mark { width: 56px; height: 56px; margin: 0 auto 1rem; opacity: 0.85; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <svg class="mark" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle cx="50" cy="50" r="40" fill="none" stroke="#26382F" stroke-width="3.4" opacity="0.55"/>
+        <path d="M16 62 H34 C41 62 44 36 51 36 C58 36 61 62 68 62 H84" fill="none" stroke="#26382F" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <h1>You're offline</h1>
+      <p>Heartbeat needs a connection to load this page. Your work is safe, come back when you're online.</p>
+      <button onclick="location.reload()">Try again</button>
+    </div>
+  </body>
+</html>
