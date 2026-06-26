@@ -401,6 +401,7 @@ function OutcomeDetailDialog({
   const [newTitle, setNewTitle] = useState("");
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkSearch, setLinkSearch] = useState("");
+  const [aiOpen, setAiOpen] = useState(false);
 
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["outcome-tasks", outcomeId] });
