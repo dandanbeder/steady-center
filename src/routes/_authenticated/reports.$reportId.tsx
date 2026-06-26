@@ -313,12 +313,12 @@ function ReportDetail() {
               .map((o) => {
                 const daysLabel =
                   o.days_remaining === null
-                    ? "no target"
+                    ? "no target date"
                     : o.days_remaining < 0
-                      ? `${Math.abs(o.days_remaining)}d overdue`
+                      ? `${Math.abs(o.days_remaining)}d past target, no rush`
                       : o.days_remaining === 0
-                        ? "due today"
-                        : `${o.days_remaining}d left`;
+                        ? "target today"
+                        : `${o.days_remaining}d to target`;
                 return (
                   <div key={o.id} className="space-y-1">
                     <div className="flex justify-between items-baseline gap-3">
