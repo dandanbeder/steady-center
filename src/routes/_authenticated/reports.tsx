@@ -40,13 +40,13 @@ function ReportsPage() {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 space-y-10">
       <header className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl text-primary">Weekly reports</h1>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl text-primary">Weekly reflections</h1>
           <p className="mt-2 text-muted-foreground">
-            A kind look back at your week, plus a gentle check-in when you plan the next one.
+            A kind look back at the week, plus a gentle nudge as you plan the next one.
           </p>
         </div>
         <Button onClick={() => gen.mutate()} disabled={gen.isPending}>
-          {gen.isPending ? "Generating…" : "Generate now"}
+          {gen.isPending ? "Reflecting…" : "Reflect on this week"}
         </Button>
       </header>
       <WeeklyGoalsPanel />
@@ -56,7 +56,7 @@ function ReportsPage() {
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : reports.length === 0 ? (
         <Card className="p-10 text-center text-muted-foreground">
-          No reports yet. Hit "Generate now" to build one for the past 7 days.
+          No reflections yet. When you're ready, "Reflect on this week" puts together a calm look at the last 7 days.
         </Card>
       ) : (
         <div className="space-y-3">
