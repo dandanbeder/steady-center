@@ -550,7 +550,17 @@ function OutcomeDetailDialog({
                       </span>
                     )}
                   </h4>
-                  <Popover open={linkOpen} onOpenChange={setLinkOpen}>
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs gap-1"
+                      onClick={() => setAiOpen(true)}
+                      title="AI breakdown into next steps"
+                    >
+                      <Sparkles className="h-3.5 w-3.5" /> Generate
+                    </Button>
+                    <Popover open={linkOpen} onOpenChange={setLinkOpen}>
                     <PopoverTrigger asChild>
                       <Button size="sm" variant="outline" className="h-7 text-xs">
                         <Plus className="h-3.5 w-3.5" /> Link existing
