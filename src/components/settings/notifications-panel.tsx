@@ -11,7 +11,9 @@ import {
   CalendarClock,
   Megaphone,
   ListChecks,
+  BookHeart,
 } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -359,6 +361,86 @@ export function NotificationsPanel() {
           )}
         </CardContent>
       </Card>
+
+      {/* Journaling reminder, opt-in */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <BookHeart className="h-4 w-4" /> Journaling reminder
+          </CardTitle>
+          <CardDescription>
+            An optional, gentle nudge to open your Journal. No streaks, no missed days, never reads
+            or references your entries. Off by default.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <RowToggle
+            label="Send me a gentle reminder"
+            description="Delivered via your existing channels, in-app and, if enabled, email. Respects Quiet hours."
+            checked={draft.events.journal_reminder_enabled}
+            onChange={(v) => setEvent("journal_reminder_enabled", v)}
+          />
+          {draft.events.journal_reminder_enabled && (
+            <div className="pl-1 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Cadence</p>
+                  <Select
+                    value={draft.events.journal_reminder_cadence}
+                    onValueChange={(v) => setEvent("journal_reminder_cadence", v as "daily" | "weekly")}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="daily">Daily</SelectItem>
+                      <SelectItem value="weekly">Weekly</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {draft.events.journal_reminder_cadence === "weekly" && (
+                  <div>
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Day</p>
+                    <Select
+                      value={String(draft.events.journal_reminder_day)}
+                      onValueChange={(v) => setEvent("journal_reminder_day", Number(v))}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"].map((d, i) => (
+                          <SelectItem key={i} value={String(i)}>{d}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <TimePicker
+                  label="Time"
+                  hour={draft.events.journal_reminder_hour}
+                  minute={draft.events.journal_reminder_minute}
+                  onChange={(h, m) =>
+                    setDraft({ ...draft, events: { ...draft.events, journal_reminder_hour: h, journal_reminder_minute: m } })
+                  }
+                />
+                <div className="flex items-end">
+                  <RowToggle
+                    label="Also email it"
+                    description="Calm one-liner with a button to open your Journal."
+                    checked={draft.events.journal_reminder_email}
+                    onChange={(v) => setEvent("journal_reminder_email", v)}
+                  />
+                </div>
+              </div>
+              <div className="pt-1">
+                <Button asChild variant="outline" size="sm">
+                  <Link to="/journal">Go to Journal</Link>
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
 
       {/* Quiet hours */}
       <Card>

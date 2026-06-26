@@ -11,11 +11,16 @@ import { generatePulseForUser } from "@/lib/daily-pulse-generator.server";
 
 function localParts(d: Date, tz: string) {
   const fmt = new Intl.DateTimeFormat("en-US", {
-    timeZone: tz, hour: "2-digit", minute: "2-digit", hour12: false,
+    timeZone: tz, hour: "2-digit", minute: "2-digit", weekday: "short", hour12: false,
   });
   const parts = fmt.formatToParts(d);
   const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "0";
-  return { hour: parseInt(get("hour"), 10) % 24, minute: parseInt(get("minute"), 10) };
+  const wdMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  return {
+    hour: parseInt(get("hour"), 10) % 24,
+    minute: parseInt(get("minute"), 10),
+    weekday: wdMap[get("weekday")] ?? 0,
+  };
 }
 
 function matchesSlot(localH: number, localM: number, targetH: number, targetM: number) {
@@ -23,6 +28,12 @@ function matchesSlot(localH: number, localM: number, targetH: number, targetM: n
   if (localH !== targetH) return false;
   return Math.floor(localM / 5) === Math.floor(targetM / 5);
 }
+
+const JOURNAL_REMINDER_LINES = [
+  "A quiet moment, take a minute to reflect or write, whenever you're ready.",
+  "Your Journal is here when you'd like a pause to put words to the day.",
+  "A small, private space to think. Open it when it feels right.",
+];
 
 export const Route = createFileRoute("/api/public/hooks/daily-pulse")({
   server: {
@@ -108,6 +119,54 @@ export const Route = createFileRoute("/api/public/hooks/daily-pulse")({
               console.error("[daily-pulse]", p.user_id, kind, msg);
               results.push({ user_id: p.user_id, kind, ok: false, reason: msg });
             }
+          }
+
+          // Optional, opt-in journaling reminder. Calm, no AI, never reads journal content.
+          try {
+            if (events.journal_reminder_enabled === true) {
+              const jh = events.journal_reminder_hour ?? 21;
+              const jm = events.journal_reminder_minute ?? 0;
+              const cadence = events.journal_reminder_cadence === "weekly" ? "weekly" : "daily";
+              const day = Number(events.journal_reminder_day ?? 0);
+              const dayOk = cadence === "daily" || local.weekday === day;
+              const slotOk = matchesSlot(local.hour, local.minute, jh, jm);
+              if (dayOk && slotOk) {
+                const body = JOURNAL_REMINDER_LINES[Math.floor(Math.random() * JOURNAL_REMINDER_LINES.length)];
+                await supabaseAdmin.from("notifications").insert({
+                  user_id: p.user_id,
+                  kind: "journal_reminder",
+                  title: "A quiet moment for your Journal",
+                  body,
+                  link: "/journal",
+                } as never);
+
+                if (channels.email !== false && events.journal_reminder_email === true && userEmail) {
+                  try {
+                    const { sendEmail, brandedEmail, getAppOrigin } = await import("@/lib/email.server");
+                    const html = brandedEmail({
+                      preheader: body,
+                      heading: "A quiet moment for your Journal",
+                      intro: body,
+                      ctaLabel: "Open Journal",
+                      ctaUrl: `${getAppOrigin()}/journal`,
+                      ctaNoteHtml: "No streaks, no missed days. Open it whenever you're ready.",
+                    });
+                    await sendEmail({
+                      to: userEmail,
+                      subject: "A quiet moment for your Journal",
+                      html,
+                    });
+                  } catch (e) {
+                    console.error("[journal-reminder email]", p.user_id, e);
+                  }
+                }
+                results.push({ user_id: p.user_id, kind: "journal_reminder", ok: true });
+              }
+            }
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            console.error("[journal-reminder]", p.user_id, msg);
+            results.push({ user_id: p.user_id, kind: "journal_reminder", ok: false, reason: msg });
           }
         }
 

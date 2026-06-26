@@ -40,6 +40,13 @@ export type NotificationEvents = {
   evening_winddown_enabled: boolean;
   evening_winddown_hour: number;
   evening_winddown_minute: number;
+  // Journaling reminder (opt-in, calm, never references journal content)
+  journal_reminder_enabled: boolean;
+  journal_reminder_cadence: "daily" | "weekly";
+  journal_reminder_day: number; // 0=Sun..6=Sat, used when cadence='weekly'
+  journal_reminder_hour: number;
+  journal_reminder_minute: number;
+  journal_reminder_email: boolean;
   // Selective-by-default master switches
   selective_mode: boolean;
   batch_low_priority: boolean;
@@ -88,6 +95,12 @@ const DEFAULT_NOTIF: NotificationPrefs = {
     evening_winddown_enabled: true,
     evening_winddown_hour: 17,
     evening_winddown_minute: 30,
+    journal_reminder_enabled: false,
+    journal_reminder_cadence: "daily",
+    journal_reminder_day: 0,
+    journal_reminder_hour: 21,
+    journal_reminder_minute: 0,
+    journal_reminder_email: false,
     selective_mode: true,
     batch_low_priority: true,
     type_channels: DEFAULT_TYPE_CHANNELS,
