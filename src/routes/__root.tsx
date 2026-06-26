@@ -94,7 +94,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "google-site-verification", content: "CaXsy9GwOCQZAzEfagnJ4B3rUdbd5Q7VWuL8wwccKXA" },
       { title: "Heartbeat, Calm command center for your businesses" },
       { name: "description", content: "Heartbeat brings calendars, tasks, notes and meetings for every business you run into one calm, focused workspace, so you can move with purpose without switching tools." },
-      { name: "theme-color", content: "#F5F0E8" },
+      { name: "theme-color", content: "#26382F" },
       { property: "og:title", content: "Heartbeat, Manage every business in one calm workspace" },
       { name: "twitter:title", content: "Heartbeat, Manage every business in one calm workspace" },
       { property: "og:description", content: "Calendars, tasks, notes and meeting summaries for every business you run, together in a focused command center so your day stays clear." },
