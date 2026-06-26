@@ -222,6 +222,7 @@ function AddConnectionDialog({
               <SelectItem value="task">Task</SelectItem>
               <SelectItem value="meeting">Meeting</SelectItem>
               <SelectItem value="event">Event</SelectItem>
+              <SelectItem value="outcome">Outcome</SelectItem>
               <SelectItem value="note">Note</SelectItem>
             </SelectContent>
           </Select>
