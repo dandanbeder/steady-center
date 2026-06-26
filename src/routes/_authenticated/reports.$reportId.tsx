@@ -178,13 +178,13 @@ function ReportDetail() {
       {flow && (
         <section className="space-y-3">
           <h2 className="text-xs uppercase tracking-wider text-muted-foreground">
-            Completed vs waiting
+            Done and still in flight
           </h2>
           <Card className="p-5 space-y-4">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <Stat label="Completed (all-time)" value={doneTotal} small />
-              <Stat label="Open / in progress" value={openCount} small />
-              <Stat label="This week done" value={flow.throughput_this_week} small />
+              <Stat label="Still in flight" value={openCount} small />
+              <Stat label="Closed this week" value={flow.throughput_this_week} small />
               <Stat
                 label="vs last week"
                 value={
@@ -198,7 +198,7 @@ function ReportDetail() {
             {flow.stuck.length > 0 && (
               <div>
                 <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
-                  Stuck / waiting &gt; 7 days
+                  Still waiting (open more than 7 days)
                 </p>
                 <ul className="divide-y divide-border text-sm">
                   {flow.stuck.map((t) => (
@@ -209,8 +209,8 @@ function ReportDetail() {
                       <div className="min-w-0">
                         <div className="truncate">{t.title}</div>
                         <div className="text-xs text-muted-foreground">
-                          {t.business_name} · {t.status}
-                          {t.priority !== "normal" ? ` · ${t.priority}` : ""}
+                          {t.business_name}, {t.status}
+                          {t.priority !== "normal" ? `, ${t.priority}` : ""}
                         </div>
                       </div>
                       <div className="text-xs text-muted-foreground shrink-0 text-right">
