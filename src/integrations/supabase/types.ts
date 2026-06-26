@@ -1217,6 +1217,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           deleted_at: string | null
+          deleted_by: string | null
           description: string | null
           end_at: string
           external_id: string | null
@@ -1240,6 +1241,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          deleted_by?: string | null
           description?: string | null
           end_at: string
           external_id?: string | null
@@ -1263,6 +1265,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          deleted_by?: string | null
           description?: string | null
           end_at?: string
           external_id?: string | null
@@ -1332,6 +1335,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           deleted_at: string | null
+          deleted_by: string | null
           id: string
           name: string
           owner_id: string
@@ -1343,6 +1347,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
           name: string
           owner_id: string
@@ -1354,6 +1359,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
           name?: string
           owner_id?: string
@@ -1668,6 +1674,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           deleted_at: string | null
+          deleted_by: string | null
           folder_id: string
           id: string
           name: string
@@ -1677,6 +1684,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          deleted_by?: string | null
           folder_id: string
           id?: string
           name: string
@@ -1686,6 +1694,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          deleted_by?: string | null
           folder_id?: string
           id?: string
           name?: string
@@ -2047,6 +2056,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           deleted_at: string | null
+          deleted_by: string | null
           folder_id: string | null
           id: string
           linked_event_id: string | null
@@ -2064,6 +2074,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          deleted_by?: string | null
           folder_id?: string | null
           id?: string
           linked_event_id?: string | null
@@ -2081,6 +2092,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          deleted_by?: string | null
           folder_id?: string | null
           id?: string
           linked_event_id?: string | null
@@ -2882,6 +2894,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           deleted_at: string | null
+          deleted_by: string | null
           description: string | null
           due_at: string | null
           estimated_minutes: number | null
@@ -2912,6 +2925,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          deleted_by?: string | null
           description?: string | null
           due_at?: string | null
           estimated_minutes?: number | null
@@ -2942,6 +2956,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          deleted_by?: string | null
           description?: string | null
           due_at?: string | null
           estimated_minutes?: number | null
@@ -3478,6 +3493,8 @@ export type Database = {
         Returns: {
           business_id: string
           deleted_at: string
+          deleted_by: string
+          deleted_by_name: string
           id: string
           kind: string
           meta: Json
