@@ -15,9 +15,17 @@ import { AuthProvider } from "@/hooks/use-auth";
 import { ActiveBusinessProvider } from "@/hooks/use-active-business";
 import { Toaster } from "@/components/ui/sonner";
 import { useAppearanceBoot } from "@/hooks/use-appearance-boot";
+import { registerServiceWorker } from "@/lib/register-sw";
 
 function AppearanceBoot() {
   useAppearanceBoot();
+  return null;
+}
+
+function ServiceWorkerBoot() {
+  useEffect(() => {
+    registerServiceWorker();
+  }, []);
   return null;
 }
 
@@ -96,6 +104,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary_large_image" },
       { property: "og:type", content: "website" },
       { property: "og:site_name", content: "Heartbeat" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "default" },
+      { name: "apple-mobile-web-app-title", content: "Heartbeat" },
+      { name: "application-name", content: "Heartbeat" },
     ],
     scripts: [
       {
