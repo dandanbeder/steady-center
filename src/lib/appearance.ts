@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type Theme = "light" | "dark" | "system";
+export type Theme = "light" | "dark";
 export type Density = "comfortable" | "compact";
 export type CalendarView = "day" | "week" | "month";
 export type FontSize = "small" | "normal" | "large";
