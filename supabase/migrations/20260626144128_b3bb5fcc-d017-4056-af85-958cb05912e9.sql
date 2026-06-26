@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ALTER COLUMN theme SET DEFAULT 'light'; UPDATE public.profiles SET theme = 'light' WHERE theme = 'system' OR theme IS NULL;

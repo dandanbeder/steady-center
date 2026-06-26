@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Moon, Sun, Monitor } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -47,11 +47,10 @@ export function AppearancePanel() {
     <div className="space-y-6">
       <div>
         <label className="text-sm font-medium block mb-2">Theme</label>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           {([
-            { v: "light", label: "Light", icon: Sun },
+            { v: "light", label: "Paper (light)", icon: Sun },
             { v: "dark", label: "Evergreen night", icon: Moon },
-            { v: "system", label: "Match system", icon: Monitor },
           ] as const).map((t) => (
             <button
               key={t.v}
