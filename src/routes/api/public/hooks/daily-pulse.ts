@@ -120,6 +120,53 @@ export const Route = createFileRoute("/api/public/hooks/daily-pulse")({
               results.push({ user_id: p.user_id, kind, ok: false, reason: msg });
             }
           }
+
+          // Optional, opt-in journaling reminder. Calm, no AI, never reads journal content.
+          try {
+            if (events.journal_reminder_enabled === true) {
+              const jh = events.journal_reminder_hour ?? 21;
+              const jm = events.journal_reminder_minute ?? 0;
+              const cadence = events.journal_reminder_cadence === "weekly" ? "weekly" : "daily";
+              const day = Number(events.journal_reminder_day ?? 0);
+              const dayOk = cadence === "daily" || local.weekday === day;
+              const slotOk = matchesSlot(local.hour, local.minute, jh, jm);
+              if (dayOk && slotOk) {
+                const body = JOURNAL_REMINDER_LINES[Math.floor(Math.random() * JOURNAL_REMINDER_LINES.length)];
+                await supabaseAdmin.from("notifications").insert({
+                  user_id: p.user_id,
+                  kind: "journal_reminder",
+                  title: "A quiet moment for your Journal",
+                  body,
+                  link: "/journal",
+                } as never);
+
+                if (channels.email !== false && events.journal_reminder_email === true && userEmail) {
+                  try {
+                    const { sendEmail, brandedEmail, getAppOrigin } = await import("@/lib/email.server");
+                    const html = brandedEmail({
+                      previewText: body,
+                      heading: "A quiet moment for your Journal",
+                      bodyHtml: `<p style="margin:0 0 12px 0">${body}</p>
+                        <p style="margin:0 0 16px 0;color:#666;font-size:13px">No streaks, no missed days. Open it whenever you're ready.</p>
+                        <p style="margin:0"><a href="${getAppOrigin()}/journal" style="display:inline-block;padding:10px 16px;background:#111;color:#fff;border-radius:6px;text-decoration:none">Open Journal</a></p>`,
+                    });
+                    await sendEmail({
+                      to: userEmail,
+                      subject: "A quiet moment for your Journal",
+                      html,
+                    });
+                  } catch (e) {
+                    console.error("[journal-reminder email]", p.user_id, e);
+                  }
+                }
+                results.push({ user_id: p.user_id, kind: "journal_reminder", ok: true });
+              }
+            }
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            console.error("[journal-reminder]", p.user_id, msg);
+            results.push({ user_id: p.user_id, kind: "journal_reminder", ok: false, reason: msg });
+          }
         }
 
         return Response.json({ matched, results });
