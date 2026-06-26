@@ -1,19 +1,35 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Sparkles, Send, Loader2, Mic, Square } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Sparkles, Send, Loader2, Mic, Square, Coins, AlertTriangle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
 import { useActiveBusiness, ALL } from "@/hooks/use-active-business";
 import { askNotes } from "@/lib/notes-journal.functions";
 import { transcribeAudio } from "@/lib/transcribe.functions";
+import { getCreditBalance } from "@/lib/credits.functions";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { UpgradeGate } from "@/components/upgrade-gate";
 import { Separator } from "@/components/ui/separator";
 import { TeamProgressPanel } from "@/components/team-progress-panel";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+
+const ASK_CREDIT_COST = 2;
+const ASK_TIMEOUT_MS = 32_000;
+const SKIP_WARN_KEY = "heartbeat:ask-skip-warn";
 
 export const Route = createFileRoute("/_authenticated/ask-notes")({
   component: () => (
@@ -43,15 +59,27 @@ function AskNotesPage() {
   const { activeId } = useActiveBusiness();
   const ask = useServerFn(askNotes);
   const transcribe = useServerFn(transcribeAudio);
+  const fetchBalance = useServerFn(getCreditBalance);
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);
   const [answer, setAnswer] = useState<string>("");
   const [matches, setMatches] = useState<Match[]>([]);
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
+  const [warnOpen, setWarnOpen] = useState(false);
+  const [dontWarnAgain, setDontWarnAgain] = useState(false);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
+
+  // Credit balance for the heads-up. Refetched after each Ask.
+  const balance = useQuery({
+    queryKey: ["credit-balance"],
+    queryFn: () => fetchBalance(),
+  });
+  const totalCredits = balance.data?.total ?? 0;
+  const creditsPaused = balance.data?.paused ?? false;
+  const insufficient = !balance.isLoading && (creditsPaused || totalCredits < ASK_CREDIT_COST);
 
   const runQuery = async (question: string) => {
     if (question.trim().length < 2) return;
@@ -59,22 +87,52 @@ function AskNotesPage() {
     setAnswer("");
     setMatches([]);
     try {
-      const res = await ask({
-        data: {
-          question: question.trim(),
-          businessId: activeId === ALL ? null : activeId,
-        },
-      });
+      // Race the call against a hard timeout so the UI never hangs.
+      const res = await Promise.race([
+        ask({
+          data: {
+            question: question.trim(),
+            businessId: activeId === ALL ? null : activeId,
+          },
+        }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Ask timed out, please try again.")), ASK_TIMEOUT_MS),
+        ),
+      ]);
       setAnswer(res.answer);
       setMatches(res.matches as Match[]);
+      void balance.refetch();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed");
+      const msg = e instanceof Error ? e.message : "Couldn't run that question.";
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
   };
 
-  const run = () => runQuery(q);
+  const run = () => {
+    if (q.trim().length < 2) return;
+    if (insufficient) {
+      setWarnOpen(true);
+      return;
+    }
+    const skip = typeof window !== "undefined" && window.localStorage.getItem(SKIP_WARN_KEY) === "1";
+    if (skip) {
+      void runQuery(q);
+      return;
+    }
+    setWarnOpen(true);
+  };
+
+  const confirmRun = () => {
+    if (insufficient) return;
+    if (dontWarnAgain && typeof window !== "undefined") {
+      window.localStorage.setItem(SKIP_WARN_KEY, "1");
+    }
+    setWarnOpen(false);
+    void runQuery(q);
+  };
+
 
   const stopMicTracks = () => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -262,6 +320,63 @@ function AskNotesPage() {
 
       <Separator className="my-2" />
       <TeamProgressPanel businessId={activeId === ALL ? null : activeId} />
+
+      <Dialog open={warnOpen} onOpenChange={setWarnOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Coins className="h-5 w-5 text-primary" />
+              Heads up — this uses about {ASK_CREDIT_COST} credits
+            </DialogTitle>
+            <DialogDescription>
+              Ask searches your notes, meetings, tasks, and outcomes and asks AI to
+              answer with sources. It's a heavier action, so we wanted to flag the cost
+              before running.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="text-sm">
+            {balance.isLoading ? (
+              <p className="text-muted-foreground">Checking your balance…</p>
+            ) : creditsPaused ? (
+              <p className="inline-flex items-center gap-1.5 text-amber-700 dark:text-amber-300">
+                <AlertTriangle className="h-4 w-4" />
+                AI is paused — you're out of credits this cycle.
+              </p>
+            ) : insufficient ? (
+              <p className="inline-flex items-center gap-1.5 text-amber-700 dark:text-amber-300">
+                <AlertTriangle className="h-4 w-4" />
+                You have {totalCredits} credit{totalCredits === 1 ? "" : "s"} — not
+                enough to run Ask.
+              </p>
+            ) : (
+              <p className="text-muted-foreground">
+                You have {totalCredits} credit{totalCredits === 1 ? "" : "s"} available.
+              </p>
+            )}
+          </div>
+          {!insufficient && (
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="ask-skip-warn"
+                checked={dontWarnAgain}
+                onCheckedChange={(v) => setDontWarnAgain(v === true)}
+              />
+              <Label htmlFor="ask-skip-warn" className="text-xs text-muted-foreground font-normal">
+                Don't show this again on this device
+              </Label>
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setWarnOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={confirmRun} disabled={insufficient} className="gap-1.5">
+              <Send className="h-4 w-4" />
+              Ask anyway
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

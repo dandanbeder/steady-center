@@ -97,10 +97,12 @@ export const askNotes = createServerFn({ method: "POST" })
     const { requireFeature } = await import("./entitlements.server");
     await requireFeature(supabase, context.userId, "ai_assistant");
     // Server-side cap: counts against the AI allowance and $ budget.
+    // Ask is a heavier action (multi-source retrieval + synthesis), so it
+    // meters 2 credits rather than 1.
     const { assertAiBudget, recordAiUsage } = await import("./ai-budget.server");
     const { assertAiCredits } = await import("./credits.server");
     await assertAiBudget(context.userId);
-    await assertAiCredits(context.userId, 1);
+    await assertAiCredits(context.userId, 2);
 
     const q = data.question.trim();
     const biz = data.businessId ?? null;
@@ -301,20 +303,34 @@ async function callClaudeFullLocal(opts: {
 }): Promise<{ text: string; input_tokens: number; output_tokens: number }> {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error("AI is not configured.");
-  const res = await fetch(ANTHROPIC_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": key,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: opts.maxTokens ?? 1200,
-      system: opts.system,
-      messages: [{ role: "user", content: opts.user }],
-    }),
-  });
+  // Hard timeout so the UI never hangs on a slow or stuck upstream.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 30_000);
+  let res: Response;
+  try {
+    res = await fetch(ANTHROPIC_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": key,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: opts.maxTokens ?? 1200,
+        system: opts.system,
+        messages: [{ role: "user", content: opts.user }],
+      }),
+      signal: controller.signal,
+    });
+  } catch (e) {
+    clearTimeout(timer);
+    if ((e as { name?: string })?.name === "AbortError") {
+      throw new Error("AI timed out, please try again.");
+    }
+    throw e;
+  }
+  clearTimeout(timer);
   if (!res.ok) {
     const t = await res.text();
     console.error("Anthropic", res.status, t.slice(0, 300));
