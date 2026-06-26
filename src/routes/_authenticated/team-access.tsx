@@ -4,20 +4,22 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState, useMemo } from "react";
 import {
   Building2, Folder, ListTodo, FileText, Calendar as CalendarIcon, CheckSquare,
-  Trash2, Plus, ShieldOff, Loader2, Video, Target,
+  Trash2, Plus, ShieldOff, Loader2, Video, Target, Users, Crown, CreditCard,
+  ShieldCheck, Activity, ExternalLink, Sparkles, ArrowUpRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  listMemberAccess,
-  listAccountShareableResources,
-  shareResource,
-  revokeShare,
-  updateShareRole,
-  type MemberAccessRow,
-  type ShareRole,
-  type ResourceType,
+  listMemberAccess, listAccountShareableResources, shareResource,
+  revokeShare, updateShareRole,
+  type MemberAccessRow, type ShareRole, type ResourceType,
 } from "@/lib/shares.functions";
 import { listAllBusinesses } from "@/lib/businesses";
+import { useMyRole } from "@/hooks/use-my-role";
+import { listMembers } from "@/lib/memberships.functions";
+import {
+  getTeamOverview, listTeamAuditLog, transferOwnership,
+} from "@/lib/team-admin.functions";
+import { PeoplePanel } from "@/components/people-panel";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -25,6 +27,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
@@ -34,7 +39,7 @@ export const Route = createFileRoute("/_authenticated/team-access")({
   component: TeamAccessPage,
   errorComponent: ({ error }) => (
     <div className="p-8 text-sm text-muted-foreground" role="alert">
-      Couldn't load team access: {error.message}
+      Couldn't load Team &amp; Access: {error.message}
     </div>
   ),
   notFoundComponent: () => <div className="p-8">Not found.</div>,
@@ -47,35 +52,317 @@ const TYPE_ICON: Record<ResourceType, typeof Folder> = {
 };
 
 function TeamAccessPage() {
-  const qc = useQueryClient();
-  const { data: businesses = [] } = useQuery({
+  const { data: businesses = [], isLoading } = useQuery({
     queryKey: ["businesses-all"],
     queryFn: listAllBusinesses,
   });
   const active = businesses.filter((b) => !b.archived_at);
   const [bizId, setBizId] = useState<string>("");
   const currentBizId = bizId || active[0]?.id || "";
-  const currentBiz = active.find((b) => b.id === currentBizId);
 
+  if (isLoading) {
+    return (
+      <div className="max-w-5xl mx-auto p-8 flex items-center gap-2 text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+      </div>
+    );
+  }
+
+  if (active.length === 0) {
+    return <SoloStartPrompt />;
+  }
+
+  return (
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8">
+      <header className="flex items-start justify-between gap-4 flex-wrap">
+        <div className="space-y-2">
+          <h1 className="text-2xl sm:text-3xl text-primary">Team &amp; Access</h1>
+          <p className="text-sm text-muted-foreground max-w-2xl">
+            Your team control room. Invite people, manage roles and seats,
+            and decide exactly which accounts and resources they can see.
+            Private items and Journals are never shown — even to the owner.
+          </p>
+        </div>
+        <Select value={currentBizId} onValueChange={setBizId}>
+          <SelectTrigger className="w-[260px]">
+            <SelectValue placeholder="Pick an Account" />
+          </SelectTrigger>
+          <SelectContent>
+            {active.map((b) => (
+              <SelectItem key={b.id} value={b.id}>
+                <span
+                  className="inline-block w-2.5 h-2.5 rounded-full mr-2 align-middle"
+                  style={{ background: b.color || "#888" }}
+                />
+                {b.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </header>
+
+      {currentBizId && (
+        <ControlRoom
+          businessId={currentBizId}
+          businessName={active.find((b) => b.id === currentBizId)?.name ?? "Account"}
+        />
+      )}
+    </div>
+  );
+}
+
+function SoloStartPrompt() {
+  return (
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-12 sm:py-20">
+      <Card>
+        <CardHeader className="text-center space-y-3">
+          <div className="mx-auto h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+            <Users className="h-6 w-6 text-primary" />
+          </div>
+          <CardTitle className="text-2xl">Start a team when you're ready</CardTitle>
+          <CardDescription className="text-sm leading-relaxed">
+            Team &amp; Access is the owner's control room — roster, roles, seats,
+            and per-account sharing. You're flying solo right now, so there's
+            nothing to administer yet. When you add a teammate, this page lights
+            up.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col sm:flex-row gap-2 justify-center pt-2">
+          <Button asChild>
+            <Link to="/billing">
+              <Sparkles className="h-4 w-4" /> Upgrade to Team
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/settings">Create an Account first</Link>
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function ControlRoom({ businessId, businessName }: { businessId: string; businessName: string }) {
+  const my = useMyRole(businessId);
+  const _overview = useServerFn(getTeamOverview);
+  const overview = useQuery({
+    queryKey: ["team-overview", businessId],
+    queryFn: () => _overview({ data: { business_id: businessId } }),
+    enabled: my.can("admin"),
+    retry: false,
+  });
+
+  if (my.isLoading) {
+    return <p className="text-sm text-muted-foreground">Loading…</p>;
+  }
+
+  // MEMBER view: limited — they see what they belong to but can't administer.
+  if (!my.can("admin")) {
+    return <MemberLimitedView businessName={businessName} role={my.role ?? "member"} />;
+  }
+
+  if (overview.isLoading) return <p className="text-sm text-muted-foreground">Loading…</p>;
+  if (overview.error || !overview.data) {
+    return (
+      <p className="text-sm text-destructive">
+        {overview.error instanceof Error ? overview.error.message : "Failed to load."}
+      </p>
+    );
+  }
+
+  const ov = overview.data;
+  const isOwner = ov.caller.role === "owner" || ov.caller.isPlatformAdmin;
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <StatCard
+          icon={<Users className="h-4 w-4" />}
+          label="Active members"
+          value={ov.members.active.toString()}
+          hint={`${ov.members.invited} invited`}
+        />
+        <StatCard
+          icon={<CreditCard className="h-4 w-4" />}
+          label="Paid seats"
+          value={ov.seats.paidUsed.toString()}
+          hint={
+            ov.seats.paidPurchased != null
+              ? `of ${ov.seats.paidPurchased} purchased`
+              : "billing detail hidden"
+          }
+        />
+        <StatCard
+          icon={<ShieldCheck className="h-4 w-4" />}
+          label="Viewers & guests"
+          value={ov.seats.freeUsed.toString()}
+          hint="free, no seat"
+        />
+        <StatCard
+          icon={<Crown className="h-4 w-4" />}
+          label="Your role"
+          value={cap(ov.caller.role)}
+          hint={ov.caller.isPlatformAdmin ? "platform admin" : undefined}
+        />
+      </div>
+
+      <Tabs defaultValue="roster" className="w-full">
+        <TabsList className="flex-wrap h-auto">
+          <TabsTrigger value="roster">Roster</TabsTrigger>
+          <TabsTrigger value="grants">Grant access</TabsTrigger>
+          <TabsTrigger value="seats">Seats &amp; billing</TabsTrigger>
+          <TabsTrigger value="shared">Shared resources</TabsTrigger>
+          <TabsTrigger value="activity">Activity log</TabsTrigger>
+          {isOwner && <TabsTrigger value="ownership">Ownership</TabsTrigger>}
+        </TabsList>
+
+        <TabsContent value="roster" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Roster &amp; roles</CardTitle>
+              <CardDescription>
+                Invite by email, change roles, remove members. The last owner
+                can't be removed or demoted.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <PeoplePanel businessId={businessId} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="grants" className="mt-4">
+          <GrantAccessTab businessId={businessId} businessName={businessName} />
+        </TabsContent>
+
+        <TabsContent value="seats" className="mt-4 space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Seats</CardTitle>
+              <CardDescription>
+                Owners, admins and members use paid seats. Viewers and
+                commenters are free — share a single item with anyone, no seat
+                required.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <Row label="In use">{ov.seats.paidUsed}</Row>
+              {ov.seats.paidPurchased != null && (
+                <Row label="Purchased">{ov.seats.paidPurchased}</Row>
+              )}
+              <Row label="Free collaborators">{ov.seats.freeUsed}</Row>
+              <Row label="Plan">{ov.seats.productId ?? "—"}</Row>
+              <Row label="Status">{ov.seats.status ?? "—"}</Row>
+              {ov.seats.currentPeriodEnd && (
+                <Row label="Renews">
+                  {new Date(ov.seats.currentPeriodEnd).toLocaleDateString()}
+                </Row>
+              )}
+              {isOwner ? (
+                <div className="pt-2">
+                  <Button asChild variant="secondary" size="sm">
+                    <Link to="/billing">
+                      Open Plans &amp; Billing <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                    </Link>
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground pt-2">
+                  Billing actions are restricted to the team owner.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="shared" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>What's shared into this team</CardTitle>
+              <CardDescription>
+                Everything explicitly shared with members appears in the Grant
+                access tab, where you can revoke at any time. Private notes,
+                tasks, calendars and Journals never appear here.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild variant="outline" size="sm">
+                <Link to="/shared">
+                  See shared with me <ArrowUpRight className="h-3.5 w-3.5 ml-1" />
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="activity" className="mt-4">
+          <AuditLogPanel businessId={businessId} />
+        </TabsContent>
+
+        {isOwner && (
+          <TabsContent value="ownership" className="mt-4">
+            <TransferOwnershipCard businessId={businessId} />
+          </TabsContent>
+        )}
+      </Tabs>
+    </div>
+  );
+}
+
+function MemberLimitedView({ businessName, role }: { businessName: string; role: string }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Users className="h-5 w-5" /> {businessName}
+        </CardTitle>
+        <CardDescription>
+          You're a <strong>{role}</strong> on this team. Use the Account
+          switcher above to move between the teams you belong to. Only owners
+          and admins can invite, change roles, or grant access — by design,
+          your private work stays private.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="text-sm text-muted-foreground space-y-2">
+        <p>What you can do here:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>See which teams you belong to and switch between them.</li>
+          <li>
+            View items shared with you on the{" "}
+            <Link to="/shared" className="underline">Shared with me</Link> page.
+          </li>
+          <li>
+            Manage your own profile and notification preferences in{" "}
+            <Link to="/settings" className="underline">Settings</Link>.
+          </li>
+        </ul>
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ---------------- Grant access tab (per-member) ---------------- */
+
+function GrantAccessTab({ businessId, businessName }: { businessId: string; businessName: string }) {
+  const qc = useQueryClient();
   const _list = useServerFn(listMemberAccess);
   const _share = useServerFn(shareResource);
   const _revoke = useServerFn(revokeShare);
   const _updateRole = useServerFn(updateShareRole);
 
   const { data: rows = [], isLoading, error } = useQuery({
-    queryKey: ["member-access", currentBizId],
-    queryFn: () => _list({ data: { businessId: currentBizId } }),
-    enabled: !!currentBizId,
+    queryKey: ["member-access", businessId],
+    queryFn: () => _list({ data: { businessId } }),
     retry: false,
   });
 
   const invalidate = () =>
-    qc.invalidateQueries({ queryKey: ["member-access", currentBizId] });
+    qc.invalidateQueries({ queryKey: ["member-access", businessId] });
 
   const grantAccount = useMutation({
     mutationFn: (v: { granteeUserId: string; role: ShareRole; canReshare: boolean; canExport: boolean }) =>
       _share({ data: {
-        resourceType: "business", resourceId: currentBizId,
+        resourceType: "business", resourceId: businessId,
         granteeUserId: v.granteeUserId, role: v.role,
         canReshare: v.canReshare, canExport: v.canExport,
       } }),
@@ -101,65 +388,53 @@ function TeamAccessPage() {
     [rows],
   );
 
-  return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8">
-      <header className="space-y-2">
-        <h1 className="text-2xl sm:text-3xl text-primary">Team &amp; Access</h1>
-        <p className="text-sm text-muted-foreground max-w-2xl">
-          See exactly what each teammate can access today, and grant or revoke per member.
-          Membership alone grants nothing, access is only what you explicitly share.
-          The Journal is never shareable.
-        </p>
-      </header>
-
-      <div className="flex flex-wrap items-center gap-3">
-        <Label className="text-sm">Account</Label>
-        <Select value={currentBizId} onValueChange={setBizId}>
-          <SelectTrigger className="w-[260px]"><SelectValue placeholder="Pick an Account" /></SelectTrigger>
-          <SelectContent>
-            {active.map((b) => (
-              <SelectItem key={b.id} value={b.id}>
-                <span className="inline-block w-2.5 h-2.5 rounded-full mr-2 align-middle" style={{ background: b.color || "#888" }} />
-                {b.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <span className="text-xs text-muted-foreground ml-auto">
-          {rows.length} member{rows.length === 1 ? "" : "s"} · {totalGranted} active grant{totalGranted === 1 ? "" : "s"}
-        </span>
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="py-6 text-sm text-muted-foreground">
+          You need to be the Account owner or an admin to grant access.
+        </CardContent>
+      </Card>
+    );
+  }
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-muted-foreground p-6">
+        <Loader2 className="h-4 w-4 animate-spin" /> Loading…
       </div>
+    );
+  }
+  if (rows.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-sm text-muted-foreground text-center">
+          No teammates in <strong>{businessName}</strong> yet. Invite someone
+          from the Roster tab to start sharing.
+        </CardContent>
+      </Card>
+    );
+  }
 
-      {error ? (
-        <div className="rounded border p-6 text-sm text-muted-foreground">
-          You need to be the Account owner or an admin to manage team access.
-        </div>
-      ) : isLoading ? (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground p-6">
-          <Loader2 className="h-4 w-4 animate-spin" /> Loading…
-        </div>
-      ) : rows.length === 0 ? (
-        <div className="rounded border p-6 text-sm text-muted-foreground">
-          No teammates in this Account yet. Invite someone from{" "}
-          <Link to="/settings" className="underline">Settings</Link>.
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {rows.map((m) => (
-            <MemberCard
-              key={m.user_id}
-              businessId={currentBizId}
-              businessName={currentBiz?.name ?? "Account"}
-              member={m}
-              onGrantAccount={(role, opts) =>
-                grantAccount.mutate({ granteeUserId: m.user_id, role, ...opts })
-              }
-              onUpdate={updateMut.mutate}
-              onRevoke={revokeMut.mutate}
-            />
-          ))}
-        </div>
-      )}
+  return (
+    <div className="space-y-4">
+      <p className="text-xs text-muted-foreground">
+        {rows.length} member{rows.length === 1 ? "" : "s"} ·{" "}
+        {totalGranted} active grant{totalGranted === 1 ? "" : "s"} · grants
+        only expose shared/work content, never private items or Journals.
+      </p>
+      {rows.map((m) => (
+        <MemberCard
+          key={m.user_id}
+          businessId={businessId}
+          businessName={businessName}
+          member={m}
+          onGrantAccount={(role, opts) =>
+            grantAccount.mutate({ granteeUserId: m.user_id, role, ...opts })
+          }
+          onUpdate={updateMut.mutate}
+          onRevoke={revokeMut.mutate}
+        />
+      ))}
     </div>
   );
 }
@@ -189,7 +464,6 @@ function MemberCard({
         <Badge variant="outline" className="text-xs capitalize">{member.membership_role}</Badge>
       </header>
 
-      {/* Account-scope */}
       <section className="rounded border bg-background/40 p-3 space-y-2">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-sm">
@@ -231,11 +505,11 @@ function MemberCard({
         )}
       </section>
 
-      {/* Per-resource shares */}
       <section className="space-y-2">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium">
-            Specific resources <span className="text-muted-foreground font-normal">({member.resource_shares.length})</span>
+            Specific resources{" "}
+            <span className="text-muted-foreground font-normal">({member.resource_shares.length})</span>
           </h3>
           <Button size="sm" variant="outline" onClick={() => setResOpen(true)}>
             <Plus className="h-3.5 w-3.5 mr-1" /> Grant resource
@@ -277,7 +551,7 @@ function MemberCard({
         {member.resource_shares.length === 0 && !member.account_share && (
           <p className="text-xs text-muted-foreground flex items-center gap-1">
             <ShieldOff className="h-3 w-3" />
-            Membership alone grants nothing, this person currently sees nothing in {businessName}.
+            Membership alone grants nothing — this person currently sees nothing in {businessName}.
           </p>
         )}
       </section>
@@ -321,7 +595,7 @@ function GrantAccountInline({
           <DialogTitle>Grant whole-Account access</DialogTitle>
           <DialogDescription>
             They'll see everything currently shared inside this Account, capped at this role.
-            The Journal is never included.
+            Private items and the Journal are never included.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
@@ -366,7 +640,7 @@ function GrantResourceDialog({
     enabled: open,
   });
 
-  const [picked, setPicked] = useState<string>(""); // "type:id"
+  const [picked, setPicked] = useState<string>("");
   const [role, setRole] = useState<ShareRole>("viewer");
   const [canReshare, setCR] = useState(false);
   const [canExport, setCE] = useState(false);
@@ -431,5 +705,197 @@ function GrantResourceDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/* ---------------- Shared building blocks ---------------- */
+
+function StatCard({ icon, label, value, hint }: { icon: React.ReactNode; label: string; value: string; hint?: string }) {
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          {icon} {label}
+        </div>
+        <div className="text-2xl font-semibold mt-1">{value}</div>
+        {hint && <div className="text-xs text-muted-foreground mt-1">{hint}</div>}
+      </CardContent>
+    </Card>
+  );
+}
+
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex justify-between gap-4">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium">{children}</span>
+    </div>
+  );
+}
+
+function cap(s: string) {
+  return s ? s[0].toUpperCase() + s.slice(1) : "";
+}
+
+function AuditLogPanel({ businessId }: { businessId: string }) {
+  const _list = useServerFn(listTeamAuditLog);
+  const q = useQuery({
+    queryKey: ["team-audit", businessId],
+    queryFn: () => _list({ data: { business_id: businessId, limit: 100 } }),
+  });
+  if (q.isLoading) return <p className="text-sm text-muted-foreground">Loading…</p>;
+  if (q.error) return <p className="text-sm text-destructive">{(q.error as Error).message}</p>;
+  const rows = q.data ?? [];
+  if (rows.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-10 text-center text-sm text-muted-foreground">
+          <Activity className="h-5 w-5 mx-auto mb-2 opacity-60" />
+          No team-admin actions yet. Invites, role changes, removals, grants
+          and revokes will appear here with who and when.
+        </CardContent>
+      </Card>
+    );
+  }
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Activity log</CardTitle>
+        <CardDescription>
+          Every invite, role change, removal, grant and revoke on this team —
+          with who, when and why.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ul className="divide-y divide-border">
+          {rows.map((r) => (
+            <li key={r.id} className="py-3 text-sm flex items-start gap-3">
+              <Badge variant="outline" className="shrink-0 mt-0.5">
+                {r.action.replace(/_/g, " ")}
+              </Badge>
+              <div className="flex-1 min-w-0">
+                <div>
+                  <span className="font-medium">{r.actor_name || "—"}</span>
+                  {r.target_name && (
+                    <>
+                      {" → "}
+                      <span className="font-medium">{r.target_name}</span>
+                    </>
+                  )}
+                </div>
+                {r.reason && (
+                  <div className="text-xs text-muted-foreground italic mt-0.5">
+                    "{r.reason}"
+                  </div>
+                )}
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  {new Date(r.created_at).toLocaleString()}
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
+  );
+}
+
+function TransferOwnershipCard({ businessId }: { businessId: string }) {
+  const qc = useQueryClient();
+  const _members = useServerFn(listMembers);
+  const _transfer = useServerFn(transferOwnership);
+  const [open, setOpen] = useState(false);
+  const [target, setTarget] = useState("");
+  const [reason, setReason] = useState("");
+
+  const members = useQuery({
+    queryKey: ["members", businessId],
+    queryFn: () => _members({ data: { business_id: businessId } }),
+  });
+  const candidates = ((members.data ?? []) as Array<{ user_id: string | null; full_name: string | null; email: string | null; role: string; status: string }>)
+    .filter((m) => m.status === "active" && m.role !== "owner" && m.user_id);
+
+  const mut = useMutation({
+    mutationFn: () => _transfer({ data: { business_id: businessId, new_owner_user_id: target, reason } }),
+    onSuccess: () => {
+      toast.success("Ownership transferred. You are now an admin.");
+      setOpen(false);
+      setTarget("");
+      setReason("");
+      qc.invalidateQueries({ queryKey: ["members", businessId] });
+      qc.invalidateQueries({ queryKey: ["team-overview", businessId] });
+      qc.invalidateQueries({ queryKey: ["team-audit", businessId] });
+      qc.invalidateQueries({ queryKey: ["my-role", businessId] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Transfer ownership</CardTitle>
+        <CardDescription>
+          Promote another active member to owner and step down to admin. The
+          action is recorded with a reason. The team can never have zero
+          owners.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Button variant="destructive" onClick={() => setOpen(true)} disabled={candidates.length === 0}>
+          Transfer ownership…
+        </Button>
+        {candidates.length === 0 && (
+          <p className="text-xs text-muted-foreground mt-2">
+            No eligible members to transfer to. Add an active member first.
+          </p>
+        )}
+
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Transfer team ownership</DialogTitle>
+              <DialogDescription>
+                The new owner gets full team-admin power. You'll be demoted to
+                admin. This is recorded in the audit log.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-muted-foreground">New owner</label>
+                <Select value={target} onValueChange={setTarget}>
+                  <SelectTrigger><SelectValue placeholder="Choose a member" /></SelectTrigger>
+                  <SelectContent>
+                    {candidates.map((m) => (
+                      <SelectItem key={m.user_id!} value={m.user_id!}>
+                        {m.full_name || m.email || "Member"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">Reason (required)</label>
+                <Textarea
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  placeholder="Why are you transferring ownership?"
+                  rows={3}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button
+                variant="destructive"
+                disabled={!target || reason.trim().length < 3 || mut.isPending}
+                onClick={() => mut.mutate()}
+              >
+                Transfer ownership
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </CardContent>
+    </Card>
   );
 }
