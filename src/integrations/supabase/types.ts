@@ -3442,6 +3442,7 @@ export type Database = {
         Args: { check_env?: string; user_uuid: string }
         Returns: boolean
       }
+      is_journal_note: { Args: { _note_id: string }; Returns: boolean }
       is_member: {
         Args: { p_business: string; p_min_role: string }
         Returns: boolean
