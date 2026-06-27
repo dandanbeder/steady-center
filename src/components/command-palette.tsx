@@ -87,7 +87,11 @@ export function CommandPalette({ open, onOpenChange, onAskAssistant }: Props) {
     if (!open) setQuery("");
   }, [open]);
 
-  const businessFilter = activeId === ALL ? null : activeId;
+  // ALL → no filter; PERSONAL ("__personal") → business_id IS NULL; specific
+  // id → that account. Never send the sentinel string into a uuid column.
+  const businessFilter = activeId === ALL || activeId === "__personal" ? null : activeId;
+  const personalOnly = activeId === "__personal";
+
   const trimmed = debounced.trim();
   const isSearching = trimmed.length >= 2;
 
