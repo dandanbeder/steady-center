@@ -21,6 +21,7 @@ export type WeeklyReport = {
 export type WeeklyReviewPrefs = {
   weekly_review_day: number;
   weekly_review_hour: number;
+  weekly_review_minute: number;
   weekly_review_enabled: boolean;
   timezone: string;
 };
@@ -56,17 +57,20 @@ export async function getWeeklyReviewPrefs(): Promise<WeeklyReviewPrefs> {
   if (!u.user) throw new Error("Not signed in");
   const { data, error } = await supabase
     .from("profiles")
-    .select("weekly_review_day, weekly_review_hour, weekly_review_enabled, timezone")
+    .select("weekly_review_day, weekly_review_hour, weekly_review_minute, weekly_review_enabled, timezone")
     .eq("id", u.user.id)
     .maybeSingle();
   if (error) throw error;
+  const row = (data ?? {}) as Record<string, unknown>;
   return {
-    weekly_review_day: data?.weekly_review_day ?? 5,
-    weekly_review_hour: data?.weekly_review_hour ?? 16,
-    weekly_review_enabled: data?.weekly_review_enabled ?? true,
-    timezone: data?.timezone ?? "Africa/Johannesburg",
+    weekly_review_day: (row.weekly_review_day as number) ?? 5,
+    weekly_review_hour: (row.weekly_review_hour as number) ?? 16,
+    weekly_review_minute: (row.weekly_review_minute as number) ?? 0,
+    weekly_review_enabled: (row.weekly_review_enabled as boolean) ?? true,
+    timezone: (row.timezone as string) ?? "Africa/Johannesburg",
   };
 }
+
 
 export const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
