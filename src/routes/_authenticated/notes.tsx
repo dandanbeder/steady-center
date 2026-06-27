@@ -116,10 +116,20 @@ function NotesPage() {
   const [creatingInstant, setCreatingInstant] = useState(false);
   const [listCollapsed, setListCollapsed] = useUiPref<boolean>("notes.listCollapsed", false);
 
+  // Normalise the PERSONAL sentinel ("__personal") and ALL to a real
+  // business_id (= null for Personal / Uncategorised). Otherwise the sentinel
+  // string is sent to Postgres as a uuid and the insert fails with
+  // `invalid input syntax for type uuid: "__personal"`.
+  const normaliseBizId = (v: string | null | undefined): string | null => {
+    if (!v) return null;
+    if (v === ALL || v === "__personal") return null;
+    return v;
+  };
+
   const defaultBusinessId =
     scope.kind === "folder"
-      ? scope.businessId
-      : scope.businessId ?? (activeId === ALL ? null : activeId);
+      ? normaliseBizId(scope.businessId)
+      : normaliseBizId(scope.businessId ?? (activeId === ALL ? null : activeId));
   const defaultFolderId = scope.kind === "folder" ? scope.folderId : null;
 
   const handleInstantCreate = async () => {
@@ -140,10 +150,15 @@ function NotesPage() {
       await qc.invalidateQueries({ queryKey: ["notes"] });
       setSelectedNoteId(n.id);
     } catch (e) {
-      // Surface the real reason — generic "Couldn't create note" hides
-      // RLS / privilege errors that we actually need to see.
+      // Surface the real reason — Supabase errors are plain objects, not
+      // Error instances, so String(e) becomes "[object Object]". Unpack
+      // message / details / hint so the user sees what actually failed.
       console.error("[notes] instant create failed", e);
-      const msg = e instanceof Error ? e.message : String(e);
+      const anyE = e as { message?: string; details?: string; hint?: string; code?: string } | null;
+      const msg =
+        e instanceof Error
+          ? e.message
+          : anyE?.message || anyE?.details || anyE?.hint || JSON.stringify(e);
       toast.error(`Couldn't create note: ${msg}`);
     } finally {
       setCreatingInstant(false);
@@ -158,6 +173,7 @@ function NotesPage() {
         : s,
     );
   }, [activeId]);
+
 
   const memberBizIds = useMemo(() => new Set(businesses.map((b) => b.id)), [businesses]);
 
