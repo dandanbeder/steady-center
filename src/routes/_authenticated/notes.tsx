@@ -179,8 +179,16 @@ function NotesPage() {
 
   const scopedNotes = useMemo(() => {
     let out = notes;
+    // "__personal" is the Personal / Uncategorised sentinel — match rows
+    // whose business_id is null rather than comparing against the literal
+    // string (no row will ever have business_id = "__personal").
+    const PERSONAL_SENTINEL = "__personal";
     if (scope.kind === "smart") {
-      if (scope.businessId) out = out.filter((n) => n.business_id === scope.businessId);
+      if (scope.businessId === PERSONAL_SENTINEL) {
+        out = out.filter((n) => n.business_id == null);
+      } else if (scope.businessId) {
+        out = out.filter((n) => n.business_id === scope.businessId);
+      }
       switch (scope.view) {
         case "pinned":
           out = out.filter((n) => n.pinned);
@@ -201,10 +209,12 @@ function NotesPage() {
           break;
       }
     } else {
+      const targetBiz = scope.businessId === PERSONAL_SENTINEL ? null : scope.businessId;
       out = out.filter(
-        (n) => n.folder_id === scope.folderId && n.business_id === scope.businessId,
+        (n) => n.folder_id === scope.folderId && n.business_id === targetBiz,
       );
     }
+
     if (search.trim()) {
       const q = search.toLowerCase();
       out = out.filter((n) =>
