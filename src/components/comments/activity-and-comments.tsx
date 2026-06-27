@@ -278,7 +278,7 @@ export function ActivityAndComments({ parentType, parentId, businessId, activity
                 ? `${missingShare[0].name ?? "This person"} doesn't have access to this ${parentType} yet.`
                 : `${missingShare.length} people you mentioned don't have access to this ${parentType} yet.`}
               {" "}
-              Heartbeat won't silently share private work — grant access explicitly to continue.
+              Heartbeat won't silently share private work, grant access explicitly to continue.
               {shareResourceType === null && (
                 <span className="block mt-2">
                   This item can't be shared directly. Remove the mention or share the parent

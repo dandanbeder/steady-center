@@ -65,7 +65,7 @@ export function QuickAddBar({
     }
     const result = parse(text);
     if (!result) {
-      toast.error("Couldn't read a date or time — try ✨ AI, or 'Coffee tomorrow 9am'");
+      toast.error("Couldn't read a date or time, try ✨ AI, or 'Coffee tomorrow 9am'");
       return;
     }
     const cal = calendars.find((c) => c.id === calId) ?? null;
@@ -105,7 +105,7 @@ export function QuickAddBar({
       setPreview(suggestion);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "AI couldn't read that";
-      toast.error(`${msg} — pick the type manually`);
+      toast.error(`${msg}, pick the type manually`);
     } finally {
       setAiBusy(false);
     }
@@ -124,7 +124,7 @@ export function QuickAddBar({
               submit();
             }
           }}
-          placeholder='Quick add — "Coffee Sam Fri 9am", "Zoom Acme Tue", "email accountant"'
+          placeholder='Quick add, "Coffee Sam Fri 9am", "Zoom Acme Tue", "email accountant"'
           className="flex-1 min-w-0 border-0 bg-transparent shadow-none focus-visible:ring-0 px-0 sm:px-2"
         />
         <div className="flex items-center gap-2">
@@ -253,7 +253,7 @@ function ConfirmDialog({
           priority: suggestion.priority ?? "normal",
           due_at: due,
         });
-        toast.success(`Task added — "${title.trim()}"`);
+        toast.success(`Task added, "${title.trim()}"`);
         qc.invalidateQueries({ queryKey: ["tasks"] });
         onCreated();
       } else if (type === "event") {
@@ -272,7 +272,7 @@ function ConfirmDialog({
         });
         qc.invalidateQueries({ queryKey: ["events"] });
         if (r.syncWarning) toast.warning(r.syncWarning);
-        else toast.success(`Event added — "${title.trim()}"`);
+        else toast.success(`Event added, "${title.trim()}"`);
         onCreated();
       } else {
         // meeting
@@ -289,7 +289,7 @@ function ConfirmDialog({
           },
         });
         qc.invalidateQueries({ queryKey: ["meetings"] });
-        toast.success(`Meeting added — "${title.trim()}"`);
+        toast.success(`Meeting added, "${title.trim()}"`);
         onCreated();
         navigate({ to: "/meetings/$meetingId", params: { meetingId: res.meeting_id } });
       }
@@ -310,7 +310,7 @@ function ConfirmDialog({
           </DialogTitle>
           <DialogDescription className="text-xs">
             From "{rawText}"
-            {suggestion.reasoning ? ` — ${suggestion.reasoning}` : null}
+            {suggestion.reasoning ? `, ${suggestion.reasoning}` : null}
           </DialogDescription>
         </DialogHeader>
 

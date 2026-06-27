@@ -66,7 +66,7 @@ function TeamAdminPage() {
           <p className="text-sm text-muted-foreground mt-1 max-w-xl">
             Roster, roles, seats and shared resources for this team.
             Private notes, tasks, calendars, journals, mood and capacity are
-            never shown here — even to the owner.
+            never shown here, even to the owner.
           </p>
         </div>
         {active.length > 0 && (
@@ -209,8 +209,8 @@ function TeamAdminBody({ businessId }: { businessId: string }) {
                 <Row label="Purchased">{ov.seats.paidPurchased}</Row>
               )}
               <Row label="Free collaborators">{ov.seats.freeUsed}</Row>
-              <Row label="Plan">{ov.seats.productId ?? "—"}</Row>
-              <Row label="Status">{ov.seats.status ?? "—"}</Row>
+              <Row label="Plan">{ov.seats.productId ?? ","}</Row>
+              <Row label="Status">{ov.seats.status ?? ","}</Row>
               {ov.seats.currentPeriodEnd && (
                 <Row label="Renews">
                   {new Date(ov.seats.currentPeriodEnd).toLocaleDateString()}
@@ -244,7 +244,7 @@ function TeamAdminBody({ businessId }: { businessId: string }) {
               <CardTitle>Shared resources</CardTitle>
               <CardDescription>
                 Spaces, calendars, outcomes, notes and tasks shared into this
-                team — and who can see what. Grant and revoke at the team
+                team, and who can see what. Grant and revoke at the team
                 level here:
               </CardDescription>
             </CardHeader>
@@ -328,7 +328,7 @@ function AuditLogPanel({ businessId }: { businessId: string }) {
       <CardHeader>
         <CardTitle>Activity log</CardTitle>
         <CardDescription>
-          Every role change, removal and share grant on this team — with who
+          Every role change, removal and share grant on this team, with who
           and when. Owner and admin can view.
         </CardDescription>
       </CardHeader>
@@ -341,7 +341,7 @@ function AuditLogPanel({ businessId }: { businessId: string }) {
               </Badge>
               <div className="flex-1 min-w-0">
                 <div>
-                  <span className="font-medium">{r.actor_name || "—"}</span>
+                  <span className="font-medium">{r.actor_name || ","}</span>
                   {r.target_name && (
                     <>
                       {" → "}
@@ -485,7 +485,7 @@ function KittyPanel({
 
   const { pool, members } = data;
   const usedPct = pool.allowance > 0 ? Math.min(100, Math.round((pool.used * 100) / pool.allowance)) : 0;
-  const cycleEnd = pool.cycle_end ? new Date(pool.cycle_end).toLocaleDateString() : "—";
+  const cycleEnd = pool.cycle_end ? new Date(pool.cycle_end).toLocaleDateString() : ",";
 
   return (
     <div className="space-y-4">
@@ -496,7 +496,7 @@ function KittyPanel({
           </CardTitle>
           <CardDescription>
             Pooled allowance ({pool.allowance.toLocaleString()} credits = 400 × {pool.paid_seats} paid
-            seats) shared by the whole team. Refills on the owner's billing date — does not roll over.
+            seats) shared by the whole team. Refills on the owner's billing date, does not roll over.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
@@ -553,11 +553,11 @@ function KittyPanel({
           </p>
           <ul className="list-disc pl-5 space-y-1">
             <li>
-              <strong>Top up the shared pool</strong> (owner only) — credits go into the kitty and
+              <strong>Top up the shared pool</strong> (owner only), credits go into the kitty and
               are available to everyone on the team.
             </li>
             <li>
-              <strong>Each member can top up their own</strong> — credits stay private to that
+              <strong>Each member can top up their own</strong>, credits stay private to that
               member and power their AI independently once the shared kitty is empty.
             </li>
           </ul>
@@ -584,7 +584,7 @@ function KittyPanel({
           <CardTitle>Per-member usage this cycle</CardTitle>
           <CardDescription>
             Credits each member has drawn from the shared kitty. Members flagged when they've used
-            more than 2× their fair share. This view shows usage only — never anyone's private
+            more than 2× their fair share. This view shows usage only, never anyone's private
             content.
           </CardDescription>
         </CardHeader>

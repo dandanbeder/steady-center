@@ -29,7 +29,7 @@ const ALLOWED_EXACT = new Set<string>([
 ]);
 
 export function isAllowedMime(mime: string | null | undefined) {
-  if (!mime) return true; // browser sometimes omits — server RLS still gates access
+  if (!mime) return true; // browser sometimes omits, server RLS still gates access
   if (ALLOWED_EXACT.has(mime)) return true;
   return ALLOWED_PREFIXES.some((p) => mime.startsWith(p));
 }

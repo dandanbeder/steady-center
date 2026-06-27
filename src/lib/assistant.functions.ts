@@ -46,7 +46,7 @@ const TOOLS = [
     input_schema: {
       type: "object",
       properties: {
-        query: { type: "string", description: "Free-text. Multi-word OK — each significant token is matched against title or body." },
+        query: { type: "string", description: "Free-text. Multi-word OK, each significant token is matched against title or body." },
       },
       required: ["query"],
     },

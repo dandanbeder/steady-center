@@ -61,7 +61,7 @@ export function DailyPulseCard() {
     onError: (e) => {
       const msg = e instanceof Error ? e.message.toLowerCase() : "";
       if (msg.includes("402") || msg.includes("credit")) {
-        toast.error("Out of AI credits — your pulse will be ready once credits are topped up.");
+        toast.error("Out of AI credits, your pulse will be ready once credits are topped up.");
       } else if (msg.includes("429") || msg.includes("rate")) {
         toast.error("AI is busy right now. Try again in a moment.");
       } else if (msg === "timeout") {
@@ -260,7 +260,7 @@ function FocusStep({ onNext }: { onNext: () => void }) {
   return (
     <div className="space-y-3">
       <p className="text-xs text-muted-foreground">
-        Still open and high priority or overdue — so nothing slips into tomorrow.
+        Still open and high priority or overdue, so nothing slips into tomorrow.
       </p>
       {isLoading ? (
         <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -316,7 +316,7 @@ function BreatheStep() {
           “{q.quote}”
         </blockquote>
         <figcaption className="mt-2 text-xs not-italic text-muted-foreground">
-          — {q.author}
+         , {q.author}
         </figcaption>
       </figure>
       <div className="flex justify-end">

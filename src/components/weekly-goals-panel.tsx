@@ -109,7 +109,7 @@ export function WeeklyGoalsPanel({ compact = false }: { compact?: boolean }) {
         timeout,
       ]);
       if (!res.suggestions.length) {
-        toast.message("No suggestions this time — try again or add one manually.");
+        toast.message("No suggestions this time, try again or add one manually.");
         return;
       }
       setSuggestions(res.suggestions);
@@ -120,7 +120,7 @@ export function WeeklyGoalsPanel({ compact = false }: { compact?: boolean }) {
         toast.error("AI took too long. Try again in a moment.");
       } else {
         toast.error(
-          e instanceof Error ? e.message : "Couldn't generate suggestions — try again.",
+          e instanceof Error ? e.message : "Couldn't generate suggestions, try again.",
         );
       }
     } finally {

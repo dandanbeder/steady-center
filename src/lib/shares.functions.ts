@@ -246,7 +246,7 @@ export const listSharedWithMeResources = createServerFn({ method: "GET" })
     };
     for (const r of rows) byType[r.resource_type as ResourceType].push(r.resource_id as string);
 
-    // Outcomes are not directly shareable today — they're surfaced via the
+    // Outcomes are not directly shareable today, they're surfaced via the
     // user's active business memberships (and any business-scope shares,
     // which already grant team access). Fetch outcomes from those accounts
     // (excluding ones the viewer owns themselves) so the Outcomes filter is
@@ -370,7 +370,7 @@ export const listMyMentionedItems = createServerFn({ method: "GET" })
     }>;
     if (rows.length === 0) return [];
 
-    // Confirm the caller still has access to each parent (defensive — they
+    // Confirm the caller still has access to each parent (defensive, they
     // could have been removed from a business after the mention landed).
     const taskIds = rows.filter((r) => r.parent_type === "task").map((r) => r.parent_id);
     const noteIds = rows.filter((r) => r.parent_type === "note").map((r) => r.parent_id);

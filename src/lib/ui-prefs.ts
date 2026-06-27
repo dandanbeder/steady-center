@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 /**
  * Per-user UI preferences for ephemeral chrome state: which panels are
  * collapsed, which sidebars are pinned, etc. Backed by `profiles.ui_prefs`
- * (jsonb) — RLS already scopes profile reads/writes to `auth.uid()`, so the
+ * (jsonb), RLS already scopes profile reads/writes to `auth.uid()`, so the
  * preference is private to the user.
  *
  * The hook reads localStorage first for instant paint, then reconciles with

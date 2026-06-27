@@ -118,7 +118,7 @@ export function NotesTreeSidebar({
     return businesses.filter((b) => b.id === activeBusinessId);
   }, [businesses, activeBusinessId]);
 
-  // Personal section is its own block — its "notes" are NULL-business notes.
+  // Personal section is its own block, its "notes" are NULL-business notes.
   const personalNotesCount = useMemo(
     () => notes.filter((n) => n.business_id == null).length,
     [notes],
@@ -301,7 +301,7 @@ export function NotesTreeSidebar({
             );
           })}
 
-          {/* Personal / Uncategorised — always present so the user can park a
+          {/* Personal / Uncategorised, always present so the user can park a
               note without picking an account. Header acts as a smart scope to
               just NULL-business notes. */}
           {showPersonalSection && (

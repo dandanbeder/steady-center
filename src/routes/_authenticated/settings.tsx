@@ -242,7 +242,7 @@ function SettingsPage() {
                   <p className="text-sm text-muted-foreground">Loading…</p>
                 ) : businesses.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    You don't have any accounts yet. Use the form below to create your first one — your existing notes and tasks will keep living under <strong>Personal / Uncategorised</strong> until you assign them.
+                    You don't have any accounts yet. Use the form below to create your first one, your existing notes and tasks will keep living under <strong>Personal / Uncategorised</strong> until you assign them.
                   </p>
                 ) : (
                   <ul className="divide-y divide-border">
@@ -721,7 +721,7 @@ function WeeklyHoursInput({ business, onChange }: { business: Business; onChange
         max={168}
         step={0.5}
         value={value}
-        placeholder="—"
+        placeholder=","
         onChange={(e) => setValue(e.target.value)}
         onBlur={commit}
         onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}

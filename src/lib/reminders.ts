@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-// Notification channels: email-only at launch. SMS is deferred — the
+// Notification channels: email-only at launch. SMS is deferred, the
 // `channel` column is kept so additional channels can be reintroduced
 // without a schema rework.
 export type ReminderChannel = "email";

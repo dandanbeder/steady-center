@@ -84,7 +84,7 @@ function CapturePage() {
   const { data: folders = [] } = useQuery({ queryKey: ["folders"], queryFn: listFolders });
   const { data: lists = [] } = useQuery({ queryKey: ["lists"], queryFn: listLists });
 
-  // Items whose AI suggestion errored/timed out — fall back to manual filing
+  // Items whose AI suggestion errored/timed out, fall back to manual filing
   // so the user is never stuck on a perpetual "Suggesting…" spinner.
   const [aiFailed, setAiFailed] = useState<Set<string>>(new Set());
   const markAiFailed = (id: string) =>
@@ -105,7 +105,7 @@ function CapturePage() {
     mutationFn: async (text: string) => {
       const item = await captureToInbox({ raw_text: text, source: "quick_add" });
       if (aiEnabled) {
-        // 30s ceiling — if the gateway hangs, drop to manual mode.
+        // 30s ceiling, if the gateway hangs, drop to manual mode.
         const timeout = new Promise((_, reject) =>
           setTimeout(() => reject(new Error("timeout")), 30_000),
         );
@@ -118,11 +118,11 @@ function CapturePage() {
             markAiFailed(item.id);
             const msg = e instanceof Error ? e.message : "";
             if (/402|credit/i.test(msg)) {
-              toast.message("Out of AI credits — file this draft manually.");
+              toast.message("Out of AI credits, file this draft manually.");
             } else if (/429|rate/i.test(msg)) {
-              toast.message("AI is busy — file this draft manually or retry.");
+              toast.message("AI is busy, file this draft manually or retry.");
             } else {
-              toast.message("Couldn't suggest — file this draft manually.");
+              toast.message("Couldn't suggest, file this draft manually.");
             }
           });
       }
@@ -259,7 +259,7 @@ function InboxCard({
   const suggest = useServerFn(suggestInboxItem);
   const processed = !!item.ai_processed_at;
   // Manual mode when the user opted out OR when the AI attempt failed/timed
-  // out — either way the user gets the manual filer instead of a spinner.
+  // out, either way the user gets the manual filer instead of a spinner.
   const manualMode = !processed && (!aiEnabled || aiFailed);
 
 
@@ -307,9 +307,9 @@ function InboxCard({
     } catch (e) {
       onAiFailed();
       const msg = e instanceof Error ? e.message : "";
-      if (/402|credit/i.test(msg)) toast.message("Out of AI credits — file manually.");
-      else if (/429|rate/i.test(msg)) toast.message("AI is busy — file manually or retry.");
-      else toast.message("AI couldn't suggest — file manually.");
+      if (/402|credit/i.test(msg)) toast.message("Out of AI credits, file manually.");
+      else if (/429|rate/i.test(msg)) toast.message("AI is busy, file manually or retry.");
+      else toast.message("AI couldn't suggest, file manually.");
     } finally {
       setBusy(false);
     }
@@ -457,7 +457,7 @@ function InboxCard({
         <div className="rounded-md border border-dashed bg-muted/30 p-3 text-xs text-muted-foreground flex items-center gap-2">
           <SparklesIcon className="h-3.5 w-3.5 opacity-50" />
           {aiFailed && aiEnabled
-            ? "AI couldn't suggest a destination — pick a type and account below."
+            ? "AI couldn't suggest a destination, pick a type and account below."
             : "AI suggestions are off. File this one yourself below."}
           {aiEnabled && aiFailed && (
             <Button variant="ghost" size="sm" onClick={reSuggest} disabled={busy} className="ml-auto h-6 px-2">

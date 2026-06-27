@@ -10,7 +10,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
  * - One trial per account, ever (per environment), enforced by
  *   `profiles.trial_used_at` and the `start_free_trial` SECURITY DEFINER fn.
  * - When a trial ends without converting, the user falls back to Free
- *   (never auto-charged — no card is captured).
+ *   (never auto-charged, no card is captured).
  * - At conversion the user goes through the normal Paddle checkout and the
  *   webhook upserts a new subscription row with status='active'.
  */

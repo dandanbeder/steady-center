@@ -93,7 +93,7 @@ export function MeetingNotesPanel({
       const note = await createNote({
         business_id: meeting.business_id,
         folder_id: null,
-        title: `Notes — ${meeting.title}`,
+        title: `Notes, ${meeting.title}`,
         body: lines.join("\n"),
         source: "meeting",
         linked_meeting_id: meeting.id,

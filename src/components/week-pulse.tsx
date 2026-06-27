@@ -189,7 +189,7 @@ export function WeekPulse({
     workDays,
   ]);
 
-  // Calm summary: name the fullest day, neutrally — load only, no judgement.
+  // Calm summary: name the fullest day, neutrally, load only, no judgement.
   const totalLoad = days.reduce((s, d) => s + d.loadH, 0);
   let summary: string | null = null;
   if (totalLoad >= 1) {

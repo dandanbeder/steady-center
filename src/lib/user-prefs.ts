@@ -2,7 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 // ---------------- Notification prefs ----------------
 // Delivery channels at launch: email (Resend) and browser (in-app + optional
-// web push). The channel architecture is intentionally extensible — SMS or
+// web push). The channel architecture is intentionally extensible, SMS or
 // other channels can be added later by extending ChannelKey/ChannelPair and
 // the per-type defaults without a schema rework.
 export type ChannelKey = "email" | "browser";

@@ -210,7 +210,7 @@ function NewMeetingDialog({
         toast.info("Uploading audio…");
         audio_path = await uploadMeetingAudio(audioFile);
       }
-      // Save only — AI is invoked manually from the meeting page.
+      // Save only, AI is invoked manually from the meeting page.
       const res = await process({
         data: {
           title: title.trim(),
@@ -287,7 +287,7 @@ function NewMeetingDialog({
               </div>
             ) : (
               <div className="mt-2">
-                <Label className="text-xs text-muted-foreground">No link — set platform manually</Label>
+                <Label className="text-xs text-muted-foreground">No link, set platform manually</Label>
                 <Select
                   value={platform}
                   onValueChange={(v) => setPlatform(v as typeof platform)}

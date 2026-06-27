@@ -148,7 +148,7 @@ export async function getVelocity(): Promise<Velocity> {
   // Always divide by 4 so the average reflects "a typical week" (a quiet week counts).
   const tasksAvg = Math.round(taskCount / 4);
   const hoursAvg = Math.round((totalMinutes / 60 / 4) * 10) / 10;
-  // Hours per task — only meaningful when we have both signals; rounded to 1dp.
+  // Hours per task, only meaningful when we have both signals; rounded to 1dp.
   const hoursPerTask =
     taskCount > 0 && totalMinutes > 0
       ? Math.round((totalMinutes / 60 / taskCount) * 10) / 10

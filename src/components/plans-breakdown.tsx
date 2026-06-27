@@ -30,7 +30,7 @@ const PLANS: PlanRow[] = [
       `${LIMITS.free.maxBusinesses} account within your space`,
       `${LIMITS.free.aiAllowanceCreditsPerSeat} AI credits / month`,
       "Calendar, tasks, notes & journal",
-      "Ask my notes — shown, unlocks on a paid plan",
+      "Ask my notes, shown, unlocks on a paid plan",
     ],
   },
   {
@@ -43,7 +43,7 @@ const PLANS: PlanRow[] = [
       `${LIMITS.basic.maxBusinesses} accounts within your space`,
       `${LIMITS.basic.aiAllowanceCreditsPerSeat} AI credits / month`,
       "Everything in Free, plus Reporting & Meetings",
-      "Ask my notes — shown, unlocks on Standard",
+      "Ask my notes, shown, unlocks on Standard",
     ],
   },
   {

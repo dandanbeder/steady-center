@@ -8,7 +8,7 @@ import { requireActiveUser } from "@/integrations/supabase/active-user-middlewar
 // Private-first contract:
 //   - Tasks counted ONLY when business_id is a team account the caller is
 //     an active member of AND the task has an assignee_id. Owner-only
-//     unassigned tasks in a team account stay out — they're not "shared".
+//     unassigned tasks in a team account stay out, they're not "shared".
 //   - Outcomes counted when business_id is a team account (team-scoped
 //     by construction).
 //   - Team commitments = weekly_goals tagged to a team account in period
@@ -18,7 +18,7 @@ import { requireActiveUser } from "@/integrations/supabase/active-user-middlewar
 //
 // Role gating:
 //   - owner/admin: per-member + per-account breakdown.
-//   - member/viewer/commenter: aggregate roll-up only — no per-member.
+//   - member/viewer/commenter: aggregate roll-up only, no per-member.
 // ----------------------------------------------------------------------
 
 type Role = "owner" | "admin" | "member" | "viewer" | "commenter";

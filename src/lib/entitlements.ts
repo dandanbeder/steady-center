@@ -1,7 +1,7 @@
 // Shared (client + server) entitlement logic. No imports, keep this pure.
 //
 // Heartbeat plans (4 tiers). "Space" is the user's ONE calm home. "Account"
-// is a business / area organised WITHIN that space — the countable thing
+// is a business / area organised WITHIN that space, the countable thing
 // plans limit. Team adds shared spaces on top.
 export type Tier = "free" | "basic" | "pro" | "team";
 export type BillingCycle = "month" | "year";
@@ -140,7 +140,7 @@ export function requiredTierFor(feature: Feature): Tier {
 export const UPGRADE_REQUIRED_PREFIX = "UPGRADE_REQUIRED:";
 export const SEAT_LIMIT_PREFIX = "SEAT_LIMIT_REACHED:";
 
-/** Display label for a tier — note `pro` is presented to users as "Standard". */
+/** Display label for a tier, note `pro` is presented to users as "Standard". */
 export function tierLabel(tier: Tier): string {
   switch (tier) {
     case "team":
@@ -177,4 +177,4 @@ export const FREE_BUSINESS_LIMIT = LIMITS.free.maxBusinesses;
 
 /** Shared helper copy that appears anywhere we talk about the space/account model. */
 export const SPACE_ACCOUNT_HELPER =
-  "Your space is your calm home. Accounts keep your different businesses or areas organised within it — and Team adds shared spaces to work together.";
+  "Your space is your calm home. Accounts keep your different businesses or areas organised within it, and Team adds shared spaces to work together.";

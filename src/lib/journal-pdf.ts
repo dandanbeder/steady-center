@@ -1,7 +1,7 @@
 /**
  * Branded Journal PDF generator.
  *
- * Runs entirely in the user's browser session via jsPDF — no entry content
+ * Runs entirely in the user's browser session via jsPDF, no entry content
  * leaves the device. The Heartbeat logo is loaded from the project's CDN
  * asset so the brand mark renders reliably. Footer year is computed at
  * generation time so the copyright never goes stale.
@@ -156,7 +156,7 @@ function renderEntry(
   doc.text(format(d, "EEEE, MMMM d, yyyy").toUpperCase(), box.left, y);
   y += 14;
 
-  // Title — Fraunces-like serif via jsPDF's built-in "times" (Fraunces isn't
+  // Title, Fraunces-like serif via jsPDF's built-in "times" (Fraunces isn't
   // bundled; "times" keeps the Calm Wave serif feel without shipping fonts).
   const title = entry.title?.trim() || "Untitled entry";
   doc.setFont("times", "bold");

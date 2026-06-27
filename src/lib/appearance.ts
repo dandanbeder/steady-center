@@ -47,7 +47,7 @@ export function writeLocalAppearance(a: Appearance) {
 export function applyAppearance(a: Appearance) {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
-  // Theme — default is always light (paper). Only an explicit "dark" choice flips it.
+  // Theme, default is always light (paper). Only an explicit "dark" choice flips it.
   const dark = a.theme === "dark";
   root.classList.toggle("dark", dark);
   // Density

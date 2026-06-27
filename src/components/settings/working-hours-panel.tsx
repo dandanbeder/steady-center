@@ -155,7 +155,7 @@ export function WorkingHoursPanel() {
           max={168}
           step={0.5}
           value={draft.general_weekly_hours ?? ""}
-          placeholder="—"
+          placeholder=","
           onChange={(e) => {
             const raw = e.target.value;
             setDraft({

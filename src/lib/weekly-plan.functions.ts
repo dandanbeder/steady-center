@@ -176,7 +176,7 @@ function fallbackPick(tasks: TaskLite[], max: number): SuggestResult {
 /* ────────────────────────────────────────────────────────────────────────────
  * Realistic plan review (invoked AI). Reads only the user's own committed
  * tasks (RLS) plus pace/capacity numbers the client already shows. Returns
- * a calm read and per-task suggestions — the UI confirms before any change.
+ * a calm read and per-task suggestions, the UI confirms before any change.
  * The Journal is never read.
  * ──────────────────────────────────────────────────────────────────────── */
 
@@ -227,9 +227,9 @@ export const realisticPlanReview = createServerFn({ method: "POST" })
       if (data.capacity_hours <= 0) return "Set a weekly budget on your accounts to get a tighter read.";
       const over = realistic > data.capacity_hours;
       if (over) {
-        return `Your ${committed.length} tasks would take about ${realistic}h at your usual pace — that's tight against ${data.capacity_hours}h of capacity. Trimming a few keeps the week realistic.`;
+        return `Your ${committed.length} tasks would take about ${realistic}h at your usual pace, that's tight against ${data.capacity_hours}h of capacity. Trimming a few keeps the week realistic.`;
       }
-      return `Your ${committed.length} tasks should fit at your usual pace — about ${realistic}h against ${data.capacity_hours}h of capacity.`;
+      return `Your ${committed.length} tasks should fit at your usual pace, about ${realistic}h against ${data.capacity_hours}h of capacity.`;
     })();
 
     const deterministic: ReviewResult = {
@@ -241,7 +241,7 @@ export const realisticPlanReview = createServerFn({ method: "POST" })
               .defer_task_ids.map((id) => ({
                 task_id: id,
                 action: "defer" as const,
-                reason: "Lower priority or later due date — safe to move back.",
+                reason: "Lower priority or later due date, safe to move back.",
               }))
           : [],
     };
@@ -268,7 +268,7 @@ export const realisticPlanReview = createServerFn({ method: "POST" })
           system:
             "You are a calm planning coach. Give a realistic read of this week's plan vs the user's pace and capacity. " +
             "Return ONLY JSON: { \"summary\": string, \"suggestions\": Array<{ \"task_id\": string, \"action\": \"keep\" | \"defer\", \"reason\": string }> }. " +
-            "Summary: ONE warm sentence under 200 chars — descriptive, no guilt, no hustle. " +
+            "Summary: ONE warm sentence under 200 chars, descriptive, no guilt, no hustle. " +
             "Suggestions: only include tasks worth deferring (never 'urgent'); short reason under 100 chars. " +
             "Prefer fewer, well-chosen defers over many. If the plan fits, return an empty suggestions array.",
           messages: [

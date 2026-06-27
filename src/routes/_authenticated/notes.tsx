@@ -136,7 +136,7 @@ function NotesPage() {
     if (creatingInstant) return;
     setCreatingInstant(true);
     try {
-      // A blank note must always be creatable — no account, no folder, no
+      // A blank note must always be creatable, no account, no folder, no
       // type chosen. The schema defaults business_id/folder_id to NULL
       // (= Personal / Unfiled) and note_type to 'note', and the RLS insert
       // policy only requires owner_id = auth.uid().
@@ -150,7 +150,7 @@ function NotesPage() {
       await qc.invalidateQueries({ queryKey: ["notes"] });
       setSelectedNoteId(n.id);
     } catch (e) {
-      // Surface the real reason — Supabase errors are plain objects, not
+      // Surface the real reason, Supabase errors are plain objects, not
       // Error instances, so String(e) becomes "[object Object]". Unpack
       // message / details / hint so the user sees what actually failed.
       console.error("[notes] instant create failed", e);
@@ -179,7 +179,7 @@ function NotesPage() {
 
   const scopedNotes = useMemo(() => {
     let out = notes;
-    // "__personal" is the Personal / Uncategorised sentinel — match rows
+    // "__personal" is the Personal / Uncategorised sentinel, match rows
     // whose business_id is null rather than comparing against the literal
     // string (no row will ever have business_id = "__personal").
     const PERSONAL_SENTINEL = "__personal";
@@ -271,7 +271,7 @@ function NotesPage() {
         </SheetContent>
       </Sheet>
 
-      {/* Notes list — collapsible on desktop */}
+      {/* Notes list, collapsible on desktop */}
       {listCollapsed ? (
         <div className="hidden md:flex w-10 shrink-0 border-r border-border flex-col items-center py-2 gap-2 bg-background transition-[width] duration-200">
           <Button
@@ -475,7 +475,7 @@ function NotesPage() {
             onMove={() => setMoveNote(selectedNote)}
             onChanged={(patch) => {
               // Patch the cache in place instead of invalidating the whole
-              // notes list — invalidation triggered a full GET after every
+              // notes list, invalidation triggered a full GET after every
               // keystroke save and starved the page.
               qc.setQueryData<Note[]>(["notes"], (prev) =>
                 (prev ?? []).map((n) =>
@@ -494,7 +494,7 @@ function NotesPage() {
           <div className="h-full flex flex-col items-center justify-center text-center px-8">
             <StickyNote className="h-12 w-12 text-muted-foreground/40 mb-3" />
             <p className="text-sm text-muted-foreground mb-4">
-              Pick a note, or start a blank one — write first, organise later.
+              Pick a note, or start a blank one, write first, organise later.
             </p>
             <div className="flex items-center gap-2">
               <Button onClick={handleInstantCreate} disabled={creatingInstant}>

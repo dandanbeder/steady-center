@@ -99,7 +99,7 @@ Return ONLY JSON:
 
 Rules:
 - Propose 3 to 5 goals total.
-- CARRY FORWARD goals from last week that were 'open' or 'missed' and still matter — set carry_from_id to that goal's id, keep its business_id when present, and you may refine the title or target.
+- CARRY FORWARD goals from last week that were 'open' or 'missed' and still matter, set carry_from_id to that goal's id, keep its business_id when present, and you may refine the title or target.
 - Suggest FRESH goals where helpful, but keep total ≤ 5 and avoid duplicating an existing goal already set for this week.
 - Each goal: short imperative title (≤ 80 chars), optional one-sentence description.
 - metric_type:
@@ -114,7 +114,7 @@ Rules:
       `Available accounts (business_id → name):`,
       businesses.length > 0
         ? businesses.map((b) => `  ${b.id} → ${b.name}`).join("\n")
-        : "  (none — personal only)",
+        : "  (none, personal only)",
       ``,
       `Last week's goals:`,
       prev.length > 0
@@ -197,7 +197,7 @@ Rules:
       })
       .filter((s) => s.title.length > 0);
 
-    // Quietly note business names for clients that want to render them — not required by schema.
+    // Quietly note business names for clients that want to render them, not required by schema.
     void bizById;
 
     return { suggestions };

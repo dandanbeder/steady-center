@@ -101,7 +101,7 @@ export function EventQuickView({
             )}
           </div>
 
-          {/* Account override — Heartbeat-only, never written back to Google/Outlook. */}
+          {/* Account override, Heartbeat-only, never written back to Google/Outlook. */}
           {businesses && onChangeAccount && (
             <div className="flex items-center justify-between gap-2 pt-1">
               <div className="text-xs text-muted-foreground">Account</div>

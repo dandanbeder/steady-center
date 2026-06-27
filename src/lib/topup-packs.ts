@@ -4,7 +4,7 @@
  * Sell price: $0.0035 / credit (0.35¢). Flat across all packs.
  * Pack sizes are deliberately LARGE so the Paddle transaction fee
  * (10% under $10, then 5% + flat fee) does not erode margin. We do not
- * offer small packs at this price point — the flat fee would invert margin.
+ * offer small packs at this price point, the flat fee would invert margin.
  *
  * Internal cost economics (anchor, true cost per credit, margin %) are
  * confidential and live ONLY in the Super Admin AI Economics dashboard.
@@ -43,7 +43,7 @@ export const TOPUP_PACKS: ReadonlyArray<TopUpPack> = [
     currency: "usd",
     label: "Standard",
     highlight: true,
-    blurb: "Most popular — plenty of headroom for a busy month.",
+    blurb: "Most popular, plenty of headroom for a busy month.",
   },
   {
     priceId: "topup_25000",

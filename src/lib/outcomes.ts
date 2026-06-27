@@ -199,7 +199,7 @@ export async function listTasksForOutcome(outcomeId: string) {
 
 
 /**
- * Tasks that could be linked to this outcome — same account scope, not done,
+ * Tasks that could be linked to this outcome, same account scope, not done,
  * not deleted, and not already linked to another outcome. RLS already
  * restricts results to tasks the user can see (owned or shared).
  */

@@ -1,7 +1,7 @@
 // Team calendar overlay.
 //
 // Returns events/meetings/tasks in a given business that the caller can see
-// AND are owned by other members — i.e. items teammates have shared into the
+// AND are owned by other members, i.e. items teammates have shared into the
 // team space. Private items never appear: every read goes through the
 // RLS-scoped `context.supabase`, whose policies route through `can_access`
 // (owner OR share grant OR business membership). Journal notes are never
@@ -15,7 +15,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireActiveUser } from "@/integrations/supabase/active-user-middleware";
 
-// Stable per-user palette — deterministic colour from the user id so a
+// Stable per-user palette, deterministic colour from the user id so a
 // teammate's events stay the same colour across reloads and surfaces.
 const MEMBER_PALETTE = [
   "#7A8471", "#A86B5C", "#5C7AA8", "#B58E3F", "#6B8E7A",
@@ -71,7 +71,7 @@ export const listTeamOverlay = createServerFn({ method: "POST" })
     const { businessId, rangeStart, rangeEnd } = data;
 
     // Caller must have some access to the business (membership OR a business
-    // share grant). RLS would already block reads otherwise — this gives a
+    // share grant). RLS would already block reads otherwise, this gives a
     // cleaner empty payload + avoids three pointless queries.
     const [{ data: mem }, { data: bizShare }] = await Promise.all([
       supabase
@@ -92,7 +92,7 @@ export const listTeamOverlay = createServerFn({ method: "POST" })
     if (!mem && !bizShare) return { members: [], items: [] };
 
     // Pull team items in the window, owned by other users. RLS still gates
-    // every row — we double-filter here so we never accidentally surface
+    // every row, we double-filter here so we never accidentally surface
     // someone's PERSONAL event that happens to be tagged to this business.
     const [evRes, mtRes, tkRes] = await Promise.all([
       supabase
