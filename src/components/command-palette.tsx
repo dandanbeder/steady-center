@@ -106,7 +106,12 @@ export function CommandPalette({ open, onOpenChange, onAskAssistant }: Props) {
     queryFn: async () => {
       const q = `%${trimmed}%`;
       const apply = (qry: any) =>
-        businessFilter ? qry.eq("business_id", businessFilter) : qry;
+        personalOnly
+          ? qry.is("business_id", null)
+          : businessFilter
+          ? qry.eq("business_id", businessFilter)
+          : qry;
+
 
       const [tasks, notes, events, meetings, folders, outcomes, accounts, people] = await Promise.all([
         apply(supabase.from("tasks").select("id,title,business_id").is("deleted_at", null).ilike("title", q).limit(6)),
