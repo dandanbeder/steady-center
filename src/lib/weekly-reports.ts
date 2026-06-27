@@ -165,14 +165,19 @@ export function nextScheduledRun(
   from: Date = new Date(),
 ): Date | null {
   if (!prefs.weekly_review_enabled) return null;
-  // Round up to the next exact hour.
+  // Round up to the next 5-minute boundary.
   const start = new Date(from);
-  start.setUTCMinutes(0, 0, 0);
-  start.setUTCHours(start.getUTCHours() + 1);
-  for (let i = 0; i < 24 * 14; i++) {
-    const candidate = new Date(start.getTime() + i * 3600_000);
+  start.setUTCSeconds(0, 0);
+  start.setUTCMinutes(start.getUTCMinutes() + (5 - (start.getUTCMinutes() % 5)));
+  const minute = prefs.weekly_review_minute ?? 0;
+  for (let i = 0; i < 12 * 24 * 14; i++) {
+    const candidate = new Date(start.getTime() + i * 5 * 60_000);
     const p = partsInTimezone(candidate, prefs.timezone);
-    if (p.weekday === prefs.weekly_review_day && p.hour === prefs.weekly_review_hour) {
+    if (
+      p.weekday === prefs.weekly_review_day &&
+      p.hour === prefs.weekly_review_hour &&
+      p.minute === minute
+    ) {
       return candidate;
     }
   }
