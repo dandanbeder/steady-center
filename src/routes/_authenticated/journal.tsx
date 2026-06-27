@@ -14,7 +14,6 @@ import {
   Download,
   ListOrdered,
   Trash2,
-  PanelLeftOpen,
   Menu,
 } from "lucide-react";
 import { toast } from "sonner";
