@@ -317,3 +317,97 @@ export function SecurityPanel() {
     </div>
   );
 }
+
+type GeoFn = (args: { data: { ip: string } }) => Promise<
+  { city: string | null; region: string | null; country: string | null; label: string | null } | null
+>;
+
+function LoginDetailDialog({
+  event,
+  onClose,
+  isNew,
+  geolocate,
+  tz,
+}: {
+  event: LoginEvent | null;
+  onClose: () => void;
+  isNew: boolean;
+  geolocate: GeoFn;
+  tz: string;
+}) {
+  const geoQ = useQuery({
+    queryKey: ["login-geo", event?.ip ?? null],
+    queryFn: () => (event?.ip ? geolocate({ data: { ip: event.ip } }) : Promise.resolve(null)),
+    enabled: !!event?.ip,
+    staleTime: 1000 * 60 * 60,
+  });
+  const ua = parseUserAgent(event?.user_agent);
+  const when = event ? new Date(event.occurred_at) : null;
+
+  return (
+    <Dialog open={!!event} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <span className="capitalize">{event?.event.replace(/_/g, " ") ?? "Sign-in"}</span>
+            {isNew && (
+              <span className="text-[10px] uppercase tracking-wide font-medium rounded-full bg-accent/15 text-accent px-1.5 py-0.5">
+                New device
+              </span>
+            )}
+          </DialogTitle>
+          <DialogDescription>Details for this sign-in event.</DialogDescription>
+        </DialogHeader>
+        {event && when && (
+          <div className="space-y-4 text-sm">
+            <div className="flex items-start gap-3">
+              <Clock className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+              <div className="space-y-0.5">
+                <p>{when.toLocaleString(undefined, { dateStyle: "full", timeStyle: "medium" })}</p>
+                <p className="text-xs text-muted-foreground">
+                  {tz} · {when.toISOString().replace("T", " ").replace(/\.\d+Z$/, " UTC")}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <Monitor className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+              <div className="space-y-0.5">
+                <p>{ua.summary}</p>
+                <p className="text-xs text-muted-foreground">
+                  {ua.device} · {ua.os} · {ua.browser}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+              <div className="space-y-0.5">
+                <p>
+                  {geoQ.isLoading
+                    ? "Looking up approximate location…"
+                    : geoQ.data?.label ?? "Location unavailable"}{" "}
+                  <span className="text-xs text-muted-foreground">(approximate)</span>
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  IP {event.ip ?? "not recorded"}
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground border-t border-border pt-3">
+              We store only the IP, user-agent, and timestamp for each sign-in. Location is
+              derived from the IP and is approximate, it is not GPS or precise.
+            </p>
+          </div>
+        )}
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>
+            Close
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
