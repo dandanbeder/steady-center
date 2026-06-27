@@ -76,6 +76,7 @@ function JournalPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [sidebarTab, setSidebarTab] = useState<"list" | "calendar">("list");
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const metaByNote = useMemo(() => {
     const m = new Map<string, JournalMeta>();
