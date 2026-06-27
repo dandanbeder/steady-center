@@ -122,7 +122,7 @@ function AdminAiEconomics() {
           <Stat label="Burn / day (30d)" value={s ? usdFromMicros(s.kitty.daily_burn_micros) : "-"} />
           <Stat label="Runway"
             value={s?.kitty.runway_days == null
-              ? ","
+              ? "-"
               : `${s.kitty.runway_days.toFixed(s.kitty.runway_days < 10 ? 1 : 0)} d`}
             tone={s?.kitty.runway_days != null && s.kitty.runway_days < 30 ? "warn" : undefined} />
         </div>

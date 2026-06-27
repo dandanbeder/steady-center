@@ -58,7 +58,7 @@ export const Route = createFileRoute("/_authenticated/billing")({
 });
 
 function fmtDate(d: string | null | undefined): string {
-  if (!d) return ",";
+  if (!d) return "-";
   return new Date(d).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 

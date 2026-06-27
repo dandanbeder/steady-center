@@ -438,7 +438,7 @@ function GoalDialog({
                   value={target}
                   onChange={(e) => setTarget(e.target.value)}
                   disabled={metric === "custom"}
-                  placeholder={metric === "custom" ? "," : "e.g. 10"}
+                  placeholder={metric === "custom" ? "-" : "e.g. 10"}
                 />
               </div>
             </div>
