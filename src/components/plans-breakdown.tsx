@@ -187,9 +187,7 @@ export function PlansBreakdown({ currentTier }: { currentTier: Tier }) {
         </div>
         <div className="mt-4 flex flex-wrap justify-end gap-2">
           <Button asChild variant="outline" size="sm">
-            <Link to="/pricing" search={{ cycle }}>
-              See full plan details
-            </Link>
+            <Link to="/pricing">See full plan details</Link>
           </Button>
         </div>
       </CardContent>
