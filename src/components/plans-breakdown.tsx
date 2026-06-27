@@ -1,12 +1,20 @@
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
-import { Check } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { Check, Loader2, ExternalLink } from "lucide-react";
+import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { LIMITS, PRICING, SPACE_ACCOUNT_HELPER, type Tier } from "@/lib/entitlements";
+import { LIMITS, PRICING, SPACE_ACCOUNT_HELPER, TEAM_MIN_SEATS, type Tier } from "@/lib/entitlements";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
+import { usePaddleCheckout } from "@/hooks/use-paddle-checkout";
+import { createCustomerPortalUrl } from "@/utils/payments.functions";
+import { getPaddleEnvironment } from "@/lib/paddle";
 
 type Cycle = "month" | "year";
+
+const TIER_RANK: Record<Tier, number> = { free: 0, basic: 1, pro: 2, team: 3 };
 
 function fmtUsd(cents: number): string {
   const v = cents / 100;
@@ -22,6 +30,11 @@ type PlanRow = {
   features: string[];
 };
 
+/**
+ * Feature lists are derived from `LIMITS` (the single source of truth used by
+ * server-side entitlement checks). Cards, enforced limits, and Paddle
+ * checkout therefore always agree about what each plan unlocks.
+ */
 const PLANS: PlanRow[] = [
   {
     id: "free",
@@ -52,7 +65,7 @@ const PLANS: PlanRow[] = [
     features: [
       `${LIMITS.basic.maxBusinesses} accounts within your space`,
       `${LIMITS.basic.aiAllowanceCreditsPerSeat} AI credits / month`,
-      "Everything in Free, plus Reporting & Meetings",
+      "Reporting & Meetings",
       "Ask my notes, shown, unlocks on Standard",
     ],
   },
@@ -89,28 +102,133 @@ const PLANS: PlanRow[] = [
           }
         : {
             main: `${fmtUsd(PRICING.team_monthly.amount)}/seat/mo`,
-            sub: "Billed monthly, 2-seat minimum",
+            sub: `Billed monthly, ${TEAM_MIN_SEATS}-seat minimum`,
           },
     features: [
       "Multiple accounts + shared team spaces",
       `${LIMITS.team.aiAllowanceCreditsPerSeat} AI credits per seat, pooled`,
-      "Everything in Standard, plus Sharing, roles & team progress",
+      "Sharing, roles & team progress",
       "Viewers & guests free (no seat)",
     ],
   },
 ];
 
+function priceIdFor(tier: Tier, cycle: Cycle): string | null {
+  if (tier === "free") return null;
+  if (tier === "basic") return cycle === "year" ? "basic_yearly" : "basic_monthly";
+  if (tier === "pro") return cycle === "year" ? "pro_yearly" : "pro_monthly";
+  return cycle === "year" ? "team_yearly" : "team_monthly";
+}
+
 /**
- * Plans comparison rendered inside the Billing page so users can compare
- * Free / Basic / Standard / Team without leaving Settings. Numbers are sourced
- * from the shared LIMITS / PRICING constants, kept in sync with /pricing.
+ * Plans comparison rendered inside the Billing page. Each card is actionable:
+ *   - Current plan shows a "Current" badge, no buy button.
+ *   - Higher tiers route to Paddle checkout for the selected cycle.
+ *   - Lower tiers (downgrade) open the Paddle customer portal.
  *
- * The Monthly/Annual toggle here is purely a display switch; the actual
- * checkout (which sends the matching priceId to Paddle) happens on /pricing
- * where the same toggle drives `priceId` selection end-to-end.
+ * Entitlements are written ONLY by the Paddle webhook (`subscriptions` table
+ * via service role). Nothing here mutates plan state client-side, and RLS on
+ * `subscriptions` forbids it (users SELECT their own row, all writes require
+ * service role).
  */
 export function PlansBreakdown({ currentTier }: { currentTier: Tier }) {
   const [cycle, setCycle] = useState<Cycle>("year");
+  const [busy, setBusy] = useState<Tier | null>(null);
+
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const env = getPaddleEnvironment();
+  const { openCheckout, loading: checkoutLoading } = usePaddleCheckout();
+  const portalFn = useServerFn(createCustomerPortalUrl);
+
+  const handleUpgrade = async (tier: Tier) => {
+    if (!user) {
+      navigate({ to: "/login" });
+      return;
+    }
+    const priceId = priceIdFor(tier, cycle);
+    if (!priceId) return;
+    setBusy(tier);
+    try {
+      await openCheckout({
+        priceId,
+        quantity: tier === "team" ? TEAM_MIN_SEATS : 1,
+        customerEmail: user.email ?? undefined,
+        customData: { userId: user.id },
+        successUrl: `${window.location.origin}/billing?checkout=success`,
+      });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not open checkout");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const handleDowngrade = async (tier: Tier) => {
+    setBusy(tier);
+    try {
+      const { url } = await portalFn({ data: { environment: env } });
+      window.open(url, "_blank", "noopener,noreferrer");
+      toast.message("Opened billing portal", {
+        description: "Switch or cancel from your Paddle portal.",
+      });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not open billing portal");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const renderCta = (tier: Tier) => {
+    if (tier === currentTier) {
+      return (
+        <Button variant="outline" size="sm" disabled className="w-full">
+          Current plan
+        </Button>
+      );
+    }
+    const isBusy = busy === tier || checkoutLoading;
+    const myRank = TIER_RANK[currentTier];
+    const targetRank = TIER_RANK[tier];
+
+    // Upgrade path: higher tier than current.
+    if (targetRank > myRank) {
+      if (tier === "free") {
+        // Free is never "higher" — only reached for someone already on free.
+        return null;
+      }
+      return (
+        <Button
+          size="sm"
+          className="w-full"
+          onClick={() => handleUpgrade(tier)}
+          disabled={isBusy}
+        >
+          {isBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : `Upgrade to ${tier === "pro" ? "Standard" : tier === "team" ? "Team" : "Basic"}`}
+        </Button>
+      );
+    }
+
+    // Downgrade path (incl. moving to Free): manage via Paddle portal.
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        className="w-full"
+        onClick={() => handleDowngrade(tier)}
+        disabled={isBusy}
+      >
+        {isBusy ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <>
+            {tier === "free" ? "Cancel in portal" : `Switch to ${tier === "pro" ? "Standard" : tier === "basic" ? "Basic" : "Team"}`}
+            <ExternalLink className="ml-1 h-3 w-3" />
+          </>
+        )}
+      </Button>
+    );
+  };
 
   return (
     <Card>
@@ -173,7 +291,7 @@ export function PlansBreakdown({ currentTier }: { currentTier: Tier }) {
                   <span className="text-2xl font-semibold">{main}</span>
                 </div>
                 <p className="text-xs text-muted-foreground">{sub}</p>
-                <ul className="mt-3 space-y-1.5 text-sm">
+                <ul className="mt-3 space-y-1.5 text-sm flex-1">
                   {p.features.map((f) => (
                     <li key={f} className="flex items-start gap-2">
                       <Check className="mt-0.5 h-3.5 w-3.5 text-primary shrink-0" />
@@ -181,6 +299,7 @@ export function PlansBreakdown({ currentTier }: { currentTier: Tier }) {
                     </li>
                   ))}
                 </ul>
+                <div className="mt-4">{renderCta(p.id)}</div>
               </div>
             );
           })}
