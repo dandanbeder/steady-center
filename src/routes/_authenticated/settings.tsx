@@ -721,7 +721,7 @@ function WeeklyHoursInput({ business, onChange }: { business: Business; onChange
         max={168}
         step={0.5}
         value={value}
-        placeholder=","
+        placeholder="-"
         onChange={(e) => setValue(e.target.value)}
         onBlur={commit}
         onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}

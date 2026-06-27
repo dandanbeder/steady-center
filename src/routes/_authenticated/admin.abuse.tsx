@@ -189,7 +189,7 @@ function FlagRow({ flag }: { flag: AbuseFlagRow }) {
     <>
       <TableRow>
         <TableCell>
-          <div className="font-medium">{flag.full_name || ","}</div>
+          <div className="font-medium">{flag.full_name || "-"}</div>
           <div className="text-xs text-muted-foreground">{flag.email || flag.user_id}</div>
         </TableCell>
         <TableCell><Badge variant={sevColor as any}>{flag.severity}</Badge></TableCell>

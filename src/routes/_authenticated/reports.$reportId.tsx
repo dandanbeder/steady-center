@@ -119,7 +119,7 @@ function ReportDetail() {
         />
         <Stat
           label="Avg cycle"
-          value={flow?.avg_cycle_days != null ? `${flow.avg_cycle_days}d` : ","}
+          value={flow?.avg_cycle_days != null ? `${flow.avg_cycle_days}d` : "-"}
         />
         <Stat label="Completion" value={`${rate}%`} />
       </div>

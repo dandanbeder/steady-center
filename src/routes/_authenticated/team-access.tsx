@@ -251,8 +251,8 @@ function ControlRoom({ businessId, businessName }: { businessId: string; busines
                 <Row label="Purchased">{ov.seats.paidPurchased}</Row>
               )}
               <Row label="Free collaborators">{ov.seats.freeUsed}</Row>
-              <Row label="Plan">{ov.seats.productId ?? ","}</Row>
-              <Row label="Status">{ov.seats.status ?? ","}</Row>
+              <Row label="Plan">{ov.seats.productId ?? "-"}</Row>
+              <Row label="Status">{ov.seats.status ?? "-"}</Row>
               {ov.seats.currentPeriodEnd && (
                 <Row label="Renews">
                   {new Date(ov.seats.currentPeriodEnd).toLocaleDateString()}
@@ -775,7 +775,7 @@ function AuditLogPanel({ businessId }: { businessId: string }) {
               </Badge>
               <div className="flex-1 min-w-0">
                 <div>
-                  <span className="font-medium">{r.actor_name || ","}</span>
+                  <span className="font-medium">{r.actor_name || "-"}</span>
                   {r.target_name && (
                     <>
                       {" → "}

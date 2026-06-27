@@ -209,8 +209,8 @@ function TeamAdminBody({ businessId }: { businessId: string }) {
                 <Row label="Purchased">{ov.seats.paidPurchased}</Row>
               )}
               <Row label="Free collaborators">{ov.seats.freeUsed}</Row>
-              <Row label="Plan">{ov.seats.productId ?? ","}</Row>
-              <Row label="Status">{ov.seats.status ?? ","}</Row>
+              <Row label="Plan">{ov.seats.productId ?? "-"}</Row>
+              <Row label="Status">{ov.seats.status ?? "-"}</Row>
               {ov.seats.currentPeriodEnd && (
                 <Row label="Renews">
                   {new Date(ov.seats.currentPeriodEnd).toLocaleDateString()}
@@ -341,7 +341,7 @@ function AuditLogPanel({ businessId }: { businessId: string }) {
               </Badge>
               <div className="flex-1 min-w-0">
                 <div>
-                  <span className="font-medium">{r.actor_name || ","}</span>
+                  <span className="font-medium">{r.actor_name || "-"}</span>
                   {r.target_name && (
                     <>
                       {" → "}
@@ -485,7 +485,7 @@ function KittyPanel({
 
   const { pool, members } = data;
   const usedPct = pool.allowance > 0 ? Math.min(100, Math.round((pool.used * 100) / pool.allowance)) : 0;
-  const cycleEnd = pool.cycle_end ? new Date(pool.cycle_end).toLocaleDateString() : ",";
+  const cycleEnd = pool.cycle_end ? new Date(pool.cycle_end).toLocaleDateString() : "-";
 
   return (
     <div className="space-y-4">

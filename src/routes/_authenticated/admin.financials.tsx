@@ -273,7 +273,7 @@ function Dashboard({ data }: { data: FinancialsSummary }) {
           <Kpi
             label="Kitty remaining"
             value={fmtMoney(data.cash.kittyRemainingMicros / 10_000)}
-            sub={data.cash.runwayDays != null ? `~${data.cash.runwayDays} days runway` : ","}
+            sub={data.cash.runwayDays != null ? `~${data.cash.runwayDays} days runway` : "-"}
           />
           <Kpi
             label="Top-ups all-time"

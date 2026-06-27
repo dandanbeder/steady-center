@@ -409,7 +409,7 @@ function PlanSection({ data, userId, onDone }: { data: any; userId: string; onDo
       {sub ? (
         <div className="text-sm space-y-1">
           <div><span className="text-muted-foreground">Plan: </span>{sub.product_id} <Badge variant="outline" className="ml-2">{sub.status}</Badge> <Badge variant="secondary" className="ml-1">{sub.environment}</Badge></div>
-          <div><span className="text-muted-foreground">Renews/ends: </span>{sub.current_period_end ? new Date(sub.current_period_end).toLocaleString() : ","}</div>
+          <div><span className="text-muted-foreground">Renews/ends: </span>{sub.current_period_end ? new Date(sub.current_period_end).toLocaleString() : "-"}</div>
           <div><span className="text-muted-foreground">Paddle customer: </span><code className="text-xs">{sub.paddle_customer_id}</code></div>
           {sub.paddle_customer_id && sub.paddle_customer_id !== "comp" && sub.paddle_customer_id !== "trial" && (
             <a
@@ -421,7 +421,7 @@ function PlanSection({ data, userId, onDone }: { data: any; userId: string; onDo
               Open in Paddle ↗
             </a>
           )}
-          <div><span className="text-muted-foreground">Seats override: </span><strong>{currentSeats || ","}</strong></div>
+          <div><span className="text-muted-foreground">Seats override: </span><strong>{currentSeats || "-"}</strong></div>
         </div>
       ) : (
         <p className="text-sm text-muted-foreground">No subscription on record (Free).</p>
@@ -838,7 +838,7 @@ function SharingSection({ c }: { c: any }) {
           ) : (
             <div className="text-xs space-y-1 max-h-40 overflow-y-auto">
               {c.sharing.received.slice(0, 50).map((s: any) => (
-                <div key={s.id}>{s.resource_type} from {s.granter_email || (s.granted_by ?? ",").slice(0, 8)} ({s.role})</div>
+                <div key={s.id}>{s.resource_type} from {s.granter_email || (s.granted_by ?? "-").slice(0, 8)} ({s.role})</div>
               ))}
             </div>
           )}

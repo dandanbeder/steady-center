@@ -212,12 +212,12 @@ function BillingPage() {
               <div>
                 <div className="text-xs uppercase tracking-wider text-muted-foreground">Paid seats</div>
                 <div className="mt-1 text-sm font-medium tabular-nums">
-                  {s ? `${s.paidUsed} / ${s.paidPurchased}` : ","}
+                  {s ? `${s.paidUsed} / ${s.paidPurchased}` : "-"}
                 </div>
               </div>
               <div>
                 <div className="text-xs uppercase tracking-wider text-muted-foreground">Free collaborators</div>
-                <div className="mt-1 text-sm font-medium tabular-nums">{s?.freeUsed ?? ","}</div>
+                <div className="mt-1 text-sm font-medium tabular-nums">{s?.freeUsed ?? "-"}</div>
               </div>
             </div>
 

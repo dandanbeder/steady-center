@@ -451,7 +451,7 @@ function NotesPage() {
                     </div>
                   )}
                   <div className="text-xs text-muted-foreground truncate mt-1">
-                    {stripMd(n.body).slice(0, 80) || ","}
+                    {stripMd(n.body).slice(0, 80) || "-"}
                   </div>
                   <div className="text-[10px] uppercase tracking-wide text-muted-foreground mt-1">
                     {formatDistanceToNow(new Date(n.updated_at), { addSuffix: true })} ·{" "}

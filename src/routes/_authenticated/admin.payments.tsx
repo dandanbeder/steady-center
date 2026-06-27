@@ -202,7 +202,7 @@ function SubscriptionsTable({ env }: { env: Env }) {
                 <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                   {r.current_period_end
                     ? new Date(r.current_period_end).toLocaleDateString()
-                    : ","}
+                    : "-"}
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                   {new Date(r.updated_at).toLocaleString()}
