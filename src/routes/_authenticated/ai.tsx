@@ -120,7 +120,7 @@ function AiPage() {
               <Sparkles className="h-5 w-5" /> What each action costs
             </CardTitle>
             <CardDescription>
-              Credits power AI features — a quick action costs about 1 credit, longer ones cost more. Your
+              Credits power AI features, a quick action costs about 1 credit, longer ones cost more. Your
               monthly allowance refills on your billing date; purchased top-ups last 12 months.
             </CardDescription>
           </CardHeader>

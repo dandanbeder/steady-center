@@ -18,10 +18,10 @@ import type { Note } from "@/lib/notes";
 /**
  * Reverse / at-a-glance view of everything connected to this note:
  * account, source meeting, linked outcome(s), linked tasks (source + outward).
- * Any item the user can't see via RLS simply doesn't appear — no silent leak.
+ * Any item the user can't see via RLS simply doesn't appear, no silent leak.
  */
 export function LinkedOverviewPanel({ note }: { note: Note }) {
-  // Account (the user's own businesses list — RLS already scopes it).
+  // Account (the user's own businesses list, RLS already scopes it).
   const accountQ = useQuery({
     queryKey: ["businesses"],
     queryFn: listBusinesses,
@@ -58,7 +58,7 @@ export function LinkedOverviewPanel({ note }: { note: Note }) {
     },
   });
 
-  // Outward and inward links — used to surface outcomes the note supports
+  // Outward and inward links, used to surface outcomes the note supports
   // (outward) or pages that reference this note (inward).
   const outwardQ = useQuery({
     queryKey: ["note-links", note.id],

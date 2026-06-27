@@ -649,7 +649,7 @@ Tone (this is the most important thing, follow it exactly):
 - Frame any problem as a gentle observation plus ONE practical, doable suggestion. Not a list of failings.
 - Keep it brief and human, a few warm sentences per field, not a lecture.
 - Ground every comment in the actual numbers / titles in the metrics. Don't invent data. If the week was quiet, say so kindly.
-- Punctuation rule: NEVER use em-dashes (—) or en-dashes (–) anywhere. Use commas, full stops, or "to" instead. Keep punctuation clean and calm.
+- Punctuation rule: NEVER use em-dashes (,) or en-dashes (–) anywhere. Use commas, full stops, or "to" instead. Keep punctuation clean and calm.
 ${styleLine}
 
 Return ONLY JSON, no prose around it, matching exactly this shape:

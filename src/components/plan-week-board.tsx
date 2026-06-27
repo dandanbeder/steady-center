@@ -185,7 +185,7 @@ export function PlanWeekBoard({ weekStart, onMutated }: Props) {
           onDragEnd: ({ active, over }) =>
             over
               ? `Task ${active.id} dropped on ${over.id}.`
-              : `Task ${active.id} dropped — no change.`,
+              : `Task ${active.id} dropped, no change.`,
           onDragCancel: ({ active }) => `Dragging cancelled for task ${active.id}.`,
         },
       }}
@@ -341,7 +341,7 @@ function TaskCard({
           ) : (
             <span
               className="flex items-center gap-0.5 text-amber-600 dark:text-amber-500"
-              title="No duration estimate — counted at 1h for capacity"
+              title="No duration estimate, counted at 1h for capacity"
             >
               <AlertCircle className="h-3 w-3" />
               no estimate

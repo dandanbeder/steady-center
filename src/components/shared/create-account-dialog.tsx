@@ -13,7 +13,7 @@ const COLORS = ["#7A8471", "#3b82f6", "#ef4444", "#f59e0b", "#10b981", "#8b5cf6"
 
 /** Single shared "Create an account" dialog used by the account switcher and by
  * AccountSelect's inline + Create action. Keeping one component avoids drift
- * between every entry point — every caller gets the same form, same defaults,
+ * between every entry point, every caller gets the same form, same defaults,
  * same error surfacing (real DB message, not a generic toast). */
 export function CreateAccountDialog({
   open,

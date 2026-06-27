@@ -185,7 +185,7 @@ export function TaskAttachments({ taskId }: { taskId: string }) {
 
       <p className="text-[11px] text-muted-foreground mb-2">
         Up to {Math.round(TASK_ATTACHMENT_MAX_BYTES / (1024 * 1024))} MB per file. Files inherit
-        this task's privacy — only people with access to the task can open them.
+        this task's privacy, only people with access to the task can open them.
       </p>
 
       {isLoading ? (

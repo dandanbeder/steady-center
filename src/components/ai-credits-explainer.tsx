@@ -15,7 +15,7 @@ export function AiCreditsExplainer({ allowance }: { allowance?: number | null })
       </CardHeader>
       <CardContent className="space-y-2 text-sm text-muted-foreground">
         <p>
-          Credits power AI features — a quick action costs about 1 credit, longer ones cost more.
+          Credits power AI features, a quick action costs about 1 credit, longer ones cost more.
           {allowance && allowance > 0 ? (
             <> Your plan includes <span className="font-medium text-foreground">{allowance.toLocaleString()} credits</span> each month.</>
           ) : null}
@@ -24,7 +24,7 @@ export function AiCreditsExplainer({ allowance }: { allowance?: number | null })
           Your monthly allowance refills on your billing date; purchased top-ups last 12 months.
         </p>
         <p>
-          If credits run low we'll tell you; if they run out, AI pauses until your next refresh — or you can
+          If credits run low we'll tell you; if they run out, AI pauses until your next refresh, or you can
           top up anytime.
         </p>
         <p className="text-foreground">

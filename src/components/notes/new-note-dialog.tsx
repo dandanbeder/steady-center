@@ -160,11 +160,11 @@ export function NewNoteDialog({
           <div className="space-y-3">
             <Label>Account</Label>
             {/* Shared AccountSelect ensures the same Personal + Create options
-                appear here as in every other picker — no dead ends, no
+                appear here as in every other picker, no dead ends, no
                 "No accounts yet". */}
             <AccountSelect value={businessId} onChange={(v) => setBusinessId(v)} />
             <p className="text-xs text-muted-foreground">
-              Choose which account this note belongs to. Leave as Personal if it doesn't fit one — you can move it later.
+              Choose which account this note belongs to. Leave as Personal if it doesn't fit one, you can move it later.
             </p>
           </div>
         )}

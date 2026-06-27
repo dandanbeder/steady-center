@@ -27,7 +27,7 @@ export type QuickAddSuggestion = z.infer<typeof SuggestionSchema>;
  * return a structured suggestion (event / task / meeting) for user confirmation.
  *
  * RLS: businesses list is read with the user's RLS-scoped supabase client.
- * Nothing is written here — the caller persists the chosen entity after confirmation.
+ * Nothing is written here, the caller persists the chosen entity after confirmation.
  */
 export const interpretQuickAdd = createServerFn({ method: "POST" })
   .middleware([requireActiveUser])
@@ -46,7 +46,7 @@ export const interpretQuickAdd = createServerFn({ method: "POST" })
     const businesses = bizRows ?? [];
     const bizLines = businesses.length
       ? businesses.map((b) => `- ${b.id} :: ${b.name}`).join("\n")
-      : "(none — user only has the Personal space)";
+      : "(none, user only has the Personal space)";
 
     const system = `You interpret a single short phrase from a calendar Quick Add bar and decide what to create.
 
@@ -66,7 +66,7 @@ Rules:
 - For task: "start_at" and "end_at" must be null and "all_day" null. If a due date is implied (e.g. "by Friday", "tomorrow"), put it in "start_at" as ISO 8601 (this is treated as due_at). Otherwise null.
 - "business_id" must EXACTLY match an existing id above, or null (Personal). Pick a match only if the phrase clearly references that account by name.
 - "priority" only for tasks: low | normal | high | urgent. Use "high" for "urgent", "asap", "important". Otherwise "normal" or null.
-- "join_url" only if the phrase literally contains an http(s) URL — never invent one.
+- "join_url" only if the phrase literally contains an http(s) URL, never invent one.
 - "reasoning" is one short sentence explaining the type choice (max 200 chars).
 
 Return ONLY via the provided tool.`;
@@ -126,7 +126,7 @@ Return ONLY via the provided tool.`;
       const t = await res.text();
       if (res.status === 429) throw new Error("Rate limited. Try again shortly.");
       if (res.status === 402)
-        throw new Error("AI credits exhausted — pick the type manually.");
+        throw new Error("AI credits exhausted, pick the type manually.");
       throw new Error(`AI error: ${t.slice(0, 200)}`);
     }
     const json = await res.json();

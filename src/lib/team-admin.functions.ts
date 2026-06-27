@@ -330,7 +330,7 @@ export const listTeamAuditLog = createServerFn({ method: "POST" })
  * validated; we then resolve the owner's billing account (the kitty) and
  * read this-cycle credit_ledger rows scoped to that account.
  *
- * Privacy: the response contains ONLY credit metering — credits_used,
+ * Privacy: the response contains ONLY credit metering, credits_used,
  * action counts, share-of-pool percent, display name and role. NO private
  * content (notes, tasks, mood, journal), NO cost/margin figures. The
  * kitty's allowance/balance is plan metadata (credits, not dollars), so
@@ -368,7 +368,7 @@ export const getTeamKittyUsage = createServerFn({ method: "GET" })
     const paused = (ac?.topup_paused as boolean | undefined) ?? false;
     const used = Math.max(0, allowance - balance);
 
-    // Per-member usage this cycle — only debits (delta < 0) on the allowance/purchased sources.
+    // Per-member usage this cycle, only debits (delta < 0) on the allowance/purchased sources.
     const since = cycleStart ?? new Date(Date.now() - 30 * 86_400_000).toISOString();
     const { data: ledger } = await supabaseAdmin
       .from("credit_ledger")

@@ -72,7 +72,7 @@ export function SupportDialog({
                 Message sent
               </DialogTitle>
               <DialogDescription>
-                Thanks — we've got your note. The team will reply to{" "}
+                Thanks, we've got your note. The team will reply to{" "}
                 <span className="text-foreground">{email}</span> as soon as they can.
               </DialogDescription>
             </DialogHeader>
@@ -85,7 +85,7 @@ export function SupportDialog({
             <DialogHeader>
               <DialogTitle>Contact support</DialogTitle>
               <DialogDescription>
-                Tell us what's going on — we'll get back to you by email.
+                Tell us what's going on, we'll get back to you by email.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-3">

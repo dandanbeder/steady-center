@@ -100,7 +100,7 @@ function AdminAiEconomics() {
         {s?.kitty.low_kitty_alert && (
           <Alert tone="danger"
             title="LOW KITTY, top up before users lose AI"
-            body={`Remaining ${usdFromMicros(s.kitty.remaining_micros)} · runway ${s.kitty.runway_days?.toFixed(1) ?? ","} days at current burn.`}
+            body={`Remaining ${usdFromMicros(s.kitty.remaining_micros)} · runway ${s.kitty.runway_days?.toFixed(1) ?? "-"} days at current burn.`}
           />
         )}
       </div>
@@ -115,14 +115,14 @@ function AdminAiEconomics() {
           <Button size="sm" onClick={() => setKittyOpen(true)}><Plus className="h-4 w-4 mr-1" /> Record entry</Button>
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-          <Stat label="Funded" value={s ? usdFromMicros(s.kitty.funded_micros) : ","} />
-          <Stat label="Consumed" value={s ? usdFromMicros(s.kitty.consumed_micros) : ","} />
-          <Stat label="Remaining" value={s ? usdFromMicros(s.kitty.remaining_micros) : ","}
+          <Stat label="Funded" value={s ? usdFromMicros(s.kitty.funded_micros) : "-"} />
+          <Stat label="Consumed" value={s ? usdFromMicros(s.kitty.consumed_micros) : "-"} />
+          <Stat label="Remaining" value={s ? usdFromMicros(s.kitty.remaining_micros) : "-"}
             tone={s?.kitty.low_kitty_alert ? "danger" : undefined} />
-          <Stat label="Burn / day (30d)" value={s ? usdFromMicros(s.kitty.daily_burn_micros) : ","} />
+          <Stat label="Burn / day (30d)" value={s ? usdFromMicros(s.kitty.daily_burn_micros) : "-"} />
           <Stat label="Runway"
             value={s?.kitty.runway_days == null
-              ? ","
+              ? "-"
               : `${s.kitty.runway_days.toFixed(s.kitty.runway_days < 10 ? 1 : 0)} d`}
             tone={s?.kitty.runway_days != null && s.kitty.runway_days < 30 ? "warn" : undefined} />
         </div>
@@ -138,7 +138,7 @@ function AdminAiEconomics() {
           tone={margin30d < 0 ? "danger" : marginErosion ? "warn" : undefined}
           sub={marginPct !== null ? `${marginPct.toFixed(1)}% margin` : undefined} />
         <Stat label="30d top-up sales"
-          value={s ? `${num(s.revenue.topup_purchases_30d)} · ${usd(s.revenue.topup_revenue_30d_cents)}` : ","} />
+          value={s ? `${num(s.revenue.topup_purchases_30d)} · ${usd(s.revenue.topup_revenue_30d_cents)}` : "-"} />
       </div>
 
       {/* Daily trend */}
@@ -281,7 +281,7 @@ function PerAccountTable({ rows, loading }: { rows: PerAccountRow[]; loading: bo
             ) : filtered.map((r) => (
               <TableRow key={r.account_user_id}>
                 <TableCell>
-                  <div className="font-medium">{r.full_name || ","}</div>
+                  <div className="font-medium">{r.full_name || "-"}</div>
                   <div className="text-xs text-muted-foreground">{r.email}</div>
                 </TableCell>
                 <TableCell>
@@ -303,7 +303,7 @@ function PerAccountTable({ rows, loading }: { rows: PerAccountRow[]; loading: bo
                 </TableCell>
                 <TableCell className="text-sm">{usd(r.topup_revenue_cents)}</TableCell>
                 <TableCell className="text-xs text-muted-foreground">
-                  {r.last_event_at ? new Date(r.last_event_at).toLocaleDateString() : ","}
+                  {r.last_event_at ? new Date(r.last_event_at).toLocaleDateString() : "-"}
                 </TableCell>
                 <TableCell className="space-x-1">
                   {r.hard_stopped && <Badge variant="destructive">hard-stop</Badge>}

@@ -286,7 +286,7 @@ function CalendarPage() {
     enabled: ready,
   });
 
-  // Current user id — used to colour team members' items distinctly from
+  // Current user id, used to colour team members' items distinctly from
   // the user's own. RLS already restricts what we can read; this is purely
   // a UI cue for the team-shared layer.
   const { data: currentUserId = null } = useQuery({
@@ -364,7 +364,7 @@ function CalendarPage() {
     [teamMembers],
   );
 
-  // Merged event list — own/synced events plus synthetic team meetings/tasks.
+  // Merged event list, own/synced events plus synthetic team meetings/tasks.
   const events = useMemo<EventRow[]>(
     () => [...rawEvents, ...teamSyntheticEvents],
     [rawEvents, teamSyntheticEvents],
@@ -419,7 +419,7 @@ function CalendarPage() {
 
   // Effective account for an event = explicit event override, else the parent
   // calendar's mapped account. This is the organising layer the rest of the UI
-  // (filter, colour, badges) keys off — sync sets event.business_id from the
+  // (filter, colour, badges) keys off, sync sets event.business_id from the
   // calendar mapping on insert, and the user can later reassign a single event.
   const effectiveBizId = useMemo(() => {
     return (e: EventRow): string | null =>
@@ -429,7 +429,7 @@ function CalendarPage() {
   const visibleEvents = useMemo(
     () =>
       events.filter((e) => {
-        // Team synthetic items (meetings/tasks) bypass the calendar list —
+        // Team synthetic items (meetings/tasks) bypass the calendar list ,
         // they don't belong to any of the user's calendars. Member-level
         // visibility is already applied in `teamSyntheticEvents`.
         const isTeam = e.source === "team";
@@ -1444,7 +1444,7 @@ function PersonalLayerRow({
   onToggle: () => void;
   onOnly: () => void;
 }) {
-  const color = "#9CA3AF"; // muted grey — distinct from any account palette colour
+  const color = "#9CA3AF"; // muted grey, distinct from any account palette colour
   return (
     <li className="group rounded-md hover:bg-muted/60">
       <div className="flex items-center gap-2 px-2 py-1.5">

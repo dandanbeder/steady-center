@@ -102,7 +102,7 @@ function PlanWeekPage() {
   const rolledFiltered = useMemo(() => filterByActive(rolled), [rolled, activeId]);
   const eventsFiltered = useMemo(() => filterByActive(events), [events, activeId]);
 
-  // Capacity — per-account weekly budgets are the source of truth.
+  // Capacity, per-account weekly budgets are the source of truth.
   const dailyCap = hours?.daily_capacity_hours ?? 6;
   const workDays = hours?.work_days ?? [1, 2, 3, 4, 5];
   const generalBudget = hours?.general_weekly_hours ?? null;
@@ -125,7 +125,7 @@ function PlanWeekPage() {
         budget: b.weekly_hours == null ? null : Number(b.weekly_hours),
         committed: 0,
       }));
-    // Personal / unassigned bucket — included when viewing All or filter is null.
+    // Personal / unassigned bucket, included when viewing All or filter is null.
     if (activeId === ALL || activeId === null) {
       rows.push({
         id: null,
@@ -252,13 +252,13 @@ function PlanWeekPage() {
       setReviewOpen(true);
     },
     onError: (e) => {
-      const msg = e instanceof Error ? e.message : "Couldn't generate a read — try again in a moment.";
+      const msg = e instanceof Error ? e.message : "Couldn't generate a read, try again in a moment.";
       if (msg.includes("UPGRADE_REQUIRED")) {
         toast.error("Pro plan required for AI suggestions");
       } else if (msg.toLowerCase().includes("credit")) {
-        toast.error("Out of AI credits — your plan still stands as it is.");
+        toast.error("Out of AI credits, your plan still stands as it is.");
       } else {
-        toast.error("Couldn't generate a read — try again in a moment.");
+        toast.error("Couldn't generate a read, try again in a moment.");
       }
     },
   });
@@ -417,7 +417,7 @@ function PlanWeekPage() {
             />
             {loadPct > 100 && (
               <p className="text-[11px] text-muted-foreground">
-                You've planned more than your hours this week — gently flagged, nothing blocked.
+                You've planned more than your hours this week, gently flagged, nothing blocked.
               </p>
             )}
             <div className="text-xs text-muted-foreground space-y-0.5">
@@ -497,7 +497,7 @@ function PlanWeekPage() {
             </div>
             {velocity && velocity.tasks_per_week === 0 && velocity.hours_per_week === 0 ? (
               <p className="text-xs text-muted-foreground">
-                Not enough history yet — a passive signal of your pace will appear as you complete tasks. No timer, no score.
+                Not enough history yet, a passive signal of your pace will appear as you complete tasks. No timer, no score.
               </p>
             ) : (
               <p className="text-xs text-muted-foreground">
@@ -516,7 +516,7 @@ function PlanWeekPage() {
               return (
                 <p className="text-xs text-muted-foreground rounded-md bg-muted/40 p-2.5">
                   At your usual pace, this week's tasks would take about{" "}
-                  <strong className="text-foreground">{(committedCount * perTask).toFixed(1)}h</strong> —
+                  <strong className="text-foreground">{(committedCount * perTask).toFixed(1)}h</strong> ,
                   this plan may be tight against your {effectiveCapacity.toFixed(0)}h capacity.
                 </p>
               );
@@ -536,14 +536,14 @@ function PlanWeekPage() {
 
             {overPace && (
               <p className="text-[11px] text-muted-foreground">
-                You've committed {committedCount} tasks — above your typical pace.
+                You've committed {committedCount} tasks, above your typical pace.
               </p>
             )}
           </Card>
         </aside>
       </div>
 
-      {/* Realistic plan preview — user confirms before anything changes */}
+      {/* Realistic plan preview, user confirms before anything changes */}
       <Dialog open={reviewOpen} onOpenChange={setReviewOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
@@ -562,7 +562,7 @@ function PlanWeekPage() {
             )}
             {reviewSuggestions.length === 0 ? (
               <p className="text-xs text-muted-foreground italic">
-                No tasks suggested to move — your plan looks well-shaped.
+                No tasks suggested to move, your plan looks well-shaped.
               </p>
             ) : (
               <div className="border rounded-md divide-y max-h-72 overflow-auto">
@@ -607,7 +607,7 @@ function PlanWeekPage() {
               {confirmReview.isPending
                 ? "Applying…"
                 : acceptedDefers.size > 0
-                  ? `Confirm — defer ${acceptedDefers.size}`
+                  ? `Confirm, defer ${acceptedDefers.size}`
                   : "Confirm"}
             </Button>
           </DialogFooter>

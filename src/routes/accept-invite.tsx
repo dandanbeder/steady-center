@@ -78,7 +78,7 @@ function AcceptInvitePage() {
         <h1 className="text-xl mb-2">You've been invited to Heartbeat</h1>
         <p className="text-sm text-muted-foreground mb-6">
           Sign in (or sign up) with the email this invite was sent to. Once you're signed
-          in we'll add you to the team — your own private space stays yours.
+          in we'll add you to the team, your own private space stays yours.
         </p>
         <Button asChild>
           <Link to="/login">Continue to sign up / sign in</Link>
@@ -143,7 +143,7 @@ function AcceptInvitePage() {
       <h1 className="text-xl mb-2">You've been invited to {businessName}</h1>
       <p className="text-sm text-muted-foreground mb-6">
         Join as <strong>{invite.proposed_role}</strong>. Your own private space stays
-        private — joining a team never shares your personal work.
+        private, joining a team never shares your personal work.
       </p>
       {wrongEmail ? (
         <div className="rounded-lg border border-border bg-muted/40 p-3 text-sm mb-4">

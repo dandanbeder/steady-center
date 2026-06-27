@@ -80,7 +80,7 @@ function TeamAccessPage() {
           <p className="text-sm text-muted-foreground max-w-2xl">
             Your team control room. Invite people, manage roles and seats,
             and decide exactly which accounts and resources they can see.
-            Private items and Journals are never shown — even to the owner.
+            Private items and Journals are never shown, even to the owner.
           </p>
         </div>
         <Select value={currentBizId} onValueChange={setBizId}>
@@ -121,7 +121,7 @@ function SoloStartPrompt() {
           </div>
           <CardTitle className="text-2xl">Start a team when you're ready</CardTitle>
           <CardDescription className="text-sm leading-relaxed">
-            Team &amp; Access is the owner's control room — roster, roles, seats,
+            Team &amp; Access is the owner's control room, roster, roles, seats,
             and per-account sharing. You're flying solo right now, so there's
             nothing to administer yet. When you add a teammate, this page lights
             up.
@@ -156,7 +156,7 @@ function ControlRoom({ businessId, businessName }: { businessId: string; busines
     return <p className="text-sm text-muted-foreground">Loading…</p>;
   }
 
-  // MEMBER view: limited — they see what they belong to but can't administer.
+  // MEMBER view: limited, they see what they belong to but can't administer.
   if (!my.can("admin")) {
     return <MemberLimitedView businessName={businessName} role={my.role ?? "member"} />;
   }
@@ -241,7 +241,7 @@ function ControlRoom({ businessId, businessName }: { businessId: string; busines
               <CardTitle>Seats</CardTitle>
               <CardDescription>
                 Owners, admins and members use paid seats. Viewers and
-                commenters are free — share a single item with anyone, no seat
+                commenters are free, share a single item with anyone, no seat
                 required.
               </CardDescription>
             </CardHeader>
@@ -251,8 +251,8 @@ function ControlRoom({ businessId, businessName }: { businessId: string; busines
                 <Row label="Purchased">{ov.seats.paidPurchased}</Row>
               )}
               <Row label="Free collaborators">{ov.seats.freeUsed}</Row>
-              <Row label="Plan">{ov.seats.productId ?? "—"}</Row>
-              <Row label="Status">{ov.seats.status ?? "—"}</Row>
+              <Row label="Plan">{ov.seats.productId ?? "-"}</Row>
+              <Row label="Status">{ov.seats.status ?? "-"}</Row>
               {ov.seats.currentPeriodEnd && (
                 <Row label="Renews">
                   {new Date(ov.seats.currentPeriodEnd).toLocaleDateString()}
@@ -319,7 +319,7 @@ function MemberLimitedView({ businessName, role }: { businessName: string; role:
         <CardDescription>
           You're a <strong>{role}</strong> on this team. Use the Account
           switcher above to move between the teams you belong to. Only owners
-          and admins can invite, change roles, or grant access — by design,
+          and admins can invite, change roles, or grant access, by design,
           your private work stays private.
         </CardDescription>
       </CardHeader>
@@ -551,7 +551,7 @@ function MemberCard({
         {member.resource_shares.length === 0 && !member.account_share && (
           <p className="text-xs text-muted-foreground flex items-center gap-1">
             <ShieldOff className="h-3 w-3" />
-            Membership alone grants nothing — this person currently sees nothing in {businessName}.
+            Membership alone grants nothing, this person currently sees nothing in {businessName}.
           </p>
         )}
       </section>
@@ -762,7 +762,7 @@ function AuditLogPanel({ businessId }: { businessId: string }) {
       <CardHeader>
         <CardTitle>Activity log</CardTitle>
         <CardDescription>
-          Every invite, role change, removal, grant and revoke on this team —
+          Every invite, role change, removal, grant and revoke on this team ,
           with who, when and why.
         </CardDescription>
       </CardHeader>
@@ -775,7 +775,7 @@ function AuditLogPanel({ businessId }: { businessId: string }) {
               </Badge>
               <div className="flex-1 min-w-0">
                 <div>
-                  <span className="font-medium">{r.actor_name || "—"}</span>
+                  <span className="font-medium">{r.actor_name || "-"}</span>
                   {r.target_name && (
                     <>
                       {" → "}

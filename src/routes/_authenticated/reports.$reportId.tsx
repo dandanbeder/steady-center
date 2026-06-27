@@ -115,11 +115,11 @@ function ReportDetail() {
         <Stat label="Tasks completed" value={o?.tasks_completed ?? 0} />
         <Stat
           label="On-time %"
-          value={onTimePct === null ? "," : `${onTimePct}%`}
+          value={onTimePct === null ? "-" : `${onTimePct}%`}
         />
         <Stat
           label="Avg cycle"
-          value={flow?.avg_cycle_days != null ? `${flow.avg_cycle_days}d` : ","}
+          value={flow?.avg_cycle_days != null ? `${flow.avg_cycle_days}d` : "-"}
         />
         <Stat label="Completion" value={`${rate}%`} />
       </div>

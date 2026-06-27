@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 
 const KEY = "heartbeat.active_business";
 export const ALL = "all" as const;
-// Sentinel for "Personal / Uncategorised" — items with no account (business_id IS NULL).
+// Sentinel for "Personal / Uncategorised", items with no account (business_id IS NULL).
 // Lives alongside ALL and a real business id in the same string slot so every
 // active-business consumer can switch on the same value without a second flag.
 export const PERSONAL = "__personal" as const;

@@ -244,7 +244,7 @@ export const processMeeting = createServerFn({ method: "POST" })
     }
 
     // 2) Best-effort AI: transcribe (if audio) + summarize. Failures are reported,
-    //    not thrown — the saved meeting stays intact.
+    //    not thrown, the saved meeting stays intact.
     let ai_error: string | null = null;
     try {
       if (!transcript && storedAudioPath) {

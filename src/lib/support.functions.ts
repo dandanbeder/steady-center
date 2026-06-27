@@ -26,7 +26,7 @@ function escapeHtml(s: string) {
  * and validated server-side; the user's id is recorded in the email
  * so the support team can correlate without trusting the client.
  *
- * RLS: this function writes no app tables — it only forwards an
+ * RLS: this function writes no app tables, it only forwards an
  * email through the gateway. The Supabase Auth middleware ensures
  * only authenticated users can call it; no other data is read or
  * written, so no additional RLS surface is exposed.
@@ -46,7 +46,7 @@ export const sendSupportEmail = createServerFn({ method: "POST" })
     const safeEmail = escapeHtml(data.email);
     const safeMessage = escapeHtml(data.message).replace(/\n/g, "<br/>");
 
-    const subject = `Heartbeat support — ${data.name}`;
+    const subject = `Heartbeat support, ${data.name}`;
     const html = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; color:#111; line-height:1.5;">
         <h2 style="margin:0 0 12px 0;">New support request</h2>

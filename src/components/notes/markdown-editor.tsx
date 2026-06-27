@@ -163,7 +163,7 @@ function Sep() {
 }
 
 // Hook: autosave with relative-time label.
-// Skips saves when the serialised value is identical to the last save —
+// Skips saves when the serialised value is identical to the last save ,
 // without this guard, a parent re-render (e.g. after a list refetch) hands
 // us a new object reference with identical contents and the debounced
 // effect re-fires forever, hammering the DB every ~1s.

@@ -171,7 +171,7 @@ function WebhookFailures() {
             <DialogTitle>Replay webhook</DialogTitle>
             <DialogDescription>
               Re-deliver <code className="text-xs">{replayTarget?.event_type}</code>. The webhook
-              handler is idempotent — safe to retry. Action is audited.
+              handler is idempotent, safe to retry. Action is audited.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
@@ -180,7 +180,7 @@ function WebhookFailures() {
               rows={3}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="e.g. Customer paid but plan didn't activate — ticket #1234"
+              placeholder="e.g. Customer paid but plan didn't activate, ticket #1234"
             />
           </div>
           <DialogFooter>
@@ -243,7 +243,7 @@ function AuditViewer() {
                     {r.target_email || r.target_user_id.slice(0, 8)}
                   </Link>
                 ) : (
-                  <span className="text-muted-foreground">—</span>
+                  <span className="text-muted-foreground">,</span>
                 )}
               </TableCell>
               <TableCell className="text-xs text-muted-foreground max-w-[320px] truncate">

@@ -143,7 +143,7 @@ function JournalPage() {
   };
 
   // Build a clean PDF for one entry or every entry. The PDF is built in the
-  // user's browser session — entry content never leaves the device.
+  // user's browser session, entry content never leaves the device.
   const buildPdfEntries = (subset: Note[]): JournalPdfEntry[] =>
     subset.map((e) => ({
       id: e.id,
@@ -304,7 +304,7 @@ function JournalPage() {
           <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground leading-snug">
             <Lock className="h-3 w-3 mt-0.5 shrink-0" />
             <p>
-              Private to you — even team admins can&apos;t see this. Never sent to AI.
+              Private to you, even team admins can&apos;t see this. Never sent to AI.
             </p>
           </div>
           <p className="text-[11px] text-muted-foreground/80 leading-snug italic">
@@ -473,7 +473,7 @@ function JournalPage() {
           <div className="h-full flex flex-col items-center justify-center text-center px-8 max-w-md mx-auto">
             <BookOpen className="h-12 w-12 text-muted-foreground/40 mb-3" />
             <p className="text-sm text-muted-foreground">
-              This is yours. Write a line, or just sit with a prompt — whenever you&apos;re ready.
+              This is yours. Write a line, or just sit with a prompt, whenever you&apos;re ready.
               Nothing here is shared, and there&apos;s no streak to keep.
             </p>
           </div>

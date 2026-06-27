@@ -208,7 +208,7 @@ function TasksPage() {
     };
   }, [taskParam, navigate]);
 
-  // PERSONAL filter has no business rows to show in the Spaces panel — only the
+  // PERSONAL filter has no business rows to show in the Spaces panel, only the
   // Uncategorised pseudo-list below. ALL shows all; a specific id narrows.
   const visibleBusinesses = useMemo(
     () =>
@@ -257,7 +257,7 @@ function TasksPage() {
           {visibleBusinesses.length === 0 && activeId !== PERSONAL ? (
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">
-                No accounts yet — your tasks live under Personal until you add one.
+                No accounts yet, your tasks live under Personal until you add one.
               </p>
               <button
                 onClick={() => setCreateAcctOpen(true)}
@@ -2361,7 +2361,7 @@ function TaskDialog({ task, onClose, onChange }: { task: Task; onClose: () => vo
     queryFn: () => listTaskActivity(task.id),
   });
 
-  // Unified per-task audit log. RLS scopes this to viewers of the task —
+  // Unified per-task audit log. RLS scopes this to viewers of the task ,
   // private/unshared tasks expose no history to anyone but the owner.
   const { data: audit = [] } = useQuery({
     queryKey: ["task-audit", task.id],

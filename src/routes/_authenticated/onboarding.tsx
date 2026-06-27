@@ -472,7 +472,7 @@ function OnboardingPage() {
                 </div>
               </div>
               <p className="text-xs text-muted-foreground">
-                Timezone: {profileQ.data?.timezone ?? ","}
+                Timezone: {profileQ.data?.timezone ?? "-"}
               </p>
 
               <div className="flex justify-between pt-2">

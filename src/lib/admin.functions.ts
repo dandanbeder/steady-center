@@ -225,7 +225,7 @@ export const adminChangeUserEmail = createServerFn({ method: "POST" })
       const { sendEmail, escapeHtml } = await import("@/lib/email.server");
       const html = (addr: string) =>
         `<p>Hi,</p><p>The email address on your Heartbeat account was changed by support.</p>` +
-        `<p><strong>Previous:</strong> ${escapeHtml(oldEmail ?? ",")}<br/><strong>New:</strong> ${escapeHtml(data.new_email)}</p>` +
+        `<p><strong>Previous:</strong> ${escapeHtml(oldEmail ?? "-")}<br/><strong>New:</strong> ${escapeHtml(data.new_email)}</p>` +
         `<p>If you didn't request this change, contact support immediately.</p>` +
         `<p><em>Sent to ${escapeHtml(addr)} for your security.</em></p>`;
       if (oldEmail && oldEmail !== data.new_email) {

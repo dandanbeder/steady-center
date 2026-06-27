@@ -326,7 +326,7 @@ function AskNotesPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Coins className="h-5 w-5 text-primary" />
-              Heads up — this uses about {ASK_CREDIT_COST} credits
+              Heads up, this uses about {ASK_CREDIT_COST} credits
             </DialogTitle>
             <DialogDescription>
               Ask searches your notes, meetings, tasks, and outcomes and asks AI to
@@ -340,12 +340,12 @@ function AskNotesPage() {
             ) : creditsPaused ? (
               <p className="inline-flex items-center gap-1.5 text-amber-700 dark:text-amber-300">
                 <AlertTriangle className="h-4 w-4" />
-                AI is paused — you're out of credits this cycle.
+                AI is paused, you're out of credits this cycle.
               </p>
             ) : insufficient ? (
               <p className="inline-flex items-center gap-1.5 text-amber-700 dark:text-amber-300">
                 <AlertTriangle className="h-4 w-4" />
-                You have {totalCredits} credit{totalCredits === 1 ? "" : "s"} — not
+                You have {totalCredits} credit{totalCredits === 1 ? "" : "s"}, not
                 enough to run Ask.
               </p>
             ) : (

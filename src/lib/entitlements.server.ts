@@ -118,7 +118,7 @@ export async function requireAccountSlot(userId: string): Promise<void> {
     .eq("owner_id", userId);
   if ((count ?? 0) >= cap) {
     throw new Error(
-      `${UPGRADE_REQUIRED_PREFIX} You've reached your plan's accounts — upgrade to add more.`,
+      `${UPGRADE_REQUIRED_PREFIX} You've reached your plan's accounts, upgrade to add more.`,
     );
   }
 }

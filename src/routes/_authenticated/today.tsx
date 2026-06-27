@@ -105,7 +105,7 @@ function TodayPage() {
   });
   const outcomesQ = useQuery({ queryKey: ["outcomes", "all-names"], queryFn: () => listOutcomes() });
 
-  // Shared with me — gracefully empty if the system isn't available.
+  // Shared with me, gracefully empty if the system isn't available.
   const sharedQ = useQuery<SharedItemRow[]>({
     queryKey: ["shared-with-me", "today-card"],
     queryFn: () => listSharedWithMeResources(),
@@ -113,7 +113,7 @@ function TodayPage() {
   });
   const sharedItems = (sharedQ.data ?? []).slice(0, 3);
 
-  // Account-scoped Notes preview — only when the user has filtered to a specific
+  // Account-scoped Notes preview, only when the user has filtered to a specific
   // account (a real business or Personal/Uncategorised). RLS on `notes` already
   // restricts to owner/shared; we additionally filter by the active account.
   const notesEnabled = activeId !== ALL;
@@ -187,7 +187,7 @@ function TodayPage() {
       </section>
 
       <div className="mt-12 grid gap-4 sm:grid-cols-2">
-        {/* TODAY'S EVENTS — header links to today in the calendar; each row links to its event */}
+        {/* TODAY'S EVENTS, header links to today in the calendar; each row links to its event */}
         <Card
           title="Today's events"
           action={
@@ -232,7 +232,7 @@ function TodayPage() {
         </Card>
 
 
-        {/* ON YOUR PLATE — tasks + today's upcoming meetings (same source) + shared with me */}
+        {/* ON YOUR PLATE, tasks + today's upcoming meetings (same source) + shared with me */}
         <Card title="On your plate">
           {(tasksQ.isLoading || eventsQ.isLoading) ? (
             <SkeletonList />

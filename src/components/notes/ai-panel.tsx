@@ -504,7 +504,7 @@ function SuggestDialog({
               />
               <div>
                 <div className="font-medium">Title</div>
-                <div className="text-muted-foreground">{data.title || ","}</div>
+                <div className="text-muted-foreground">{data.title || "-"}</div>
               </div>
             </label>
             <label className="flex items-start gap-2">

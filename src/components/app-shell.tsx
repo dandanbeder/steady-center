@@ -121,7 +121,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, []);
 
   // First-open routing for brand-new users is handled server-side at "/"
-  // via the per-user `profiles.has_seen_tutorial` flag — see src/routes/index.tsx.
+  // via the per-user `profiles.has_seen_tutorial` flag, see src/routes/index.tsx.
   // Deep links (shared items, meetings, notifications) bypass that redirect
   // and resolve directly to their target.
 

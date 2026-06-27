@@ -50,10 +50,10 @@ export async function createBusiness(name: string, color: string): Promise<{ id:
     .single();
   if (error) {
     // DB trigger raises UPGRADE_REQUIRED when the plan cap is hit. We surface
-    // a calm, plan-agnostic nudge — the upgrade affordance lives in the UI
+    // a calm, plan-agnostic nudge, the upgrade affordance lives in the UI
     // (CreateAccountDialog catches this and offers a link to /billing).
     if (/UPGRADE_REQUIRED/i.test(error.message)) {
-      throw new Error("You've reached your plan's accounts — upgrade to add more.");
+      throw new Error("You've reached your plan's accounts, upgrade to add more.");
     }
     throw error;
   }
