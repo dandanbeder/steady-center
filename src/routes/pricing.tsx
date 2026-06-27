@@ -203,7 +203,7 @@ function PricingPage() {
             Annual
             <span className="ml-2 rounded-full px-2 py-0.5 text-xs"
                   style={{ backgroundColor: "#7C9B7F", color: "#FBF8F0" }}>
-              Save up to {Math.max(basicAnnualSavingsPct, proAnnualSavingsPct, teamAnnualSavingsPct)}%
+              Save 18%
             </span>
           </CycleButton>
         </div>
@@ -253,7 +253,7 @@ function PricingPage() {
             }
             priceSub={
               cycle === "year"
-                ? `Billed ${fmtUsd(PRICING.basic_yearly.amount)} yearly, save ${basicAnnualSavingsPct}%`
+                ? `Billed ${fmtUsd(PRICING.basic_yearly.amount)} yearly, save 18%`
                 : "Billed monthly"
             }
             features={[
@@ -290,7 +290,7 @@ function PricingPage() {
             }
             priceSub={
               cycle === "year"
-                ? `Billed ${fmtUsd(PRICING.pro_yearly.amount)} yearly, save ${proAnnualSavingsPct}%`
+                ? `Billed ${fmtUsd(PRICING.pro_yearly.amount)} yearly, save 18%`
                 : "Billed monthly"
             }
             features={[
@@ -326,7 +326,7 @@ function PricingPage() {
             }
             priceSub={
               cycle === "year"
-                ? `Billed ${fmtUsd(PRICING.team_yearly.amount)}/seat yearly, save ${teamAnnualSavingsPct}%`
+                ? `Billed ${fmtUsd(PRICING.team_yearly.amount)}/seat yearly, save 18%`
                 : `Billed monthly · ${TEAM_MIN_SEATS}-seat minimum`
             }
             features={[

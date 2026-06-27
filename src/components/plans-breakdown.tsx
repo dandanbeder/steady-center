@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Check } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LIMITS, PRICING, SPACE_ACCOUNT_HELPER, type Tier } from "@/lib/entitlements";
 import { cn } from "@/lib/utils";
+
+type Cycle = "month" | "year";
 
 function fmtUsd(cents: number): string {
   const v = cents / 100;
@@ -14,8 +17,8 @@ type PlanRow = {
   id: Tier;
   name: string;
   tagline: string;
-  price: string;
-  priceSub: string;
+  /** Returns price + sublabel for the chosen cycle. */
+  price: (cycle: Cycle) => { main: string; sub: string };
   features: string[];
 };
 
@@ -24,8 +27,7 @@ const PLANS: PlanRow[] = [
     id: "free",
     name: "Free",
     tagline: "Get started, no card needed.",
-    price: "$0",
-    priceSub: "forever",
+    price: () => ({ main: "$0", sub: "forever" }),
     features: [
       `${LIMITS.free.maxBusinesses} account within your space`,
       `${LIMITS.free.aiAllowanceCreditsPerSeat} AI credits / month`,
@@ -37,8 +39,16 @@ const PLANS: PlanRow[] = [
     id: "basic",
     name: "Basic",
     tagline: "Two areas, one calm home.",
-    price: `${fmtUsd(PRICING.basic_monthly.amount)}/mo`,
-    priceSub: `or ${fmtUsd(Math.round(PRICING.basic_yearly.amount / 12))}/mo billed annually`,
+    price: (cycle) =>
+      cycle === "year"
+        ? {
+            main: `${fmtUsd(Math.round(PRICING.basic_yearly.amount / 12))}/mo`,
+            sub: `Billed ${fmtUsd(PRICING.basic_yearly.amount)} yearly, save 18%`,
+          }
+        : {
+            main: `${fmtUsd(PRICING.basic_monthly.amount)}/mo`,
+            sub: "Billed monthly",
+          },
     features: [
       `${LIMITS.basic.maxBusinesses} accounts within your space`,
       `${LIMITS.basic.aiAllowanceCreditsPerSeat} AI credits / month`,
@@ -50,8 +60,16 @@ const PLANS: PlanRow[] = [
     id: "pro",
     name: "Standard",
     tagline: "For everything you're juggling.",
-    price: `${fmtUsd(PRICING.pro_monthly.amount)}/mo`,
-    priceSub: `or ${fmtUsd(Math.round(PRICING.pro_yearly.amount / 12))}/mo billed annually`,
+    price: (cycle) =>
+      cycle === "year"
+        ? {
+            main: `${fmtUsd(Math.round(PRICING.pro_yearly.amount / 12))}/mo`,
+            sub: `Billed ${fmtUsd(PRICING.pro_yearly.amount)} yearly, save 18%`,
+          }
+        : {
+            main: `${fmtUsd(PRICING.pro_monthly.amount)}/mo`,
+            sub: "Billed monthly",
+          },
     features: [
       `${LIMITS.pro.maxBusinesses} accounts within your space`,
       `${LIMITS.pro.aiAllowanceCreditsPerSeat} AI credits / month`,
@@ -63,8 +81,16 @@ const PLANS: PlanRow[] = [
     id: "team",
     name: "Team",
     tagline: "For teams that collaborate.",
-    price: `${fmtUsd(PRICING.team_monthly.amount)}/seat/mo`,
-    priceSub: `or ${fmtUsd(Math.round(PRICING.team_yearly.amount / 12))}/seat billed annually · 2-seat minimum`,
+    price: (cycle) =>
+      cycle === "year"
+        ? {
+            main: `${fmtUsd(Math.round(PRICING.team_yearly.amount / 12))}/seat/mo`,
+            sub: `Billed ${fmtUsd(PRICING.team_yearly.amount)}/seat yearly, save 18%`,
+          }
+        : {
+            main: `${fmtUsd(PRICING.team_monthly.amount)}/seat/mo`,
+            sub: "Billed monthly, 2-seat minimum",
+          },
     features: [
       "Multiple accounts + shared team spaces",
       `${LIMITS.team.aiAllowanceCreditsPerSeat} AI credits per seat, pooled`,
@@ -77,20 +103,55 @@ const PLANS: PlanRow[] = [
 /**
  * Plans comparison rendered inside the Billing page so users can compare
  * Free / Basic / Standard / Team without leaving Settings. Numbers are sourced
- * from the shared LIMITS / PRICING constants used by the public pricing page,
- * so the two stay in sync.
+ * from the shared LIMITS / PRICING constants, kept in sync with /pricing.
+ *
+ * The Monthly/Annual toggle here is purely a display switch; the actual
+ * checkout (which sends the matching priceId to Paddle) happens on /pricing
+ * where the same toggle drives `priceId` selection end-to-end.
  */
 export function PlansBreakdown({ currentTier }: { currentTier: Tier }) {
+  const [cycle, setCycle] = useState<Cycle>("year");
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Plans</CardTitle>
-        <CardDescription>{SPACE_ACCOUNT_HELPER}</CardDescription>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <CardTitle>Plans</CardTitle>
+            <CardDescription>{SPACE_ACCOUNT_HELPER}</CardDescription>
+          </div>
+          <div className="inline-flex shrink-0 rounded-full border bg-muted/40 p-1 text-sm">
+            <button
+              type="button"
+              onClick={() => setCycle("month")}
+              className={cn(
+                "rounded-full px-3 py-1 transition",
+                cycle === "month" ? "bg-background shadow" : "text-muted-foreground",
+              )}
+            >
+              Monthly
+            </button>
+            <button
+              type="button"
+              onClick={() => setCycle("year")}
+              className={cn(
+                "rounded-full px-3 py-1 transition",
+                cycle === "year" ? "bg-background shadow" : "text-muted-foreground",
+              )}
+            >
+              Annual{" "}
+              <span className="ml-1 rounded bg-primary/15 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-primary">
+                Save 18%
+              </span>
+            </button>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {PLANS.map((p) => {
             const isCurrent = p.id === currentTier;
+            const { main, sub } = p.price(cycle);
             return (
               <div
                 key={p.id}
@@ -109,9 +170,9 @@ export function PlansBreakdown({ currentTier }: { currentTier: Tier }) {
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">{p.tagline}</p>
                 <div className="mt-3">
-                  <span className="text-2xl font-semibold">{p.price}</span>
+                  <span className="text-2xl font-semibold">{main}</span>
                 </div>
-                <p className="text-xs text-muted-foreground">{p.priceSub}</p>
+                <p className="text-xs text-muted-foreground">{sub}</p>
                 <ul className="mt-3 space-y-1.5 text-sm">
                   {p.features.map((f) => (
                     <li key={f} className="flex items-start gap-2">
