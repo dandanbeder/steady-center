@@ -376,7 +376,7 @@ function BillingPage() {
                   cycle === "year" ? "bg-background shadow" : "text-muted-foreground"
                 }`}
               >
-                Annual <span className="ml-1 rounded bg-primary/15 px-1.5 py-0.5 text-xs text-primary">save ~20%</span>
+                Annual <span className="ml-1 rounded bg-primary/15 px-1.5 py-0.5 text-xs text-primary">Save 18%</span>
               </button>
             </div>
           </CardContent>
