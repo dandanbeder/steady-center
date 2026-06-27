@@ -14,6 +14,8 @@ import {
   Download,
   ListOrdered,
   Trash2,
+  PanelLeftOpen,
+  Menu,
 } from "lucide-react";
 import { toast } from "sonner";
 import { listNotes, createNote, updateNote, type Note } from "@/lib/notes";
@@ -44,8 +46,10 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { getLocalSupportSession } from "@/lib/support-session";
+
 
 export const Route = createFileRoute("/_authenticated/journal")({
   component: JournalPage,
