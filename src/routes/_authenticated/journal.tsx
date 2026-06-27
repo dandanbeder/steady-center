@@ -267,7 +267,6 @@ function JournalPage() {
   }
 
   const entryDates = entries.map((e) => parseISO(e.created_at));
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const sidebar = (
     <div className="p-4 border-b border-border space-y-3 sticky top-0 bg-background z-10">
