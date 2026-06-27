@@ -49,7 +49,6 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/s
 import { cn } from "@/lib/utils";
 import { getLocalSupportSession } from "@/lib/support-session";
 
-
 export const Route = createFileRoute("/_authenticated/journal")({
   component: JournalPage,
 });
@@ -88,9 +87,7 @@ function JournalPage() {
     () =>
       notes
         .filter((n) => n.note_type === "journal")
-        .sort(
-          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-        ),
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
     [notes],
   );
 
@@ -101,9 +98,7 @@ function JournalPage() {
       const meta = metaByNote.get(e.id);
       const tagHit = meta?.tags.some((t) => t.includes(q));
       return (
-        e.title.toLowerCase().includes(q) ||
-        e.body.toLowerCase().includes(q) ||
-        Boolean(tagHit)
+        e.title.toLowerCase().includes(q) || e.body.toLowerCase().includes(q) || Boolean(tagHit)
       );
     });
   }, [entries, query, metaByNote]);
@@ -305,9 +300,7 @@ function JournalPage() {
       </div>
       <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground leading-snug">
         <Lock className="h-3 w-3 mt-0.5 shrink-0" />
-        <p>
-          Private to you, even team admins can&apos;t see this. Never sent to AI.
-        </p>
+        <p>Private to you, even team admins can&apos;t see this. Never sent to AI.</p>
       </div>
       <p className="text-[11px] text-muted-foreground/80 leading-snug italic">
         This is an AI-free space. Nothing you write here is ever read by AI or used to train it.
@@ -531,9 +524,7 @@ function JournalEntryList({
               onClick={() => onSelect(e.id)}
               className="w-full text-left p-2.5 pr-9"
             >
-              <div className="text-sm font-medium truncate">
-                {format(d, "EEE, MMM d")}
-              </div>
+              <div className="text-sm font-medium truncate">{format(d, "EEE, MMM d")}</div>
               <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
                 {format(d, "yyyy")}
               </div>
@@ -568,7 +559,6 @@ function JournalEntryList({
     </div>
   );
 }
-
 
 function JournalEditor({
   note,
