@@ -203,7 +203,7 @@ function PricingPage() {
             Annual
             <span className="ml-2 rounded-full px-2 py-0.5 text-xs"
                   style={{ backgroundColor: "#7C9B7F", color: "#FBF8F0" }}>
-              Save up to {Math.max(basicAnnualSavingsPct, proAnnualSavingsPct, teamAnnualSavingsPct)}%
+              Save 18%
             </span>
           </CycleButton>
         </div>
