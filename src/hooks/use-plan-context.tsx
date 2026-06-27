@@ -11,8 +11,6 @@ export type PlanContextData = {
   trialEnd: string | null;
   aiCap: number;
   aiUsed: number;
-  aiSpendCapCents: number;
-  aiSpendUsedCents: number;
 };
 
 export function usePlanContext() {
