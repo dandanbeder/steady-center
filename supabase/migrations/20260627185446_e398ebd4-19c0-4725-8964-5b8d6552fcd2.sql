@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS weekly_review_minute integer NOT NULL DEFAULT 0 CHECK (weekly_review_minute >= 0 AND weekly_review_minute < 60);
