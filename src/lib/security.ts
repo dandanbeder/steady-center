@@ -21,12 +21,12 @@ export async function recordLogin(event: "sign_in" | "sign_out" = "sign_in") {
   }
 }
 
-export async function listLoginHistory(limit = 25): Promise<LoginEvent[]> {
+export async function listLoginHistory(limit = 25, offset = 0): Promise<LoginEvent[]> {
   const { data, error } = await supabase
     .from("login_history")
     .select("*")
     .order("occurred_at", { ascending: false })
-    .limit(limit);
+    .range(offset, offset + limit - 1);
   if (error) throw error;
   return (data ?? []) as LoginEvent[];
 }
