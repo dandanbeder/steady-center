@@ -115,7 +115,7 @@ function ReportDetail() {
         <Stat label="Tasks completed" value={o?.tasks_completed ?? 0} />
         <Stat
           label="On-time %"
-          value={onTimePct === null ? "," : `${onTimePct}%`}
+          value={onTimePct === null ? "-" : `${onTimePct}%`}
         />
         <Stat
           label="Avg cycle"
