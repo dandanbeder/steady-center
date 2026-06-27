@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Shield, ShieldCheck, Trash2, KeyRound, LogOut } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { Shield, ShieldCheck, Trash2, KeyRound, LogOut, MapPin, Monitor, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,14 +21,47 @@ import {
   signOutOtherSessions,
   unenrollFactor,
   verifyTotpEnrollment,
+  type LoginEvent,
 } from "@/lib/security";
+import { geolocateIp } from "@/lib/security.functions";
+import { parseUserAgent } from "@/lib/user-agent";
 import { ChangePasswordSection } from "./change-password-section";
+
+const PAGE_SIZE = 20;
 
 export function SecurityPanel() {
   const qc = useQueryClient();
   const factorsQ = useQuery({ queryKey: ["mfa-factors"], queryFn: listMfaFactors });
   const aalQ = useQuery({ queryKey: ["mfa-aal"], queryFn: getAuthAal });
-  const historyQ = useQuery({ queryKey: ["login-history"], queryFn: () => listLoginHistory(20) });
+  const [historyLimit, setHistoryLimit] = useState(PAGE_SIZE);
+  const historyQ = useQuery({
+    queryKey: ["login-history", historyLimit],
+    queryFn: () => listLoginHistory(historyLimit),
+  });
+  const [detail, setDetail] = useState<LoginEvent | null>(null);
+  const geolocate = useServerFn(geolocateIp);
+  const tz = useMemo(
+    () => Intl.DateTimeFormat().resolvedOptions().timeZone || "local time",
+    [],
+  );
+
+  // Mark events whose parsed device/OS/browser hasn't appeared in any
+  // earlier entry as "New device". Heuristic only, helps owner spot
+  // unfamiliar sign-ins.
+  const newDeviceIds = useMemo(() => {
+    const rows = historyQ.data ?? [];
+    const seen = new Set<string>();
+    const flagged = new Set<string>();
+    // Walk oldest -> newest so the first occurrence is what gets flagged.
+    for (let i = rows.length - 1; i >= 0; i--) {
+      const r = rows[i];
+      const fp = parseUserAgent(r.user_agent).fingerprint;
+      if (!seen.has(fp) && seen.size > 0) flagged.add(r.id);
+      seen.add(fp);
+    }
+    return flagged;
+  }, [historyQ.data]);
+
 
   const [enrollOpen, setEnrollOpen] = useState(false);
   const [enrollment, setEnrollment] = useState<{ id: string; qr: string; secret: string } | null>(null);
@@ -172,28 +206,73 @@ export function SecurityPanel() {
         ) : (historyQ.data?.length ?? 0) === 0 ? (
           <p className="text-sm text-muted-foreground">No recent sign-in events yet.</p>
         ) : (
-          <div className="rounded-lg border border-border overflow-hidden">
-            <ul className="divide-y divide-border max-h-80 overflow-y-auto">
-              {historyQ.data!.map((e) => (
-                <li
-                  key={e.id}
-                  className="flex items-start justify-between gap-3 px-4 py-3 text-sm"
+          <>
+            <div className="rounded-lg border border-border overflow-hidden">
+              <ul className="divide-y divide-border">
+                {historyQ.data!.map((e) => {
+                  const ua = parseUserAgent(e.user_agent);
+                  const isNew = newDeviceIds.has(e.id);
+                  return (
+                    <li key={e.id}>
+                      <button
+                        type="button"
+                        onClick={() => setDetail(e)}
+                        className="w-full text-left flex items-start justify-between gap-3 px-4 py-3 text-sm hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="min-w-0 space-y-0.5">
+                          <p className="flex items-center gap-2">
+                            <span className="capitalize">{e.event.replace(/_/g, " ")}</span>
+                            {isNew && (
+                              <span className="text-[10px] uppercase tracking-wide font-medium rounded-full bg-accent/15 text-accent px-1.5 py-0.5">
+                                New device
+                              </span>
+                            )}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate max-w-md">
+                            {ua.summary}
+                          </p>
+                          {e.ip && (
+                            <p className="text-xs text-muted-foreground/80">
+                              IP {e.ip} · location approximate
+                            </p>
+                          )}
+                        </div>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                          {new Date(e.occurred_at).toLocaleString()}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+            {(historyQ.data?.length ?? 0) >= historyLimit && (
+              <div className="pt-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setHistoryLimit((n) => n + PAGE_SIZE)}
+                  disabled={historyQ.isFetching}
                 >
-                  <div className="min-w-0">
-                    <p className="capitalize">{e.event.replace(/_/g, " ")}</p>
-                    <p className="text-xs text-muted-foreground truncate max-w-md">
-                      {e.user_agent ?? "Unknown device"}
-                    </p>
-                  </div>
-                  <span className="text-xs text-muted-foreground whitespace-nowrap">
-                    {new Date(e.occurred_at).toLocaleString()}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
+                  {historyQ.isFetching ? "Loading…" : "Load more"}
+                </Button>
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Times shown in your timezone ({tz}). Locations are approximate, derived from IP.
+            </p>
+          </>
         )}
       </section>
+
+      <LoginDetailDialog
+        event={detail}
+        onClose={() => setDetail(null)}
+        isNew={detail ? newDeviceIds.has(detail.id) : false}
+        geolocate={geolocate}
+        tz={tz}
+      />
+
 
       <Dialog open={enrollOpen} onOpenChange={setEnrollOpen}>
         <DialogContent>
@@ -238,3 +317,97 @@ export function SecurityPanel() {
     </div>
   );
 }
+
+type GeoFn = (args: { data: { ip: string } }) => Promise<
+  { city: string | null; region: string | null; country: string | null; label: string | null } | null
+>;
+
+function LoginDetailDialog({
+  event,
+  onClose,
+  isNew,
+  geolocate,
+  tz,
+}: {
+  event: LoginEvent | null;
+  onClose: () => void;
+  isNew: boolean;
+  geolocate: GeoFn;
+  tz: string;
+}) {
+  const geoQ = useQuery({
+    queryKey: ["login-geo", event?.ip ?? null],
+    queryFn: () => (event?.ip ? geolocate({ data: { ip: event.ip } }) : Promise.resolve(null)),
+    enabled: !!event?.ip,
+    staleTime: 1000 * 60 * 60,
+  });
+  const ua = parseUserAgent(event?.user_agent);
+  const when = event ? new Date(event.occurred_at) : null;
+
+  return (
+    <Dialog open={!!event} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <span className="capitalize">{event?.event.replace(/_/g, " ") ?? "Sign-in"}</span>
+            {isNew && (
+              <span className="text-[10px] uppercase tracking-wide font-medium rounded-full bg-accent/15 text-accent px-1.5 py-0.5">
+                New device
+              </span>
+            )}
+          </DialogTitle>
+          <DialogDescription>Details for this sign-in event.</DialogDescription>
+        </DialogHeader>
+        {event && when && (
+          <div className="space-y-4 text-sm">
+            <div className="flex items-start gap-3">
+              <Clock className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+              <div className="space-y-0.5">
+                <p>{when.toLocaleString(undefined, { dateStyle: "full", timeStyle: "medium" })}</p>
+                <p className="text-xs text-muted-foreground">
+                  {tz} · {when.toISOString().replace("T", " ").replace(/\.\d+Z$/, " UTC")}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <Monitor className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+              <div className="space-y-0.5">
+                <p>{ua.summary}</p>
+                <p className="text-xs text-muted-foreground">
+                  {ua.device} · {ua.os} · {ua.browser}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+              <div className="space-y-0.5">
+                <p>
+                  {geoQ.isLoading
+                    ? "Looking up approximate location…"
+                    : geoQ.data?.label ?? "Location unavailable"}{" "}
+                  <span className="text-xs text-muted-foreground">(approximate)</span>
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  IP {event.ip ?? "not recorded"}
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground border-t border-border pt-3">
+              We store only the IP, user-agent, and timestamp for each sign-in. Location is
+              derived from the IP and is approximate, it is not GPS or precise.
+            </p>
+          </div>
+        )}
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>
+            Close
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+

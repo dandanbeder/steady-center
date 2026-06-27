@@ -44,3 +44,45 @@ export const recordLoginEvent = createServerFn({ method: "POST" })
     }
     return { ok: true };
   });
+
+/**
+ * Approximate IP geolocation for the Login history detail view.
+ * Uses the free ipapi.co endpoint (no key, ~1k req/day). Result is
+ * intentionally coarse — city + country only — and always labelled
+ * "approximate" in the UI. Returns null on any failure.
+ */
+export const geolocateIp = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ ip: z.string().min(1).max(64) }).parse(i))
+  .handler(async ({ data }) => {
+    // Skip obvious private / unroutable addresses.
+    if (
+      /^(10\.|127\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|::1|fc|fd|fe80)/i.test(
+        data.ip,
+      )
+    ) {
+      return { city: null, region: null, country: null, label: "Local network" };
+    }
+    try {
+      const r = await fetch(`https://ipapi.co/${encodeURIComponent(data.ip)}/json/`, {
+        headers: { "user-agent": "heartbeat-login-history" },
+      });
+      if (!r.ok) return null;
+      const j = (await r.json()) as {
+        city?: string;
+        region?: string;
+        country_name?: string;
+        error?: boolean;
+      };
+      if (j.error) return null;
+      const parts = [j.city, j.region, j.country_name].filter(Boolean) as string[];
+      return {
+        city: j.city ?? null,
+        region: j.region ?? null,
+        country: j.country_name ?? null,
+        label: parts.length ? parts.join(", ") : null,
+      };
+    } catch {
+      return null;
+    }
+  });
