@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Shield, ShieldCheck, Trash2, KeyRound, LogOut } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { Shield, ShieldCheck, Trash2, KeyRound, LogOut, MapPin, Monitor, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,14 +21,47 @@ import {
   signOutOtherSessions,
   unenrollFactor,
   verifyTotpEnrollment,
+  type LoginEvent,
 } from "@/lib/security";
+import { geolocateIp } from "@/lib/security.functions";
+import { parseUserAgent } from "@/lib/user-agent";
 import { ChangePasswordSection } from "./change-password-section";
+
+const PAGE_SIZE = 20;
 
 export function SecurityPanel() {
   const qc = useQueryClient();
   const factorsQ = useQuery({ queryKey: ["mfa-factors"], queryFn: listMfaFactors });
   const aalQ = useQuery({ queryKey: ["mfa-aal"], queryFn: getAuthAal });
-  const historyQ = useQuery({ queryKey: ["login-history"], queryFn: () => listLoginHistory(20) });
+  const [historyLimit, setHistoryLimit] = useState(PAGE_SIZE);
+  const historyQ = useQuery({
+    queryKey: ["login-history", historyLimit],
+    queryFn: () => listLoginHistory(historyLimit),
+  });
+  const [detail, setDetail] = useState<LoginEvent | null>(null);
+  const geolocate = useServerFn(geolocateIp);
+  const tz = useMemo(
+    () => Intl.DateTimeFormat().resolvedOptions().timeZone || "local time",
+    [],
+  );
+
+  // Mark events whose parsed device/OS/browser hasn't appeared in any
+  // earlier entry as "New device". Heuristic only, helps owner spot
+  // unfamiliar sign-ins.
+  const newDeviceIds = useMemo(() => {
+    const rows = historyQ.data ?? [];
+    const seen = new Set<string>();
+    const flagged = new Set<string>();
+    // Walk oldest -> newest so the first occurrence is what gets flagged.
+    for (let i = rows.length - 1; i >= 0; i--) {
+      const r = rows[i];
+      const fp = parseUserAgent(r.user_agent).fingerprint;
+      if (!seen.has(fp) && seen.size > 0) flagged.add(r.id);
+      seen.add(fp);
+    }
+    return flagged;
+  }, [historyQ.data]);
+
 
   const [enrollOpen, setEnrollOpen] = useState(false);
   const [enrollment, setEnrollment] = useState<{ id: string; qr: string; secret: string } | null>(null);
