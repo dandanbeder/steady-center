@@ -14,6 +14,7 @@ import {
   Download,
   ListOrdered,
   Trash2,
+  Menu,
 } from "lucide-react";
 import { toast } from "sonner";
 import { listNotes, createNote, updateNote, type Note } from "@/lib/notes";
@@ -44,6 +45,7 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { getLocalSupportSession } from "@/lib/support-session";
 
@@ -74,6 +76,7 @@ function JournalPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [sidebarTab, setSidebarTab] = useState<"list" | "calendar">("list");
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const metaByNote = useMemo(() => {
     const m = new Map<string, JournalMeta>();
@@ -85,9 +88,7 @@ function JournalPage() {
     () =>
       notes
         .filter((n) => n.note_type === "journal")
-        .sort(
-          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-        ),
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
     [notes],
   );
 
@@ -98,9 +99,7 @@ function JournalPage() {
       const meta = metaByNote.get(e.id);
       const tagHit = meta?.tags.some((t) => t.includes(q));
       return (
-        e.title.toLowerCase().includes(q) ||
-        e.body.toLowerCase().includes(q) ||
-        Boolean(tagHit)
+        e.title.toLowerCase().includes(q) || e.body.toLowerCase().includes(q) || Boolean(tagHit)
       );
     });
   }, [entries, query, metaByNote]);
@@ -269,196 +268,191 @@ function JournalPage() {
 
   const entryDates = entries.map((e) => parseISO(e.created_at));
 
-  return (
-    <div className="flex h-[calc(100vh-4rem)]">
-      <aside className="w-80 shrink-0 border-r border-border overflow-y-auto flex flex-col">
-        <div className="p-4 border-b border-border space-y-3 sticky top-0 bg-background z-10">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <BookOpen className="h-4 w-4 text-muted-foreground" />
-              <h1 className="text-sm font-semibold">Journal</h1>
-            </div>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={handleExportAll}
-                className="text-muted-foreground hover:text-foreground"
-                title="Download journal as PDF"
-              >
-                <Download className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setSettingsOpen(true)}
-                className="text-muted-foreground hover:text-foreground"
-                title={lockStatus?.enabled ? "Journal is locked" : "Add a lock"}
-              >
-                {lockStatus?.enabled ? (
-                  <ShieldCheck className="h-4 w-4" />
-                ) : (
-                  <Lock className="h-4 w-4" />
-                )}
-              </button>
-            </div>
-          </div>
-          <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground leading-snug">
-            <Lock className="h-3 w-3 mt-0.5 shrink-0" />
-            <p>
-              Private to you, even team admins can&apos;t see this. Never sent to AI.
+  const sidebar = (
+    <div className="p-4 border-b border-border space-y-3 sticky top-0 bg-background z-10">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <BookOpen className="h-4 w-4 text-muted-foreground" />
+          <h1 className="text-sm font-semibold">Journal</h1>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={handleExportAll}
+            className="text-muted-foreground hover:text-foreground"
+            title="Download journal as PDF"
+          >
+            <Download className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+            className="text-muted-foreground hover:text-foreground"
+            title={lockStatus?.enabled ? "Journal is locked" : "Add a lock"}
+          >
+            {lockStatus?.enabled ? (
+              <ShieldCheck className="h-4 w-4" />
+            ) : (
+              <Lock className="h-4 w-4" />
+            )}
+          </button>
+        </div>
+      </div>
+      <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground leading-snug">
+        <Lock className="h-3 w-3 mt-0.5 shrink-0" />
+        <p>Private to you, even team admins can&apos;t see this. Never sent to AI.</p>
+      </div>
+      <p className="text-[11px] text-muted-foreground/80 leading-snug italic">
+        This is an AI-free space. Nothing you write here is ever read by AI or used to train it.
+      </p>
+
+      {todayEntry ? (
+        <Button
+          size="sm"
+          variant="outline"
+          className="w-full"
+          onClick={() => {
+            setSelectedId(todayEntry.id);
+            setMobileSidebarOpen(false);
+          }}
+        >
+          Open today&apos;s entry
+        </Button>
+      ) : (
+        <div className="space-y-1.5">
+          <Button
+            size="sm"
+            className="w-full gap-1.5"
+            onClick={() => {
+              startToday({});
+              setMobileSidebarOpen(false);
+            }}
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Blank entry
+          </Button>
+          <div className="pt-1">
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">
+              Start from a prompt
             </p>
-          </div>
-          <p className="text-[11px] text-muted-foreground/80 leading-snug italic">
-            This is an AI-free space. Nothing you write here is ever read by AI or used to train it.
-          </p>
-
-          {todayEntry ? (
-            <Button
-              size="sm"
-              variant="outline"
-              className="w-full"
-              onClick={() => setSelectedId(todayEntry.id)}
-            >
-              Open today&apos;s entry
-            </Button>
-          ) : (
-            <div className="space-y-1.5">
-              <Button
-                size="sm"
-                className="w-full gap-1.5"
-                onClick={() => startToday({})}
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Blank entry
-              </Button>
-              <div className="pt-1">
-                <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">
-                  Start from a prompt
-                </p>
-                <div className="grid grid-cols-1 gap-1">
-                  {REFLECTION_PROMPTS.map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() =>
-                        startToday({
-                          body: `# ${format(today, "EEEE, MMMM d")}\n\n${p.body}`,
-                          titleHint: p.label,
-                        })
-                      }
-                      className="text-left text-xs px-2.5 py-1.5 rounded-md border border-border/60 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+            <div className="grid grid-cols-1 gap-1">
+              {REFLECTION_PROMPTS.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => {
+                    startToday({
+                      body: `# ${format(today, "EEEE, MMMM d")}\n\n${p.body}`,
+                      titleHint: p.label,
+                    });
+                    setMobileSidebarOpen(false);
+                  }}
+                  className="text-left text-xs px-2.5 py-1.5 rounded-md border border-border/60 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {p.label}
+                </button>
+              ))}
             </div>
-          )}
-
-          <div className="relative">
-            <Search className="h-3.5 w-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search entries & themes"
-              className="h-8 pl-7 text-xs"
-            />
-          </div>
-
-          <div className="flex gap-1 text-xs">
-            <button
-              type="button"
-              onClick={() => setSidebarTab("list")}
-              className={cn(
-                "flex-1 px-2 py-1 rounded-md inline-flex items-center justify-center gap-1.5",
-                sidebarTab === "list"
-                  ? "bg-muted text-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              <ListOrdered className="h-3 w-3" /> Entries
-            </button>
-            <button
-              type="button"
-              onClick={() => setSidebarTab("calendar")}
-              className={cn(
-                "flex-1 px-2 py-1 rounded-md inline-flex items-center justify-center gap-1.5",
-                sidebarTab === "calendar"
-                  ? "bg-muted text-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              <CalendarDays className="h-3 w-3" /> Calendar
-            </button>
           </div>
         </div>
+      )}
 
+      <div className="relative">
+        <Search className="h-3.5 w-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search entries & themes"
+          className="h-8 pl-7 text-xs"
+        />
+      </div>
+
+      <div className="flex gap-1 text-xs">
+        <button
+          type="button"
+          onClick={() => setSidebarTab("list")}
+          className={cn(
+            "flex-1 px-2 py-1 rounded-md inline-flex items-center justify-center gap-1.5",
+            sidebarTab === "list"
+              ? "bg-muted text-foreground"
+              : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          <ListOrdered className="h-3 w-3" /> Entries
+        </button>
+        <button
+          type="button"
+          onClick={() => setSidebarTab("calendar")}
+          className={cn(
+            "flex-1 px-2 py-1 rounded-md inline-flex items-center justify-center gap-1.5",
+            sidebarTab === "calendar"
+              ? "bg-muted text-foreground"
+              : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          <CalendarDays className="h-3 w-3" /> Calendar
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="flex h-[calc(100vh-4rem)] flex-col lg:flex-row">
+      {/* Mobile / tablet sidebar toggle */}
+      <div className="lg:hidden shrink-0 border-b border-border bg-background p-3 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <BookOpen className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-semibold">Journal</span>
+        </div>
+        <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
+          <SheetTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-1.5">
+              <Menu className="h-4 w-4" />
+              Entries
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="p-0 w-80 flex flex-col">
+            <SheetTitle className="sr-only">Journal entries</SheetTitle>
+            {sidebar}
+            <div className="flex-1 overflow-y-auto bg-background">
+              {sidebarTab === "list" ? (
+                <JournalEntryList
+                  entries={filteredEntries}
+                  metaByNote={metaByNote}
+                  selectedId={selectedId}
+                  onSelect={(id) => {
+                    setSelectedId(id);
+                    setMobileSidebarOpen(false);
+                  }}
+                  onDelete={handleDeleteEntry}
+                  query={query}
+                />
+              ) : (
+                <JournalCalendar entryDates={entryDates} onPick={pickDate} />
+              )}
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
+
+      {/* Desktop sidebar */}
+      <aside className="hidden lg:flex w-80 shrink-0 border-r border-border overflow-y-auto flex-col">
+        {sidebar}
         {sidebarTab === "list" ? (
-          <div className="p-2 space-y-1">
-            {filteredEntries.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-8 px-4">
-                {query
-                  ? "No entries match that search."
-                  : "No entries yet. Start when you feel like it, there's no streak to break."}
-              </p>
-            )}
-            {filteredEntries.map((e) => {
-              const d = parseISO(e.created_at);
-              const meta = metaByNote.get(e.id);
-              return (
-                <div
-                  key={e.id}
-                  className={cn(
-                    "group relative rounded-lg transition-colors",
-                    selectedId === e.id ? "bg-muted" : "hover:bg-muted/60",
-                  )}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setSelectedId(e.id)}
-                    className="w-full text-left p-2.5 pr-9"
-                  >
-                    <div className="text-sm font-medium truncate">
-                      {format(d, "EEE, MMM d")}
-                    </div>
-                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                      {format(d, "yyyy")}
-                    </div>
-                    {meta && (meta.tags.length > 0 || meta.mood) && (
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {meta.tags.slice(0, 3).map((t) => (
-                          <span
-                            key={t}
-                            className="text-[10px] px-1.5 py-0.5 rounded-full bg-background border border-border/60 text-muted-foreground"
-                          >
-                            {t}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(ev) => {
-                      ev.stopPropagation();
-                      handleDeleteEntry(e);
-                    }}
-                    aria-label="Delete entry"
-                    title="Delete entry"
-                    className="absolute top-1.5 right-1.5 p-1 rounded-md text-muted-foreground opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-destructive hover:bg-background transition-opacity"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              );
-            })}
-          </div>
+          <JournalEntryList
+            entries={filteredEntries}
+            metaByNote={metaByNote}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            onDelete={handleDeleteEntry}
+            query={query}
+          />
         ) : (
           <JournalCalendar entryDates={entryDates} onPick={pickDate} />
         )}
       </aside>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto min-w-0">
         {selected ? (
           <JournalEditor
             key={selected.id}
@@ -470,9 +464,9 @@ function JournalPage() {
             onDelete={() => handleDeleteEntry(selected)}
           />
         ) : (
-          <div className="h-full flex flex-col items-center justify-center text-center px-8 max-w-md mx-auto">
-            <BookOpen className="h-12 w-12 text-muted-foreground/40 mb-3" />
-            <p className="text-sm text-muted-foreground">
+          <div className="h-full flex flex-col items-center justify-center text-center px-6 py-12 max-w-md mx-auto">
+            <BookOpen className="h-12 w-12 text-muted-foreground/40 mb-4" />
+            <p className="text-sm text-muted-foreground leading-relaxed">
               This is yours. Write a line, or just sit with a prompt, whenever you&apos;re ready.
               Nothing here is shared, and there&apos;s no streak to keep.
             </p>
@@ -486,6 +480,82 @@ function JournalPage() {
         enabled={Boolean(lockStatus?.enabled)}
         onChanged={() => qc.invalidateQueries({ queryKey: ["journal-lock"] })}
       />
+    </div>
+  );
+}
+
+function JournalEntryList({
+  entries,
+  metaByNote,
+  selectedId,
+  onSelect,
+  onDelete,
+  query,
+}: {
+  entries: Note[];
+  metaByNote: Map<string, JournalMeta>;
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+  onDelete: (entry: Note) => void;
+  query: string;
+}) {
+  return (
+    <div className="p-2 space-y-1">
+      {entries.length === 0 && (
+        <p className="text-sm text-muted-foreground text-center py-8 px-4">
+          {query
+            ? "No entries match that search."
+            : "No entries yet. Start when you feel like it, there's no streak to break."}
+        </p>
+      )}
+      {entries.map((e) => {
+        const d = parseISO(e.created_at);
+        const meta = metaByNote.get(e.id);
+        return (
+          <div
+            key={e.id}
+            className={cn(
+              "group relative rounded-lg transition-colors",
+              selectedId === e.id ? "bg-muted" : "hover:bg-muted/60",
+            )}
+          >
+            <button
+              type="button"
+              onClick={() => onSelect(e.id)}
+              className="w-full text-left p-2.5 pr-9"
+            >
+              <div className="text-sm font-medium truncate">{format(d, "EEE, MMM d")}</div>
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                {format(d, "yyyy")}
+              </div>
+              {meta && (meta.tags.length > 0 || meta.mood) && (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {meta.tags.slice(0, 3).map((t) => (
+                    <span
+                      key={t}
+                      className="text-[10px] px-1.5 py-0.5 rounded-full bg-background border border-border/60 text-muted-foreground"
+                    >
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={(ev) => {
+                ev.stopPropagation();
+                onDelete(e);
+              }}
+              aria-label="Delete entry"
+              title="Delete entry"
+              className="absolute top-1.5 right-1.5 p-1 rounded-md text-muted-foreground opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-destructive hover:bg-background transition-opacity"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        );
+      })}
     </div>
   );
 }
