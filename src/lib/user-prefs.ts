@@ -171,38 +171,37 @@ export async function saveNotificationPrefs(p: NotificationPrefs) {
 }
 
 // ---------------- AI prefs ----------------
+// User-facing AI preferences only. Internal economics (model selection, USD
+// spend cap, raw $ usage) are deliberately NOT exposed to the client, they
+// live in the data layer and are read server-side by admin code only.
 export type CoachStyle = "warm" | "direct" | "off";
 export type AiPrefs = {
-  model: string;
   summary_length: "short" | "medium" | "long";
   tone: "neutral" | "friendly" | "formal" | "concise";
-  monthly_cap_cents: number;
   coach_style: CoachStyle;
 };
 
 const DEFAULT_AI: AiPrefs = {
-  model: "claude-sonnet-4-5",
   summary_length: "medium",
   tone: "neutral",
-  monthly_cap_cents: 1000,
   coach_style: "warm",
 };
 
 export async function getAiPrefs(): Promise<AiPrefs> {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) throw new Error("Not signed in");
+  // Explicit column projection, never select * here, model + monthly_cap_cents
+  // must not leave the server.
   const { data, error } = await supabase
     .from("ai_prefs")
-    .select("*")
+    .select("summary_length, tone, coach_style")
     .eq("user_id", u.user.id)
     .maybeSingle();
   if (error) throw error;
   if (!data) return DEFAULT_AI;
   return {
-    model: data.model,
-    summary_length: data.summary_length as AiPrefs["summary_length"],
-    tone: data.tone as AiPrefs["tone"],
-    monthly_cap_cents: data.monthly_cap_cents,
+    summary_length: (data.summary_length as AiPrefs["summary_length"]) ?? "medium",
+    tone: (data.tone as AiPrefs["tone"]) ?? "neutral",
     coach_style: ((data.coach_style as CoachStyle | null) ?? "warm"),
   };
 }
@@ -211,11 +210,17 @@ export async function saveAiPrefs(p: AiPrefs) {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) throw new Error("Not signed in");
   const { error } = await supabase.from("ai_prefs").upsert(
-    { user_id: u.user.id, ...p },
+    {
+      user_id: u.user.id,
+      summary_length: p.summary_length,
+      tone: p.tone,
+      coach_style: p.coach_style,
+    },
     { onConflict: "user_id" },
   );
   if (error) throw error;
 }
+
 
 export function currentMonthKey(d = new Date()): string {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
