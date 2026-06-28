@@ -52,7 +52,7 @@ const PLANS: PlanRow[] = [
   {
     id: "basic",
     name: "Basic",
-    tagline: "Two areas, one calm home.",
+    tagline: "For running more than one thing.",
     price: (cycle) =>
       cycle === "year"
         ? {
@@ -66,11 +66,10 @@ const PLANS: PlanRow[] = [
             sub: "Billed monthly",
           },
     features: [
-      `${LIMITS.basic.maxBusinesses} accounts within your space`,
-      `${LIMITS.basic.aiAllowanceCreditsPerSeat} AI credits / month`,
-      "Reporting & Meetings",
-      "Ask my notes, shown, unlocks on Standard",
+      "Organise two businesses or areas separately",
+      "Meeting summaries plus weekly reporting",
     ],
+    note: "Ask my notes unlocks on Standard",
   },
   {
     id: "pro",
