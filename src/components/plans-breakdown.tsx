@@ -45,8 +45,7 @@ const PLANS: PlanRow[] = [
     price: () => ({ main: "$0", sub: "forever" }),
     features: [
       "One calm space with calendar, tasks, notes and journal in one place",
-      "A taste of AI, a few helpful prompts each month",
-      `${LIMITS.free.aiAllowanceCreditsPerSeat} AI credits / month`,
+      `A taste of AI, ${LIMITS.free.aiAllowanceCreditsPerSeat} credits per month`,
       `${LIMITS.free.maxBusinesses} account`,
     ],
     note: "Ask my notes unlocks on Standard",
