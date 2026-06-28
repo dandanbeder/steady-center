@@ -105,19 +105,8 @@ function BillingPage() {
     }
   };
 
-  const handleSwitch = async (cycle: "month" | "year") => {
-    setBusy("switch");
-    try {
-      const r = await switchFn({ data: { environment: env, cycle } });
-      if (!r.changed) toast.message("Already on that billing cycle");
-      else toast.success(`Switched to ${cycle === "year" ? "annual" : "monthly"} billing`);
-      await refetchAll();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not switch billing cycle");
-    } finally {
-      setBusy(null);
-    }
-  };
+
+
 
   const handlePortal = async () => {
     setBusy("portal");
