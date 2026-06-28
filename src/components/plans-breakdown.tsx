@@ -275,7 +275,7 @@ export function PlansBreakdown({ currentTier }: { currentTier: Tier }) {
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {PLANS.map((p) => {
             const isCurrent = p.id === currentTier;
-            const { main, sub } = p.price(cycle);
+            const { main, suffix, sub } = p.price(cycle);
             return (
               <div
                 key={p.id}
@@ -293,8 +293,11 @@ export function PlansBreakdown({ currentTier }: { currentTier: Tier }) {
                   )}
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">{p.tagline}</p>
-                <div className="mt-3">
+                <div className="mt-3 min-h-[3.5rem]">
                   <span className="text-2xl font-semibold">{main}</span>
+                  {suffix ? (
+                    <span className="block text-sm font-medium text-foreground">{suffix}</span>
+                  ) : null}
                 </div>
                 <p className="text-xs text-muted-foreground">{sub}</p>
                 <ul className="mt-3 space-y-1.5 text-sm flex-1">
