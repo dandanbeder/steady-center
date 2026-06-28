@@ -88,10 +88,8 @@ const PLANS: PlanRow[] = [
             sub: "Billed monthly",
           },
     features: [
-      `${LIMITS.pro.maxBusinesses} accounts within your space`,
-      `${LIMITS.pro.aiAllowanceCreditsPerSeat} AI credits / month`,
-      "Everything in Basic, plus Ask my notes (full)",
-      "Top up AI credits anytime",
+      "Ask anything across your notes, tasks and meetings and get sourced answers",
+      "Organise up to four areas",
     ],
   },
   {
