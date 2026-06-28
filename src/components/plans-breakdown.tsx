@@ -204,7 +204,7 @@ export function PlansBreakdown({ currentTier }: { currentTier: Tier }) {
     // Upgrade path: higher tier than current.
     if (targetRank > myRank) {
       if (tier === "free") {
-        // Free is never "higher" — only reached for someone already on free.
+        // Free is never "higher", only reached for someone already on free.
         return null;
       }
       return (

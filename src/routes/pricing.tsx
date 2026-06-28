@@ -349,7 +349,7 @@ function PricingPage() {
                       onClick={() => setTeamSeats((n) => Math.max(TEAM_MIN_SEATS, n - 1))}
                       className="h-7 w-7 rounded-full border text-sm"
                       style={{ borderColor: "rgba(38,56,47,0.2)" }}
-                    >–</button>
+                    >-</button>
                     <input
                       type="number"
                       min={TEAM_MIN_SEATS}
