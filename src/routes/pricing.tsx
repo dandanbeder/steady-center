@@ -244,7 +244,7 @@ function PricingPage() {
           {/* Basic */}
           <PlanCard
             name="Basic"
-            tagline="Two areas, one calm home."
+            tagline="For running more than one thing."
             priceMain={
               <div className="flex flex-col leading-none">
                 <span className="font-serif text-5xl">{fmtUsd(basicMonthlyEquivCents)}</span>
@@ -257,11 +257,12 @@ function PricingPage() {
                 : "Billed monthly"
             }
             features={[
-              `${LIMITS.basic.maxBusinesses} accounts within your space`,
+              "Organise two businesses or areas separately",
+              "Meeting summaries plus weekly reporting",
               `${LIMITS.basic.aiAllowanceCreditsPerSeat} AI credits / month`,
-              "Everything in Free, plus Reporting & Meetings",
-              "Ask my notes, shown, unlocks on Standard",
+              `${LIMITS.basic.maxBusinesses} accounts`,
             ]}
+            note="Ask my notes unlocks on Standard"
             cta={
               <PlanCta
                 tier="basic"
