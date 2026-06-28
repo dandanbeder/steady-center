@@ -41,14 +41,13 @@ const PLANS: PlanRow[] = [
   {
     id: "free",
     name: "Free",
-    tagline: "Get started, no card needed.",
+    tagline: "Try Heartbeat, free forever.",
     price: () => ({ main: "$0", sub: "forever" }),
     features: [
-      `${LIMITS.free.maxBusinesses} account within your space`,
-      `${LIMITS.free.aiAllowanceCreditsPerSeat} AI credits / month`,
-      "Calendar, tasks, notes & journal",
-      "Ask my notes, shown, unlocks on a paid plan",
+      "One calm space with calendar, tasks, notes and journal in one place",
+      "A taste of AI to get you started",
     ],
+    note: "Ask my notes unlocks on Standard",
   },
   {
     id: "basic",
