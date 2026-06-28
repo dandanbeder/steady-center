@@ -470,6 +470,7 @@ type PlanCardProps = {
   priceSub: string;
   features: string[];
   cta: React.ReactNode;
+  note?: string;
   extra?: React.ReactNode;
   footnote?: string;
   highlighted?: boolean;
@@ -477,7 +478,7 @@ type PlanCardProps = {
 };
 
 function PlanCard({
-  name, tagline, priceMain, priceSub, features, cta, extra, footnote, highlighted, badge,
+  name, tagline, priceMain, priceSub, features, cta, note, extra, footnote, highlighted, badge,
 }: PlanCardProps) {
   return (
     <div
@@ -518,6 +519,10 @@ function PlanCard({
           </li>
         ))}
       </ul>
+
+      {note ? (
+        <p className="mt-3 text-xs italic" style={{ color: "#26382F", opacity: 0.65 }}>{note}</p>
+      ) : null}
 
       {extra}
 
