@@ -218,15 +218,15 @@ function PricingPage() {
           {/* Free */}
           <PlanCard
             name="Free"
-            tagline="Get started, no card needed."
+            tagline="Try Heartbeat, free forever."
             priceMain={<span className="font-serif text-5xl">$0</span>}
             priceSub="forever"
             features={[
-              `${LIMITS.free.maxBusinesses} account within your space`,
-              `${LIMITS.free.aiAllowanceCreditsPerSeat} AI credits / month`,
-              "Calendar, tasks, notes & journal",
-              "Ask my notes, shown, unlocks on a paid plan",
+              "One calm space with calendar, tasks, notes and journal in one place",
+              `A taste of AI, ${LIMITS.free.aiAllowanceCreditsPerSeat} credits per month`,
+              `${LIMITS.free.maxBusinesses} account`,
             ]}
+            note="Ask my notes unlocks on Standard"
             cta={
               <PlanCta
                 tier="free"
