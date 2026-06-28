@@ -257,11 +257,12 @@ export function GoogleSyncPanel({ businesses }: Props) {
           provider="Google"
           calendarName={disconnectTarget.name}
           busy={disconnectMut.isPending}
-          onConfirm={() =>
-            disconnectMut.mutate({ calendar_id: disconnectTarget.id, remove_events: false })
+          onConfirm={({ removeEvents }) =>
+            disconnectMut.mutate({ calendar_id: disconnectTarget.id, remove_events: removeEvents })
           }
         />
       )}
+
     </div>
   );
 }
