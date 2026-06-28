@@ -95,7 +95,7 @@ const PLANS: PlanRow[] = [
   {
     id: "team",
     name: "Team",
-    tagline: "For teams that collaborate.",
+    tagline: "For working together.",
     price: (cycle) =>
       cycle === "year"
         ? {
@@ -109,10 +109,10 @@ const PLANS: PlanRow[] = [
             sub: `Billed monthly, ${TEAM_MIN_SEATS}-seat minimum`,
           },
     features: [
-      "Multiple accounts + shared team spaces",
-      `${LIMITS.team.aiAllowanceCreditsPerSeat} AI credits per seat, pooled`,
-      "Sharing, roles & team progress",
-      "Viewers & guests free (no seat)",
+      "Share work without losing your own private space",
+      "Roles and team progress",
+      "Pooled AI credits, 400 per seat",
+      "Viewers and guests free",
     ],
   },
 ];
