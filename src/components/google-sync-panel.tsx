@@ -120,57 +120,84 @@ export function GoogleSyncPanel({ businesses }: Props) {
           {syncedGoogleCals.map((c) => (
             <div
               key={c.id}
-              className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm"
+              className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm space-y-2"
             >
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                <span
-                  className="inline-block h-3 w-3 rounded-full shrink-0"
-                  style={{ background: c.color }}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <span
+                    className="inline-block h-3 w-3 rounded-full shrink-0"
+                    style={{ background: c.color }}
+                  />
+                  <span className="truncate">{c.name}</span>
+                  {c.last_sync_error ? (
+                    <span className="text-xs text-destructive shrink-0 inline-flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" /> Needs attention
+                    </span>
+                  ) : c.last_synced_at ? (
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      · synced {new Date(c.last_synced_at).toLocaleString()}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground shrink-0">· not yet synced</span>
+                  )}
+                </div>
+                <CalendarAccountPicker
+                  businesses={businesses}
+                  value={c.business_id}
+                  onChange={(business_id) => remapMut.mutate({ calendar_id: c.id, business_id })}
                 />
-                <span className="truncate">{c.name}</span>
-                {c.last_synced_at && (
-                  <span className="text-xs text-muted-foreground shrink-0">
-                    · synced {new Date(c.last_synced_at).toLocaleString()}
-                  </span>
-                )}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={syncMut.isPending}
+                  onClick={() => syncMut.mutate(c.id)}
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 mr-1 ${syncMut.isPending ? "animate-spin" : ""}`} />
+                  Sync now
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="icon" variant="ghost" className="h-8 w-8" aria-label="More actions">
+                      <MoreVertical className="h-3.5 w-3.5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => syncMut.mutate(c.id)}>
+                      <RefreshCw className="h-3.5 w-3.5 mr-2" /> Sync now
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      onClick={() => setDisconnectTarget({ id: c.id, name: c.name })}
+                    >
+                      <Unplug className="h-3.5 w-3.5 mr-2" /> Disconnect…
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
-              <CalendarAccountPicker
-                businesses={businesses}
-                value={c.business_id}
-                onChange={(business_id) => remapMut.mutate({ calendar_id: c.id, business_id })}
-              />
-              <Button
-                size="sm"
-                variant="ghost"
-                disabled={syncMut.isPending}
-                onClick={() => syncMut.mutate(c.id)}
-              >
-                <RefreshCw className={`h-3.5 w-3.5 mr-1 ${syncMut.isPending ? "animate-spin" : ""}`} />
-                Sync now
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button size="icon" variant="ghost" className="h-8 w-8" aria-label="More actions">
-                    <MoreVertical className="h-3.5 w-3.5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => syncMut.mutate(c.id)}>
-                    <RefreshCw className="h-3.5 w-3.5 mr-2" /> Sync now
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="text-destructive focus:text-destructive"
-                    onClick={() => setDisconnectTarget({ id: c.id, name: c.name })}
+              {c.last_sync_error && (
+                <div className="rounded border border-destructive/30 bg-destructive/5 px-2.5 py-2 text-xs text-destructive flex items-start gap-2">
+                  <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium">This calendar needs reconnecting.</p>
+                    <p className="text-destructive/80 mt-0.5 break-words">{c.last_sync_error}</p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 shrink-0"
+                    onClick={() => syncMut.mutate(c.id)}
+                    disabled={syncMut.isPending}
                   >
-                    <Unplug className="h-3.5 w-3.5 mr-2" /> Disconnect…
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    Try again
+                  </Button>
+                </div>
+              )}
             </div>
           ))}
         </div>
       )}
+
 
       {open && (
         <div className="rounded-md border border-border bg-card p-4 space-y-3">
