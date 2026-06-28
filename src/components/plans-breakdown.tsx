@@ -25,8 +25,8 @@ type PlanRow = {
   id: Tier;
   name: string;
   tagline: string;
-  /** Returns price + sublabel for the chosen cycle. */
-  price: (cycle: Cycle) => { main: string; sub: string };
+  /** Returns price + optional suffix + sublabel for the chosen cycle. */
+  price: (cycle: Cycle) => { main: string; suffix?: string; sub: string };
   features: string[];
 };
 
@@ -55,11 +55,13 @@ const PLANS: PlanRow[] = [
     price: (cycle) =>
       cycle === "year"
         ? {
-            main: `${fmtUsd(Math.round(PRICING.basic_yearly.amount / 12))}/mo`,
+            main: fmtUsd(Math.round(PRICING.basic_yearly.amount / 12)),
+            suffix: "/mo",
             sub: `Billed ${fmtUsd(PRICING.basic_yearly.amount)} yearly, save 18%`,
           }
         : {
-            main: `${fmtUsd(PRICING.basic_monthly.amount)}/mo`,
+            main: fmtUsd(PRICING.basic_monthly.amount),
+            suffix: "/mo",
             sub: "Billed monthly",
           },
     features: [
@@ -76,11 +78,13 @@ const PLANS: PlanRow[] = [
     price: (cycle) =>
       cycle === "year"
         ? {
-            main: `${fmtUsd(Math.round(PRICING.pro_yearly.amount / 12))}/mo`,
+            main: fmtUsd(Math.round(PRICING.pro_yearly.amount / 12)),
+            suffix: "/mo",
             sub: `Billed ${fmtUsd(PRICING.pro_yearly.amount)} yearly, save 18%`,
           }
         : {
-            main: `${fmtUsd(PRICING.pro_monthly.amount)}/mo`,
+            main: fmtUsd(PRICING.pro_monthly.amount),
+            suffix: "/mo",
             sub: "Billed monthly",
           },
     features: [
@@ -97,11 +101,13 @@ const PLANS: PlanRow[] = [
     price: (cycle) =>
       cycle === "year"
         ? {
-            main: `${fmtUsd(Math.round(PRICING.team_yearly.amount / 12))}/seat/mo`,
+            main: fmtUsd(Math.round(PRICING.team_yearly.amount / 12)),
+            suffix: "/seat/mo",
             sub: `Billed ${fmtUsd(PRICING.team_yearly.amount)}/seat yearly, save 18%`,
           }
         : {
-            main: `${fmtUsd(PRICING.team_monthly.amount)}/seat/mo`,
+            main: fmtUsd(PRICING.team_monthly.amount),
+            suffix: "/seat/mo",
             sub: `Billed monthly, ${TEAM_MIN_SEATS}-seat minimum`,
           },
     features: [
@@ -269,7 +275,7 @@ export function PlansBreakdown({ currentTier }: { currentTier: Tier }) {
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {PLANS.map((p) => {
             const isCurrent = p.id === currentTier;
-            const { main, sub } = p.price(cycle);
+            const { main, suffix, sub } = p.price(cycle);
             return (
               <div
                 key={p.id}
@@ -287,8 +293,11 @@ export function PlansBreakdown({ currentTier }: { currentTier: Tier }) {
                   )}
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">{p.tagline}</p>
-                <div className="mt-3">
+                <div className="mt-3 min-h-[3.5rem]">
                   <span className="text-2xl font-semibold">{main}</span>
+                  {suffix ? (
+                    <span className="block text-sm font-medium text-foreground">{suffix}</span>
+                  ) : null}
                 </div>
                 <p className="text-xs text-muted-foreground">{sub}</p>
                 <ul className="mt-3 space-y-1.5 text-sm flex-1">
