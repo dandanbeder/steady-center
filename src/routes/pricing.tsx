@@ -505,12 +505,12 @@ function PlanCard({
         <p className="mt-1 text-sm" style={{ color: "#26382F", opacity: 0.7 }}>{tagline}</p>
       </div>
 
-      <div className="mt-6 flex items-baseline" style={{ color: "#26382F" }}>
+      <div className="mt-6 min-h-[4.5rem]" style={{ color: "#26382F" }}>
         {priceMain}
       </div>
       <p className="mt-1 text-xs" style={{ color: "#26382F", opacity: 0.7 }}>{priceSub}</p>
 
-      <ul className="mt-6 space-y-3">
+      <ul className="mt-6 space-y-3 flex-1">
         {features.map((f) => (
           <li key={f} className="flex items-start gap-2 text-sm" style={{ color: "#26382F" }}>
             <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: "#7C9B7F" }} />
