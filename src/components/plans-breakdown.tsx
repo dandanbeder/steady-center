@@ -55,11 +55,13 @@ const PLANS: PlanRow[] = [
     price: (cycle) =>
       cycle === "year"
         ? {
-            main: `${fmtUsd(Math.round(PRICING.basic_yearly.amount / 12))}/mo`,
+            main: fmtUsd(Math.round(PRICING.basic_yearly.amount / 12)),
+            suffix: "/mo",
             sub: `Billed ${fmtUsd(PRICING.basic_yearly.amount)} yearly, save 18%`,
           }
         : {
-            main: `${fmtUsd(PRICING.basic_monthly.amount)}/mo`,
+            main: fmtUsd(PRICING.basic_monthly.amount),
+            suffix: "/mo",
             sub: "Billed monthly",
           },
     features: [
@@ -76,11 +78,13 @@ const PLANS: PlanRow[] = [
     price: (cycle) =>
       cycle === "year"
         ? {
-            main: `${fmtUsd(Math.round(PRICING.pro_yearly.amount / 12))}/mo`,
+            main: fmtUsd(Math.round(PRICING.pro_yearly.amount / 12)),
+            suffix: "/mo",
             sub: `Billed ${fmtUsd(PRICING.pro_yearly.amount)} yearly, save 18%`,
           }
         : {
-            main: `${fmtUsd(PRICING.pro_monthly.amount)}/mo`,
+            main: fmtUsd(PRICING.pro_monthly.amount),
+            suffix: "/mo",
             sub: "Billed monthly",
           },
     features: [
@@ -97,11 +101,13 @@ const PLANS: PlanRow[] = [
     price: (cycle) =>
       cycle === "year"
         ? {
-            main: `${fmtUsd(Math.round(PRICING.team_yearly.amount / 12))}/seat/mo`,
+            main: fmtUsd(Math.round(PRICING.team_yearly.amount / 12)),
+            suffix: "/seat/mo",
             sub: `Billed ${fmtUsd(PRICING.team_yearly.amount)}/seat yearly, save 18%`,
           }
         : {
-            main: `${fmtUsd(PRICING.team_monthly.amount)}/seat/mo`,
+            main: fmtUsd(PRICING.team_monthly.amount),
+            suffix: "/seat/mo",
             sub: `Billed monthly, ${TEAM_MIN_SEATS}-seat minimum`,
           },
     features: [
