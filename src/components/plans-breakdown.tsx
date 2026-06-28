@@ -25,8 +25,8 @@ type PlanRow = {
   id: Tier;
   name: string;
   tagline: string;
-  /** Returns price + sublabel for the chosen cycle. */
-  price: (cycle: Cycle) => { main: string; sub: string };
+  /** Returns price + optional suffix + sublabel for the chosen cycle. */
+  price: (cycle: Cycle) => { main: string; suffix?: string; sub: string };
   features: string[];
 };
 
