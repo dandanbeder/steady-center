@@ -29,7 +29,8 @@ const BRAND = {
 };
 
 const LOGO_URL =
-  "https://www.heartbeatcommand.software/__l5e/assets-v1/b2df7157-ecdb-4f7d-acbb-3d93bd190cee/heartbeat-email-logo-v2.png";
+  "https://www.heartbeatcommand.software/__l5e/assets-v1/c8f33ceb-8c16-4488-b109-05311d4214ae/heartbeat-command-email.png";
+
 
 export function getAppOrigin(): string {
   return (
