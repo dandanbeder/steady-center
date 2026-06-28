@@ -70,7 +70,7 @@ function BillingPage() {
 
   const fetchSummary = useServerFn(getSeatSummary);
   const seatsFn = useServerFn(updateSeats);
-  const switchFn = useServerFn(switchBillingCycle);
+  
   const cancelFn = useServerFn(cancelSubscription);
   const resumeFn = useServerFn(resumeSubscription);
   const portalFn = useServerFn(createCustomerPortalUrl);
