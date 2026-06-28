@@ -218,15 +218,15 @@ function PricingPage() {
           {/* Free */}
           <PlanCard
             name="Free"
-            tagline="Get started, no card needed."
+            tagline="Try Heartbeat, free forever."
             priceMain={<span className="font-serif text-5xl">$0</span>}
             priceSub="forever"
             features={[
-              `${LIMITS.free.maxBusinesses} account within your space`,
-              `${LIMITS.free.aiAllowanceCreditsPerSeat} AI credits / month`,
-              "Calendar, tasks, notes & journal",
-              "Ask my notes, shown, unlocks on a paid plan",
+              "One calm space with calendar, tasks, notes and journal in one place",
+              `A taste of AI, ${LIMITS.free.aiAllowanceCreditsPerSeat} credits per month`,
+              `${LIMITS.free.maxBusinesses} account`,
             ]}
+            note="Ask my notes unlocks on Standard"
             cta={
               <PlanCta
                 tier="free"
@@ -244,7 +244,7 @@ function PricingPage() {
           {/* Basic */}
           <PlanCard
             name="Basic"
-            tagline="Two areas, one calm home."
+            tagline="For running more than one thing."
             priceMain={
               <div className="flex flex-col leading-none">
                 <span className="font-serif text-5xl">{fmtUsd(basicMonthlyEquivCents)}</span>
@@ -257,11 +257,12 @@ function PricingPage() {
                 : "Billed monthly"
             }
             features={[
-              `${LIMITS.basic.maxBusinesses} accounts within your space`,
+              "Organise two businesses or areas separately",
+              "Meeting summaries plus weekly reporting",
               `${LIMITS.basic.aiAllowanceCreditsPerSeat} AI credits / month`,
-              "Everything in Free, plus Reporting & Meetings",
-              "Ask my notes, shown, unlocks on Standard",
+              `${LIMITS.basic.maxBusinesses} accounts`,
             ]}
+            note="Ask my notes unlocks on Standard"
             cta={
               <PlanCta
                 tier="basic"
@@ -294,10 +295,10 @@ function PricingPage() {
                 : "Billed monthly"
             }
             features={[
-              `${LIMITS.pro.maxBusinesses} accounts within your space`,
+              "Ask anything across your notes, tasks and meetings and get sourced answers",
+              "Organise up to four areas",
               `${LIMITS.pro.aiAllowanceCreditsPerSeat} AI credits / month`,
-              "Everything in Basic, plus Ask my notes (full)",
-              "Top up AI credits anytime",
+              `${LIMITS.pro.maxBusinesses} accounts`,
             ]}
             cta={
               <PlanCta
@@ -317,7 +318,7 @@ function PricingPage() {
           {/* Team */}
           <PlanCard
             name="Team"
-            tagline="For teams that collaborate."
+            tagline="For working together."
             priceMain={
               <div className="flex flex-col leading-none">
                 <span className="font-serif text-5xl">{fmtUsd(teamMonthlyEquivCents)}</span>
@@ -330,10 +331,11 @@ function PricingPage() {
                 : `Billed monthly · ${TEAM_MIN_SEATS}-seat minimum`
             }
             features={[
-              "Multiple accounts + shared team spaces",
-              `${LIMITS.team.aiAllowanceCreditsPerSeat} AI credits per seat, pooled`,
-              "Everything in Standard, plus Sharing, roles & team progress",
-              "Viewers & guests free (no seat)",
+              "Share work without losing your own private space",
+              "Roles and team progress",
+              `Pooled AI credits, ${LIMITS.team.aiAllowanceCreditsPerSeat} per seat`,
+              "Viewers and guests free",
+              "Unlimited accounts plus shared spaces",
             ]}
             extra={
               <div className="mt-4 rounded-lg border px-3 py-2.5 text-sm"
@@ -347,7 +349,7 @@ function PricingPage() {
                       onClick={() => setTeamSeats((n) => Math.max(TEAM_MIN_SEATS, n - 1))}
                       className="h-7 w-7 rounded-full border text-sm"
                       style={{ borderColor: "rgba(38,56,47,0.2)" }}
-                    >–</button>
+                    >-</button>
                     <input
                       type="number"
                       min={TEAM_MIN_SEATS}
@@ -470,6 +472,7 @@ type PlanCardProps = {
   priceSub: string;
   features: string[];
   cta: React.ReactNode;
+  note?: string;
   extra?: React.ReactNode;
   footnote?: string;
   highlighted?: boolean;
@@ -477,7 +480,7 @@ type PlanCardProps = {
 };
 
 function PlanCard({
-  name, tagline, priceMain, priceSub, features, cta, extra, footnote, highlighted, badge,
+  name, tagline, priceMain, priceSub, features, cta, note, extra, footnote, highlighted, badge,
 }: PlanCardProps) {
   return (
     <div
@@ -518,6 +521,10 @@ function PlanCard({
           </li>
         ))}
       </ul>
+
+      {note ? (
+        <p className="mt-3 text-xs italic" style={{ color: "#26382F", opacity: 0.65 }}>{note}</p>
+      ) : null}
 
       {extra}
 

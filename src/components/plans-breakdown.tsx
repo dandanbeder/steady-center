@@ -28,6 +28,8 @@ type PlanRow = {
   /** Returns price + optional suffix + sublabel for the chosen cycle. */
   price: (cycle: Cycle) => { main: string; suffix?: string; sub: string };
   features: string[];
+  /** Optional invitation-style note for lower tiers (e.g. "Unlocks on Standard"). */
+  note?: string;
 };
 
 /**
@@ -39,19 +41,19 @@ const PLANS: PlanRow[] = [
   {
     id: "free",
     name: "Free",
-    tagline: "Get started, no card needed.",
+    tagline: "Try Heartbeat, free forever.",
     price: () => ({ main: "$0", sub: "forever" }),
     features: [
-      `${LIMITS.free.maxBusinesses} account within your space`,
-      `${LIMITS.free.aiAllowanceCreditsPerSeat} AI credits / month`,
-      "Calendar, tasks, notes & journal",
-      "Ask my notes, shown, unlocks on a paid plan",
+      "One calm space with calendar, tasks, notes and journal in one place",
+      `A taste of AI, ${LIMITS.free.aiAllowanceCreditsPerSeat} credits per month`,
+      `${LIMITS.free.maxBusinesses} account`,
     ],
+    note: "Ask my notes unlocks on Standard",
   },
   {
     id: "basic",
     name: "Basic",
-    tagline: "Two areas, one calm home.",
+    tagline: "For running more than one thing.",
     price: (cycle) =>
       cycle === "year"
         ? {
@@ -65,11 +67,12 @@ const PLANS: PlanRow[] = [
             sub: "Billed monthly",
           },
     features: [
-      `${LIMITS.basic.maxBusinesses} accounts within your space`,
+      "Organise two businesses or areas separately",
+      "Meeting summaries plus weekly reporting",
       `${LIMITS.basic.aiAllowanceCreditsPerSeat} AI credits / month`,
-      "Reporting & Meetings",
-      "Ask my notes, shown, unlocks on Standard",
+      `${LIMITS.basic.maxBusinesses} accounts`,
     ],
+    note: "Ask my notes unlocks on Standard",
   },
   {
     id: "pro",
@@ -88,16 +91,16 @@ const PLANS: PlanRow[] = [
             sub: "Billed monthly",
           },
     features: [
-      `${LIMITS.pro.maxBusinesses} accounts within your space`,
+      "Ask anything across your notes, tasks and meetings and get sourced answers",
+      "Organise up to four areas",
       `${LIMITS.pro.aiAllowanceCreditsPerSeat} AI credits / month`,
-      "Everything in Basic, plus Ask my notes (full)",
-      "Top up AI credits anytime",
+      `${LIMITS.pro.maxBusinesses} accounts`,
     ],
   },
   {
     id: "team",
     name: "Team",
-    tagline: "For teams that collaborate.",
+    tagline: "For working together.",
     price: (cycle) =>
       cycle === "year"
         ? {
@@ -111,10 +114,11 @@ const PLANS: PlanRow[] = [
             sub: `Billed monthly, ${TEAM_MIN_SEATS}-seat minimum`,
           },
     features: [
-      "Multiple accounts + shared team spaces",
-      `${LIMITS.team.aiAllowanceCreditsPerSeat} AI credits per seat, pooled`,
-      "Sharing, roles & team progress",
-      "Viewers & guests free (no seat)",
+      "Share work without losing your own private space",
+      "Roles and team progress",
+      `Pooled AI credits, ${LIMITS.team.aiAllowanceCreditsPerSeat} per seat`,
+      "Viewers and guests free",
+      "Unlimited accounts plus shared spaces",
     ],
   },
 ];
@@ -200,7 +204,7 @@ export function PlansBreakdown({ currentTier }: { currentTier: Tier }) {
     // Upgrade path: higher tier than current.
     if (targetRank > myRank) {
       if (tier === "free") {
-        // Free is never "higher" — only reached for someone already on free.
+        // Free is never "higher", only reached for someone already on free.
         return null;
       }
       return (
@@ -308,6 +312,9 @@ export function PlansBreakdown({ currentTier }: { currentTier: Tier }) {
                     </li>
                   ))}
                 </ul>
+                {p.note ? (
+                  <p className="mt-2 text-xs text-muted-foreground italic">{p.note}</p>
+                ) : null}
                 <div className="mt-4">{renderCta(p.id)}</div>
               </div>
             );
