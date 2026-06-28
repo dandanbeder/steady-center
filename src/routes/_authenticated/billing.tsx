@@ -30,7 +30,7 @@ import {
   cancelSubscription,
   getSeatSummary,
   resumeSubscription,
-  switchBillingCycle,
+  
   updateSeats,
 } from "@/lib/subscriptions.functions";
 import { PRICING, tierLabel } from "@/lib/entitlements";
@@ -70,7 +70,7 @@ function BillingPage() {
 
   const fetchSummary = useServerFn(getSeatSummary);
   const seatsFn = useServerFn(updateSeats);
-  const switchFn = useServerFn(switchBillingCycle);
+  
   const cancelFn = useServerFn(cancelSubscription);
   const resumeFn = useServerFn(resumeSubscription);
   const portalFn = useServerFn(createCustomerPortalUrl);
@@ -105,19 +105,8 @@ function BillingPage() {
     }
   };
 
-  const handleSwitch = async (cycle: "month" | "year") => {
-    setBusy("switch");
-    try {
-      const r = await switchFn({ data: { environment: env, cycle } });
-      if (!r.changed) toast.message("Already on that billing cycle");
-      else toast.success(`Switched to ${cycle === "year" ? "annual" : "monthly"} billing`);
-      await refetchAll();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not switch billing cycle");
-    } finally {
-      setBusy(null);
-    }
-  };
+
+
 
   const handlePortal = async () => {
     setBusy("portal");
@@ -361,39 +350,7 @@ function BillingPage() {
           </Card>
         )}
 
-        {/* Billing cycle switch */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Billing cycle</CardTitle>
-            <CardDescription>
-              Switching takes effect immediately with proration handled by Paddle.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="inline-flex rounded-full border bg-muted/40 p-1">
-              <button
-                type="button"
-                onClick={() => cycle !== "month" && handleSwitch("month")}
-                disabled={busy === "switch"}
-                className={`rounded-full px-4 py-1.5 text-sm transition ${
-                  cycle === "month" ? "bg-background shadow" : "text-muted-foreground"
-                }`}
-              >
-                Monthly
-              </button>
-              <button
-                type="button"
-                onClick={() => cycle !== "year" && handleSwitch("year")}
-                disabled={busy === "switch"}
-                className={`rounded-full px-4 py-1.5 text-sm transition ${
-                  cycle === "year" ? "bg-background shadow" : "text-muted-foreground"
-                }`}
-              >
-                Annual <span className="ml-1 rounded bg-primary/15 px-1.5 py-0.5 text-xs text-primary">Save 18%</span>
-              </button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Billing cycle is controlled in the Plans section below. */}
 
         {/* Plans breakdown */}
         <PlansBreakdown currentTier={tier} />
