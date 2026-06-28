@@ -312,6 +312,9 @@ export function PlansBreakdown({ currentTier }: { currentTier: Tier }) {
                     </li>
                   ))}
                 </ul>
+                {p.note ? (
+                  <p className="mt-2 text-xs text-muted-foreground italic">{p.note}</p>
+                ) : null}
                 <div className="mt-4">{renderCta(p.id)}</div>
               </div>
             );
