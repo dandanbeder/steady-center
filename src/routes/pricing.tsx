@@ -318,7 +318,7 @@ function PricingPage() {
           {/* Team */}
           <PlanCard
             name="Team"
-            tagline="For teams that collaborate."
+            tagline="For working together."
             priceMain={
               <div className="flex flex-col leading-none">
                 <span className="font-serif text-5xl">{fmtUsd(teamMonthlyEquivCents)}</span>
@@ -331,10 +331,11 @@ function PricingPage() {
                 : `Billed monthly · ${TEAM_MIN_SEATS}-seat minimum`
             }
             features={[
-              "Multiple accounts + shared team spaces",
-              `${LIMITS.team.aiAllowanceCreditsPerSeat} AI credits per seat, pooled`,
-              "Everything in Standard, plus Sharing, roles & team progress",
-              "Viewers & guests free (no seat)",
+              "Share work without losing your own private space",
+              "Roles and team progress",
+              `Pooled AI credits, ${LIMITS.team.aiAllowanceCreditsPerSeat} per seat`,
+              "Viewers and guests free",
+              "Unlimited accounts plus shared spaces",
             ]}
             extra={
               <div className="mt-4 rounded-lg border px-3 py-2.5 text-sm"
