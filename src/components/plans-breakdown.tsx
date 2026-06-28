@@ -116,8 +116,9 @@ const PLANS: PlanRow[] = [
     features: [
       "Share work without losing your own private space",
       "Roles and team progress",
-      "Pooled AI credits, 400 per seat",
+      `Pooled AI credits, ${LIMITS.team.aiAllowanceCreditsPerSeat} per seat`,
       "Viewers and guests free",
+      "Unlimited accounts plus shared spaces",
     ],
   },
 ];
