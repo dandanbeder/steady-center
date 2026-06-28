@@ -295,10 +295,10 @@ function PricingPage() {
                 : "Billed monthly"
             }
             features={[
-              `${LIMITS.pro.maxBusinesses} accounts within your space`,
+              "Ask anything across your notes, tasks and meetings and get sourced answers",
+              "Organise up to four areas",
               `${LIMITS.pro.aiAllowanceCreditsPerSeat} AI credits / month`,
-              "Everything in Basic, plus Ask my notes (full)",
-              "Top up AI credits anytime",
+              `${LIMITS.pro.maxBusinesses} accounts`,
             ]}
             cta={
               <PlanCta
