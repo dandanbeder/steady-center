@@ -69,6 +69,8 @@ const PLANS: PlanRow[] = [
     features: [
       "Organise two businesses or areas separately",
       "Meeting summaries plus weekly reporting",
+      `${LIMITS.basic.aiAllowanceCreditsPerSeat} AI credits / month`,
+      `${LIMITS.basic.maxBusinesses} accounts`,
     ],
     note: "Ask my notes unlocks on Standard",
   },
