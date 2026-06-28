@@ -93,6 +93,8 @@ const PLANS: PlanRow[] = [
     features: [
       "Ask anything across your notes, tasks and meetings and get sourced answers",
       "Organise up to four areas",
+      `${LIMITS.pro.aiAllowanceCreditsPerSeat} AI credits / month`,
+      `${LIMITS.pro.maxBusinesses} accounts`,
     ],
   },
   {
