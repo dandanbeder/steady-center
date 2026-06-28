@@ -224,8 +224,14 @@ export async function runMicrosoftSyncForCalendar(
 
   await sb
     .from("calendars")
-    .update({ sync_token: nextDeltaLink, last_synced_at: new Date().toISOString() })
+    .update({
+      sync_token: nextDeltaLink,
+      last_synced_at: new Date().toISOString(),
+      last_sync_error: null,
+      last_sync_error_at: null,
+    })
     .eq("id", localCalendarId);
+
 
   return { inserted, updated, deleted };
 }

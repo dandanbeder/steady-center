@@ -37,10 +37,15 @@ export const Route = createFileRoute("/api/public/hooks/sync-microsoft-calendars
           } catch (e) {
             const msg = e instanceof Error ? e.message : String(e);
             console.error("sync-microsoft-calendars error", c.id, msg);
+            await supabaseAdmin
+              .from("calendars")
+              .update({ last_sync_error: msg.slice(0, 500), last_sync_error_at: new Date().toISOString() })
+              .eq("id", c.id);
             results.push({ id: c.id, ok: false, error: msg });
           }
         }
         return Response.json({ synced: results.length, results });
+
       },
     },
   },

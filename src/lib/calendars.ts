@@ -14,7 +14,10 @@ export type Calendar = {
   external_id: string | null;
   created_at: string;
   last_synced_at: string | null;
+  last_sync_error: string | null;
+  last_sync_error_at: string | null;
 };
+
 
 
 export type EventRow = {

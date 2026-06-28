@@ -923,6 +923,8 @@ export type Database = {
           created_by: string | null
           external_id: string | null
           id: string
+          last_sync_error: string | null
+          last_sync_error_at: string | null
           last_synced_at: string | null
           name: string
           owner_id: string
@@ -937,6 +939,8 @@ export type Database = {
           created_by?: string | null
           external_id?: string | null
           id?: string
+          last_sync_error?: string | null
+          last_sync_error_at?: string | null
           last_synced_at?: string | null
           name: string
           owner_id: string
@@ -951,6 +955,8 @@ export type Database = {
           created_by?: string | null
           external_id?: string | null
           id?: string
+          last_sync_error?: string | null
+          last_sync_error_at?: string | null
           last_synced_at?: string | null
           name?: string
           owner_id?: string
@@ -3609,6 +3615,8 @@ export type Database = {
           created_by: string | null
           external_id: string | null
           id: string
+          last_sync_error: string | null
+          last_sync_error_at: string | null
           last_synced_at: string | null
           name: string
           owner_id: string

@@ -1,4 +1,7 @@
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -14,16 +17,18 @@ type Props = {
   provider: "Google" | "Microsoft";
   calendarName: string;
   busy?: boolean;
-  onConfirm: () => void;
+  /** When true, the dialog is for the whole provider account, not a single calendar. */
+  accountLevel?: boolean;
+  onConfirm: (opts: { removeEvents: boolean }) => void;
 };
 
 /**
- * Confirmation dialog for disconnecting a synced calendar.
+ * Confirmation dialog for disconnecting a synced calendar (or whole account).
  *
- * Two-way sync stops, OAuth access for the provider is revoked server-side,
- * and the row returns to its "Connect" state. Already-synced events are kept
- * as local items by default, we don't ask the user to decide unless a future
- * requirement explicitly asks for it.
+ * Disconnecting stops two-way sync and removes the stored connection,
+ * including any server-side OAuth tokens for that account. The user may
+ * also choose to remove already-synced events from Heartbeat (POPIA:
+ * revoke and erase).
  */
 export function DisconnectCalendarDialog({
   open,
@@ -31,32 +36,60 @@ export function DisconnectCalendarDialog({
   provider,
   calendarName,
   busy,
+  accountLevel,
   onConfirm,
 }: Props) {
+  const [removeEvents, setRemoveEvents] = useState(true);
+  useEffect(() => {
+    if (open) setRemoveEvents(true);
+  }, [open]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Disconnect {provider} calendar</DialogTitle>
+          <DialogTitle>
+            Disconnect {accountLevel ? `${provider} account` : `${provider} calendar`}
+          </DialogTitle>
           <DialogDescription className="space-y-2 pt-1">
             <span className="block">
               Two-way sync will stop for{" "}
               <span className="font-medium text-foreground">{calendarName}</span>.
-              New changes in {provider} won&apos;t appear in Heartbeat, and changes
-              you make here won&apos;t be sent back.
-            </span>
-            <span className="block text-xs">
-              Already-synced events stay on your calendar as local items you can
-              edit. Your original events in {provider} are not affected.
+              {accountLevel
+                ? ` All access tokens for ${provider} stored on our servers will be removed.`
+                : ` Sync will stop for this calendar.`}{" "}
+              Your original events in {provider} are not affected.
             </span>
           </DialogDescription>
         </DialogHeader>
+
+        <div className="flex items-start gap-2 rounded-md border border-border bg-muted/30 p-3">
+          <Checkbox
+            id="remove-events"
+            checked={removeEvents}
+            onCheckedChange={(v) => setRemoveEvents(v === true)}
+            disabled={busy}
+          />
+          <div className="space-y-1">
+            <Label htmlFor="remove-events" className="text-sm font-medium leading-tight cursor-pointer">
+              Also delete the synced events from Heartbeat
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              Recommended for a full revoke. If you leave this off, already-synced
+              events stay here as local items you can edit or delete later.
+            </p>
+          </div>
+        </div>
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={busy}>
             Cancel
           </Button>
-          <Button variant="destructive" disabled={busy} onClick={onConfirm}>
+          <Button
+            variant="destructive"
+            disabled={busy}
+            onClick={() => onConfirm({ removeEvents })}
+          >
             {busy ? "Disconnecting…" : "Disconnect"}
           </Button>
         </DialogFooter>

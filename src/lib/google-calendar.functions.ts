@@ -388,14 +388,20 @@ export async function runSyncForCalendar(
     }
   }
 
-  // Save the new sync token + timestamp
+  // Save the new sync token + timestamp, and clear any previous error.
   await sb
     .from("calendars")
-    .update({ sync_token: nextSyncToken, last_synced_at: new Date().toISOString() })
+    .update({
+      sync_token: nextSyncToken,
+      last_synced_at: new Date().toISOString(),
+      last_sync_error: null,
+      last_sync_error_at: null,
+    })
     .eq("id", localCalendarId);
 
   return { inserted, updated, deleted };
 }
+
 
 
 // ---------------- Helpers ----------------
