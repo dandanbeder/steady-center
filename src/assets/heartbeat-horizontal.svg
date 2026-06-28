@@ -1,13 +1,15 @@
-<svg viewBox="0 0 330 100" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 390 120" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500&amp;display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500&amp;family=Hanken+Grotesk:wght@500;600;700&amp;display=swap');
       .wm{font-family:'Fraunces',Georgia,serif;font-weight:500;}
+      .ui{font-family:'Hanken Grotesk',Arial,sans-serif;font-weight:600;}
     </style>
   </defs>
-  <g transform="translate(8,10) scale(0.8)">
+  <g transform="translate(8,18) scale(0.82)">
     <circle cx="50" cy="50" r="40" fill="none" stroke="#26382F" stroke-width="3.4" opacity="0.4"/>
     <path d="M16 62 H34 C41 62 44 36 51 36 C58 36 61 62 68 62 H84" fill="none" stroke="#C26B4D" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
-  <text class="wm" x="104" y="64" font-size="46" fill="#26382F">Heartbeat</text>
+  <text class="wm" x="106" y="59" font-size="44" fill="#26382F">Heartbeat</text>
+  <text class="ui" x="109" y="88" font-size="20" letter-spacing="3.4" fill="#C26B4D">COMMAND</text>
 </svg>

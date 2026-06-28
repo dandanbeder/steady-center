@@ -8,7 +8,7 @@
  */
 import { jsPDF } from "jspdf";
 import { format, parseISO } from "date-fns";
-import heartbeatLogoAsset from "@/assets/heartbeat-email-logo.png.asset.json";
+import heartbeatLogoAsset from "@/assets/heartbeat-command-email.png.asset.json";
 import { MOOD_LABELS, type JournalMeta } from "@/lib/journal";
 
 export type JournalPdfEntry = {
