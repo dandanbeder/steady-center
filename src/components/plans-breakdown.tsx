@@ -28,6 +28,8 @@ type PlanRow = {
   /** Returns price + optional suffix + sublabel for the chosen cycle. */
   price: (cycle: Cycle) => { main: string; suffix?: string; sub: string };
   features: string[];
+  /** Optional invitation-style note for lower tiers (e.g. "Unlocks on Standard"). */
+  note?: string;
 };
 
 /**
