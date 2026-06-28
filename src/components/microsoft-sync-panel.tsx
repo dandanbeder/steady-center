@@ -337,8 +337,8 @@ export function MicrosoftSyncPanel({ businesses }: Props) {
           provider="Microsoft"
           calendarName={disconnectTarget.name}
           busy={disconnectCalMut.isPending}
-          onConfirm={() =>
-            disconnectCalMut.mutate({ calendar_id: disconnectTarget.id, remove_events: false })
+          onConfirm={({ removeEvents }) =>
+            disconnectCalMut.mutate({ calendar_id: disconnectTarget.id, remove_events: removeEvents })
           }
         />
       )}
@@ -349,10 +349,12 @@ export function MicrosoftSyncPanel({ businesses }: Props) {
           onOpenChange={(o) => !o && setDisconnectTarget(null)}
           provider="Microsoft"
           calendarName="your entire Microsoft account"
+          accountLevel
           busy={disconnectAccountMut.isPending}
-          onConfirm={() => disconnectAccountMut.mutate(false)}
+          onConfirm={({ removeEvents }) => disconnectAccountMut.mutate(removeEvents)}
         />
       )}
+
     </div>
   );
 }
