@@ -361,39 +361,7 @@ function BillingPage() {
           </Card>
         )}
 
-        {/* Billing cycle switch */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Billing cycle</CardTitle>
-            <CardDescription>
-              Switching takes effect immediately with proration handled by Paddle.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="inline-flex rounded-full border bg-muted/40 p-1">
-              <button
-                type="button"
-                onClick={() => cycle !== "month" && handleSwitch("month")}
-                disabled={busy === "switch"}
-                className={`rounded-full px-4 py-1.5 text-sm transition ${
-                  cycle === "month" ? "bg-background shadow" : "text-muted-foreground"
-                }`}
-              >
-                Monthly
-              </button>
-              <button
-                type="button"
-                onClick={() => cycle !== "year" && handleSwitch("year")}
-                disabled={busy === "switch"}
-                className={`rounded-full px-4 py-1.5 text-sm transition ${
-                  cycle === "year" ? "bg-background shadow" : "text-muted-foreground"
-                }`}
-              >
-                Annual <span className="ml-1 rounded bg-primary/15 px-1.5 py-0.5 text-xs text-primary">Save 18%</span>
-              </button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Billing cycle is controlled in the Plans section below. */}
 
         {/* Plans breakdown */}
         <PlansBreakdown currentTier={tier} />
