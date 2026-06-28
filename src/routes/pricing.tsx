@@ -246,10 +246,10 @@ function PricingPage() {
             name="Basic"
             tagline="Two areas, one calm home."
             priceMain={
-              <>
+              <div className="flex flex-col leading-none">
                 <span className="font-serif text-5xl">{fmtUsd(basicMonthlyEquivCents)}</span>
-                <span className="ml-1 text-sm" style={{ opacity: 0.7 }}>/mo</span>
-              </>
+                <span className="text-sm font-medium" style={{ opacity: 0.7 }}>/mo</span>
+              </div>
             }
             priceSub={
               cycle === "year"
@@ -283,10 +283,10 @@ function PricingPage() {
             name="Standard"
             tagline="For everything you're juggling."
             priceMain={
-              <>
+              <div className="flex flex-col leading-none">
                 <span className="font-serif text-5xl">{fmtUsd(proMonthlyEquivCents)}</span>
-                <span className="ml-1 text-sm" style={{ opacity: 0.7 }}>/mo</span>
-              </>
+                <span className="text-sm font-medium" style={{ opacity: 0.7 }}>/mo</span>
+              </div>
             }
             priceSub={
               cycle === "year"
@@ -319,10 +319,10 @@ function PricingPage() {
             name="Team"
             tagline="For teams that collaborate."
             priceMain={
-              <>
+              <div className="flex flex-col leading-none">
                 <span className="font-serif text-5xl">{fmtUsd(teamMonthlyEquivCents)}</span>
-                <span className="ml-1 text-sm" style={{ opacity: 0.7 }}>/seat/mo</span>
-              </>
+                <span className="text-sm font-medium" style={{ opacity: 0.7 }}>/seat/mo</span>
+              </div>
             }
             priceSub={
               cycle === "year"
