@@ -2,6 +2,7 @@
 // already entered, or the private DOM handover for advice and Blackbox calls.
 
 import { CATEGORY_BY_KEY, vitalRedFlags } from "./escalation";
+import { directionsUrl, isLatLng, mapSearchUrl } from "./geo";
 import { normaliseW3W, threeQuestionsRed, w3wUrl, type Intake } from "./triage";
 import { DOM_PATHWAYS, PATHWAY_LABEL, SPECIAL_CALL_LABEL, type Pathway } from "./types";
 
@@ -12,12 +13,16 @@ export function formatLocation(i: Pick<Intake, "street_address" | "apartment" | 
   return [street, i.suburb].filter(Boolean).join(", ");
 }
 
-/** Best link for responders: what3words if given (precise to 3m), else a maps search. */
-export function navigationUrl(i: Pick<Intake, "street_address" | "apartment" | "suburb" | "what3words" | "meeting_point">): string | null {
+type Locatable = Pick<Intake, "street_address" | "apartment" | "suburb" | "what3words" | "meeting_point"> &
+  Partial<Pick<Intake, "latitude" | "longitude">>;
+
+/** Best link for responders: directions to the exact pin, else what3words, else a maps search. */
+export function navigationUrl(i: Locatable): string | null {
+  if (isLatLng(i)) return directionsUrl({ lat: i.latitude, lng: i.longitude });
   const w = w3wUrl(i.what3words ?? "");
   if (w) return w;
   const q = [i.meeting_point, formatLocation(i)].filter(Boolean).join(", ");
-  return q ? `https://maps.google.com/?q=${encodeURIComponent(q)}` : null;
+  return q ? directionsUrl(q) : null;
 }
 
 export function buildResponseMessage(callId: string, i: Intake, pathway: Pathway): string {
@@ -30,6 +35,7 @@ export function buildResponseMessage(callId: string, i: Intake, pathway: Pathway
   lines.push(`LOCATION: ${formatLocation(i) || "Unknown"}`);
   if (i.meeting_point) lines.push(`MEETING POINT: ${i.meeting_point}`);
   if (i.what3words && w3wUrl(i.what3words)) lines.push(`W3W: ///${normaliseW3W(i.what3words)}`);
+  if (isLatLng(i)) lines.push(`MAP: ${mapSearchUrl({ lat: i.latitude, lng: i.longitude })}`);
   if (i.address_details) lines.push(`ACCESS: ${i.address_details}`);
   lines.push(`CROSS ST: ${i.cross_street || "Unknown"}`);
   lines.push(`PROBLEM: ${[i.main_problem || "Unknown", i.patient_age && `Age ${i.patient_age}`].filter(Boolean).join(" - ")}`);

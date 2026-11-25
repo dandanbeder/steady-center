@@ -29,6 +29,10 @@ export interface Intake {
   meeting_point: string;
   /** what3words address, e.g. "filled.count.soap", used when a location is hard to describe. */
   what3words: string;
+  /** Precise point from Google Places, a dragged pin, or what3words. */
+  latitude: number | null;
+  longitude: number | null;
+  location_source: "" | "address" | "pin" | "what3words";
   main_problem: string;
   /** Escalation matrix categories the dispatcher has confirmed apply. */
   escalation_terms: EscalationCategory[];
@@ -62,6 +66,9 @@ export const emptyIntake = (): Intake => ({
   in_area: true,
   meeting_point: "",
   what3words: "",
+  latitude: null,
+  longitude: null,
+  location_source: "",
   main_problem: "",
   escalation_terms: [],
   vital_signs: {},

@@ -29,6 +29,9 @@ export interface Incident {
   in_area: boolean;
   meeting_point: string;
   what3words: string;
+  latitude: number | null;
+  longitude: number | null;
+  location_source: "" | "address" | "pin" | "what3words";
   main_problem: string;
   escalation_terms: EscalationCategory[];
   vital_signs: VitalSigns;

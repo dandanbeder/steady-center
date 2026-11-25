@@ -1,4 +1,9 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import AddressSearch from "./AddressSearch";
+import LocationMap from "./LocationMap";
+import { directionsUrl, fmtLatLng, inSydneyArea, isLatLng } from "@/domain/geo";
+import { hasMaps } from "@/lib/maps";
+import { autosuggest, hasW3W, to3wa, toCoordinates, type W3WSuggestion } from "@/lib/w3w";
 import { CATEGORY_BY_KEY, ESCALATION_MATRIX, detectSpecialCall, matchEscalation, vitalRedFlags, type EscalationCategory, type VitalSigns } from "@/domain/escalation";
 import { OUT_OF_AREA_SAY, W3W_RE, isBlackbox, locationNeedsHelp, normaliseW3W, w3wUrl, type Intake, type QuestionKey } from "@/domain/triage";
 import { SPECIAL_CALL_LABEL, type IncidentFlag, type SpecialCall } from "@/domain/types";
@@ -36,6 +41,31 @@ function LocationHelp({ v, onChange }: { v: Intake; onChange: (p: Partial<Intake
   const w = normaliseW3W(draft);
   const valid = !w || W3W_RE.test(w);
   const link = w3wUrl(w);
+  const [lookup, setLookup] = useState<{ state: "idle" | "checking" | "ok" | "bad"; place?: string; suggestions?: W3WSuggestion[]; error?: string }>({ state: "idle" });
+  const focus = isLatLng(v) ? { lat: v.latitude, lng: v.longitude } : undefined;
+
+  // With a what3words key: check the words are real, place the pin, and suggest fixes for misheard words.
+  useEffect(() => {
+    if (!hasW3W || !w) return setLookup({ state: "idle" });
+    const t = setTimeout(async () => {
+      setLookup({ state: "checking" });
+      try {
+        if (W3W_RE.test(w)) {
+          const sq = await toCoordinates(w);
+          setLookup({ state: "ok", place: sq.nearestPlace });
+          onChange({ what3words: sq.words, latitude: sq.coordinates.lat, longitude: sq.coordinates.lng, location_source: "what3words" });
+          return;
+        }
+        const suggestions = await autosuggest(w, focus);
+        setLookup({ state: "bad", suggestions });
+      } catch (e) {
+        const suggestions = await autosuggest(w, focus).catch(() => []);
+        setLookup({ state: "bad", suggestions, error: e instanceof Error ? e.message : String(e) });
+      }
+    }, 450);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [w]);
   return (
     <div className="space-y-3 rounded-lg border border-amber-300 bg-amber-50 p-3">
       <p className="text-sm font-bold text-amber-900">Struggling to locate the caller</p>
@@ -58,7 +88,8 @@ function LocationHelp({ v, onChange }: { v: Intake; onChange: (p: Partial<Intake
             onChange={(e) => {
               const n = normaliseW3W(e.target.value);
               setDraft(n);
-              if (!n || W3W_RE.test(n)) onChange({ what3words: n });
+              // With the API the words are saved once verified (see effect above).
+              if (!n || (W3W_RE.test(n) && !hasW3W)) onChange({ what3words: n });
             }}
             autoCapitalize="off"
             spellCheck={false}
@@ -70,8 +101,79 @@ function LocationHelp({ v, onChange }: { v: Intake; onChange: (p: Partial<Intake
           )}
         </div>
         {!valid && <p className="mt-1 text-xs text-red-700">Not saved yet: three words separated by dots, e.g. filled.count.soap</p>}
-        {link && <p className="mt-1 text-xs text-slate-600">Read the words back and check the square on the map matches what the caller describes. Responders get a direct link.</p>}
+        {lookup.state === "checking" && <p className="mt-1 text-xs text-slate-500">Checking with what3words…</p>}
+        {lookup.state === "ok" && (
+          <p className="mt-1 text-xs font-semibold text-emerald-700">Valid square near {lookup.place}. Pin placed on the map. Read the words and place back to the caller.</p>
+        )}
+        {lookup.state === "bad" && (
+          <div className="mt-1 space-y-1 text-xs">
+            <p className="font-semibold text-red-700">Not a valid what3words address. Did they mean:</p>
+            {(lookup.suggestions ?? []).map((sg) => (
+              <button key={sg.words} type="button" className="mr-1 rounded-md border border-slate-300 bg-white px-2 py-1 font-mono" onClick={() => setDraft(sg.words)}>
+                ///{sg.words} <span className="font-sans text-slate-500">near {sg.nearestPlace}</span>
+              </button>
+            ))}
+          </div>
+        )}
+        {link && !hasW3W && <p className="mt-1 text-xs text-slate-600">Read the words back and check the square on the map matches what the caller describes. Responders get a direct link.</p>}
       </div>
+    </div>
+  );
+}
+
+const SOURCE_LABEL = { address: "from address search", pin: "pin placed by dispatcher", what3words: "from what3words", "": "" } as const;
+
+/** Map with a draggable pin: shows where responders will be sent, and the what3words square there. */
+function PinPanel({ v, onChange }: { v: Intake; onChange: (p: Partial<Intake>) => void }) {
+  const has = isLatLng(v);
+  const [square, setSquare] = useState<{ words: string; place: string } | null>(null);
+  const lat = v.latitude;
+  const lng = v.longitude;
+  useEffect(() => {
+    setSquare(null);
+    if (!hasW3W || lat === null || lng === null) return;
+    const t = setTimeout(() => {
+      to3wa({ lat, lng })
+        .then((sq) => setSquare({ words: sq.words, place: sq.nearestPlace }))
+        .catch(() => setSquare(null));
+    }, 400);
+    return () => clearTimeout(t);
+  }, [lat, lng]);
+
+  if (!hasMaps && !has) return null;
+  const pos = has ? { lat: v.latitude!, lng: v.longitude! } : null;
+  return (
+    <div className="space-y-2">
+      <LocationMap
+        pins={pos ? [{ id: "incident", position: pos, draggable: true, label: "!" }] : []}
+        onMove={(p) => onChange({ latitude: p.lat, longitude: p.lng, location_source: "pin" })}
+      />
+      {hasMaps && !pos && <p className="text-xs text-slate-500">Search an address above, or click the map to drop a pin.</p>}
+      {pos && (
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <span className="chip bg-slate-100 text-slate-700">
+            Pin {fmtLatLng(pos)} · {SOURCE_LABEL[v.location_source]}
+          </span>
+          {hasMaps && <span className="text-slate-500">Drag the pin to the exact spot (e.g. a park entrance).</span>}
+          {!inSydneyArea(pos) && <span className="chip bg-amber-100 text-amber-900">Pin is outside the Sydney area. Check it, and coverage.</span>}
+          <a className="font-semibold text-brand underline" href={directionsUrl(pos)} target="_blank" rel="noreferrer">
+            Open in Google Maps
+          </a>
+          <button type="button" className="text-slate-500 underline" onClick={() => onChange({ latitude: null, longitude: null, location_source: "" })}>
+            Clear pin
+          </button>
+        </div>
+      )}
+      {square && (
+        <p className="text-xs">
+          what3words here: <span className="font-mono font-bold text-red-700">///{square.words}</span> (near {square.place}).{" "}
+          {v.what3words !== square.words && (
+            <button type="button" className="font-semibold text-brand underline" onClick={() => onChange({ what3words: square.words })}>
+              Add to message
+            </button>
+          )}
+        </p>
+      )}
     </div>
   );
 }
@@ -134,6 +236,11 @@ export default function IntakeForm({
       </div>
 
       <Step say={`${greeting}. What is the address and suburb where you need assistance?`}>
+        <AddressSearch
+          onPick={(a) =>
+            onChange({ street_address: a.street_address, suburb: a.suburb, latitude: a.location.lat, longitude: a.location.lng, location_source: "address" })
+          }
+        />
         <div className="grid gap-2 sm:grid-cols-[1fr_120px]">
           <input className="input" placeholder="Street address (number and street)" value={v.street_address} onChange={(e) => onChange({ street_address: e.target.value })} />
           <input className="input" placeholder="Apt no." value={v.apartment} onChange={(e) => onChange({ apartment: e.target.value })} />
@@ -153,6 +260,7 @@ export default function IntakeForm({
             </button>
           )}
         </div>
+        <PinPanel v={v} onChange={onChange} />
         {!v.in_area && <p className="say">"{OUT_OF_AREA_SAY}"</p>}
         {(showLocate || needsHelp || !!v.meeting_point || !!v.what3words) && <LocationHelp v={v} onChange={onChange} />}
       </Step>

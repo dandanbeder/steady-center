@@ -6,6 +6,8 @@ import { ops } from "@/lib/ops";
 import type { ChannelMembership, Incident, IncidentAlert, IncidentEvent, IncidentResponder, PatientCareRecord } from "@/lib/db";
 import { CHANNELS } from "@/domain/alerts";
 import { formatLocation, navigationUrl } from "@/domain/message";
+import { isLatLng } from "@/domain/geo";
+import LocationMap from "@/components/LocationMap";
 import { clockTime } from "@/domain/time";
 import { SPECIAL_CALL_LABEL } from "@/domain/types";
 import { ErrorNote, PathwayChip, Section, cx, useAction } from "@/components/ui";
@@ -64,9 +66,10 @@ function Destination({ i }: { i: Incident }) {
         {i.patient_age ? ` · age ${i.patient_age}` : ""}
       </p>
       {i.flags.includes("unsafe_situation") && <p className="text-sm font-bold text-red-700">Caution: unsafe situation reported. Do not enter until safe.</p>}
+      {isLatLng(i) && <LocationMap height={180} pins={[{ id: i.id, position: { lat: i.latitude, lng: i.longitude }, label: "!" }]} />}
       {nav && (
-        <a className="text-sm font-semibold text-brand underline" target="_blank" rel="noreferrer" href={nav}>
-          {i.what3words ? "Navigate with what3words" : "Open in maps"}
+        <a className="btn-primary mt-1 w-full" target="_blank" rel="noreferrer" href={nav}>
+          {isLatLng(i) ? "Directions (Google Maps)" : i.what3words ? "Navigate with what3words" : "Directions (Google Maps)"}
         </a>
       )}
     </div>

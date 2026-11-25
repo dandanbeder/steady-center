@@ -8,6 +8,9 @@ import { RESPONDER_PATHWAYS, SPECIAL_CALL_LABEL } from "@/domain/types";
 import { ErrorNote, PathwayChip, StatusChip, cx, useAction } from "@/components/ui";
 import { allocationFor, awaitingAck, crewGroups } from "@/components/crew";
 import AvailableResponders from "@/components/AvailableResponders";
+import LocationMap from "@/components/LocationMap";
+import { isLatLng } from "@/domain/geo";
+import { hasMaps } from "@/lib/maps";
 
 function IncidentCard({ b, n }: { b: BoardIncident; n: number }) {
   const { incident: i, crew } = b;
@@ -97,7 +100,28 @@ export default function Board() {
             <IncidentCard key={b.incident.id} b={b} n={idx + 1} />
           ))}
         </div>
-        <AvailableResponders />
+        <div className="space-y-4">
+          {hasMaps && data.some((b) => isLatLng(b.incident)) && (
+            <div className="card p-2">
+              <LocationMap
+                height={280}
+                zoom={14}
+                fitAll
+                pins={data
+                  .map((b, idx) => ({ b, n: idx + 1 }))
+                  .filter(({ b }) => isLatLng(b.incident))
+                  .map(({ b, n }) => ({
+                    id: b.incident.id,
+                    position: { lat: b.incident.latitude!, lng: b.incident.longitude! },
+                    label: String(n),
+                    colour: b.incident.pathway === "yellow" ? "#d9a800" : b.incident.pathway === "green" ? "#1a9a3a" : b.incident.blackbox ? "#000000" : "#d71920",
+                    onClick: () => nav(`/incidents/${b.incident.id}`),
+                  }))}
+              />
+            </div>
+          )}
+          <AvailableResponders />
+        </div>
       </div>
     </div>
   );
