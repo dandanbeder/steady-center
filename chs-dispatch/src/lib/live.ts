@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { supabase } from "./supabase";
+import { isDemo, supabase } from "./supabase";
+import { onDemoStorage } from "@/demo/backend";
+
+if (isDemo && typeof window !== "undefined") onDemoStorage(() => window.dispatchEvent(new Event("chs:changed")));
 
 const CHANGED = "chs:changed";
 /** Tell every live view on this page to refresh now (after a local write). */
@@ -30,23 +33,26 @@ export function useLive<T>(key: string, tables: string[], fetcher: () => Promise
 
   useEffect(() => {
     reload();
-    const ch = supabase.channel(`live:${key}:${Math.random().toString(36).slice(2)}`);
-    for (const t of tables) {
-      ch.on("postgres_changes", { event: "*", schema: "public", table: t }, () => {
-        if (timer.current) clearTimeout(timer.current);
-        timer.current = setTimeout(reload, 150);
-      });
+    // The demo has no realtime server: local writes and other demo tabs notify instead.
+    const ch = isDemo ? null : supabase.channel(`live:${key}:${Math.random().toString(36).slice(2)}`);
+    if (ch) {
+      for (const t of tables) {
+        ch.on("postgres_changes", { event: "*", schema: "public", table: t }, () => {
+          if (timer.current) clearTimeout(timer.current);
+          timer.current = setTimeout(reload, 150);
+        });
+      }
+      ch.subscribe();
     }
-    ch.subscribe();
     const onLocal = () => reload();
     window.addEventListener(CHANGED, onLocal);
     // Safety net if a realtime message is missed.
-    const poll = setInterval(reload, 15000);
+    const poll = setInterval(reload, isDemo ? 5000 : 15000);
     return () => {
       clearInterval(poll);
       window.removeEventListener(CHANGED, onLocal);
       if (timer.current) clearTimeout(timer.current);
-      supabase.removeChannel(ch);
+      if (ch) supabase.removeChannel(ch);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, reload]);

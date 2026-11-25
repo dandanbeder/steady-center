@@ -1,6 +1,7 @@
 import { Navigate, NavLink, Route, Routes } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
-import { isConfigured } from "@/lib/supabase";
+import { isConfigured, isDemo } from "@/lib/supabase";
+import { resetDemo } from "@/demo/backend";
 import { cx } from "@/components/ui";
 import Login from "@/pages/Login";
 import Board from "@/pages/Board";
@@ -53,6 +54,26 @@ function Shell({ children }: { children: ReactNode }) {
           </div>
         </div>
       </header>
+      {isDemo && (
+        <div className="border-b border-amber-300 bg-amber-50 text-amber-900">
+          <div className="mx-auto flex max-w-[1500px] flex-wrap items-center gap-x-4 gap-y-1 px-4 py-1.5 text-xs">
+            <span className="font-semibold">Review build: demo data, stored only in this browser. No real calls, alerts or patients.</span>
+            <button className="font-semibold underline" onClick={signOut}>
+              Switch user
+            </button>
+            <button
+              className="font-semibold underline"
+              onClick={async () => {
+                resetDemo();
+                await signOut();
+                window.location.reload();
+              }}
+            >
+              Reset demo data
+            </button>
+          </div>
+        </div>
+      )}
       <main className="mx-auto w-full max-w-[1500px] flex-1 p-4">{children}</main>
     </div>
   );

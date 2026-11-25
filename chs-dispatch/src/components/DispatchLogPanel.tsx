@@ -6,7 +6,7 @@ import { ops } from "@/lib/ops";
 import { supabase } from "@/lib/supabase";
 import { notifyChanged } from "@/lib/live";
 import type { IncidentBundle } from "@/lib/queries";
-import { ErrorNote, Section, useAction } from "./ui";
+import { ConfirmButton, ErrorNote, Section, useAction } from "./ui";
 
 const CALL_TYPES: { v: DispatchLog["call_type"]; l: string }[] = [
   { v: "proceeded", l: "Proceeded as per usual processes" },
@@ -170,19 +170,18 @@ export default function DispatchLogPanel({ b, readOnly }: { b: IncidentBundle; r
             >
               Complete log and close incident
             </button>
-            <button
+            <ConfirmButton
+              label="Cancel call"
+              confirmLabel="Cancel call and stand down responders"
               className="btn-ghost text-red-700"
               disabled={act.busy}
-              onClick={() =>
-                confirm("Cancel this call? Any offered or assigned responders will be stood down.") &&
+              onConfirm={() =>
                 act.run(async () => {
                   if (dirty) await save();
                   await ops.close(i.id, true);
                 })
               }
-            >
-              Cancel call
-            </button>
+            />
             {going > 0 && <p className="w-full text-xs text-slate-500">{going} responder(s) still assigned. Clear them on the Crew tab before closing.</p>}
           </div>
         )}

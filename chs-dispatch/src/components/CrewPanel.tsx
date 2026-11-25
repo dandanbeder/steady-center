@@ -9,7 +9,7 @@ import { useLive, useNow } from "@/lib/live";
 import { loadOpenIncidents, profiles, type BoardIncident, type IncidentBundle } from "@/lib/queries";
 import type { Profile } from "@/lib/db";
 import { allocationFor, awaitingAck, crewGroups } from "./crew";
-import { ASSIGNMENT_LABEL, ErrorNote, Section, cx, useAction } from "./ui";
+import { ASSIGNMENT_LABEL, ConfirmButton, ErrorNote, Section, cx, useAction } from "./ui";
 
 const ADVICE_STYLE: Record<Advice, string> = {
   go: "bg-emerald-100 text-emerald-800",
@@ -195,9 +195,13 @@ export default function CrewPanel({ b }: { b: IncidentBundle }) {
                     </button>
                   )}
                   {c.status === "go" && c.on_scene_at && !i.duress_at && (
-                    <button className="btn-ghost text-red-700" title="Responder duress: Code 1" onClick={() => confirm(`Code 1 from ${c.profile.call_sign}? This stands down responders not yet on scene.`) && act.run(() => ops.duress(i.id, c.responder_id))}>
-                      Code 1
-                    </button>
+                    <ConfirmButton
+                      label="Code 1"
+                      confirmLabel={`Code 1 from ${c.profile.call_sign}: stand down en-route crew`}
+                      className="btn-ghost text-red-700"
+                      title="Responder duress: Code 1"
+                      onConfirm={() => act.run(() => ops.duress(i.id, c.responder_id))}
+                    />
                   )}
                   {c.status === "go" && !c.on_scene_at && (
                     <button className="btn-ghost" onClick={() => act.run(() => ops.markTime(i.id, c.responder_id, "on_scene"))}>

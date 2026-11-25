@@ -65,6 +65,10 @@ Open three windows: dispatcher, `chs-d22`, `chs-e56`.
    - **D22 sees:** "You have been moved to a new call. Stop going to Bondi", a GO 👍 with the new address, and a Confirm button.
 5. D22 confirms, arrives, completes the patient care record, clears. Dispatcher completes the Dispatch Log and closes. Clinical sees the case under **Cases**.
 
+## Review build (no server)
+
+`npm run build:demo` builds `dist-demo/`: the full app with a built-in demo backend (`src/demo/backend.ts`) that stands in for Supabase and mirrors its access rules and operations. Demo data (responders, a closed Rose Bay case with a patient care record, a cancelled call, a live Bondi call and a Blackbox call) is created on first load and kept only in that browser. Each tab can sign in as a different person, so one tab can be the dispatcher and another a responder.
+
 ## Tests
 
 ```bash

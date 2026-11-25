@@ -138,12 +138,59 @@ export function CopyButton({ text, label = "Copy" }: { text: string; label?: str
       type="button"
       className="btn-ghost"
       onClick={async () => {
-        await navigator.clipboard.writeText(text);
-        setDone(true);
+        try {
+          await navigator.clipboard.writeText(text);
+          setDone(true);
+        } catch {
+          return;
+        }
         setTimeout(() => setDone(false), 1500);
       }}
     >
       {done ? "Copied" : label}
     </button>
+  );
+}
+
+/** Two-step button: first click asks, second confirms. Works where browser confirm() dialogs are blocked. */
+export function ConfirmButton({
+  label,
+  confirmLabel,
+  onConfirm,
+  className = "btn-ghost",
+  disabled,
+  title,
+}: {
+  label: string;
+  confirmLabel: string;
+  onConfirm: () => void;
+  className?: string;
+  disabled?: boolean;
+  title?: string;
+}) {
+  const [asking, setAsking] = useState(false);
+  if (!asking)
+    return (
+      <button type="button" className={className} disabled={disabled} title={title} onClick={() => setAsking(true)}>
+        {label}
+      </button>
+    );
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1.5">
+      <button
+        type="button"
+        className="btn-danger"
+        disabled={disabled}
+        onClick={() => {
+          setAsking(false);
+          onConfirm();
+        }}
+      >
+        {confirmLabel}
+      </button>
+      <button type="button" className="btn-ghost" onClick={() => setAsking(false)}>
+        Keep
+      </button>
+    </span>
   );
 }
