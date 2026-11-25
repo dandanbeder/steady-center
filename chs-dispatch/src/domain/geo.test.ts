@@ -31,15 +31,17 @@ describe("geo helpers", () => {
 });
 
 describe("what3words client", () => {
-  const fake = (body: unknown, ok = true) => (async (url: string) => {
-    fake.last = url;
-    return { ok, status: ok ? 200 : 400, json: async () => body } as Response;
-  }) as unknown as typeof fetch & { last?: string };
+  let last = "";
+  const fake = (body: unknown, ok = true) =>
+    (async (url: string) => {
+      last = url;
+      return { ok, status: ok ? 200 : 400, json: async () => body } as Response;
+    }) as unknown as typeof fetch;
   it("converts words to a square", async () => {
     const f = fake({ words: "filled.count.soap", nearestPlace: "Vaucluse, NSW", coordinates: { lat: -33.85, lng: 151.27 } });
     const sq = await toCoordinates("filled.count.soap", f);
     expect(sq.coordinates.lat).toBe(-33.85);
-    expect((fake as { last?: string }).last).toContain("convert-to-coordinates?words=filled.count.soap");
+    expect(last).toContain("convert-to-coordinates?words=filled.count.soap");
   });
   it("converts a pin to words", async () => {
     const f = fake({ words: "index.home.raft", nearestPlace: "Bondi, NSW", coordinates: { lat: -33.89, lng: 151.27 } });
@@ -49,6 +51,6 @@ describe("what3words client", () => {
     await expect(toCoordinates("filled.count.soup", fake({ error: { code: "BadWords", message: "Invalid or non-existent 3 word address" } }, false))).rejects.toThrow("non-existent");
     const f = fake({ suggestions: [{ words: "filled.count.soap", nearestPlace: "Vaucluse, NSW" }] });
     expect((await autosuggest("filled.count.soup", { lat: -33.85, lng: 151.27 }, f))[0].words).toBe("filled.count.soap");
-    expect((fake as { last?: string }).last).toContain("clip-to-country=AU");
+    expect(last).toContain("clip-to-country=AU");
   });
 });
