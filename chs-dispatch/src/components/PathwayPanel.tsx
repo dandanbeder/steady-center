@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { buildAlertTitle, buildResponseMessage } from "@/domain/message";
-import { PATHWAY_SCRIPT, SCRIPTS, intakeFrom, type Intake, type TriageResult } from "@/domain/triage";
+import { BLACKBOX_SCRIPT, OUT_OF_AREA_SAY, PATHWAY_SCRIPT, SCRIPTS, intakeFrom, type Intake, type TriageResult } from "@/domain/triage";
 import { CHANNELS, suggestChannels } from "@/domain/alerts";
 import { DOM_PATHWAYS, PATHWAY_LABEL, RESPONDER_PATHWAYS, type Pathway } from "@/domain/types";
 import type { Incident } from "@/lib/db";
@@ -63,18 +63,27 @@ export function PathwayPanel({ incident, intake, triage, flush }: { incident: In
           )}
         </div>
 
-        {script && (
-          <div className="rounded-lg bg-slate-50 p-3">
+        {chosen === "red_out_of_area" && <p className="say">"{OUT_OF_AREA_SAY}"</p>}
+        {script && chosen !== "dom_direct" && (
+          <div className="space-y-2 rounded-lg bg-slate-50 p-3">
             <p className="text-sm font-bold">{script.title}</p>
-            <ol className="mt-1 list-decimal pl-5 text-sm">
+            <p className="say">"{script.say}"</p>
+            <ol className="list-decimal pl-5 text-sm">
               {script.actions.map((a) => (
                 <li key={a}>{a}</li>
               ))}
             </ol>
           </div>
         )}
-        {chosen === "red_out_of_area" && (
-          <p className="rounded-lg bg-red-50 p-3 text-sm text-red-800">Outside the response area: connect the caller to Triple Zero. CHS responders are not dispatched.</p>
+        {chosen === "dom_direct" && (incident.blackbox || triage.blackbox) && (
+          <div className="space-y-2 rounded-lg bg-black p-3 text-white">
+            <p className="text-sm font-bold">{BLACKBOX_SCRIPT.title}</p>
+            <ol className="list-decimal pl-5 text-sm">
+              {BLACKBOX_SCRIPT.actions.map((a) => (
+                <li key={a}>{a}</li>
+              ))}
+            </ol>
+          </div>
         )}
 
         {chosen && chosen !== "no_action" && (
@@ -116,89 +125,124 @@ export function PathwayPanel({ incident, intake, triage, flush }: { incident: In
   );
 }
 
-/** What happens once the pathway is set and the call is still in intake. */
-export function NextStepPanel({ incident, flush }: { incident: Incident; flush: () => Promise<void> }) {
-  const p = incident.pathway!;
-  const special = !!incident.special_call;
-  const [channels, setChannels] = useState<number[]>(() => suggestChannels(incident.suburb, incident.special_call));
-  const [note, setNote] = useState("");
-  const act = useAction();
+function AmbulanceCheck({ incident }: { incident: Incident }) {
   const amb = useAction();
   const [ambulance, setAmbulance] = useState(incident.ambulance_notified);
   useEffect(() => setAmbulance(incident.ambulance_notified), [incident.ambulance_notified]);
-  // Built from the saved record at the moment it is sent, so it reflects every answer.
-  const finalMessage = () => buildResponseMessage(incident.call_id, intakeFrom(incident), p);
+  return (
+    <div>
+      <label className={cx("flex items-center gap-2 rounded-lg p-2 text-sm font-semibold", ambulance ? "bg-emerald-50" : "bg-red-50 text-red-800")}>
+        <input
+          type="checkbox"
+          checked={ambulance}
+          onChange={(e) => {
+            const v = e.target.checked;
+            setAmbulance(v);
+            amb.run(async () => {
+              try {
+                await ops.updateIncident(incident.id, { ambulance_notified: v });
+              } catch (err) {
+                setAmbulance(!v);
+                throw err;
+              }
+            });
+          }}
+        />
+        112 added to the call / ambulance notified
+      </label>
+      {!ambulance && (
+        <p className="mt-1 text-xs text-slate-500">
+          Caller says they already called 000? Transfer anyway as per protocol so they can get an update; then tick this.
+        </p>
+      )}
+      <ErrorNote error={amb.error} />
+    </div>
+  );
+}
 
-  if (RESPONDER_PATHWAYS.includes(p)) {
-    const title = buildAlertTitle(incident.call_id, incident.suburb, special);
-    return (
-      <Section title="Alert responders">
-        <div className="space-y-3">
-          {p === "red_in_area" && (
-            <label className={cx("flex items-center gap-2 rounded-lg p-2 text-sm font-semibold", ambulance ? "bg-emerald-50" : "bg-red-50 text-red-800")}>
-              <input
-                type="checkbox"
-                checked={ambulance}
-                onChange={(e) => {
-                  const v = e.target.checked;
-                  setAmbulance(v);
-                  amb.run(async () => {
-                    try {
-                      await ops.updateIncident(incident.id, { ambulance_notified: v });
-                    } catch (err) {
-                      setAmbulance(!v);
-                      throw err;
-                    }
-                  });
-                }}
-              />
-              Triple Zero added to the call / ambulance notified
-            </label>
-          )}
-          <div>
-            <span className="label">Internal Messenger channels</span>
-            <div className="flex flex-wrap gap-1.5">
-              {CHANNELS.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => setChannels((cs) => (cs.includes(c.id) ? cs.filter((x) => x !== c.id) : [...cs, c.id].sort()))}
-                  className={cx("rounded-md border px-2 py-1 text-xs font-semibold", channels.includes(c.id) ? "border-brand bg-brand text-white" : "border-slate-300 bg-white")}
-                >
-                  {c.id} - {c.name}
-                </button>
-              ))}
-            </div>
-            {special && <p className="mt-1 text-xs text-slate-500">Special call: alert East and ERT.</p>}
+function AlertPanel({ incident, flush, pathway }: { incident: Incident; flush: () => Promise<void>; pathway: Pathway }) {
+  const special = !!incident.special_call;
+  const [channels, setChannels] = useState<number[]>(() => suggestChannels(incident.suburb, incident.special_call));
+  const act = useAction();
+  const title = buildAlertTitle(incident.call_id, incident.suburb, special);
+  const needs112 = pathway === "red_in_area" || pathway === "red_out_of_area" || incident.blackbox;
+  return (
+    <Section title="Alert responders">
+      <div className="space-y-3">
+        {needs112 && <AmbulanceCheck incident={incident} />}
+        <div>
+          <span className="label">Internal Messenger channels</span>
+          <div className="flex flex-wrap gap-1.5">
+            {CHANNELS.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setChannels((cs) => (cs.includes(c.id) ? cs.filter((x) => x !== c.id) : [...cs, c.id].sort()))}
+                className={cx("rounded-md border px-2 py-1 text-xs font-semibold", channels.includes(c.id) ? "border-brand bg-brand text-white" : "border-slate-300 bg-white")}
+              >
+                {c.id} - {c.name}
+              </button>
+            ))}
           </div>
-          <p className="rounded-md bg-slate-50 p-2 text-sm">
-            <span className="font-semibold">Critical alert:</span> {title}
-          </p>
-          <ErrorNote error={act.error ?? amb.error} />
-          <button
-            className="btn-danger w-full"
-            disabled={!channels.length || act.busy || amb.busy}
-            onClick={() =>
-              act.run(async () => {
-                await flush();
-                const msg = finalMessage();
-                await ops.updateIncident(incident.id, { response_message: msg });
-                await ops.issueAlert(incident.id, channels, title, msg);
-              })
-            }
-          >
-            Send alert and dispatch
+          <p className="mt-1 text-xs text-slate-500">Choose East or North by location.{special ? " Special call: alert East and ERT." : ""}</p>
+        </div>
+        <p className="rounded-md bg-slate-50 p-2 text-sm">
+          <span className="font-semibold">Critical alert:</span> {title}
+        </p>
+        <ErrorNote error={act.error} />
+        <button
+          className="btn-danger w-full"
+          disabled={!channels.length || act.busy}
+          onClick={() =>
+            act.run(async () => {
+              await flush();
+              // Built from the saved record at the moment it is sent, so it reflects every answer.
+              const msg = buildResponseMessage(incident.call_id, intakeFrom(incident), pathway === "dom_direct" ? "red_in_area" : pathway);
+              await ops.updateIncident(incident.id, { response_message: msg });
+              await ops.issueAlert(incident.id, channels, title, msg);
+            })
+          }
+        >
+          Send alert and dispatch
+        </button>
+      </div>
+    </Section>
+  );
+}
+
+/** What happens once the pathway is set: alert, hand to the DOM, or (Blackbox) wait for approval. */
+export function NextStepPanel({ incident, flush }: { incident: Incident; flush: () => Promise<void> }) {
+  const p = incident.pathway!;
+  const [note, setNote] = useState("");
+  const [approval, setApproval] = useState("");
+  const act = useAction();
+
+  if (RESPONDER_PATHWAYS.includes(p)) return <AlertPanel incident={incident} flush={flush} pathway={p} />;
+
+  if (incident.blackbox && incident.status === "dom_handover") {
+    if (incident.dom_approved_at) return <AlertPanel incident={incident} flush={flush} pathway="dom_direct" />;
+    return (
+      <Section title="Waiting for the DOM">
+        <div className="space-y-3">
+          <p className="text-sm">Blackbox call. Do not send responders until the DOM approves. Record the DOM's decision here.</p>
+          <input className="input" placeholder="e.g. DOM (phone): police on scene, send 1 Delta" value={approval} onChange={(e) => setApproval(e.target.value)} />
+          <ErrorNote error={act.error} />
+          <button className="btn-primary w-full" disabled={act.busy || !approval.trim()} onClick={() => act.run(() => ops.approveBlackbox(incident.id, approval.trim()))}>
+            DOM approved: dispatch responders
           </button>
+          <p className="text-xs text-slate-500">If the DOM says no responders, complete the Dispatch Log and close.</p>
         </div>
       </Section>
     );
   }
 
   if (DOM_PATHWAYS.includes(p)) {
+    const finalMessage = () => buildResponseMessage(incident.call_id, intakeFrom(incident), p);
     return (
       <Section title="Hand over to the DOM">
         <div className="space-y-3">
-          <p className="text-sm">Goes privately to the Duty Operations Manager, not to responders.</p>
+          {incident.blackbox && <AmbulanceCheck incident={incident} />}
+          <p className="text-sm">Send the message to the DOM (not the response group), call the DOM line and hand over, then post "advice call with DOM" in the dispatcher group.</p>
           <textarea className="input" rows={3} placeholder="Notes for the DOM" value={note} onChange={(e) => setNote(e.target.value)} />
           <ErrorNote error={act.error} />
           <button

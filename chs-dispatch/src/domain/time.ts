@@ -18,11 +18,15 @@ export function isAdviceOvernight(at: Date): boolean {
   return hour >= 23 || hour < 8;
 }
 
-/** Allocation grid "Night": overnight 23:00-06:00 (dispatch training, Module 2). */
-export function isAllocationNight(at: Date): boolean {
+/**
+ * "Night" for allocation and welfare checks: 21:00-07:00 (Dispatcher Manual, May 2025, p.14).
+ * The training extract said 23:00-06:00; the manual is the current operating document.
+ */
+export function isNight(at: Date): boolean {
   const { hour } = sydneyClock(at);
-  return hour >= 23 || hour < 6;
+  return hour >= 21 || hour < 7;
 }
+export const isAllocationNight = isNight;
 
 /** 24-hour time as the Dispatch Log expects it, e.g. "1605". Blank when unknown. */
 export function logTime(iso: string | null | undefined): string {

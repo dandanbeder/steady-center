@@ -4,7 +4,7 @@ import { loadOpenIncidents, type BoardIncident } from "@/lib/queries";
 import { ops } from "@/lib/ops";
 import { formatLocation } from "@/domain/message";
 import { clockTime } from "@/domain/time";
-import { SPECIAL_CALL_LABEL } from "@/domain/types";
+import { RESPONDER_PATHWAYS, SPECIAL_CALL_LABEL } from "@/domain/types";
 import { ErrorNote, PathwayChip, StatusChip, cx, useAction } from "@/components/ui";
 import { allocationFor, awaitingAck, crewGroups } from "@/components/crew";
 import AvailableResponders from "@/components/AvailableResponders";
@@ -12,7 +12,7 @@ import AvailableResponders from "@/components/AvailableResponders";
 function IncidentCard({ b, n }: { b: BoardIncident; n: number }) {
   const { incident: i, crew } = b;
   const g = crewGroups(crew);
-  const alloc = i.pathway === "red_in_area" || i.pathway === "yellow" ? allocationFor(i, crew) : null;
+  const alloc = (i.pathway && RESPONDER_PATHWAYS.includes(i.pathway)) || (i.blackbox && i.dom_approved_at) ? allocationFor(i, crew) : null;
   return (
     <Link to={`/incidents/${i.id}`} className="card block min-w-[300px] flex-1 transition hover:border-brand hover:shadow-md">
       <div className="flex items-start justify-between gap-2">
@@ -30,6 +30,9 @@ function IncidentCard({ b, n }: { b: BoardIncident; n: number }) {
         <PathwayChip pathway={i.pathway} />
         {i.special_call && <span className="chip bg-red-50 text-red-700 ring-1 ring-red-200">Special: {SPECIAL_CALL_LABEL[i.special_call]}</span>}
         {i.coverage !== "open" && <span className="chip bg-slate-100 text-slate-700">{i.coverage.replace(/_/g, " ")}</span>}
+        {i.blackbox && <span className="chip bg-black text-white">Blackbox{i.dom_approved_at ? ": DOM approved" : ": awaiting DOM"}</span>}
+        {i.duress_at && <span className="chip animate-pulse bg-red-700 text-white">CODE 1</span>}
+        {i.what3words && <span className="chip bg-red-50 font-mono text-red-700">///{i.what3words}</span>}
       </div>
       <p className="mt-2 text-sm">
         <span className="font-semibold">{i.main_problem || "Main problem not yet recorded"}</span>

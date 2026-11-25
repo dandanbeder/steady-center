@@ -64,6 +64,6 @@ export const SPECIAL_CALL_LABEL: Record<SpecialCall, string> = {
 };
 
 /** Pathways that send CHS responders. */
-export const RESPONDER_PATHWAYS: readonly Pathway[] = ["red_in_area", "yellow"];
+export const RESPONDER_PATHWAYS: readonly Pathway[] = ["red_in_area", "red_out_of_area", "yellow"];
 /** Pathways that go privately to the Duty Operations Manager. */
 export const DOM_PATHWAYS: readonly Pathway[] = ["green", "dom_direct"];

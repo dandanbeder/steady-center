@@ -63,7 +63,7 @@ export default function IncidentPage() {
     timer.current = setTimeout(() => void flush().catch(() => {}), 600);
   };
 
-  const defaultTab: Tab = !i ? "call" : i.status === "intake" ? "call" : i.status === "dispatching" || i.status === "active" ? "crew" : "log";
+  const defaultTab: Tab = !i ? "call" : i.status === "intake" || (i.status === "dom_handover" && i.blackbox) ? "call" : i.status === "dispatching" || i.status === "active" ? "crew" : "log";
   const [tab, setTab] = useState<Tab | null>(null);
   const current = tab ?? defaultTab;
 
@@ -72,7 +72,7 @@ export default function IncidentPage() {
 
   const result = triage(intake, new Date(i.received_at));
   const open = i.status !== "closed" && i.status !== "cancelled";
-  const hasCrew = i.pathway === "red_in_area" || i.pathway === "yellow";
+  const hasCrew = i.pathway === "red_in_area" || i.pathway === "red_out_of_area" || i.pathway === "yellow" || (i.blackbox && !!i.dom_approved_at);
 
   return (
     <div className="space-y-4">
@@ -124,7 +124,7 @@ export default function IncidentPage() {
               </Section>
               <div className="space-y-4">
                 <PathwayPanel incident={i} intake={intake} triage={result} flush={flush} />
-                {i.pathway && i.status === "intake" && <NextStepPanel incident={i} flush={flush} />}
+                {i.pathway && (i.status === "intake" || (i.status === "dom_handover" && i.blackbox)) && <NextStepPanel incident={i} flush={flush} />}
               </div>
             </div>
           )}

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { alertDecision, CHANNELS, MAX_ALERT_ATTEMPTS } from "@/domain/alerts";
-import { welfareChecksDue } from "@/domain/welfare";
+import { duringPhasePrompts, type Prompt } from "@/domain/welfare";
 import { clockTime } from "@/domain/time";
 import { RANK_LABEL, type CoverageStatus } from "@/domain/types";
 import type { Advice } from "@/domain/allocation";
@@ -88,8 +88,8 @@ export default function CrewPanel({ b }: { b: IncidentBundle }) {
   const [moveTarget, setMoveTarget] = useState<Record<string, string>>({});
   const [radioOffer, setRadioOffer] = useState({ responder: "", eta: "" });
 
-  const welfare = welfareChecksDue(
-    b.crew.map((c) => ({
+  const prompts = duringPhasePrompts({
+    subjects: b.crew.map((c) => ({
       responder_id: c.responder_id,
       call_sign: c.profile.call_sign ?? "?",
       rank: c.profile.rank!,
@@ -97,11 +97,15 @@ export default function CrewPanel({ b }: { b: IncidentBundle }) {
       status: c.status,
       eta_from: c.eta_from,
       eta_minutes: c.eta_minutes,
+      instruction_at: c.instruction_at,
+      on_air_at: c.on_air_at,
       on_scene_at: c.on_scene_at,
       last_welfare_check_at: c.last_welfare_check_at,
     })),
+    lastContactAt: b.events[b.events.length - 1]?.created_at ?? null,
+    sitrepAt: i.sitrep_at,
     now,
-  );
+  });
 
   const otherIncidents = others.data.filter((o) => o.incident.id !== i.id);
   // Responders en route elsewhere who could be moved to this call.
@@ -115,24 +119,8 @@ export default function CrewPanel({ b }: { b: IncidentBundle }) {
 
   return (
     <div className="space-y-4">
-      {welfare.length > 0 && (
-        <div className="rounded-xl border-2 border-red-500 bg-red-50 p-3">
-          <p className="font-bold text-red-800">Welfare check due</p>
-          {welfare.map((w) => (
-            <div key={w.responder_id} className="mt-1 flex flex-wrap items-center gap-2 text-sm">
-              <span>
-                {w.call_sign} is {w.overdueMinutes + 5}+ min past ETA without arriving. Call them directly.
-              </span>
-              <button className="btn-ghost" onClick={() => act.run(() => ops.welfareCheck(i.id, w.responder_id, "Called: safe, en route"))}>
-                Called: safe
-              </button>
-              <button className="btn-ghost" onClick={() => act.run(() => ops.welfareCheck(i.id, w.responder_id, "No answer: escalated to DOM"))}>
-                No answer
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
+      {i.duress_at && <DuressBanner />}
+      {prompts.length > 0 && <PromptList incidentId={i.id} prompts={prompts} />}
 
       <Section
         title="Crew"
@@ -183,6 +171,7 @@ export default function CrewPanel({ b }: { b: IncidentBundle }) {
                 </span>
                 {awaitingAck(c) && <span className="chip bg-amber-100 text-amber-800">Awaiting confirm</span>}
                 {!awaitingAck(c) && c.acknowledged_at && <span className="chip bg-emerald-50 text-emerald-700">Confirmed {clockTime(c.acknowledged_at)}</span>}
+                {c.on_air_at && !c.on_scene_at && <span className="chip bg-slate-100 text-slate-700">On air {clockTime(c.on_air_at)}</span>}
                 {c.on_scene_at && <span className="chip bg-sky-100 text-sky-800">On scene {clockTime(c.on_scene_at)}</span>}
                 {r && editable && (
                   <span className={cx("chip", ADVICE_STYLE[r.advice])} title={r.reason}>
@@ -198,6 +187,16 @@ export default function CrewPanel({ b }: { b: IncidentBundle }) {
                   {editable && c.status !== "stand_down" && !c.on_scene_at && (
                     <button className="btn-stop" disabled={act.busy} onClick={() => act.run(() => ops.instruct(i.id, c.responder_id, "stand_down"))}>
                       🛑 Stand down
+                    </button>
+                  )}
+                  {c.status === "go" && !c.on_air_at && !c.on_scene_at && c.profile.has_radio && (
+                    <button className="btn-ghost" onClick={() => act.run(() => ops.markTime(i.id, c.responder_id, "on_air"))}>
+                      On air
+                    </button>
+                  )}
+                  {c.status === "go" && c.on_scene_at && !i.duress_at && (
+                    <button className="btn-ghost text-red-700" title="Responder duress: Code 1" onClick={() => confirm(`Code 1 from ${c.profile.call_sign}? This stands down responders not yet on scene.`) && act.run(() => ops.duress(i.id, c.responder_id))}>
+                      Code 1
                     </button>
                   )}
                   {c.status === "go" && !c.on_scene_at && (
@@ -261,6 +260,8 @@ export default function CrewPanel({ b }: { b: IncidentBundle }) {
         </Section>
       )}
 
+      <DuringPhase b={b} />
+
       <div className="grid gap-4 md:grid-cols-2">
         <Section title="Internal Messenger alert">
           <AlertStatus b={b} />
@@ -309,5 +310,146 @@ export default function CrewPanel({ b }: { b: IncidentBundle }) {
         </Section>
       </div>
     </div>
+  );
+}
+
+function DuressBanner() {
+  return (
+    <div className="rounded-xl border-2 border-red-700 bg-red-700 p-3 text-white">
+      <p className="text-lg font-black">CODE 1: responder duress</p>
+      <ol className="mt-1 list-decimal pl-5 text-sm">
+        <li>Acknowledge generically on the radio: "Code 1 acknowledged, standby"</li>
+        <li>Responders not yet on scene have been stood down</li>
+        <li>Call 000 and request police</li>
+        <li>Notify the DOM</li>
+      </ol>
+    </div>
+  );
+}
+
+function PromptList({ incidentId, prompts }: { incidentId: string; prompts: Prompt[] }) {
+  const act = useAction();
+  return (
+    <div className="space-y-2 rounded-xl border-2 border-amber-500 bg-amber-50 p-3">
+      <p className="font-bold text-amber-900">Needs attention</p>
+      {prompts.map((p, idx) => (
+        <div key={`${p.kind}-${p.responder_id ?? idx}`} className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="flex-1">
+            {p.text}
+            {p.radio && <span className="ml-1 font-mono text-xs text-slate-600">“{p.radio}”</span>}
+          </span>
+          {(p.kind === "echo_welfare" || p.kind === "on_air") && p.responder_id && (
+            <>
+              <button className="btn-ghost" onClick={() => act.run(() => ops.welfareCheck(incidentId, p.responder_id!, "Contacted: safe, en route"))}>
+                Contacted: safe
+              </button>
+              <button className="btn-ghost" onClick={() => act.run(() => ops.welfareCheck(incidentId, p.responder_id!, "No answer after two calls: DOM contacted"))}>
+                No answer: DOM
+              </button>
+            </>
+          )}
+          {p.kind === "radio_silence" && (
+            <button className="btn-ghost" onClick={() => act.run(() => ops.note(incidentId, "Welfare check: all good"))}>
+              Welfare check done
+            </button>
+          )}
+        </div>
+      ))}
+      <ErrorNote error={act.error} />
+    </div>
+  );
+}
+
+function DuringPhase({ b }: { b: IncidentBundle }) {
+  const i = b.incident!;
+  const act = useAction();
+  const onScene = b.crew.filter((c) => c.on_scene_at && (c.status === "go" || c.status === "cleared"));
+  const [sitrep, setSitrep] = useState({ responder: "", acuity: "routine" as "routine" | "emergency", body: "" });
+  const [note, setNote] = useState("");
+  const ambulanceArrived = b.events.some((e) => e.kind === "ambulance_arrived");
+  if (!b.crew.some((c) => c.status === "go" || c.status === "cleared")) return null;
+  return (
+    <Section title="During phase">
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <span className="label">Sitrep (within 3 min of arrival)</span>
+          {i.sitrep_acuity && (
+            <p className={cx("chip", i.sitrep_acuity === "emergency" ? "bg-red-600 text-white" : "bg-emerald-100 text-emerald-800")}>
+              Last sitrep: {i.sitrep_acuity} at {clockTime(i.sitrep_at)}
+            </p>
+          )}
+          <div className="flex gap-2">
+            <select className="input" value={sitrep.responder} onChange={(e) => setSitrep({ ...sitrep, responder: e.target.value })}>
+              <option value="">From…</option>
+              {onScene.map((c) => (
+                <option key={c.responder_id} value={c.responder_id}>
+                  {c.profile.call_sign}
+                </option>
+              ))}
+            </select>
+            <select className="input" value={sitrep.acuity} onChange={(e) => setSitrep({ ...sitrep, acuity: e.target.value as "routine" | "emergency" })}>
+              <option value="routine">Routine</option>
+              <option value="emergency">Emergency</option>
+            </select>
+          </div>
+          <input className="input" placeholder="Alert? Breathing? Resources needed?" value={sitrep.body} onChange={(e) => setSitrep({ ...sitrep, body: e.target.value })} />
+          <button
+            className="btn-ghost"
+            disabled={!sitrep.responder || act.busy}
+            onClick={() =>
+              act.run(async () => {
+                await ops.sitrep(i.id, sitrep.responder, sitrep.acuity, sitrep.body);
+                setSitrep({ responder: "", acuity: "routine", body: "" });
+              })
+            }
+          >
+            Log sitrep
+          </button>
+          {i.sitrep_acuity === "emergency" && (
+            <p className="rounded-md bg-red-50 p-2 text-xs text-red-800">Emergency sitrep: confirm whether further resources are needed, and make sure the DOM has acknowledged.</p>
+          )}
+        </div>
+        <div className="space-y-2">
+          <span className="label">Ambulance</span>
+          <div className="flex flex-wrap gap-1.5">
+            {!i.ambulance_notified && (
+              <button className="btn-ghost" onClick={() => act.run(() => ops.ambulance(i.id, "called"))}>
+                Ambulance called from scene
+              </button>
+            )}
+            {!ambulanceArrived && (
+              <button className="btn-ghost" onClick={() => act.run(() => ops.ambulance(i.id, "arrived"))}>
+                Ambulance on scene
+              </button>
+            )}
+            {ambulanceArrived && (
+              <button className="btn-ghost" onClick={() => act.run(() => ops.ambulance(i.id, "left"))}>
+                Ambulance left
+              </button>
+            )}
+          </div>
+          <p className="text-xs text-slate-500">
+            Only when confirmed by a responder or the caller (lights in the distance aren't enough). Don't stand down responders under 5 min away.
+          </p>
+          <span className="label mt-3">Radio log</span>
+          <div className="flex gap-2">
+            <input className="input" placeholder="e.g. D13 calling DOM line" value={note} onChange={(e) => setNote(e.target.value)} />
+            <button
+              className="btn-ghost"
+              disabled={!note.trim()}
+              onClick={() =>
+                act.run(async () => {
+                  await ops.note(i.id, note.trim());
+                  setNote("");
+                })
+              }
+            >
+              Log
+            </button>
+          </div>
+        </div>
+      </div>
+      <ErrorNote error={act.error} />
+    </Section>
   );
 }

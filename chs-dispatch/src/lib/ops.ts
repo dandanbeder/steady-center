@@ -35,7 +35,12 @@ export const ops = {
   acknowledge: (incident: string) => rpc("acknowledge_instruction", { _incident: incident }),
   reassign: (from: string, to: string, responder: string, eta: number) =>
     rpc("reassign_responder", { _from: from, _to: to, _responder: responder, _eta: eta }),
-  markTime: (incident: string, responder: string, what: "on_scene" | "cleared") =>
+  approveBlackbox: (incident: string, note: string) => rpc("approve_blackbox_dispatch", { _incident: incident, _note: note }),
+  sitrep: (incident: string, responder: string, acuity: "routine" | "emergency", body: string) =>
+    rpc("record_sitrep", { _incident: incident, _responder: responder, _acuity: acuity, _body: body }),
+  ambulance: (incident: string, what: "called" | "arrived" | "left", note = "") => rpc("record_ambulance", { _incident: incident, _what: what, _note: note }),
+  duress: (incident: string, responder: string) => rpc("record_duress", { _incident: incident, _responder: responder }),
+  markTime: (incident: string, responder: string, what: "on_air" | "on_scene" | "cleared") =>
     rpc("mark_responder_time", { _incident: incident, _responder: responder, _what: what }),
   welfareCheck: (incident: string, responder: string, outcome: string) =>
     rpc("record_welfare_check", { _incident: incident, _responder: responder, _outcome: outcome }),

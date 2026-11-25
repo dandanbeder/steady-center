@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { emptyIntake, triage, detectEmergencyTerms, type Intake } from "./triage";
-import { buildResponseMessage } from "./message";
+import { emptyIntake, triage, normaliseW3W, w3wUrl, locationNeedsHelp, type Intake } from "./triage";
+import { detectSpecialCall, matchEscalation, vitalRedFlags } from "./escalation";
+import { buildResponseMessage, navigationUrl } from "./message";
 import { recommend, type Candidate } from "./allocation";
 import { alertDecision, suggestChannels } from "./alerts";
-import { welfareChecksDue } from "./welfare";
+import { duringPhasePrompts, phonetic, welfareChecksDue } from "./welfare";
 import { logTime } from "./time";
 
 // Sydney is UTC+11 in November (AEDT).
@@ -20,8 +21,11 @@ describe("triage: emergency pathway", () => {
     expect(r.script?.no).toBe(1);
     expect(r.questions).toContain("onscene_contact");
   });
-  it("Red out of area when outside the response area", () => {
-    expect(triage(intake({ emergency_complaint: true, in_area: false })).suggested).toBe("red_out_of_area");
+  it("out of area: 112 regardless of severity, responders still dispatched", () => {
+    const r = triage(intake({ emergency_complaint: false, alert_talking: true, breathing_normally: true, uncontrolled_bleeding: false, in_area: false }));
+    expect(r.suggested).toBe("red_out_of_area");
+    expect(r.add112).toBe(true);
+    expect(r.script?.no).toBe(1);
   });
   it("asks the three questions when no emergency complaint", () => {
     const r = triage(intake({ emergency_complaint: false }));
@@ -39,33 +43,91 @@ describe("triage: emergency pathway", () => {
   });
 });
 
-describe("triage: advice pathway", () => {
+describe("triage: advice pathway (flowchart 19/08/2025)", () => {
   const clear = { hotline: "advice" as const, emergency_complaint: false, alert_talking: true, breathing_normally: true, uncontrolled_bleeding: false };
-  it("overnight goes Purple (Health Direct)", () => {
-    expect(triage(intake(clear), sydney("23:30")).suggested).toBe("purple");
-    expect(triage(intake(clear), sydney("07:59")).suggested).toBe("purple");
+  it("no escalation goes to the DOM (Script 3) at any hour", () => {
+    expect(triage(intake(clear), sydney("23:30")).suggested).toBe("green");
+    expect(triage(intake(clear), sydney("14:00")).script?.no).toBe(3);
   });
-  it("daytime community org and worse in 2 hrs goes Green (DOM)", () => {
-    const r = triage(intake({ ...clear, calling_from_community_org: true, worse_last_2h: true }), sydney("14:00"));
-    expect(r.suggested).toBe("green");
-    expect(r.script?.no).toBe(3);
-  });
-  it("daytime otherwise goes Purple", () => {
-    expect(triage(intake({ ...clear, calling_from_community_org: true, worse_last_2h: false }), sydney("14:00")).suggested).toBe("purple");
-  });
-  it("daytime waits for the two extra questions", () => {
-    expect(triage(intake(clear), sydney("14:00")).complete).toBe(false);
-  });
-  it("advice call with an emergency complaint still goes Red", () => {
+  it("advice call with an emergency complaint goes Red", () => {
     expect(triage(intake({ hotline: "advice", emergency_complaint: true })).suggested).toBe("red_in_area");
+  });
+  it("a red answer to the three questions escalates an advice call", () => {
+    expect(triage(intake({ ...clear, breathing_normally: false })).suggested).toBe("red_in_area");
+  });
+  it("burns and severe pain stay advice on the advice line", () => {
+    const r = triage(intake({ ...clear, emergency_complaint: true, escalation_terms: ["severe_burn", "severe_pain"] }));
+    expect(r.suggested).toBe("green");
+    expect(triage(intake({ emergency_complaint: true, escalation_terms: ["severe_burn"] })).suggested).toBe("red_in_area");
+  });
+  it("vital-sign advice escalates only with red-flag numbers", () => {
+    expect(triage(intake({ ...clear, emergency_complaint: true, escalation_terms: ["vital_signs"], vital_signs: { heart_rate: 100 } })).suggested).toBe("green");
+    expect(triage(intake({ ...clear, emergency_complaint: false, escalation_terms: ["vital_signs"], vital_signs: { systolic_bp: 210 } })).suggested).toBe("red_in_area");
+  });
+  it("May 2025 Health Direct branch is available as an option", () => {
+    const opts = { adviceHealthDirect: true };
+    expect(triage(intake(clear), sydney("23:30"), opts).suggested).toBe("purple");
+    expect(triage(intake({ ...clear, calling_from_community_org: false, worse_last_2h: true }), sydney("14:00"), opts).suggested).toBe("green");
+    expect(triage(intake({ ...clear, calling_from_community_org: false, worse_last_2h: false }), sydney("14:00"), opts).suggested).toBe("purple");
   });
 });
 
-describe("emergency term detection", () => {
-  it("flags special calls", () => {
-    expect(detectEmergencyTerms("Elderly man unconscious")).toEqual({ matched: true, special: "unconscious" });
-    expect(detectEmergencyTerms("Heart attack").matched).toBe(true);
-    expect(detectEmergencyTerms("sprained ankle").matched).toBe(false);
+describe("triage: exceptions", () => {
+  it("Blackbox: assault / self-harm goes to the DOM with 112, no responders yet", () => {
+    const r = triage(intake({ emergency_complaint: true, escalation_terms: ["suicide_self_harm"] }));
+    expect(r.suggested).toBe("dom_direct");
+    expect(r.blackbox).toBe(true);
+    expect(r.add112).toBe(true);
+    expect(triage(intake({ flags: ["unsafe_situation"] })).blackbox).toBe(true);
+  });
+  it("high-frequency caller on the emergency line goes to the DOM unless red flags", () => {
+    const base = { flags: ["high_frequency_caller" as const], emergency_complaint: false, alert_talking: true, breathing_normally: true, uncontrolled_bleeding: false };
+    expect(triage(intake(base)).suggested).toBe("green");
+    expect(triage(intake({ ...base, breathing_normally: false })).suggested).toBe("red_in_area");
+  });
+});
+
+describe("escalation matrix", () => {
+  it("matches categories and offers clarifying questions", () => {
+    const m = matchEscalation("Dad has had a fall");
+    expect(m.map((c) => c.key)).toContain("fall_still_on_ground");
+    expect(m.find((c) => c.key === "fall_still_on_ground")?.clarify).toContain("Are they still on the ground?");
+    expect(matchEscalation("chest tightness and jaw pain").map((c) => c.key)).toContain("chest_pain");
+    expect(matchEscalation("bitten by a snake").map((c) => c.key)).toContain("envenomation");
+    expect(matchEscalation("fight outside the pub").find((c) => c.blackbox)?.key).toBe("assault_aggression");
+  });
+  it("vital signs chart red flags", () => {
+    expect(vitalRedFlags({ heart_rate: 45, spo2: 90 })).toHaveLength(2);
+    expect(vitalRedFlags({ temp: 38, age_days: 20 })).toHaveLength(1);
+    expect(vitalRedFlags({ temp: 38.5, age_days: 60 })).toHaveLength(0);
+    expect(vitalRedFlags({ temp: 39.5, age_days: 60 })).toHaveLength(1);
+    expect(vitalRedFlags({ heart_rate: 80, systolic_bp: 120 })).toHaveLength(0);
+  });
+});
+
+describe("location help and what3words", () => {
+  it("normalises and links what3words", () => {
+    expect(normaliseW3W("///Filled.Count.Soap ")).toBe("filled.count.soap");
+    expect(w3wUrl("filled.count.soap")).toBe("https://what3words.com/filled.count.soap");
+    expect(w3wUrl("filled.count")).toBeNull();
+  });
+  it("flags parks and missing street numbers", () => {
+    expect(locationNeedsHelp({ street_address: "walkway far side of the park", address_details: "" })).toBe(true);
+    expect(locationNeedsHelp({ street_address: "10 Campbell Pde", address_details: "" })).toBe(false);
+    expect(locationNeedsHelp({ street_address: "5 Beach Rd", address_details: "" })).toBe(false);
+  });
+  it("responders navigate by what3words when given", () => {
+    const i = { ...emptyIntake(), street_address: "Nielsen Park", suburb: "Vaucluse", what3words: "filled.count.soap" };
+    expect(navigationUrl(i)).toBe("https://what3words.com/filled.count.soap");
+    expect(buildResponseMessage("X", i, "red_in_area")).toContain("W3W: ///filled.count.soap");
+  });
+});
+
+describe("special call detection", () => {
+  it("flags special calls, GoodSAM is a cardiac arrest", () => {
+    expect(detectSpecialCall("Elderly man unconscious")).toBe("unconscious");
+    expect(detectSpecialCall("GoodSAM alert")).toBe("cardiac_arrest");
+    expect(detectSpecialCall("sprained ankle")).toBeNull();
   });
 });
 
@@ -112,8 +174,8 @@ describe("allocation grid", () => {
     expect(by.D66).toBe("optional");
     expect(r.requirement.max).toBe(3);
   });
-  it("night needs two responders", () => {
-    const r = recommend({ pathway: "yellow", special_call: null, at: sydney("02:00"), candidates: [cand({ call_sign: "D22" })] });
+  it("night (21:00-07:00) needs two responders", () => {
+    const r = recommend({ pathway: "yellow", special_call: null, at: sydney("21:30"), candidates: [cand({ call_sign: "D22" })] });
     expect(r.gaps).toHaveLength(1);
   });
   it("special call prefers ERT within the 3 minute window", () => {
@@ -207,5 +269,34 @@ describe("welfare checks", () => {
 describe("log time", () => {
   it("formats 24 hour Sydney time", () => {
     expect(logTime("2026-11-25T05:05:00Z")).toBe("1605");
+  });
+});
+
+describe("during-phase prompts", () => {
+  const t0 = "2026-11-25T03:00:00Z"; // 14:00 Sydney
+  const base = { responder_id: "d", call_sign: "D13", rank: "delta" as const, has_radio: true, status: "go" as const, eta_from: t0, eta_minutes: 5, instruction_at: t0, on_air_at: null, on_scene_at: null, last_welfare_check_at: null };
+  it("prompts on-air after 5 minutes with the phonetic radio call", () => {
+    const p = duringPhasePrompts({ subjects: [base], lastContactAt: t0, sitrepAt: null, now: new Date("2026-11-25T03:06:00Z") });
+    expect(p[0].kind).toBe("on_air");
+    expect(p[0].radio).toContain("Delta 13, Delta 13 from Control");
+  });
+  it("prompts a sitrep 3 minutes after arrival", () => {
+    const s = { ...base, on_air_at: t0, on_scene_at: "2026-11-25T03:10:00Z" };
+    expect(duringPhasePrompts({ subjects: [s], lastContactAt: s.on_scene_at, sitrepAt: null, now: new Date("2026-11-25T03:14:00Z") }).map((x) => x.kind)).toContain("sitrep");
+  });
+  it("radio silence: 30 min by day, 15 at night", () => {
+    const s = { ...base, on_air_at: t0, on_scene_at: t0 };
+    const day = duringPhasePrompts({ subjects: [s], lastContactAt: t0, sitrepAt: t0, now: new Date("2026-11-25T03:20:00Z") });
+    expect(day.some((x) => x.kind === "radio_silence")).toBe(false);
+    const n0 = "2026-11-25T12:00:00Z"; // 23:00 Sydney
+    const night = duringPhasePrompts({ subjects: [{ ...s, on_scene_at: n0 }], lastContactAt: n0, sitrepAt: n0, now: new Date("2026-11-25T12:16:00Z") });
+    expect(night.some((x) => x.kind === "radio_silence")).toBe(true);
+  });
+  it("Echo on scene alone is told to wait", () => {
+    const e = { ...base, responder_id: "e", call_sign: "E56", rank: "echo" as const, has_radio: false, on_scene_at: t0 };
+    expect(duringPhasePrompts({ subjects: [e], lastContactAt: t0, sitrepAt: null, now: new Date(t0) }).some((x) => x.kind === "echo_wait")).toBe(true);
+  });
+  it("phonetic call signs", () => {
+    expect(phonetic("IE31")).toBe("India Echo 31");
   });
 });

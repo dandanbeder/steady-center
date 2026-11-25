@@ -9,5 +9,5 @@ psql -q -c "drop database if exists $DB" -c "create database $DB"
 psql -q -d "$DB" -v ON_ERROR_STOP=1 -f supabase/tests/00_supabase_stub.sql
 for f in supabase/migrations/*.sql; do psql -q -d "$DB" -v ON_ERROR_STOP=1 -f "$f"; done
 psql -q -d "$DB" -v ON_ERROR_STOP=1 -f supabase/tests/01_grants.sql
-psql -d "$DB" -v ON_ERROR_STOP=1 -f supabase/tests/10_two_incident_scenario.sql | grep -E "NOTICE|ERROR|SHOULD" || true
+cat supabase/tests/10_two_incident_scenario.sql supabase/tests/20_manual_rules.sql | grep -v "^reset role;$" | psql -d "$DB" -v ON_ERROR_STOP=1 | grep -E "NOTICE|ERROR|SHOULD" || true
 echo "Scenario passed."

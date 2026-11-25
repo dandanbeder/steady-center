@@ -4,6 +4,8 @@ Dispatch and case management for Community Health Support. It replaces the Jotfo
 
 This is a standalone app. It is separate from the Heartbeat app in the rest of this repository and uses its **own Supabase project**.
 
+Sources encoded: *CHS Dispatch Resources for ToooAir* (Nov 2026), *CHS Dispatcher Manual* (May 2025), *Escalation / Emergency Terms* matrix (July 2025 draft) and the *updated dispatch flowchart* (19/08/2025). Where they disagree, the newest wins and the difference is listed under "Decisions to confirm".
+
 ## What phase 1 covers
 
 | Brief | Where |
@@ -12,6 +14,11 @@ This is a standalone app. It is separate from the Heartbeat app in the rest of t
 | One "Response Required" message (or a private DOM handover) built from the answers | `src/domain/message.ts` |
 | Alert the right Internal Messenger channels; re-send after 1 min, at most 3 times, stop at 2+ going unless special call | `src/domain/alerts.ts`, `issue_alert()` |
 | Offers vs assignments: responders offer with an ETA, the dispatcher says 👍 go or 🛑 stand down, the responder confirms to close the loop | `offer_to_attend`, `set_instruction`, `acknowledge_instruction` |
+| Escalation matrix: terms → categories, clarifying questions, vital-sign red flags (Resource 2) | `src/domain/escalation.ts` |
+| Advice-line exceptions (burns, severe pain, vital-sign advice); Blackbox calls (assault, aggression, self-harm, suicide, drug related) need DOM approval before responders, enforced in the database | `triage.ts`, `approve_blackbox_dispatch()` |
+| Out of coverage area: 112 regardless of severity, responders dispatched as normal | `triage.ts` |
+| Struggling to locate: manual's park script, agreed meeting point, what3words (sent to responders as a direct link) | Call tab, `message.ts` |
+| During phase: on air within 5 min, sitrep within 3 min of arrival, radio-silence welfare checks (30 min, 15 at night), Echo waits for a Delta+, ambulance updates, Code 1 duress, address corrections pushed to responders | `src/domain/welfare.ts`, Crew tab, responder app |
 | Allocation grid (day/night/special/MCI), ERT and kit preference, Echo rules, 10-minute rule, alpha discretion | `src/domain/allocation.ts` |
 | Keep incidents separate; move a responder between calls; both incidents show the new crew and the gap | `reassign_responder()`, Dispatch board |
 | Welfare check when an Echo or radio-less responder is 5+ min past ETA | `src/domain/welfare.ts` |
@@ -60,15 +67,18 @@ Database (RLS and the two-incident scenario) against any throwaway Postgres 15+:
 PGHOST=localhost PGUSER=postgres scripts/test-db.sh
 ```
 
-## Assumptions to confirm with CHS
+## Decisions to confirm with CHS
 
-- **Red (out of area):** treated as "connect to Triple Zero, no CHS responders".
-- **Advice pathway, 3 questions:** a red answer escalates to Script 1, as on the Emergency chart.
-- **Night** for allocation is 23:00-06:00 (Module 2); the Advice pathway's overnight window is 23:00-08:00 (chart).
+- **Advice line, no escalation → DOM (Script 3).** The 19/08/2025 flowchart removed the Health Direct (Purple) branch; the May 2025 manual still has it (overnight, or in hours unless a community organisation / worse in 2 hours). The old branch is kept behind `adviceHealthDirect` in `triage.ts`, and Purple / Script 4 can still be chosen by hand.
+- **Night = 21:00-07:00** for the allocation grid and 15-minute welfare checks (manual p.14). The training extract said 23:00-06:00.
+- **High-frequency caller on the emergency line:** suggested to the DOM (Green) as the manual says, *unless* an emergency complaint or a red answer to the three questions, which stay Red.
+- **Blackbox approval** can be recorded by a dispatcher noting the DOM's verbal approval (the timeline marks it "recorded by dispatcher").
+- **what3words** is captured and linked, not converted to coordinates. Converting (and checking the square against the suburb) needs a what3words API key; that's a small server-side addition.
+- **Escalation term matching** uses keyword patterns from the July 2025 draft matrix. It only suggests; the dispatcher confirms each category.
 - **Channel suggestions** by suburb (Maroubra, North) use a short starter list in `src/domain/alerts.ts`.
-- **Internal Messenger push** is recorded in the app, but not yet sent to phones. Next step: a Supabase Edge Function that sends a critical push (or calls the existing Messenger) on `incident_alerts` insert.
+- **Internal Messenger push** is recorded in the app but not yet sent to phones (next step: an Edge Function on `incident_alerts` insert).
 - Call ID format `CHS-YYMMDD-NNNN` (Sydney date).
 
 ## Not in phase 1
 
-Push notifications to phones, Dialpad/telephony integration, maps/geolocation ETAs, DOM case workflow beyond the handover, a full clinical PCR form, reporting.
+Push notifications to phones, Dialpad/telephony integration, what3words API conversion, maps/geolocation ETAs, the Jotform template field-for-field (link not yet received), DOM case workflow beyond the handover, a full clinical PCR form, reporting.

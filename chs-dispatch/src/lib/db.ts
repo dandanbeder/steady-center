@@ -1,6 +1,7 @@
 // Row shapes for the tables in supabase/migrations.
 import type { AssignmentStatus, CallSource, CoverageStatus, Hotline, IncidentStatus, Pathway, Rank, Role, SpecialCall } from "@/domain/types";
 import type { IncidentFlag } from "@/domain/types";
+import type { EscalationCategory, VitalSigns } from "@/domain/escalation";
 
 export interface Profile {
   id: string;
@@ -26,7 +27,17 @@ export interface Incident {
   suburb: string;
   cross_street: string;
   in_area: boolean;
+  meeting_point: string;
+  what3words: string;
   main_problem: string;
+  escalation_terms: EscalationCategory[];
+  vital_signs: VitalSigns;
+  blackbox: boolean;
+  dom_approved_at: string | null;
+  dom_approval_note: string;
+  sitrep_at: string | null;
+  sitrep_acuity: "routine" | "emergency" | null;
+  duress_at: string | null;
   emergency_complaint: boolean | null;
   alert_talking: boolean | null;
   breathing_normally: boolean | null;
@@ -73,6 +84,7 @@ export interface IncidentResponder {
   instruction_at: string | null;
   acknowledged_status: AssignmentStatus | null;
   acknowledged_at: string | null;
+  on_air_at: string | null;
   on_scene_at: string | null;
   cleared_at: string | null;
   last_welfare_check_at: string | null;

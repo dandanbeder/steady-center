@@ -83,7 +83,7 @@ export function requirementFor(opts: { special_call: SpecialCall | null; at: Dat
         { kind: "any", required: false, label: "Responder 3 (preference)" },
         { kind: "any", required: false, label: "Responder 4 (additional)" },
       ],
-      notes: ["ERT should be prioritised for special calls.", "Alert East and ERT channels."],
+      notes: ["Unconscious, MVA, cardiac arrest (incl. GoodSAM), not breathing.", "ERT should be prioritised for special calls. Alert East and ERT channels."],
     };
   }
   if (night) {
@@ -98,7 +98,7 @@ export function requirementFor(opts: { special_call: SpecialCall | null; at: Dat
         { kind: "any", required: true, label: "Responder 2" },
         { kind: "echo_only", required: false, label: "Responder 3 (Echo only)" },
       ],
-      notes: ["Overnight (23:00-06:00) needs a Delta+ and one other responder.", "Only send a 3rd responder if under 10 minutes' difference."],
+      notes: ["Night (21:00-07:00) needs a Delta+ and one other responder.", "3rd responder: Echo only, if under 10 minutes' difference."],
     };
   }
   return {
@@ -114,7 +114,7 @@ export function requirementFor(opts: { special_call: SpecialCall | null; at: Dat
     ],
     notes: [
       "A Delta+ is trained to manage a routine call alone.",
-      "The 3rd responder is optional, mainly so an Echo can train. Only send if under 10 minutes' difference.",
+      "CHS priority is experience for junior volunteers: where possible aim for 3 responders, the 3rd an Echo, if under 10 minutes' difference.",
     ],
   };
 }
@@ -176,7 +176,7 @@ export function recommend(opts: {
   candidates: Candidate[];
 }): AllocationResult {
   const req = requirementFor(opts);
-  const red = opts.pathway === "red_in_area";
+  const red = opts.pathway === "red_in_area" || opts.pathway === "red_out_of_area" || opts.pathway === "dom_direct";
   const live = opts.candidates.filter((c) => c.status === "offered" || c.status === "go");
   const going = live.filter((c) => c.status === "go");
   const recs = new Map<string, Recommendation>();

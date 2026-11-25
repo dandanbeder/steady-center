@@ -3,14 +3,15 @@ import { supabase } from "@/lib/supabase";
 import { must, notifyChanged, useLive } from "@/lib/live";
 import { useAuth } from "@/lib/auth";
 import { ops } from "@/lib/ops";
-import type { ChannelMembership, Incident, IncidentAlert, IncidentResponder, PatientCareRecord } from "@/lib/db";
+import type { ChannelMembership, Incident, IncidentAlert, IncidentEvent, IncidentResponder, PatientCareRecord } from "@/lib/db";
 import { CHANNELS } from "@/domain/alerts";
-import { formatLocation } from "@/domain/message";
+import { formatLocation, navigationUrl } from "@/domain/message";
 import { clockTime } from "@/domain/time";
 import { SPECIAL_CALL_LABEL } from "@/domain/types";
 import { ErrorNote, PathwayChip, Section, cx, useAction } from "@/components/ui";
 
 interface Data {
+  events: IncidentEvent[];
   incidents: Incident[];
   mine: IncidentResponder[];
   alerts: IncidentAlert[];
@@ -32,15 +33,28 @@ async function load(uid: string): Promise<Data> {
   const alerts = incidents.length
     ? await must<IncidentAlert[]>(supabase.from("incident_alerts").select("*").in("incident_id", incidents.map((i) => i.id)))
     : [];
-  return { incidents, mine, alerts, channels, pcrs };
+  const myIds = mine.map((m) => m.incident_id);
+  const events = myIds.length
+    ? await must<IncidentEvent[]>(supabase.from("incident_events").select("*").in("incident_id", myIds).in("kind", ["address_changed", "on_scene", "duress"]))
+    : [];
+  return { events, incidents, mine, alerts, channels, pcrs };
 }
 
 const ETAS = [2, 3, 5, 8, 10, 15];
 
 function Destination({ i }: { i: Incident }) {
+  const nav = navigationUrl(i);
   return (
     <div className="space-y-1">
       <p className="text-lg font-bold">{formatLocation(i) || "Address pending"}</p>
+      {i.meeting_point && (
+        <p className="rounded-md bg-amber-100 px-2 py-1 text-sm font-semibold text-amber-900">Meet at: {i.meeting_point}</p>
+      )}
+      {i.what3words && (
+        <a className="inline-flex items-center gap-1 rounded-md bg-red-600 px-2 py-1 font-mono text-sm font-bold text-white" target="_blank" rel="noreferrer" href={`https://what3words.com/${i.what3words}`}>
+          ///{i.what3words}
+        </a>
+      )}
       <p className="text-sm text-slate-600">
         Cross st: {i.cross_street || "—"}
         {i.address_details ? ` · ${i.address_details}` : ""}
@@ -50,9 +64,32 @@ function Destination({ i }: { i: Incident }) {
         {i.patient_age ? ` · age ${i.patient_age}` : ""}
       </p>
       {i.flags.includes("unsafe_situation") && <p className="text-sm font-bold text-red-700">Caution: unsafe situation reported. Do not enter until safe.</p>}
-      <a className="text-sm font-semibold text-brand underline" target="_blank" rel="noreferrer" href={`https://maps.google.com/?q=${encodeURIComponent(formatLocation(i))}`}>
-        Open in maps
-      </a>
+      {nav && (
+        <a className="text-sm font-semibold text-brand underline" target="_blank" rel="noreferrer" href={nav}>
+          {i.what3words ? "Navigate with what3words" : "Open in maps"}
+        </a>
+      )}
+    </div>
+  );
+}
+
+function SitrepQuick({ incident, uid }: { incident: Incident; uid: string }) {
+  const [body, setBody] = useState("");
+  const act = useAction();
+  if (incident.sitrep_at) return <p className="text-xs text-slate-500">Sitrep logged {clockTime(incident.sitrep_at)} ({incident.sitrep_acuity}).</p>;
+  return (
+    <div className="space-y-2 rounded-lg border border-slate-200 p-3">
+      <p className="text-sm font-bold">Sitrep to Control (within 3 min)</p>
+      <input className="input" placeholder="Alert? Breathing? Resources needed?" value={body} onChange={(e) => setBody(e.target.value)} />
+      <div className="flex gap-2">
+        <button className="btn-ghost flex-1" disabled={act.busy} onClick={() => act.run(() => ops.sitrep(incident.id, uid, "routine", body || "Routine"))}>
+          Routine
+        </button>
+        <button className="btn-stop flex-1" disabled={act.busy} onClick={() => act.run(() => ops.sitrep(incident.id, uid, "emergency", body || "Emergency"))}>
+          Emergency
+        </button>
+      </div>
+      <ErrorNote error={act.error} />
     </div>
   );
 }
@@ -116,9 +153,9 @@ export default function Responder() {
   const uid = session!.user.id;
   const { data, error } = useLive(
     `responder:${uid}`,
-    ["incidents", "incident_responders", "incident_alerts", "channel_memberships", "patient_care_records"],
+    ["incidents", "incident_responders", "incident_alerts", "incident_events", "channel_memberships", "patient_care_records"],
     () => load(uid),
-    { incidents: [], mine: [], alerts: [], channels: [], pcrs: [] } as Data,
+    { events: [], incidents: [], mine: [], alerts: [], channels: [], pcrs: [] } as Data,
   );
   const act = useAction();
   const [onCall, setOnCall] = useState(!!profile?.on_call);
@@ -180,6 +217,22 @@ export default function Responder() {
               </div>
             )}
 
+            {(() => {
+              const change = data.events.filter((e) => e.incident_id === i.id && e.kind === "address_changed").pop();
+              return change && m.status === "go" ? (
+                <div className="rounded-lg border-2 border-red-600 bg-red-50 p-3 text-red-900">
+                  <p className="font-bold">Address updated {clockTime(change.created_at)}</p>
+                  <p className="text-sm">{change.body}</p>
+                </div>
+              ) : null;
+            })()}
+            {profile?.rank === "echo" && m.status === "go" && !closed && (
+              <p className="rounded-lg bg-sky-50 p-2 text-sm text-sky-900">
+                {i.coverage === "delta_on_scene"
+                  ? "A Delta+ is on scene. You may enter."
+                  : "Echo: wait outside until a Delta+ is on scene. Control will tell you here."}
+              </p>
+            )}
             {m.status === "offered" && (
               <p className="rounded-lg bg-slate-50 p-3 text-sm">
                 Your offer (ETA {m.eta_minutes} min) is with the dispatcher. <b>An offer is not an assignment.</b> Wait for 👍 or 🛑.
@@ -216,6 +269,11 @@ export default function Responder() {
             {m.status !== "stand_down" && <Destination i={i} />}
             {i.coverage !== "open" && <p className="text-sm font-semibold text-slate-700">Control: {i.coverage.replace(/_/g, " ")}</p>}
 
+            {m.status === "go" && !needsAck && !m.on_air_at && !m.on_scene_at && profile?.has_radio && (
+              <button className="btn-ghost w-full" onClick={() => act.run(() => ops.markTime(i.id, uid, "on_air"))}>
+                I'm on the air (radio on)
+              </button>
+            )}
             {m.status === "go" && !needsAck && !m.on_scene_at && (
               <button className="btn-primary w-full" onClick={() => act.run(() => ops.markTime(i.id, uid, "on_scene"))}>
                 Arrived: patient contact
@@ -226,6 +284,7 @@ export default function Responder() {
                 Clear of scene
               </button>
             )}
+            {m.status === "go" && m.on_scene_at && profile?.rank !== "echo" && <SitrepQuick incident={i} uid={uid} />}
             {m.on_scene_at && <PcrForm incident={i} existing={data.pcrs.find((p) => p.incident_id === i.id)} uid={uid} />}
           </section>
         );
