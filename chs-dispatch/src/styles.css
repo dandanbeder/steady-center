@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #12303f;
+  --color-brand: #0f6e5c;
+  --color-brand-soft: #e5f1ee;
+  --color-surface: #f4f6f7;
+  --color-red-path: #d71920;
+  --color-yellow-path: #f3c614;
+  --color-green-path: #1a9a3a;
+  --color-purple-path: #7d3fb0;
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+html, body, #root { height: 100%; }
+body { @apply bg-surface text-ink antialiased; }
+
+@utility card { @apply rounded-xl border border-slate-200 bg-white p-4 shadow-sm; }
+@utility btn { @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50; }
+@utility btn-primary { @apply btn bg-brand text-white hover:bg-[#0b5a4b]; }
+@utility btn-danger { @apply btn bg-red-path text-white hover:bg-red-700; }
+@utility btn-ghost { @apply btn border border-slate-300 bg-white text-ink hover:bg-slate-50; }
+@utility btn-go { @apply btn bg-emerald-600 text-white hover:bg-emerald-700; }
+@utility btn-stop { @apply btn bg-red-600 text-white hover:bg-red-700; }
+@utility input { @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20; }
+@utility label { @apply mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500; }
+@utility say { @apply inline-block rounded bg-ink px-2 py-1 text-sm font-semibold text-white; }
+@utility chip { @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold; }
